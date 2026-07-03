@@ -162,10 +162,8 @@ fun CreateWalletPhraseScreen(
         page = createWalletPages[1],
         settings = settings,
         primaryTextRes = R.string.wallet_setup_action_continue,
-        secondaryTextRes = R.string.wallet_setup_action_previous,
         onBack = onBack,
         onPrimaryClick = onNext,
-        onSecondaryClick = onBack,
     ) {
         HiddenPhrasePanel()
     }
@@ -241,11 +239,9 @@ fun ImportRecoveryPhraseScreen(
         ),
         settings = settings,
         primaryTextRes = R.string.wallet_setup_action_continue,
-        secondaryTextRes = R.string.wallet_setup_action_previous,
         primaryEnabled = phraseValidation.isValid,
         onBack = onBack,
         onPrimaryClick = onNext,
-        onSecondaryClick = onBack,
     ) {
         RecoveryPhraseEntry(
             recoveryPhrase = recoveryPhrase,
@@ -272,10 +268,8 @@ fun ImportChainScreen(
         ),
         settings = settings,
         primaryTextRes = R.string.wallet_setup_action_continue,
-        secondaryTextRes = R.string.wallet_setup_action_previous,
         onBack = onBack,
         onPrimaryClick = { onNetworkContinue(selectedNetwork) },
-        onSecondaryClick = onBack,
     ) { performHaptic ->
         NetworkSelectionPanel(
             selectedNetwork = selectedNetwork,
@@ -302,10 +296,8 @@ fun ImportPrivateKeyScreen(
         ),
         settings = settings,
         primaryTextRes = R.string.wallet_setup_action_continue,
-        secondaryTextRes = R.string.wallet_setup_action_previous,
         onBack = onBack,
         onPrimaryClick = onNext,
-        onSecondaryClick = onBack,
     ) {
         PrivateKeyEntry(selectedNetwork = network)
     }
@@ -326,10 +318,8 @@ fun ImportWatchOnlyAddressScreen(
         ),
         settings = settings,
         primaryTextRes = R.string.wallet_setup_action_continue,
-        secondaryTextRes = R.string.wallet_setup_action_previous,
         onBack = onBack,
         onPrimaryClick = onNext,
-        onSecondaryClick = onBack,
     ) {
         WatchOnlyAddressEntry(selectedNetwork = network)
     }
@@ -351,10 +341,8 @@ fun ImportReviewScreen(
         ),
         settings = settings,
         primaryTextRes = R.string.wallet_setup_action_continue,
-        secondaryTextRes = R.string.wallet_setup_action_previous,
         onBack = onBack,
         onPrimaryClick = onNext,
-        onSecondaryClick = onBack,
     ) {
         ImportReviewPanel(
             method = method,
@@ -417,11 +405,9 @@ fun SetupConfirmPasscodeScreen(
         ),
         settings = settings,
         primaryTextRes = R.string.wallet_setup_action_confirm_passcode,
-        secondaryTextRes = R.string.wallet_setup_action_previous,
         primaryEnabled = matches,
         onBack = onBack,
         onPrimaryClick = onConfirmed,
-        onSecondaryClick = onBack,
     ) {
         PasscodeEntryPanel(
             passcode = confirmation,
@@ -486,10 +472,8 @@ fun SetupSuccessScreen(
         ),
         settings = settings,
         primaryTextRes = R.string.wallet_setup_action_open_wallet,
-        secondaryTextRes = R.string.wallet_setup_action_previous,
         onBack = onBack,
         onPrimaryClick = onOpenWallet,
-        onSecondaryClick = onBack,
     ) {
         SuccessSummaryPanel(flow = flow)
     }
@@ -501,11 +485,11 @@ private fun WalletSetupRouteScreen(
     page: SetupPageContent,
     settings: SatraSettings,
     @StringRes primaryTextRes: Int,
-    @StringRes secondaryTextRes: Int,
+    @StringRes secondaryTextRes: Int? = null,
     primaryEnabled: Boolean = true,
     onBack: () -> Unit,
     onPrimaryClick: () -> Unit,
-    onSecondaryClick: () -> Unit,
+    onSecondaryClick: (() -> Unit)? = null,
     content: @Composable (performHaptic: () -> Unit) -> Unit,
 ) {
     val hapticFeedback = LocalHapticFeedback.current
@@ -584,9 +568,11 @@ private fun WalletSetupRouteScreen(
                         performHaptic()
                         onPrimaryClick()
                     },
-                    onSecondaryClick = {
-                        performHaptic()
-                        onSecondaryClick()
+                    onSecondaryClick = onSecondaryClick?.let { secondaryClick ->
+                        {
+                            performHaptic()
+                            secondaryClick()
+                        }
                     },
                 )
             }
@@ -1358,10 +1344,10 @@ private fun ReviewTextRow(
 @Composable
 private fun SetupActions(
     @StringRes primaryTextRes: Int,
-    @StringRes secondaryTextRes: Int,
+    @StringRes secondaryTextRes: Int?,
     primaryEnabled: Boolean,
     onPrimaryClick: () -> Unit,
-    onSecondaryClick: () -> Unit,
+    onSecondaryClick: (() -> Unit)?,
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -1386,18 +1372,20 @@ private fun SetupActions(
             )
         }
 
-        OutlinedButton(
-            onClick = onSecondaryClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp),
-            border = BorderStroke(1.dp, SatraButtonSecondaryBorder),
-        ) {
-            Text(
-                text = stringResource(secondaryTextRes),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-            )
+        if (secondaryTextRes != null && onSecondaryClick != null) {
+            OutlinedButton(
+                onClick = onSecondaryClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                border = BorderStroke(1.dp, SatraButtonSecondaryBorder),
+            ) {
+                Text(
+                    text = stringResource(secondaryTextRes),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
         }
     }
 }
