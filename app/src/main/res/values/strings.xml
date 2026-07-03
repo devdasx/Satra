@@ -15,6 +15,58 @@
     <string name="onboarding_open_source_url" translatable="false">https://github.com/devdasx/Satra</string>
     <string name="onboarding_privacy_policy_url" translatable="false">https://satra.app/privacy</string>
     <string name="onboarding_terms_of_use_url" translatable="false">https://satra.app/terms</string>
+    <string name="settings_title">Settings</string>
+    <string name="settings_back">Back</string>
+    <string name="settings_open_indicator" translatable="false">&gt;</string>
+    <string name="settings_section_appearance">Appearance</string>
+    <string name="settings_theme_system">System</string>
+    <string name="settings_theme_system_body">Follow this device.</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_light_body">Use Satra light mode.</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_theme_dark_body">Use Satra dark mode.</string>
+    <string name="settings_haptics_title">Haptic feedback</string>
+    <string name="settings_haptics_body">Use device vibration for important taps.</string>
+    <string name="settings_language_title">Language</string>
+    <string name="settings_help_title">Help &amp; support</string>
+    <string name="settings_help_body">Documentation, source, bugs, features, and contact.</string>
+    <string name="settings_about_title">About Satra</string>
+    <string name="settings_about_body">Version, terms, and privacy.</string>
+    <string name="settings_about_version">Version</string>
+    <string name="settings_help_read_documentation">Read documentation</string>
+    <string name="settings_help_view_source">View source on GitHub</string>
+    <string name="settings_help_report_bug">Report a bug</string>
+    <string name="settings_help_request_feature">Request a feature</string>
+    <string name="settings_help_contact_us">Contact us</string>
+    <string name="settings_url_documentation" translatable="false">https://github.com/devdasx/Satra#readme</string>
+    <string name="settings_url_report_bug" translatable="false">https://github.com/devdasx/Satra/issues/new?labels=bug</string>
+    <string name="settings_url_request_feature" translatable="false">https://github.com/devdasx/Satra/issues/new?labels=enhancement</string>
+    <string name="settings_url_contact" translatable="false">https://github.com/devdasx/Satra/issues/new?labels=question</string>
+    <string name="settings_language_english">English</string>
+    <string name="settings_language_chinese_simplified">Chinese (Simplified)</string>
+    <string name="settings_language_hindi">Hindi</string>
+    <string name="settings_language_spanish">Spanish</string>
+    <string name="settings_language_french">French</string>
+    <string name="settings_language_arabic">Arabic</string>
+    <string name="settings_language_bengali">Bengali</string>
+    <string name="settings_language_portuguese">Portuguese</string>
+    <string name="settings_language_russian">Russian</string>
+    <string name="settings_language_urdu">Urdu</string>
+    <string name="settings_language_indonesian">Indonesian</string>
+    <string name="settings_language_german">German</string>
+    <string name="settings_language_japanese">Japanese</string>
+    <string name="settings_language_swahili">Swahili</string>
+    <string name="settings_language_marathi">Marathi</string>
+    <string name="settings_language_telugu">Telugu</string>
+    <string name="settings_language_turkish">Turkish</string>
+    <string name="settings_language_tamil">Tamil</string>
+    <string name="settings_language_vietnamese">Vietnamese</string>
+    <string name="settings_language_korean">Korean</string>
+    <string name="settings_language_persian">Persian</string>
+    <string name="settings_language_italian">Italian</string>
+    <string name="settings_language_thai">Thai</string>
+    <string name="settings_language_gujarati">Gujarati</string>
+    <string name="settings_language_polish">Polish</string>
     <string name="onboarding_receive_label">Receive</string>
     <string name="onboarding_receive_address_preview">0x… / bc1…</string>
     <string name="onboarding_page_self_custody_eyebrow">Self-custody</string>

@@ -30,20 +30,38 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -60,16 +78,40 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.satra.wallet.R
+import dev.satra.wallet.settings.SatraSettings
+import dev.satra.wallet.settings.SatraThemePreference
 import dev.satra.wallet.ui.theme.SatraTheme
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SatraOnboardingScreen(
+    settings: SatraSettings = SatraSettings(),
+    appVersion: String = "0.1.0",
+    onThemePreferenceChange: (SatraThemePreference) -> Unit = {},
+    onHapticsEnabledChange: (Boolean) -> Unit = {},
+    onLanguageTagChange: (String) -> Unit = {},
     onCreateWallet: () -> Unit = {},
     onRestoreWallet: () -> Unit = {},
 ) {
     val pages = remember { onboardingPages }
     val pagerState = rememberPagerState(pageCount = { pages.size })
+    val hapticFeedback = LocalHapticFeedback.current
+    val performHaptic = remember(settings.hapticsEnabled, hapticFeedback) {
+        { performSatraHaptic(hapticFeedback, settings.hapticsEnabled) }
+    }
+    var settingsSheetVisible by rememberSaveable { mutableStateOf(false) }
+    var settingsSheetPage by rememberSaveable { mutableStateOf(SettingsSheetPage.Main.name) }
+
+    LaunchedEffect(pagerState, pages.size, settingsSheetVisible) {
+        while (!settingsSheetVisible) {
+            delay(AUTO_ADVANCE_DELAY_MILLIS)
+            if (!pagerState.isScrollInProgress) {
+                val nextPage = (pagerState.currentPage + 1) % pages.size
+                pagerState.animateScrollToPage(nextPage)
+            }
+        }
+    }
 
     BoxWithConstraints(
         modifier = Modifier
@@ -96,10 +138,17 @@ fun SatraOnboardingScreen(
                             copyHeight = if (compactHeight) 204.dp else 236.dp,
                             visualCopyGap = if (compactHeight) 8.dp else 14.dp,
                             pageSpacing = 18.dp,
+                            performHaptic = performHaptic,
                         )
                     },
                     onCreateWallet = onCreateWallet,
                     onRestoreWallet = onRestoreWallet,
+                    onSettingsClick = {
+                        performHaptic()
+                        settingsSheetPage = SettingsSheetPage.Main.name
+                        settingsSheetVisible = true
+                    },
+                    performHaptic = performHaptic,
                     screenHeight = screenHeight,
                     contentMaxWidth = 460.dp,
                     horizontalPadding = 24.dp,
@@ -118,10 +167,17 @@ fun SatraOnboardingScreen(
                             copyHeight = if (compactHeight) 204.dp else 224.dp,
                             visualCopyGap = 18.dp,
                             pageSpacing = 22.dp,
+                            performHaptic = performHaptic,
                         )
                     },
                     onCreateWallet = onCreateWallet,
                     onRestoreWallet = onRestoreWallet,
+                    onSettingsClick = {
+                        performHaptic()
+                        settingsSheetPage = SettingsSheetPage.Main.name
+                        settingsSheetVisible = true
+                    },
+                    performHaptic = performHaptic,
                     screenHeight = screenHeight,
                     contentMaxWidth = 560.dp,
                     horizontalPadding = 48.dp,
@@ -139,15 +195,36 @@ fun SatraOnboardingScreen(
                             artworkHeight = if (compactHeight) 320.dp else 400.dp,
                             copyHeight = if (compactHeight) 216.dp else 244.dp,
                             pageSpacing = 24.dp,
+                            performHaptic = performHaptic,
                         )
                     },
                     onCreateWallet = onCreateWallet,
                     onRestoreWallet = onRestoreWallet,
+                    onSettingsClick = {
+                        performHaptic()
+                        settingsSheetPage = SettingsSheetPage.Main.name
+                        settingsSheetVisible = true
+                    },
+                    performHaptic = performHaptic,
                     screenHeight = screenHeight,
                     compactHeight = compactHeight,
                     scrollFallback = scrollFallback,
                 )
             }
+        }
+
+        if (settingsSheetVisible) {
+            SatraSettingsBottomSheet(
+                settings = settings,
+                appVersion = appVersion,
+                currentPage = SettingsSheetPage.valueOf(settingsSheetPage),
+                onPageChange = { page -> settingsSheetPage = page.name },
+                onDismissRequest = { settingsSheetVisible = false },
+                onThemePreferenceChange = onThemePreferenceChange,
+                onHapticsEnabledChange = onHapticsEnabledChange,
+                onLanguageTagChange = onLanguageTagChange,
+                performHaptic = performHaptic,
+            )
         }
     }
 }
@@ -159,6 +236,8 @@ private fun OnboardingSinglePaneLayout(
     pageContent: @Composable () -> Unit,
     onCreateWallet: () -> Unit,
     onRestoreWallet: () -> Unit,
+    onSettingsClick: () -> Unit,
+    performHaptic: () -> Unit,
     screenHeight: Dp,
     contentMaxWidth: Dp,
     horizontalPadding: Dp,
@@ -182,7 +261,10 @@ private fun OnboardingSinglePaneLayout(
                 .then(if (scrollFallback) Modifier.heightIn(min = screenHeight) else Modifier.fillMaxSize()),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            SatraHeader(modifier = Modifier.fillMaxWidth())
+            SatraHeader(
+                onSettingsClick = onSettingsClick,
+                modifier = Modifier.fillMaxWidth(),
+            )
 
             Spacer(modifier = Modifier.height(if (compactHeight) 10.dp else 18.dp))
 
@@ -203,6 +285,7 @@ private fun OnboardingSinglePaneLayout(
             OnboardingActions(
                 onCreateWallet = onCreateWallet,
                 onRestoreWallet = onRestoreWallet,
+                performHaptic = performHaptic,
                 modifier = Modifier.fillMaxWidth(),
             )
         }
@@ -216,6 +299,8 @@ private fun OnboardingExpandedLayout(
     pageContent: @Composable () -> Unit,
     onCreateWallet: () -> Unit,
     onRestoreWallet: () -> Unit,
+    onSettingsClick: () -> Unit,
+    performHaptic: () -> Unit,
     screenHeight: Dp,
     compactHeight: Boolean,
     scrollFallback: Boolean,
@@ -235,7 +320,10 @@ private fun OnboardingExpandedLayout(
                 .then(if (scrollFallback) Modifier.heightIn(min = screenHeight) else Modifier.fillMaxSize()),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            SatraHeader(modifier = Modifier.fillMaxWidth())
+            SatraHeader(
+                onSettingsClick = onSettingsClick,
+                modifier = Modifier.fillMaxWidth(),
+            )
 
             Spacer(modifier = Modifier.height(if (compactHeight) 28.dp else 44.dp))
 
@@ -260,6 +348,7 @@ private fun OnboardingExpandedLayout(
                 OnboardingActions(
                     onCreateWallet = onCreateWallet,
                     onRestoreWallet = onRestoreWallet,
+                    performHaptic = performHaptic,
                     modifier = Modifier
                         .widthIn(max = 460.dp)
                         .fillMaxWidth(),
@@ -278,6 +367,7 @@ private fun OnboardingPagedContent(
     copyHeight: Dp,
     visualCopyGap: Dp,
     pageSpacing: Dp,
+    performHaptic: () -> Unit,
 ) {
     HorizontalPager(
         state = pagerState,
@@ -303,6 +393,7 @@ private fun OnboardingPagedContent(
 
             OnboardingCopy(
                 page = page,
+                performHaptic = performHaptic,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(copyHeight),
@@ -319,6 +410,7 @@ private fun OnboardingExpandedPagedContent(
     artworkHeight: Dp,
     copyHeight: Dp,
     pageSpacing: Dp,
+    performHaptic: () -> Unit,
 ) {
     HorizontalPager(
         state = pagerState,
@@ -343,6 +435,7 @@ private fun OnboardingExpandedPagedContent(
 
             OnboardingCopy(
                 page = page,
+                performHaptic = performHaptic,
                 modifier = Modifier
                     .weight(0.92f)
                     .height(copyHeight),
@@ -352,11 +445,14 @@ private fun OnboardingExpandedPagedContent(
 }
 
 @Composable
-private fun SatraHeader(modifier: Modifier = Modifier) {
+private fun SatraHeader(
+    onSettingsClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Start,
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Image(
             painter = painterResource(R.drawable.satra_lockup_horizontal),
@@ -366,6 +462,14 @@ private fun SatraHeader(modifier: Modifier = Modifier) {
                 .width(132.dp)
                 .height(48.dp),
         )
+
+        IconButton(onClick = onSettingsClick) {
+            Icon(
+                imageVector = Icons.Filled.Settings,
+                contentDescription = stringResource(R.string.settings_title),
+                tint = MaterialTheme.colorScheme.onSurface,
+            )
+        }
     }
 }
 
@@ -421,6 +525,7 @@ private fun IconBadge(
 @Composable
 private fun OnboardingCopy(
     page: OnboardingPage,
+    performHaptic: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -458,6 +563,7 @@ private fun OnboardingCopy(
             SourceCodePill(
                 label = stringResource(labelRes),
                 url = stringResource(R.string.onboarding_open_source_url),
+                performHaptic = performHaptic,
             )
         }
     }
@@ -467,6 +573,7 @@ private fun OnboardingCopy(
 private fun SourceCodePill(
     label: String,
     url: String,
+    performHaptic: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val uriHandler = LocalUriHandler.current
@@ -476,7 +583,10 @@ private fun SourceCodePill(
             .clip(CircleShape)
             .background(MaterialTheme.colorScheme.primaryContainer)
             .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
-            .clickable { uriHandler.openUri(url) }
+            .clickable {
+                performHaptic()
+                uriHandler.openUri(url)
+            }
             .padding(horizontal = 16.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -536,6 +646,7 @@ private fun PagerDots(
 private fun OnboardingActions(
     onCreateWallet: () -> Unit,
     onRestoreWallet: () -> Unit,
+    performHaptic: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -544,7 +655,10 @@ private fun OnboardingActions(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Button(
-            onClick = onCreateWallet,
+            onClick = {
+                performHaptic()
+                onCreateWallet()
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
@@ -563,7 +677,10 @@ private fun OnboardingActions(
         }
 
         OutlinedButton(
-            onClick = onRestoreWallet,
+            onClick = {
+                performHaptic()
+                onRestoreWallet()
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
@@ -645,6 +762,455 @@ private fun OnboardingFooterLinks(modifier: Modifier = Modifier) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SatraSettingsBottomSheet(
+    settings: SatraSettings,
+    appVersion: String,
+    currentPage: SettingsSheetPage,
+    onPageChange: (SettingsSheetPage) -> Unit,
+    onDismissRequest: () -> Unit,
+    onThemePreferenceChange: (SatraThemePreference) -> Unit,
+    onHapticsEnabledChange: (Boolean) -> Unit,
+    onLanguageTagChange: (String) -> Unit,
+    performHaptic: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismissRequest,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 32.dp),
+        ) {
+            when (currentPage) {
+                SettingsSheetPage.Main -> SettingsMainContent(
+                    settings = settings,
+                    onThemePreferenceChange = onThemePreferenceChange,
+                    onHapticsEnabledChange = onHapticsEnabledChange,
+                    onPageChange = onPageChange,
+                    performHaptic = performHaptic,
+                )
+
+                SettingsSheetPage.Language -> SettingsLanguageContent(
+                    settings = settings,
+                    onBack = { onPageChange(SettingsSheetPage.Main) },
+                    onLanguageTagChange = onLanguageTagChange,
+                    performHaptic = performHaptic,
+                )
+
+                SettingsSheetPage.Help -> SettingsHelpContent(
+                    onBack = { onPageChange(SettingsSheetPage.Main) },
+                    performHaptic = performHaptic,
+                )
+
+                SettingsSheetPage.About -> SettingsAboutContent(
+                    appVersion = appVersion,
+                    onBack = { onPageChange(SettingsSheetPage.Main) },
+                    performHaptic = performHaptic,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingsMainContent(
+    settings: SatraSettings,
+    onThemePreferenceChange: (SatraThemePreference) -> Unit,
+    onHapticsEnabledChange: (Boolean) -> Unit,
+    onPageChange: (SettingsSheetPage) -> Unit,
+    performHaptic: () -> Unit,
+) {
+    SettingsSheetHeader(titleRes = R.string.settings_title)
+
+    SettingsSectionTitle(titleRes = R.string.settings_section_appearance)
+    SelectableSettingsRow(
+        title = stringResource(R.string.settings_theme_system),
+        body = stringResource(R.string.settings_theme_system_body),
+        selected = settings.themePreference == SatraThemePreference.System,
+        onClick = {
+            performHaptic()
+            onThemePreferenceChange(SatraThemePreference.System)
+        },
+    )
+    SelectableSettingsRow(
+        title = stringResource(R.string.settings_theme_light),
+        body = stringResource(R.string.settings_theme_light_body),
+        selected = settings.themePreference == SatraThemePreference.Light,
+        onClick = {
+            performHaptic()
+            onThemePreferenceChange(SatraThemePreference.Light)
+        },
+    )
+    SelectableSettingsRow(
+        title = stringResource(R.string.settings_theme_dark),
+        body = stringResource(R.string.settings_theme_dark_body),
+        selected = settings.themePreference == SatraThemePreference.Dark,
+        onClick = {
+            performHaptic()
+            onThemePreferenceChange(SatraThemePreference.Dark)
+        },
+    )
+
+    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+
+    SwitchSettingsRow(
+        title = stringResource(R.string.settings_haptics_title),
+        body = stringResource(R.string.settings_haptics_body),
+        checked = settings.hapticsEnabled,
+        onCheckedChange = { enabled ->
+            performHaptic()
+            onHapticsEnabledChange(enabled)
+        },
+    )
+
+    SettingsNavigationRow(
+        title = stringResource(R.string.settings_language_title),
+        body = currentLanguageLabel(settings.languageTag),
+        onClick = {
+            performHaptic()
+            onPageChange(SettingsSheetPage.Language)
+        },
+    )
+
+    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+
+    SettingsNavigationRow(
+        title = stringResource(R.string.settings_help_title),
+        body = stringResource(R.string.settings_help_body),
+        onClick = {
+            performHaptic()
+            onPageChange(SettingsSheetPage.Help)
+        },
+    )
+    SettingsNavigationRow(
+        title = stringResource(R.string.settings_about_title),
+        body = stringResource(R.string.settings_about_body),
+        onClick = {
+            performHaptic()
+            onPageChange(SettingsSheetPage.About)
+        },
+    )
+}
+
+@Composable
+private fun SettingsLanguageContent(
+    settings: SatraSettings,
+    onBack: () -> Unit,
+    onLanguageTagChange: (String) -> Unit,
+    performHaptic: () -> Unit,
+) {
+    SettingsSheetHeader(
+        titleRes = R.string.settings_language_title,
+        onBack = {
+            performHaptic()
+            onBack()
+        },
+    )
+
+    supportedLanguageOptions.forEach { option ->
+        SelectableSettingsRow(
+            title = stringResource(option.labelRes),
+            body = option.languageTag,
+            selected = settings.languageTag == option.languageTag,
+            onClick = {
+                performHaptic()
+                onLanguageTagChange(option.languageTag)
+            },
+        )
+    }
+}
+
+@Composable
+private fun SettingsHelpContent(
+    onBack: () -> Unit,
+    performHaptic: () -> Unit,
+) {
+    val uriHandler = LocalUriHandler.current
+    val documentationUrl = stringResource(R.string.settings_url_documentation)
+    val sourceUrl = stringResource(R.string.onboarding_open_source_url)
+    val reportBugUrl = stringResource(R.string.settings_url_report_bug)
+    val requestFeatureUrl = stringResource(R.string.settings_url_request_feature)
+    val contactUrl = stringResource(R.string.settings_url_contact)
+
+    SettingsSheetHeader(
+        titleRes = R.string.settings_help_title,
+        onBack = {
+            performHaptic()
+            onBack()
+        },
+    )
+
+    SettingsNavigationRow(
+        title = stringResource(R.string.settings_help_read_documentation),
+        onClick = {
+            performHaptic()
+            uriHandler.openUri(documentationUrl)
+        },
+    )
+    SettingsNavigationRow(
+        title = stringResource(R.string.settings_help_view_source),
+        onClick = {
+            performHaptic()
+            uriHandler.openUri(sourceUrl)
+        },
+    )
+    SettingsNavigationRow(
+        title = stringResource(R.string.settings_help_report_bug),
+        onClick = {
+            performHaptic()
+            uriHandler.openUri(reportBugUrl)
+        },
+    )
+    SettingsNavigationRow(
+        title = stringResource(R.string.settings_help_request_feature),
+        onClick = {
+            performHaptic()
+            uriHandler.openUri(requestFeatureUrl)
+        },
+    )
+    SettingsNavigationRow(
+        title = stringResource(R.string.settings_help_contact_us),
+        onClick = {
+            performHaptic()
+            uriHandler.openUri(contactUrl)
+        },
+    )
+}
+
+@Composable
+private fun SettingsAboutContent(
+    appVersion: String,
+    onBack: () -> Unit,
+    performHaptic: () -> Unit,
+) {
+    val uriHandler = LocalUriHandler.current
+    val termsUrl = stringResource(R.string.onboarding_terms_of_use_url)
+    val privacyUrl = stringResource(R.string.onboarding_privacy_policy_url)
+
+    SettingsSheetHeader(
+        titleRes = R.string.settings_about_title,
+        onBack = {
+            performHaptic()
+            onBack()
+        },
+    )
+
+    StaticSettingsRow(
+        title = stringResource(R.string.settings_about_version),
+        body = appVersion,
+    )
+    SettingsNavigationRow(
+        title = stringResource(R.string.onboarding_terms_of_use),
+        onClick = {
+            performHaptic()
+            uriHandler.openUri(termsUrl)
+        },
+    )
+    SettingsNavigationRow(
+        title = stringResource(R.string.onboarding_privacy_policy),
+        onClick = {
+            performHaptic()
+            uriHandler.openUri(privacyUrl)
+        },
+    )
+}
+
+@Composable
+private fun SettingsSheetHeader(
+    @StringRes titleRes: Int,
+    onBack: (() -> Unit)? = null,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        if (onBack != null) {
+            TextButton(onClick = onBack) {
+                Text(
+                    text = stringResource(R.string.settings_back),
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+        }
+
+        Text(
+            text = stringResource(titleRes),
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Bold,
+            modifier = if (onBack == null) Modifier.fillMaxWidth() else Modifier,
+        )
+    }
+}
+
+@Composable
+private fun SettingsSectionTitle(@StringRes titleRes: Int) {
+    Text(
+        text = stringResource(titleRes),
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier.padding(top = 8.dp, bottom = 6.dp),
+    )
+}
+
+@Composable
+private fun SelectableSettingsRow(
+    title: String,
+    body: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 2.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        RadioButton(
+            selected = selected,
+            onClick = null,
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = body,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SwitchSettingsRow(
+    title: String,
+    body: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .clickable { onCheckedChange(!checked) }
+            .padding(horizontal = 2.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = body,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+        )
+    }
+}
+
+@Composable
+private fun SettingsNavigationRow(
+    title: String,
+    body: String? = null,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 2.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+            )
+            body?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        Text(
+            text = stringResource(R.string.settings_open_indicator),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.Bold,
+        )
+    }
+}
+
+@Composable
+private fun StaticSettingsRow(
+    title: String,
+    body: String,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 2.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = body,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun currentLanguageLabel(languageTag: String): String {
+    val option = supportedLanguageOptions.firstOrNull { it.languageTag == languageTag }
+        ?: supportedLanguageOptions.first()
+    return stringResource(option.labelRes)
+}
+
 private fun AnnotatedString.Builder.appendLink(
     text: String,
     url: String,
@@ -693,12 +1259,26 @@ private data class OnboardingPage(
     @StringRes val sourcePillLabelRes: Int? = null,
 )
 
+private data class SupportedLanguageOption(
+    val languageTag: String,
+    @StringRes val labelRes: Int,
+)
+
+private const val AUTO_ADVANCE_DELAY_MILLIS = 5_000L
+
 private val onboardingPages = listOf(
     OnboardingPage(
         visual = OnboardingArtwork.SelfCustody,
         eyebrowRes = R.string.onboarding_page_self_custody_eyebrow,
         titleRes = R.string.onboarding_page_self_custody_title,
         bodyRes = R.string.onboarding_page_self_custody_body,
+    ),
+    OnboardingPage(
+        visual = OnboardingArtwork.OpenSource,
+        eyebrowRes = R.string.onboarding_page_open_source_eyebrow,
+        titleRes = R.string.onboarding_page_open_source_title,
+        bodyRes = R.string.onboarding_page_open_source_body,
+        sourcePillLabelRes = R.string.onboarding_source_pill_label,
     ),
     OnboardingPage(
         visual = OnboardingArtwork.Import,
@@ -742,13 +1322,34 @@ private val onboardingPages = listOf(
         titleRes = R.string.onboarding_page_move_title,
         bodyRes = R.string.onboarding_page_move_body,
     ),
-    OnboardingPage(
-        visual = OnboardingArtwork.OpenSource,
-        eyebrowRes = R.string.onboarding_page_open_source_eyebrow,
-        titleRes = R.string.onboarding_page_open_source_title,
-        bodyRes = R.string.onboarding_page_open_source_body,
-        sourcePillLabelRes = R.string.onboarding_source_pill_label,
-    ),
+)
+
+private val supportedLanguageOptions = listOf(
+    SupportedLanguageOption("en", R.string.settings_language_english),
+    SupportedLanguageOption("zh-Hans", R.string.settings_language_chinese_simplified),
+    SupportedLanguageOption("hi", R.string.settings_language_hindi),
+    SupportedLanguageOption("es", R.string.settings_language_spanish),
+    SupportedLanguageOption("fr", R.string.settings_language_french),
+    SupportedLanguageOption("ar", R.string.settings_language_arabic),
+    SupportedLanguageOption("bn", R.string.settings_language_bengali),
+    SupportedLanguageOption("pt", R.string.settings_language_portuguese),
+    SupportedLanguageOption("ru", R.string.settings_language_russian),
+    SupportedLanguageOption("ur", R.string.settings_language_urdu),
+    SupportedLanguageOption("id", R.string.settings_language_indonesian),
+    SupportedLanguageOption("de", R.string.settings_language_german),
+    SupportedLanguageOption("ja", R.string.settings_language_japanese),
+    SupportedLanguageOption("sw", R.string.settings_language_swahili),
+    SupportedLanguageOption("mr", R.string.settings_language_marathi),
+    SupportedLanguageOption("te", R.string.settings_language_telugu),
+    SupportedLanguageOption("tr", R.string.settings_language_turkish),
+    SupportedLanguageOption("ta", R.string.settings_language_tamil),
+    SupportedLanguageOption("vi", R.string.settings_language_vietnamese),
+    SupportedLanguageOption("ko", R.string.settings_language_korean),
+    SupportedLanguageOption("fa", R.string.settings_language_persian),
+    SupportedLanguageOption("it", R.string.settings_language_italian),
+    SupportedLanguageOption("th", R.string.settings_language_thai),
+    SupportedLanguageOption("gu", R.string.settings_language_gujarati),
+    SupportedLanguageOption("pl", R.string.settings_language_polish),
 )
 
 private enum class OnboardingArtwork(
@@ -804,6 +1405,22 @@ private enum class OnboardingWindowSize {
             width >= 600.dp -> Medium
             else -> Compact
         }
+    }
+}
+
+private enum class SettingsSheetPage {
+    Main,
+    Language,
+    Help,
+    About,
+}
+
+private fun performSatraHaptic(
+    hapticFeedback: HapticFeedback,
+    enabled: Boolean,
+) {
+    if (enabled) {
+        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
     }
 }
 

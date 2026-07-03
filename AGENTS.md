@@ -12,6 +12,7 @@
 - Every screen must be responsive across compact phones, tablets, foldables, and desktop-class/windowed Android surfaces.
 - Each screen should fit inside the visible viewport without vertical scrolling whenever the content can reasonably fit; primary actions must be visible without scrolling. Use scroll only as a fallback for genuinely cramped window sizes.
 - In paged onboarding/tutorial UI, keep visuals and copy in fixed-size page slots so swiping never shifts the header, dots, actions, or other surrounding layout; every page must have its own meaningful visual.
+- Use real Android haptic feedback for meaningful user actions where it helps confirm interaction, and always respect the app-level haptic feedback setting. Avoid decorative or automatic haptics.
 - Put every user-facing string in English resource keys under `app/src/main/res/values/strings.xml` as soon as it is added. Do not leave visible text hardcoded in Compose.
 - Track future localization for the top 25 languages by total speakers; keep English as the source language until the full-app translation pass.
 - Satra is a multi-chain, multi-asset wallet. Do not describe it as Bitcoin-only.
