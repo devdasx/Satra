@@ -68,6 +68,8 @@ import dev.satra.wallet.data.assets.SupportedNetwork
 import dev.satra.wallet.data.db.SatraWalletRepository
 import dev.satra.wallet.data.db.WalletAddressRecord
 import dev.satra.wallet.data.db.WalletAssetRecord
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 
 @Composable
 fun SatraReceiveScreen(
@@ -82,9 +84,16 @@ fun SatraReceiveScreen(
             state = ReceiveScreenState.Empty
             return@LaunchedEffect
         }
-        val addresses = walletRepository.ensureMnemonicReceiveAddresses(wallet.walletId)
-            .ifEmpty { walletRepository.getWalletAddresses(wallet.walletId) }
-        val walletAssets = walletRepository.getWalletAssets(wallet.walletId)
+        val (addresses, walletAssets) = coroutineScope {
+            val addressesDeferred = async {
+                walletRepository.ensureMnemonicReceiveAddresses(wallet.walletId)
+                    .ifEmpty { walletRepository.getWalletAddresses(wallet.walletId) }
+            }
+            val assetsDeferred = async {
+                walletRepository.getWalletAssets(wallet.walletId)
+            }
+            addressesDeferred.await() to assetsDeferred.await()
+        }
         val rows = walletAssets.toReceiveAssetRows(addresses)
         state = if (rows.isEmpty()) ReceiveScreenState.Empty else ReceiveScreenState.Content(rows)
     }

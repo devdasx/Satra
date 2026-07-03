@@ -74,6 +74,8 @@ import dev.satra.wallet.data.sync.evm.EvmProviderRegistry
 import dev.satra.wallet.data.sync.evm.EvmSyncCompleteness
 import dev.satra.wallet.settings.SatraSettings
 import dev.satra.wallet.settings.SatraThemePreference
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import java.math.BigDecimal
 import java.text.NumberFormat
 import java.time.Instant
@@ -278,8 +280,12 @@ private fun SatraHomeDashboard(
         }
 
         suspend fun loadContent(status: HomeSyncStatus) {
-            val walletAssets = walletRepository.getWalletAssets(wallet.walletId)
-            homeState = wallet.toHomeDashboardState(
+            val (latestWallet, walletAssets) = coroutineScope {
+                val walletDeferred = async { walletRepository.getPrimaryWallet() }
+                val assetsDeferred = async { walletRepository.getWalletAssets(wallet.walletId) }
+                (walletDeferred.await() ?: wallet) to assetsDeferred.await()
+            }
+            homeState = latestWallet.toHomeDashboardState(
                 walletAssets = walletAssets,
                 status = status,
             )
@@ -287,8 +293,7 @@ private fun SatraHomeDashboard(
 
         loadContent(HomeSyncStatus.Syncing)
         runCatching {
-            walletRepository.syncEvmWallet(wallet.walletId)
-            walletRepository.syncWalletPrices(wallet.walletId)
+            walletRepository.syncWalletData(wallet.walletId)
         }
         loadContent(HomeSyncStatus.Ready)
     }
@@ -376,9 +381,12 @@ private fun SatraActivityScreen(
         }
 
         suspend fun loadContent(status: HomeSyncStatus, error: String? = null) {
-            val latestWallet = walletRepository.getPrimaryWallet() ?: wallet
-            val transactions = walletRepository.getWalletTransactions(wallet.walletId)
-                .toActivityRows(latestWallet.localCurrencyCode, resources)
+            val (latestWallet, walletTransactions) = coroutineScope {
+                val walletDeferred = async { walletRepository.getPrimaryWallet() }
+                val transactionsDeferred = async { walletRepository.getWalletTransactions(wallet.walletId) }
+                (walletDeferred.await() ?: wallet) to transactionsDeferred.await()
+            }
+            val transactions = walletTransactions.toActivityRows(latestWallet.localCurrencyCode, resources)
             activityState = ActivityScreenState.Content(
                 walletName = latestWallet.walletName,
                 status = status,

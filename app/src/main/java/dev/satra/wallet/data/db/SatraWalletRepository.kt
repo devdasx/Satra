@@ -14,6 +14,8 @@ import dev.satra.wallet.wallet.bip39.Bip39MnemonicValidator
 import dev.satra.wallet.wallet.derivation.DerivedReceiveAccount
 import dev.satra.wallet.wallet.derivation.SatraAddressDerivation
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -338,56 +340,62 @@ class SatraWalletRepository(
             result.networkResults.single()
         }
 
+    suspend fun syncWalletData(walletId: String): SatraWalletDataSyncResult =
+        withContext(Dispatchers.IO) {
+            val wallet = walletDao.getWallet(walletId)
+                ?: error("Wallet not found: $walletId")
+            val addresses = walletDao.getWalletAddresses(walletId)
+            coroutineScope {
+                val evmDeferred = async {
+                    evmWalletSyncService.syncWallet(
+                        walletId = walletId,
+                        addresses = addresses,
+                    )
+                }
+                val pricesDeferred = async {
+                    priceSyncService.syncSupportedAssetPricesOrNull(wallet.localCurrencyCode)
+                }
+
+                val evmResult = evmDeferred.await()
+                persistEvmSyncResult(wallet, evmResult)
+
+                val priceResult = pricesDeferred.await()
+                persistWalletPrices(wallet, priceResult)
+
+                SatraWalletDataSyncResult(
+                    evmSyncResult = evmResult,
+                    priceSyncResult = priceResult,
+                )
+            }
+        }
+
     suspend fun syncWalletPrices(walletId: String): SatraPriceSyncResult? =
         withContext(Dispatchers.IO) {
             val wallet = walletDao.getWallet(walletId)
                 ?: error("Wallet not found: $walletId")
-            val walletAssets = walletDao.getWalletAssets(walletId)
             val result = priceSyncService.syncSupportedAssetPricesOrNull(wallet.localCurrencyCode)
-            val pricesByAssetId = result?.prices.orEmpty().associateBy { it.asset.assetId }
-            var totalFiat = BigDecimal.ZERO
-            val nowMillis = result?.updatedAtMillis ?: System.currentTimeMillis()
-
-            walletAssets.forEach { walletAsset ->
-                val price = pricesByAssetId[walletAsset.assetId]
-                val cachedPrice = walletAsset.priceFiatValue.toBigDecimalOrZero()
-                    .takeIf { it > BigDecimal.ZERO && walletAsset.localCurrencyCode == wallet.localCurrencyCode }
-                val localPrice = price?.localPrice ?: cachedPrice
-                if (localPrice != null) {
-                    val balanceFiat = walletAsset.balanceDecimal.toBigDecimalOrZero().multiply(localPrice)
-                    totalFiat += balanceFiat
-                    walletDao.updateWalletAssetPrice(
-                        walletId = walletId,
-                        assetId = walletAsset.assetId,
-                        priceFiatValue = localPrice.toPlainString(),
-                        balanceFiatValue = balanceFiat.toPlainString(),
-                        localCurrencyCode = wallet.localCurrencyCode,
-                        metadataJson = walletAsset.metadataJson.withPriceSync(
-                            price = price,
-                            cached = price == null,
-                            localCurrencyCode = wallet.localCurrencyCode,
-                            failed = result?.failedSymbols.orEmpty().contains(
-                                walletAsset.assetId.substringAfter(':').uppercase(),
-                            ),
-                            nowMillis = nowMillis,
-                        ),
-                        nowMillis = nowMillis,
-                    )
-                }
-            }
-            walletDao.updateWalletFiatBalance(
-                walletId = walletId,
-                balanceFiatValue = totalFiat.toPlainString(),
-                localCurrencyCode = wallet.localCurrencyCode,
-                nowMillis = nowMillis,
-            )
+            persistWalletPrices(wallet, result)
             result
         }
 
     suspend fun syncAllWalletPrices(): List<SatraPriceSyncResult?> =
         withContext(Dispatchers.IO) {
-            walletDao.getWallets().map { wallet ->
-                syncWalletPrices(wallet.walletId)
+            val wallets = walletDao.getWallets()
+            coroutineScope {
+                val pricesByCurrency = wallets
+                    .map { it.localCurrencyCode }
+                    .distinct()
+                    .associateWith { localCurrencyCode ->
+                        async {
+                            priceSyncService.syncSupportedAssetPricesOrNull(localCurrencyCode)
+                        }
+                    }
+                    .mapValues { (_, deferred) -> deferred.await() }
+
+                wallets.map { wallet ->
+                    pricesByCurrency[wallet.localCurrencyCode]
+                        .also { result -> persistWalletPrices(wallet, result) }
+                }
             }
         }
 
@@ -504,7 +512,56 @@ class SatraWalletRepository(
             nowMillis = nowMillis,
         )
     }
+
+    private fun persistWalletPrices(
+        wallet: WalletRecord,
+        result: SatraPriceSyncResult?,
+    ) {
+        val walletAssets = walletDao.getWalletAssets(wallet.walletId)
+        val pricesByAssetId = result?.prices.orEmpty().associateBy { it.asset.assetId }
+        var totalFiat = BigDecimal.ZERO
+        val nowMillis = result?.updatedAtMillis ?: System.currentTimeMillis()
+
+        walletAssets.forEach { walletAsset ->
+            val price = pricesByAssetId[walletAsset.assetId]
+            val cachedPrice = walletAsset.priceFiatValue.toBigDecimalOrZero()
+                .takeIf { it > BigDecimal.ZERO && walletAsset.localCurrencyCode == wallet.localCurrencyCode }
+            val localPrice = price?.localPrice ?: cachedPrice
+            if (localPrice != null) {
+                val balanceFiat = walletAsset.balanceDecimal.toBigDecimalOrZero().multiply(localPrice)
+                totalFiat += balanceFiat
+                walletDao.updateWalletAssetPrice(
+                    walletId = wallet.walletId,
+                    assetId = walletAsset.assetId,
+                    priceFiatValue = localPrice.toPlainString(),
+                    balanceFiatValue = balanceFiat.toPlainString(),
+                    localCurrencyCode = wallet.localCurrencyCode,
+                    metadataJson = walletAsset.metadataJson.withPriceSync(
+                        price = price,
+                        cached = price == null,
+                        localCurrencyCode = wallet.localCurrencyCode,
+                        failed = result?.failedSymbols.orEmpty().contains(
+                            walletAsset.assetId.substringAfter(':').uppercase(),
+                        ),
+                        nowMillis = nowMillis,
+                    ),
+                    nowMillis = nowMillis,
+                )
+            }
+        }
+        walletDao.updateWalletFiatBalance(
+            walletId = wallet.walletId,
+            balanceFiatValue = totalFiat.toPlainString(),
+            localCurrencyCode = wallet.localCurrencyCode,
+            nowMillis = nowMillis,
+        )
+    }
 }
+
+data class SatraWalletDataSyncResult(
+    val evmSyncResult: EvmWalletSyncResult,
+    val priceSyncResult: SatraPriceSyncResult?,
+)
 
 private fun Char.isHexDigit(): Boolean =
     this in '0'..'9' || this in 'a'..'f' || this in 'A'..'F'
