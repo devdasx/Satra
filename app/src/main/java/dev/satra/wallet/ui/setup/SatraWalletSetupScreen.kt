@@ -141,10 +141,10 @@ fun CreateWalletPhraseScreen(
 ) {
     WalletSetupRouteScreen(
         titleRes = R.string.wallet_setup_screen_create_phrase,
-        page = createWalletPages[0],
+        page = createWalletPages[1],
         settings = settings,
         primaryTextRes = R.string.wallet_setup_action_continue,
-        secondaryTextRes = R.string.wallet_setup_action_cancel,
+        secondaryTextRes = R.string.wallet_setup_action_previous,
         onBack = onBack,
         onPrimaryClick = onNext,
         onSecondaryClick = onBack,
@@ -161,10 +161,10 @@ fun CreateWalletBackupScreen(
 ) {
     WalletSetupRouteScreen(
         titleRes = R.string.wallet_setup_screen_create_backup,
-        page = createWalletPages[1],
+        page = createWalletPages[0],
         settings = settings,
         primaryTextRes = R.string.wallet_setup_action_continue,
-        secondaryTextRes = R.string.wallet_setup_action_previous,
+        secondaryTextRes = R.string.wallet_setup_action_cancel,
         onBack = onBack,
         onPrimaryClick = onNext,
         onSecondaryClick = onBack,
@@ -1270,14 +1270,14 @@ private data class SetupPageContent(
 
 private val createWalletPages = listOf(
     SetupPageContent(
-        titleRes = R.string.wallet_setup_create_step_phrase_title,
-        bodyRes = R.string.wallet_setup_create_step_phrase_body,
-        iconRes = R.drawable.ic_brand_security,
-    ),
-    SetupPageContent(
         titleRes = R.string.wallet_setup_create_step_backup_title,
         bodyRes = R.string.wallet_setup_create_step_backup_body,
         iconRes = R.drawable.ic_brand_list,
+    ),
+    SetupPageContent(
+        titleRes = R.string.wallet_setup_create_step_phrase_title,
+        bodyRes = R.string.wallet_setup_create_step_phrase_body,
+        iconRes = R.drawable.ic_brand_security,
     ),
     SetupPageContent(
         titleRes = R.string.wallet_setup_create_step_security_title,
@@ -1379,7 +1379,7 @@ private fun performSetupHaptic(
 @Composable
 private fun CreateWalletSetupPreview() {
     SatraTheme {
-        CreateWalletPhraseScreen()
+        CreateWalletBackupScreen()
     }
 }
 
@@ -1411,6 +1411,6 @@ private fun WatchOnlyAddressSetupPreview() {
 @Composable
 private fun ExpandedCreateWalletSetupPreview() {
     SatraTheme {
-        CreateWalletPhraseScreen()
+        CreateWalletBackupScreen()
     }
 }

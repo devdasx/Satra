@@ -120,7 +120,7 @@ class MainActivity : ComponentActivity() {
                                 applyAppLocale(tag)
                             },
                             onCreateWallet = {
-                                navController.navigate(SatraRoute.CREATE_WALLET_PHRASE) {
+                                navController.navigate(SatraRoute.CREATE_WALLET_BACKUP) {
                                     launchSingleTop = true
                                 }
                             },
@@ -139,7 +139,7 @@ class MainActivity : ComponentActivity() {
                                 navController.popBackStack()
                             },
                             onNext = {
-                                navController.navigate(SatraRoute.CREATE_WALLET_BACKUP)
+                                navController.navigate(SatraRoute.CREATE_WALLET_SECURITY)
                             },
                         )
                     }
@@ -151,7 +151,7 @@ class MainActivity : ComponentActivity() {
                                 navController.popBackStack()
                             },
                             onNext = {
-                                navController.navigate(SatraRoute.CREATE_WALLET_SECURITY)
+                                navController.navigate(SatraRoute.CREATE_WALLET_PHRASE)
                             },
                         )
                     }
@@ -360,8 +360,8 @@ private object SatraRoute {
     const val ARG_NETWORK = "network"
     private const val NO_NETWORK = "none"
     const val ONBOARDING = "onboarding"
-    const val CREATE_WALLET_PHRASE = "create-wallet/recovery-phrase"
     const val CREATE_WALLET_BACKUP = "create-wallet/backup"
+    const val CREATE_WALLET_PHRASE = "create-wallet/recovery-phrase"
     const val CREATE_WALLET_SECURITY = "create-wallet/security"
     const val IMPORT_METHOD = "import-wallet/method"
     const val IMPORT_RECOVERY_PHRASE = "import-wallet/recovery-phrase"
