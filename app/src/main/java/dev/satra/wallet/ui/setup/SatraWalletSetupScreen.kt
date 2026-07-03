@@ -1,5 +1,8 @@
 package dev.satra.wallet.ui.setup
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.widget.Toast
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
@@ -44,6 +47,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -60,6 +64,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -163,10 +168,30 @@ private enum class SecuritySetupPage {
 @Composable
 fun CreateWalletPhraseScreen(
     mnemonic: String,
+    screenshotWarningRequests: Int = 0,
     settings: SatraSettings = SatraSettings(),
     onBack: () -> Unit = {},
+    onGenerateNewMnemonic: () -> Unit = {},
     onNext: () -> Unit = {},
 ) {
+    val context = LocalContext.current
+    val clipboardManager = remember(context) {
+        context.getSystemService(ClipboardManager::class.java)
+    }
+    val clipboardLabel = stringResource(R.string.wallet_setup_recovery_phrase_clip_label)
+    val copiedMessage = stringResource(R.string.wallet_setup_recovery_phrase_copied)
+    var handledScreenshotRequests by rememberSaveable {
+        mutableStateOf(screenshotWarningRequests)
+    }
+    var showScreenshotWarning by rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(screenshotWarningRequests) {
+        if (screenshotWarningRequests > handledScreenshotRequests) {
+            handledScreenshotRequests = screenshotWarningRequests
+            showScreenshotWarning = true
+        }
+    }
+
     WalletSetupRouteScreen(
         titleRes = R.string.wallet_setup_screen_create_phrase,
         page = createWalletPages[1],
@@ -174,8 +199,41 @@ fun CreateWalletPhraseScreen(
         primaryTextRes = R.string.wallet_setup_action_continue,
         onBack = onBack,
         onPrimaryClick = onNext,
-    ) {
-        HiddenPhrasePanel(mnemonic = mnemonic)
+    ) { performHaptic ->
+        HiddenPhrasePanel(
+            mnemonic = mnemonic,
+            onCopyClick = {
+                performHaptic()
+                clipboardManager?.setPrimaryClip(
+                    ClipData.newPlainText(
+                        clipboardLabel,
+                        mnemonic,
+                    ),
+                )
+                Toast.makeText(
+                    context,
+                    copiedMessage,
+                    Toast.LENGTH_SHORT,
+                ).show()
+            },
+        )
+
+        if (showScreenshotWarning) {
+            RecoveryPhraseScreenshotWarningSheet(
+                onGenerateNewMnemonic = {
+                    performHaptic()
+                    onGenerateNewMnemonic()
+                    showScreenshotWarning = false
+                },
+                onKeepCurrent = {
+                    performHaptic()
+                    showScreenshotWarning = false
+                },
+                onDismissRequest = {
+                    showScreenshotWarning = false
+                },
+            )
+        }
     }
 }
 
@@ -766,13 +824,16 @@ private fun SetupPageBody(
 }
 
 @Composable
-private fun HiddenPhrasePanel(mnemonic: String) {
+private fun HiddenPhrasePanel(
+    mnemonic: String,
+    onCopyClick: () -> Unit,
+) {
     val words = remember(mnemonic) {
         mnemonic.split(Regex("\\s+")).filter(String::isNotBlank)
     }
 
     FramedTool {
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             words.chunked(3).forEachIndexed { rowIndex, rowWords ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -790,6 +851,83 @@ private fun HiddenPhrasePanel(mnemonic: String) {
                         Spacer(modifier = Modifier.weight(1f))
                     }
                 }
+            }
+            OutlinedButton(
+                onClick = onCopyClick,
+                modifier = Modifier.fillMaxWidth(),
+                border = BorderStroke(1.dp, SatraButtonSecondaryBorder),
+            ) {
+                Text(
+                    text = stringResource(R.string.wallet_setup_recovery_phrase_copy),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RecoveryPhraseScreenshotWarningSheet(
+    onGenerateNewMnemonic: () -> Unit,
+    onKeepCurrent: () -> Unit,
+    onDismissRequest: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismissRequest,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.wallet_setup_screenshot_warning_title),
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = stringResource(R.string.wallet_setup_screenshot_warning_body),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Button(
+                onClick = onGenerateNewMnemonic,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                ),
+            ) {
+                Text(
+                    text = stringResource(R.string.wallet_setup_screenshot_generate_new),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+            OutlinedButton(
+                onClick = onKeepCurrent,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                border = BorderStroke(1.dp, SatraButtonSecondaryBorder),
+            ) {
+                Text(
+                    text = stringResource(R.string.wallet_setup_screenshot_keep_current),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
             }
         }
     }

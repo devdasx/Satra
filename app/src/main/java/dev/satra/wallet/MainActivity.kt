@@ -1,11 +1,13 @@
 package dev.satra.wallet
 
+import android.app.Activity
 import android.app.LocaleManager
 import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
 import android.os.LocaleList
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -13,6 +15,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,6 +54,23 @@ import dev.satra.wallet.wallet.bip39.Bip39MnemonicValidator
 import java.util.Locale
 
 class MainActivity : ComponentActivity() {
+    private var screenCaptureCallback: Activity.ScreenCaptureCallback? = null
+    private var onScreenCaptured: (() -> Unit)? = null
+
+    override fun onStart() {
+        super.onStart()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            registerScreenshotDetection()
+        }
+    }
+
+    override fun onStop() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            unregisterScreenshotDetection()
+        }
+        super.onStop()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         val settingsStore = getSharedPreferences(SETTINGS_PREFS_NAME, MODE_PRIVATE)
@@ -72,9 +92,18 @@ class MainActivity : ComponentActivity() {
             var pendingImportPrivateKey by rememberSaveable { mutableStateOf("") }
             var pendingImportWatchAddress by rememberSaveable { mutableStateOf("") }
             var pendingWalletId by rememberSaveable { mutableStateOf("") }
+            var screenshotWarningRequests by remember { mutableStateOf(0) }
             val navController = rememberNavController()
             val walletRepository = remember {
                 SatraDatabaseProvider.walletRepository(this@MainActivity)
+            }
+            DisposableEffect(Unit) {
+                onScreenCaptured = {
+                    screenshotWarningRequests += 1
+                }
+                onDispose {
+                    onScreenCaptured = null
+                }
             }
             val settings = SatraSettings(
                 themePreference = themePreference,
@@ -239,9 +268,13 @@ class MainActivity : ComponentActivity() {
                     composable(SatraRoute.CREATE_WALLET_PHRASE) {
                         CreateWalletPhraseScreen(
                             mnemonic = pendingGeneratedMnemonic,
+                            screenshotWarningRequests = screenshotWarningRequests,
                             settings = settings,
                             onBack = {
                                 navController.popBackStack()
+                            },
+                            onGenerateNewMnemonic = {
+                                pendingGeneratedMnemonic = Bip39MnemonicGenerator.generate()
                             },
                             onNext = {
                                 navController.navigate(SatraRoute.setupPasscode(WalletSetupFlow.Create))
@@ -548,6 +581,26 @@ class MainActivity : ComponentActivity() {
             config.setLocales(LocaleList(locale))
             resources.updateConfiguration(config, resources.displayMetrics)
         }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    private fun registerScreenshotDetection() {
+        if (screenCaptureCallback != null) {
+            return
+        }
+        val callback = Activity.ScreenCaptureCallback {
+            onScreenCaptured?.invoke()
+        }
+        screenCaptureCallback = callback
+        registerScreenCaptureCallback(mainExecutor, callback)
+    }
+
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    private fun unregisterScreenshotDetection() {
+        screenCaptureCallback?.let { callback ->
+            unregisterScreenCaptureCallback(callback)
+        }
+        screenCaptureCallback = null
     }
 }
 

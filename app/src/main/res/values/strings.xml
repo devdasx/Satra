@@ -89,6 +89,13 @@
     <string name="wallet_setup_action_open_wallet">Open wallet</string>
     <string name="wallet_setup_create_step_phrase_title">Write it down before funds arrive.</string>
     <string name="wallet_setup_create_step_phrase_body">Satra will generate a recovery phrase on this device. Keep it offline and never share it with anyone.</string>
+    <string name="wallet_setup_recovery_phrase_copy">Copy recovery phrase</string>
+    <string name="wallet_setup_recovery_phrase_copied">Recovery phrase copied.</string>
+    <string name="wallet_setup_recovery_phrase_clip_label">Satra recovery phrase</string>
+    <string name="wallet_setup_screenshot_warning_title">Screenshot detected</string>
+    <string name="wallet_setup_screenshot_warning_body">A screenshot of your recovery phrase can be saved in your gallery, backups, or cloud sync. If someone gets access to those photos later, they may be able to restore and control this wallet.</string>
+    <string name="wallet_setup_screenshot_generate_new">Generate new phrase</string>
+    <string name="wallet_setup_screenshot_keep_current">Keep current phrase</string>
     <string name="wallet_setup_recovery_word_placeholder">word</string>
     <string name="wallet_setup_create_step_backup_title">Confirm your backup environment.</string>
     <string name="wallet_setup_create_step_backup_body">Satra keeps backup confirmation explicit before the wallet can be used for real value.</string>
