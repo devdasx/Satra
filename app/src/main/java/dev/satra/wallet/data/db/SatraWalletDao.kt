@@ -43,6 +43,7 @@ class SatraWalletDao(
                     putNullable("wallet_key_material", wallet.walletKeyMaterial)
                     putNullable("wallet_key_fingerprint", wallet.walletKeyFingerprint)
                     putNullable("wallet_key_derivation_path", wallet.walletKeyDerivationPath)
+                    putNullable("passphrase", wallet.passphrase)
                     put("wallet_key_encryption_state", wallet.walletKeyEncryptionState)
                     put("local_currency_code", wallet.localCurrencyCode)
                     put("balance_fiat_value", "0")
@@ -357,6 +358,7 @@ private fun Cursor.toWalletRecord(): WalletRecord =
         walletKeyMaterial = nullableString("wallet_key_material"),
         walletKeyFingerprint = nullableString("wallet_key_fingerprint"),
         walletKeyDerivationPath = nullableString("wallet_key_derivation_path"),
+        passphrase = nullableString("passphrase"),
         walletKeyEncryptionState = string("wallet_key_encryption_state"),
         localCurrencyCode = string("local_currency_code"),
         balanceFiatValue = string("balance_fiat_value"),

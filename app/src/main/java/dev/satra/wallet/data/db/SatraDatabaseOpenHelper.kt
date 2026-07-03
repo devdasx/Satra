@@ -32,7 +32,18 @@ class SatraDatabaseOpenHelper(
         oldVersion: Int,
         newVersion: Int,
     ) {
-        error("No migration from $oldVersion to $newVersion is defined yet.")
+        var migratedVersion = oldVersion
+
+        if (migratedVersion < 2) {
+            db.execSQL(
+                "ALTER TABLE ${SatraDatabaseContract.TABLE_WALLETS} ADD COLUMN passphrase TEXT",
+            )
+            migratedVersion = 2
+        }
+
+        if (migratedVersion != newVersion) {
+            error("No migration from $migratedVersion to $newVersion is defined yet.")
+        }
     }
 
     private fun seedSupportedNetworks(db: SQLiteDatabase) {

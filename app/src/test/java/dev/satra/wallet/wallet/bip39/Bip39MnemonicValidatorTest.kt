@@ -27,6 +27,14 @@ class Bip39MnemonicValidatorTest {
     }
 
     @Test
+    fun generatedTwentyFourWordMnemonicPassesValidation() {
+        val mnemonic = Bip39MnemonicGenerator.generate(wordCount = 24)
+
+        assertTrue(Bip39MnemonicValidator.validate(mnemonic).isValid)
+        assertEquals(24, mnemonic.split(" ").size)
+    }
+
+    @Test
     fun validatesSupportedBip39WordCounts() {
         val validMnemonics = mapOf(
             12 to "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",

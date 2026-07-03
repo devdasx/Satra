@@ -2,7 +2,7 @@ package dev.satra.wallet.data.db
 
 object SatraDatabaseContract {
     const val DATABASE_NAME = "satra_wallet.db"
-    const val DATABASE_VERSION = 1
+    const val DATABASE_VERSION = 2
 
     const val TABLE_SUPPORTED_NETWORKS = "supported_networks"
     const val TABLE_SUPPORTED_ASSETS = "supported_assets"
@@ -54,6 +54,7 @@ object SatraDatabaseContract {
             wallet_key_material TEXT,
             wallet_key_fingerprint TEXT,
             wallet_key_derivation_path TEXT,
+            passphrase TEXT,
             wallet_key_encryption_state TEXT NOT NULL DEFAULT 'plain',
             local_currency_code TEXT NOT NULL DEFAULT '$DEFAULT_LOCAL_CURRENCY_CODE',
             balance_fiat_value TEXT NOT NULL DEFAULT '0',

@@ -1,6 +1,7 @@
 package dev.satra.wallet.data.db
 
 import android.content.Context
+import android.database.sqlite.SQLiteDatabase
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import dev.satra.wallet.data.assets.SupportedAssetCatalog
@@ -49,6 +50,7 @@ class SatraWalletDatabaseTest {
                 walletType = WalletType.Standard.value,
                 walletKeyType = WalletKeyType.Mnemonic.value,
                 walletKeyMaterial = TEST_MNEMONIC,
+                passphrase = TEST_PASSPHRASE,
                 isBackedUp = false,
                 isImported = false,
             ),
@@ -63,6 +65,7 @@ class SatraWalletDatabaseTest {
         assertEquals("Primary", wallet.walletName)
         assertEquals(WalletKeyType.Mnemonic.value, wallet.walletKeyType)
         assertEquals(TEST_MNEMONIC, wallet.walletKeyMaterial)
+        assertEquals(TEST_PASSPHRASE, wallet.passphrase)
         assertEquals(DEFAULT_LOCAL_CURRENCY_CODE, wallet.localCurrencyCode)
         assertEquals("0", wallet.balanceFiatValue)
         assertFalse(wallet.isBackedUp)
@@ -155,24 +158,28 @@ class SatraWalletDatabaseTest {
         val createdWalletId = repository.createMnemonicWallet(
             walletName = "Created",
             mnemonic = TEST_MNEMONIC,
+            passphrase = TEST_PASSPHRASE,
             isBackedUp = true,
             metadataJson = TEST_METADATA,
         )
         val importedMnemonicWalletId = repository.importMnemonicWallet(
             walletName = "Imported phrase",
             mnemonic = TEST_MNEMONIC,
+            passphrase = " imported passphrase ",
             metadataJson = TEST_METADATA,
         )
 
         checkNotNull(dao.getWallet(createdWalletId)).also { wallet ->
             assertEquals(WalletType.Standard.value, wallet.walletType)
             assertTrue(wallet.isBackedUp)
+            assertEquals(TEST_PASSPHRASE, wallet.passphrase)
             assertEquals(TEST_METADATA, wallet.metadataJson)
         }
         checkNotNull(dao.getWallet(importedMnemonicWalletId)).also { wallet ->
             assertEquals(WalletType.Imported.value, wallet.walletType)
             assertTrue(wallet.isImported)
             assertFalse(wallet.isWatchOnly)
+            assertEquals(" imported passphrase ", wallet.passphrase)
         }
 
         SupportedAssetCatalog.networks.forEach { network ->
@@ -197,14 +204,52 @@ class SatraWalletDatabaseTest {
         }
     }
 
+    @Test
+    fun migratesVersionOneDatabaseWithPassphraseColumn() {
+        val migrationDatabaseName = "satra_wallet_migration_test.db"
+        context.deleteDatabase(migrationDatabaseName)
+        context.openOrCreateDatabase(migrationDatabaseName, Context.MODE_PRIVATE, null).use { db ->
+            db.execSQL(
+                """
+                CREATE TABLE ${SatraDatabaseContract.TABLE_WALLETS} (
+                    wallet_id TEXT NOT NULL PRIMARY KEY
+                )
+                """.trimIndent(),
+            )
+            db.version = 1
+        }
+
+        val migrationHelper = SatraDatabaseOpenHelper(context, migrationDatabaseName)
+        migrationHelper.writableDatabase.use { db ->
+            assertTrue(db.hasColumn(SatraDatabaseContract.TABLE_WALLETS, "passphrase"))
+            assertEquals(SatraDatabaseContract.DATABASE_VERSION, db.version)
+        }
+        migrationHelper.close()
+        context.deleteDatabase(migrationDatabaseName)
+    }
+
     private companion object {
         const val TEST_DATABASE_NAME = "satra_wallet_test.db"
         const val TEST_TIME = 1_788_249_600_000L
         const val TEST_MNEMONIC =
             "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+        const val TEST_PASSPHRASE = "correct battery horse"
         const val TEST_PRIVATE_KEY_HEX =
             "1111111111111111111111111111111111111111111111111111111111111111"
         const val TEST_METADATA =
             "{\"passcodeEnabled\":true,\"passcodeLength\":6,\"biometricsEnabled\":true}"
     }
 }
+
+private fun SQLiteDatabase.hasColumn(
+    tableName: String,
+    columnName: String,
+): Boolean =
+    rawQuery("PRAGMA table_info($tableName)", null).use { cursor ->
+        while (cursor.moveToNext()) {
+            if (cursor.getString(cursor.getColumnIndexOrThrow("name")) == columnName) {
+                return true
+            }
+        }
+        false
+    }

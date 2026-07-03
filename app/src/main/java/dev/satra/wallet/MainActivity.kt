@@ -91,9 +91,14 @@ class MainActivity : ComponentActivity() {
             var languageTag by remember { mutableStateOf(readLanguageTag(settingsStore)) }
             var pendingSetupPasscode by rememberSaveable { mutableStateOf("") }
             var pendingGeneratedMnemonic by rememberSaveable { mutableStateOf("") }
+            var pendingGeneratedMnemonicWordCount by rememberSaveable {
+                mutableStateOf(DEFAULT_MNEMONIC_WORD_COUNT)
+            }
+            var pendingCreatePassphrase by rememberSaveable { mutableStateOf("") }
             var pendingImportMethodSegment by rememberSaveable { mutableStateOf("") }
             var pendingImportNetworkSegment by rememberSaveable { mutableStateOf("") }
             var pendingImportRecoveryPhrase by rememberSaveable { mutableStateOf("") }
+            var pendingImportPassphrase by rememberSaveable { mutableStateOf("") }
             var pendingImportPrivateKey by rememberSaveable { mutableStateOf("") }
             var pendingImportWatchAddress by rememberSaveable { mutableStateOf("") }
             var pendingWalletId by rememberSaveable { mutableStateOf("") }
@@ -123,9 +128,12 @@ class MainActivity : ComponentActivity() {
             fun resetPendingWalletSetup() {
                 pendingSetupPasscode = ""
                 pendingGeneratedMnemonic = ""
+                pendingGeneratedMnemonicWordCount = DEFAULT_MNEMONIC_WORD_COUNT
+                pendingCreatePassphrase = ""
                 pendingImportMethodSegment = ""
                 pendingImportNetworkSegment = ""
                 pendingImportRecoveryPhrase = ""
+                pendingImportPassphrase = ""
                 pendingImportPrivateKey = ""
                 pendingImportWatchAddress = ""
                 pendingWalletId = ""
@@ -147,13 +155,16 @@ class MainActivity : ComponentActivity() {
                     )
                     pendingWalletId = if (flow == WalletSetupFlow.Create) {
                         val mnemonic = pendingGeneratedMnemonic.ifBlank {
-                            Bip39MnemonicGenerator.generate().also { generatedMnemonic ->
+                            Bip39MnemonicGenerator.generate(
+                                wordCount = pendingGeneratedMnemonicWordCount,
+                            ).also { generatedMnemonic ->
                                 pendingGeneratedMnemonic = generatedMnemonic
                             }
                         }
                         walletRepository.createMnemonicWallet(
                             walletName = DEFAULT_CREATED_WALLET_NAME,
                             mnemonic = mnemonic,
+                            passphrase = pendingCreatePassphrase,
                             isBackedUp = true,
                             metadataJson = metadataJson,
                         )
@@ -164,6 +175,7 @@ class MainActivity : ComponentActivity() {
                                 walletRepository.importMnemonicWallet(
                                     walletName = DEFAULT_IMPORTED_WALLET_NAME,
                                     mnemonic = pendingImportRecoveryPhrase,
+                                    passphrase = pendingImportPassphrase,
                                     metadataJson = metadataJson,
                                 )
                             }
@@ -256,7 +268,10 @@ class MainActivity : ComponentActivity() {
                             },
                             onCreateWallet = {
                                 resetPendingWalletSetup()
-                                pendingGeneratedMnemonic = Bip39MnemonicGenerator.generate()
+                                pendingGeneratedMnemonicWordCount = DEFAULT_MNEMONIC_WORD_COUNT
+                                pendingGeneratedMnemonic = Bip39MnemonicGenerator.generate(
+                                    wordCount = pendingGeneratedMnemonicWordCount,
+                                )
                                 navController.navigate(SatraRoute.CREATE_WALLET_BACKUP) {
                                     launchSingleTop = true
                                 }
@@ -273,13 +288,26 @@ class MainActivity : ComponentActivity() {
                     composable(SatraRoute.CREATE_WALLET_PHRASE) {
                         CreateWalletPhraseScreen(
                             mnemonic = pendingGeneratedMnemonic,
+                            mnemonicWordCount = pendingGeneratedMnemonicWordCount,
+                            passphrase = pendingCreatePassphrase,
                             screenshotWarningRequests = screenshotWarningRequests,
                             settings = settings,
+                            onMnemonicWordCountChange = { wordCount ->
+                                pendingGeneratedMnemonicWordCount = wordCount
+                                pendingGeneratedMnemonic = Bip39MnemonicGenerator.generate(
+                                    wordCount = wordCount,
+                                )
+                            },
+                            onPassphraseChange = { passphrase ->
+                                pendingCreatePassphrase = passphrase
+                            },
                             onBack = {
                                 navController.popBackStack()
                             },
                             onGenerateNewMnemonic = {
-                                pendingGeneratedMnemonic = Bip39MnemonicGenerator.generate()
+                                pendingGeneratedMnemonic = Bip39MnemonicGenerator.generate(
+                                    wordCount = pendingGeneratedMnemonicWordCount,
+                                )
                             },
                             onNext = {
                                 navController.navigate(SatraRoute.setupPasscode(WalletSetupFlow.Create))
@@ -337,10 +365,11 @@ class MainActivity : ComponentActivity() {
                             onScannedRecoveryPhraseConsumed = {
                                 backStackEntry.savedStateHandle[SatraRoute.SCAN_RESULT_VALUE] = ""
                             },
-                            onNext = { recoveryPhrase ->
+                            onNext = { recoveryPhrase, passphrase ->
                                 pendingImportMethodSegment = WalletImportMethod.RecoveryPhrase.routeSegment
                                 pendingImportNetworkSegment = ""
                                 pendingImportRecoveryPhrase = recoveryPhrase
+                                pendingImportPassphrase = passphrase
                                 pendingImportPrivateKey = ""
                                 pendingImportWatchAddress = ""
                                 navController.navigate(
@@ -436,6 +465,7 @@ class MainActivity : ComponentActivity() {
                                     pendingImportMethodSegment = method.routeSegment
                                     pendingImportNetworkSegment = network.routeSegment
                                     pendingImportRecoveryPhrase = ""
+                                    pendingImportPassphrase = ""
                                     pendingImportPrivateKey = privateKey
                                     pendingImportWatchAddress = ""
                                     navController.navigate(SatraRoute.importReview(method, network))
@@ -452,6 +482,7 @@ class MainActivity : ComponentActivity() {
                                     pendingImportMethodSegment = method.routeSegment
                                     pendingImportNetworkSegment = network.routeSegment
                                     pendingImportRecoveryPhrase = ""
+                                    pendingImportPassphrase = ""
                                     pendingImportPrivateKey = ""
                                     pendingImportWatchAddress = address
                                     navController.navigate(SatraRoute.importReview(method, network))
@@ -666,6 +697,7 @@ private const val NAV_ANIMATION_MILLIS = 280
 private const val DEFAULT_CREATED_WALLET_NAME = "Satra Wallet"
 private const val DEFAULT_IMPORTED_WALLET_NAME = "Imported Wallet"
 private const val DEFAULT_WATCH_ONLY_WALLET_NAME = "Watch-only Wallet"
+private const val DEFAULT_MNEMONIC_WORD_COUNT = 12
 
 private fun setupMetadataJson(
     passcodeEnabled: Boolean,

@@ -170,8 +170,12 @@ private enum class SecuritySetupPage {
 @Composable
 fun CreateWalletPhraseScreen(
     mnemonic: String,
+    mnemonicWordCount: Int = DEFAULT_RECOVERY_PHRASE_WORD_COUNT,
+    passphrase: String = "",
     screenshotWarningRequests: Int = 0,
     settings: SatraSettings = SatraSettings(),
+    onMnemonicWordCountChange: (Int) -> Unit = {},
+    onPassphraseChange: (String) -> Unit = {},
     onBack: () -> Unit = {},
     onGenerateNewMnemonic: () -> Unit = {},
     onNext: () -> Unit = {},
@@ -186,6 +190,7 @@ fun CreateWalletPhraseScreen(
         mutableStateOf(screenshotWarningRequests)
     }
     var showScreenshotWarning by rememberSaveable { mutableStateOf(false) }
+    var showRecoveryPhraseOptions by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(screenshotWarningRequests) {
         if (screenshotWarningRequests > handledScreenshotRequests) {
@@ -204,6 +209,12 @@ fun CreateWalletPhraseScreen(
     ) { performHaptic ->
         HiddenPhrasePanel(
             mnemonic = mnemonic,
+            passphrase = passphrase,
+            onPassphraseChange = onPassphraseChange,
+            onOptionsClick = {
+                performHaptic()
+                showRecoveryPhraseOptions = true
+            },
             onCopyClick = {
                 performHaptic()
                 clipboardManager?.setPrimaryClip(
@@ -219,6 +230,20 @@ fun CreateWalletPhraseScreen(
                 ).show()
             },
         )
+
+        if (showRecoveryPhraseOptions) {
+            RecoveryPhraseOptionsBottomSheet(
+                selectedWordCount = mnemonicWordCount,
+                onWordCountSelected = { wordCount ->
+                    performHaptic()
+                    onMnemonicWordCountChange(wordCount)
+                    showRecoveryPhraseOptions = false
+                },
+                onDismissRequest = {
+                    showRecoveryPhraseOptions = false
+                },
+            )
+        }
 
         if (showScreenshotWarning) {
             RecoveryPhraseScreenshotWarningSheet(
@@ -319,7 +344,7 @@ fun ImportRecoveryPhraseScreen(
     onBack: () -> Unit = {},
     onScanClick: () -> Unit = {},
     onScannedRecoveryPhraseConsumed: () -> Unit = {},
-    onNext: (String) -> Unit = {},
+    onNext: (String, String) -> Unit = { _, _ -> },
 ) {
     val context = LocalContext.current
     val clipboardManager = remember(context) {
@@ -327,6 +352,7 @@ fun ImportRecoveryPhraseScreen(
     }
     val clipboardEmptyMessage = stringResource(R.string.wallet_setup_clipboard_empty)
     var recoveryPhrase by rememberSaveable { mutableStateOf("") }
+    var passphrase by rememberSaveable { mutableStateOf("") }
     val phraseValidation = remember(recoveryPhrase) {
         Bip39MnemonicValidator.validate(recoveryPhrase)
     }
@@ -348,11 +374,13 @@ fun ImportRecoveryPhraseScreen(
         primaryTextRes = R.string.wallet_setup_action_continue,
         primaryEnabled = phraseValidation.isValid,
         onBack = onBack,
-        onPrimaryClick = { onNext(recoveryPhrase.trim()) },
+        onPrimaryClick = { onNext(recoveryPhrase.trim(), passphrase) },
     ) { performHaptic ->
         RecoveryPhraseEntry(
             recoveryPhrase = recoveryPhrase,
             onRecoveryPhraseChange = { recoveryPhrase = it },
+            passphrase = passphrase,
+            onPassphraseChange = { passphrase = it },
             validation = phraseValidation,
             onPasteClick = {
                 performHaptic()
@@ -888,6 +916,9 @@ private fun SetupPageBody(
 @Composable
 private fun HiddenPhrasePanel(
     mnemonic: String,
+    passphrase: String,
+    onPassphraseChange: (String) -> Unit,
+    onOptionsClick: () -> Unit,
     onCopyClick: () -> Unit,
 ) {
     val words = remember(mnemonic) {
@@ -914,6 +945,16 @@ private fun HiddenPhrasePanel(
                     }
                 }
             }
+            TextButton(
+                onClick = onOptionsClick,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    text = stringResource(R.string.wallet_setup_recovery_phrase_options),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
             OutlinedButton(
                 onClick = onCopyClick,
                 modifier = Modifier.fillMaxWidth(),
@@ -925,6 +966,58 @@ private fun HiddenPhrasePanel(
                     fontWeight = FontWeight.Bold,
                 )
             }
+            OptionalPassphraseField(
+                passphrase = passphrase,
+                onPassphraseChange = onPassphraseChange,
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RecoveryPhraseOptionsBottomSheet(
+    selectedWordCount: Int,
+    onWordCountSelected: (Int) -> Unit,
+    onDismissRequest: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismissRequest,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 32.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.wallet_setup_recovery_phrase_options_sheet_title),
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 12.dp),
+            )
+            PasscodeOptionRow(
+                titleRes = R.string.wallet_setup_recovery_phrase_use_12,
+                bodyRes = R.string.wallet_setup_recovery_phrase_use_12_body,
+                selected = selectedWordCount == DEFAULT_RECOVERY_PHRASE_WORD_COUNT,
+                onClick = {
+                    onWordCountSelected(DEFAULT_RECOVERY_PHRASE_WORD_COUNT)
+                },
+            )
+            PasscodeOptionRow(
+                titleRes = R.string.wallet_setup_recovery_phrase_use_24,
+                bodyRes = R.string.wallet_setup_recovery_phrase_use_24_body,
+                selected = selectedWordCount == STRONG_RECOVERY_PHRASE_WORD_COUNT,
+                onClick = {
+                    onWordCountSelected(STRONG_RECOVERY_PHRASE_WORD_COUNT)
+                },
+            )
         }
     }
 }
@@ -1327,6 +1420,8 @@ private fun ImportMethodPanel(
 private fun RecoveryPhraseEntry(
     recoveryPhrase: String,
     onRecoveryPhraseChange: (String) -> Unit,
+    passphrase: String,
+    onPassphraseChange: (String) -> Unit,
     validation: Bip39MnemonicValidation,
     onPasteClick: () -> Unit,
     onScanClick: () -> Unit,
@@ -1358,6 +1453,10 @@ private fun RecoveryPhraseEntry(
                     )
                 },
                 minLines = 4,
+            )
+            OptionalPassphraseField(
+                passphrase = passphrase,
+                onPassphraseChange = onPassphraseChange,
             )
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -1395,6 +1494,30 @@ private fun RecoveryPhraseEntry(
             }
         }
     }
+}
+
+@Composable
+private fun OptionalPassphraseField(
+    passphrase: String,
+    onPassphraseChange: (String) -> Unit,
+) {
+    OutlinedTextField(
+        value = passphrase,
+        onValueChange = onPassphraseChange,
+        modifier = Modifier.fillMaxWidth(),
+        textStyle = MaterialTheme.typography.bodyLarge,
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+        label = {
+            Text(text = stringResource(R.string.wallet_setup_passphrase_label))
+        },
+        placeholder = {
+            Text(text = stringResource(R.string.wallet_setup_passphrase_placeholder))
+        },
+        supportingText = {
+            Text(text = stringResource(R.string.wallet_setup_passphrase_note))
+        },
+    )
 }
 
 @Composable
@@ -1567,13 +1690,13 @@ private fun RecoveryWordChip(
     ) {
         Text(
             text = number.toString(),
-            style = MaterialTheme.typography.labelMedium,
+            style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = FontWeight.Bold,
         )
         Text(
             text = text,
-            style = MaterialTheme.typography.labelLarge,
+            style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.Bold,
         )
@@ -1976,6 +2099,8 @@ private enum class SetupWindowSize {
 
 private const val DEFAULT_PASSCODE_LENGTH = 6
 private const val SHORT_PASSCODE_LENGTH = 4
+private const val DEFAULT_RECOVERY_PHRASE_WORD_COUNT = 12
+private const val STRONG_RECOVERY_PHRASE_WORD_COUNT = 24
 private val supportedPasscodeLengths = setOf(
     SHORT_PASSCODE_LENGTH,
     DEFAULT_PASSCODE_LENGTH,

@@ -8,6 +8,7 @@ class SatraWalletRepository(
     fun createMnemonicWallet(
         walletName: String,
         mnemonic: String,
+        passphrase: String? = null,
         isBackedUp: Boolean = false,
         localCurrencyCode: String = DEFAULT_LOCAL_CURRENCY_CODE,
         metadataJson: String = EMPTY_JSON,
@@ -18,6 +19,7 @@ class SatraWalletRepository(
                 walletType = WalletType.Standard.value,
                 walletKeyType = WalletKeyType.Mnemonic.value,
                 walletKeyMaterial = mnemonic,
+                passphrase = passphrase.cleanPassphrase(),
                 localCurrencyCode = localCurrencyCode,
                 isBackedUp = isBackedUp,
                 isImported = false,
@@ -29,6 +31,7 @@ class SatraWalletRepository(
     fun importMnemonicWallet(
         walletName: String,
         mnemonic: String,
+        passphrase: String? = null,
         localCurrencyCode: String = DEFAULT_LOCAL_CURRENCY_CODE,
         metadataJson: String = EMPTY_JSON,
     ): String =
@@ -38,6 +41,7 @@ class SatraWalletRepository(
                 walletType = WalletType.Imported.value,
                 walletKeyType = WalletKeyType.Mnemonic.value,
                 walletKeyMaterial = mnemonic,
+                passphrase = passphrase.cleanPassphrase(),
                 localCurrencyCode = localCurrencyCode,
                 isImported = true,
                 isWatchOnly = false,
@@ -120,6 +124,9 @@ class SatraWalletRepository(
 
 private fun Char.isHexDigit(): Boolean =
     this in '0'..'9' || this in 'a'..'f' || this in 'A'..'F'
+
+private fun String?.cleanPassphrase(): String? =
+    this?.takeIf(String::isNotEmpty)
 
 object SatraDatabaseProvider {
     @Volatile

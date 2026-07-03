@@ -94,6 +94,15 @@
     <string name="wallet_setup_recovery_phrase_copy">Copy recovery phrase</string>
     <string name="wallet_setup_recovery_phrase_copied">Recovery phrase copied.</string>
     <string name="wallet_setup_recovery_phrase_clip_label">Satra recovery phrase</string>
+    <string name="wallet_setup_recovery_phrase_options">Recovery Phrase Options</string>
+    <string name="wallet_setup_recovery_phrase_options_sheet_title">Recovery phrase options</string>
+    <string name="wallet_setup_recovery_phrase_use_12">Use 12-word phrase</string>
+    <string name="wallet_setup_recovery_phrase_use_12_body">The standard recovery phrase length for most wallets.</string>
+    <string name="wallet_setup_recovery_phrase_use_24">Use 24-word phrase</string>
+    <string name="wallet_setup_recovery_phrase_use_24_body">A longer recovery phrase generated from more entropy.</string>
+    <string name="wallet_setup_passphrase_label">Passphrase (optional)</string>
+    <string name="wallet_setup_passphrase_placeholder">Extra secret word or sentence</string>
+    <string name="wallet_setup_passphrase_note">Use the exact passphrase, including spaces and capitalization. Leave empty if this wallet does not use one.</string>
     <string name="wallet_setup_screenshot_warning_title">Screenshot detected</string>
     <string name="wallet_setup_screenshot_warning_body">A screenshot of your recovery phrase can be saved in your gallery, backups, or cloud sync. If someone gets access to those photos later, they may be able to restore and control this wallet.</string>
     <string name="wallet_setup_screenshot_generate_new">Generate new phrase</string>
