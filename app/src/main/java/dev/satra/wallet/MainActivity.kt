@@ -34,7 +34,7 @@ import dev.satra.wallet.scanner.SatraScanPurpose
 import dev.satra.wallet.settings.SatraSettings
 import dev.satra.wallet.settings.SatraSettingsDefaults
 import dev.satra.wallet.settings.SatraThemePreference
-import dev.satra.wallet.ui.main.SatraHomeScreen
+import dev.satra.wallet.ui.main.SatraMainScreen
 import dev.satra.wallet.ui.onboarding.SatraOnboardingScreen
 import dev.satra.wallet.ui.scanner.SatraScannerScreen
 import dev.satra.wallet.ui.setup.CreateWalletBackupScreen
@@ -649,7 +649,7 @@ class MainActivity : ComponentActivity() {
                     }
 
                     composable(SatraRoute.MAIN) {
-                        SatraHomeScreen()
+                        SatraMainScreen()
                     }
                 }
             }
