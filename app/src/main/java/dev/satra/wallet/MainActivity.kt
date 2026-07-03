@@ -16,6 +16,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -28,11 +29,13 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import dev.satra.wallet.data.db.SatraDatabaseProvider
+import dev.satra.wallet.scanner.SatraScanPurpose
 import dev.satra.wallet.settings.SatraSettings
 import dev.satra.wallet.settings.SatraSettingsDefaults
 import dev.satra.wallet.settings.SatraThemePreference
 import dev.satra.wallet.ui.main.SatraHomeScreen
 import dev.satra.wallet.ui.onboarding.SatraOnboardingScreen
+import dev.satra.wallet.ui.scanner.SatraScannerScreen
 import dev.satra.wallet.ui.setup.CreateWalletBackupScreen
 import dev.satra.wallet.ui.setup.CreateWalletPhraseScreen
 import dev.satra.wallet.ui.setup.ImportChainScreen
@@ -315,11 +318,22 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    composable(SatraRoute.IMPORT_RECOVERY_PHRASE) {
+                    composable(SatraRoute.IMPORT_RECOVERY_PHRASE) { backStackEntry ->
+                        val scannedRecoveryPhrase by backStackEntry.savedStateHandle
+                            .getStateFlow(SatraRoute.SCAN_RESULT_VALUE, "")
+                            .collectAsState()
+
                         ImportRecoveryPhraseScreen(
                             settings = settings,
+                            scannedRecoveryPhrase = scannedRecoveryPhrase,
                             onBack = {
                                 navController.popBackStack()
+                            },
+                            onScanClick = {
+                                navController.navigate(SatraRoute.scanner(SatraScanPurpose.RecoveryPhrase))
+                            },
+                            onScannedRecoveryPhraseConsumed = {
+                                backStackEntry.savedStateHandle[SatraRoute.SCAN_RESULT_VALUE] = ""
                             },
                             onNext = { recoveryPhrase ->
                                 pendingImportMethodSegment = WalletImportMethod.RecoveryPhrase.routeSegment
@@ -333,6 +347,36 @@ class MainActivity : ComponentActivity() {
                                         network = null,
                                     ),
                                 )
+                            },
+                        )
+                    }
+
+                    composable(
+                        route = SatraRoute.SCANNER,
+                        arguments = listOf(
+                            navArgument(SatraRoute.ARG_SCAN_PURPOSE) {
+                                type = NavType.StringType
+                            },
+                        ),
+                    ) { backStackEntry ->
+                        val purpose = SatraScanPurpose.fromRoute(
+                            backStackEntry.arguments?.getString(SatraRoute.ARG_SCAN_PURPOSE),
+                        )
+
+                        SatraScannerScreen(
+                            purpose = purpose,
+                            settings = settings,
+                            onBack = {
+                                navController.popBackStack()
+                            },
+                            onScanResult = { result ->
+                                navController.previousBackStackEntry?.savedStateHandle?.apply {
+                                    set(SatraRoute.SCAN_RESULT_VALUE, result.normalizedValue)
+                                    set(SatraRoute.SCAN_RESULT_KIND, result.kind.name)
+                                    set(SatraRoute.SCAN_RESULT_AMOUNT, result.amount.orEmpty())
+                                    set(SatraRoute.SCAN_RESULT_SCHEME, result.scheme.orEmpty())
+                                }
+                                navController.popBackStack()
                             },
                         )
                     }
@@ -633,6 +677,11 @@ private object SatraRoute {
     const val ARG_FLOW = "flow"
     const val ARG_METHOD = "method"
     const val ARG_NETWORK = "network"
+    const val ARG_SCAN_PURPOSE = "scanPurpose"
+    const val SCAN_RESULT_VALUE = "scan_result_value"
+    const val SCAN_RESULT_KIND = "scan_result_kind"
+    const val SCAN_RESULT_AMOUNT = "scan_result_amount"
+    const val SCAN_RESULT_SCHEME = "scan_result_scheme"
     private const val NO_NETWORK = "none"
     const val MAIN = "main"
     const val ONBOARDING = "onboarding"
@@ -643,6 +692,7 @@ private object SatraRoute {
     const val IMPORT_CHAIN = "import-wallet/{$ARG_METHOD}/chain"
     const val IMPORT_ENTRY = "import-wallet/{$ARG_METHOD}/entry/{$ARG_NETWORK}"
     const val IMPORT_REVIEW = "import-wallet/{$ARG_METHOD}/review/{$ARG_NETWORK}"
+    const val SCANNER = "scanner/{$ARG_SCAN_PURPOSE}"
     const val SETUP_PASSCODE = "setup/{$ARG_FLOW}/passcode"
     const val SETUP_CONFIRM_PASSCODE = "setup/{$ARG_FLOW}/confirm-passcode"
     const val SETUP_BIOMETRICS = "setup/{$ARG_FLOW}/biometrics"
@@ -660,6 +710,9 @@ private object SatraRoute {
         method: WalletImportMethod,
         network: WalletImportNetwork?,
     ): String = "import-wallet/${method.routeSegment}/review/${network?.routeSegment ?: NO_NETWORK}"
+
+    fun scanner(purpose: SatraScanPurpose): String =
+        "scanner/${purpose.routeSegment}"
 
     fun setupPasscode(flow: WalletSetupFlow): String =
         "setup/${flow.routeSegment}/passcode"

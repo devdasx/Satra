@@ -291,12 +291,27 @@ fun ImportMethodScreen(
 @Composable
 fun ImportRecoveryPhraseScreen(
     settings: SatraSettings = SatraSettings(),
+    scannedRecoveryPhrase: String = "",
     onBack: () -> Unit = {},
+    onScanClick: () -> Unit = {},
+    onScannedRecoveryPhraseConsumed: () -> Unit = {},
     onNext: (String) -> Unit = {},
 ) {
+    val context = LocalContext.current
+    val clipboardManager = remember(context) {
+        context.getSystemService(ClipboardManager::class.java)
+    }
+    val clipboardEmptyMessage = stringResource(R.string.wallet_setup_clipboard_empty)
     var recoveryPhrase by rememberSaveable { mutableStateOf("") }
     val phraseValidation = remember(recoveryPhrase) {
         Bip39MnemonicValidator.validate(recoveryPhrase)
+    }
+
+    LaunchedEffect(scannedRecoveryPhrase) {
+        if (scannedRecoveryPhrase.isNotBlank()) {
+            recoveryPhrase = scannedRecoveryPhrase
+            onScannedRecoveryPhraseConsumed()
+        }
     }
 
     WalletSetupRouteScreen(
@@ -310,11 +325,35 @@ fun ImportRecoveryPhraseScreen(
         primaryEnabled = phraseValidation.isValid,
         onBack = onBack,
         onPrimaryClick = { onNext(recoveryPhrase.trim()) },
-    ) {
+    ) { performHaptic ->
         RecoveryPhraseEntry(
             recoveryPhrase = recoveryPhrase,
             onRecoveryPhraseChange = { recoveryPhrase = it },
             validation = phraseValidation,
+            onPasteClick = {
+                performHaptic()
+                val pastedText = clipboardManager?.primaryClip
+                    ?.takeIf { clipData -> clipData.itemCount > 0 }
+                    ?.getItemAt(0)
+                    ?.coerceToText(context)
+                    ?.toString()
+                    ?.trim()
+                    .orEmpty()
+
+                if (pastedText.isNotBlank()) {
+                    recoveryPhrase = pastedText
+                } else {
+                    Toast.makeText(
+                        context,
+                        clipboardEmptyMessage,
+                        Toast.LENGTH_SHORT,
+                    ).show()
+                }
+            },
+            onScanClick = {
+                performHaptic()
+                onScanClick()
+            },
         )
     }
 }
@@ -1262,6 +1301,8 @@ private fun RecoveryPhraseEntry(
     recoveryPhrase: String,
     onRecoveryPhraseChange: (String) -> Unit,
     validation: Bip39MnemonicValidation,
+    onPasteClick: () -> Unit,
+    onScanClick: () -> Unit,
 ) {
     val showError = recoveryPhrase.isNotBlank() && !validation.isValid
     val messageColor = when {
@@ -1291,6 +1332,40 @@ private fun RecoveryPhraseEntry(
                 },
                 minLines = 4,
             )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                OutlinedButton(
+                    onClick = onPasteClick,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp),
+                    border = BorderStroke(1.dp, SatraButtonSecondaryBorder),
+                ) {
+                    Text(
+                        text = stringResource(R.string.wallet_setup_action_paste),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+                Button(
+                    onClick = onScanClick,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                    ),
+                ) {
+                    Text(
+                        text = stringResource(R.string.wallet_setup_action_scan),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
         }
     }
 }
