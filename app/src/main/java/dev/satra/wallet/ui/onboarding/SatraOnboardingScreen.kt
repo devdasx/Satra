@@ -4,7 +4,6 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
@@ -30,6 +30,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -39,9 +40,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -412,6 +413,8 @@ private fun OnboardingVisual(
     visual: OnboardingArtwork,
     modifier: Modifier = Modifier,
 ) {
+    val colorScheme = MaterialTheme.colorScheme
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -419,13 +422,92 @@ private fun OnboardingVisual(
             .background(MaterialTheme.colorScheme.surfaceContainerLow),
         contentAlignment = Alignment.Center,
     ) {
-        Image(
-            painter = painterResource(visual.drawableRes),
-            contentDescription = stringResource(visual.contentDescriptionRes),
-            contentScale = ContentScale.Fit,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val center = Offset(size.width / 2f, size.height / 2f)
+            val radius = size.minDimension * 0.34f
+
+            drawCircle(
+                color = colorScheme.primary.copy(alpha = 0.08f),
+                radius = radius,
+                center = center,
+            )
+            drawCircle(
+                color = colorScheme.outlineVariant.copy(alpha = 0.42f),
+                radius = radius,
+                center = center,
+                style = Stroke(width = 1.dp.toPx()),
+            )
+            drawLine(
+                color = colorScheme.outlineVariant.copy(alpha = 0.28f),
+                start = Offset(size.width * 0.22f, center.y),
+                end = Offset(size.width * 0.78f, center.y),
+                strokeWidth = 1.dp.toPx(),
+                cap = StrokeCap.Round,
+            )
+        }
+
+        BoxWithConstraints(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            val primarySize = (maxHeight * 0.48f).coerceIn(96.dp, 156.dp)
+            val supportSize = (primarySize * 0.38f).coerceIn(42.dp, 58.dp)
+
+            IconBadge(
+                iconRes = visual.leadingIconRes,
+                size = supportSize,
+                containerColor = colorScheme.secondaryContainer,
+                iconColor = colorScheme.onSecondaryContainer,
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .padding(start = maxWidth * 0.16f)
+                    .offset(y = -(primarySize * 0.24f)),
+            )
+
+            IconBadge(
+                iconRes = visual.trailingIconRes,
+                size = supportSize,
+                containerColor = colorScheme.tertiaryContainer,
+                iconColor = colorScheme.onTertiaryContainer,
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(end = maxWidth * 0.16f)
+                    .offset(y = primarySize * 0.24f),
+            )
+
+            IconBadge(
+                iconRes = visual.primaryIconRes,
+                size = primarySize,
+                containerColor = colorScheme.primary,
+                iconColor = colorScheme.onPrimary,
+                contentDescription = stringResource(visual.contentDescriptionRes),
+                modifier = Modifier.align(Alignment.Center),
+            )
+        }
+    }
+}
+
+@Composable
+private fun IconBadge(
+    @DrawableRes iconRes: Int,
+    size: Dp,
+    containerColor: Color,
+    iconColor: Color,
+    modifier: Modifier = Modifier,
+    contentDescription: String? = null,
+) {
+    Box(
+        modifier = modifier
+            .size(size)
+            .clip(RoundedCornerShape(size * 0.28f))
+            .background(containerColor),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            painter = painterResource(iconRes),
+            contentDescription = contentDescription,
+            tint = iconColor,
+            modifier = Modifier.size(size * 0.48f),
         )
     }
 }
@@ -603,19 +685,27 @@ private val onboardingPages = listOf(
 )
 
 private enum class OnboardingArtwork(
-    @DrawableRes val drawableRes: Int,
+    @DrawableRes val primaryIconRes: Int,
+    @DrawableRes val leadingIconRes: Int,
+    @DrawableRes val trailingIconRes: Int,
     @StringRes val contentDescriptionRes: Int,
 ) {
     SelfCustody(
-        drawableRes = R.drawable.onboarding_self_custody,
+        primaryIconRes = R.drawable.ic_onboarding_lock,
+        leadingIconRes = R.drawable.ic_onboarding_key,
+        trailingIconRes = R.drawable.ic_onboarding_wallet,
         contentDescriptionRes = R.string.onboarding_visual_self_custody_description,
     ),
     Clarity(
-        drawableRes = R.drawable.onboarding_clarity,
+        primaryIconRes = R.drawable.ic_onboarding_checklist,
+        leadingIconRes = R.drawable.ic_onboarding_receipt,
+        trailingIconRes = R.drawable.ic_onboarding_send,
         contentDescriptionRes = R.string.onboarding_visual_clarity_description,
     ),
     OpenSource(
-        drawableRes = R.drawable.onboarding_open_source,
+        primaryIconRes = R.drawable.ic_onboarding_code,
+        leadingIconRes = R.drawable.ic_onboarding_branch,
+        trailingIconRes = R.drawable.ic_onboarding_shield_check,
         contentDescriptionRes = R.string.onboarding_visual_open_source_description,
     ),
 }
