@@ -1,0 +1,160 @@
+/* ============================================================
+   SATRA DESIGN TOKENS — v1.0
+   Light theme on :root. Dark theme via [data-theme="dark"]
+   or automatically via prefers-color-scheme.
+   Usage:  color: var(--satra-text-title);
+   ============================================================ */
+
+:root {
+  /* ---- Primitives (never use directly in components) ---- */
+  --satra-ink: #0B0B0C;
+  --satra-graphite: #2C2C30;
+  --satra-steel: #8E8E93;
+  --satra-mist: #D9D8D4;
+  --satra-bone: #F7F6F3;
+  --satra-white: #FFFFFF;
+  --satra-green: #2E7D5A;
+  --satra-amber: #B07C2A;
+  --satra-red: #B3452E;
+
+  /* ---- Backgrounds ---- */
+  --satra-bg-app: #F7F6F3;          /* app / page background */
+  --satra-bg-subtle: #EFEDE8;       /* recessed areas, wells */
+
+  /* ---- Surfaces ---- */
+  --satra-surface-card: #FFFFFF;         /* card ON app background */
+  --satra-surface-card-nested: #F7F6F3;  /* card ON a card */
+  --satra-surface-list: #FFFFFF;         /* list rows */
+  --satra-surface-list-hover: #F2F1ED;
+  --satra-border: #E4E2DD;
+  --satra-divider: #ECEAE5;
+
+  /* ---- Text ---- */
+  --satra-text-title: #131316;
+  --satra-text-body: #2C2C30;
+  --satra-text-subtitle: #55555A;
+  --satra-text-muted: #8E8E93;
+  --satra-text-inverse: #F7F6F3;
+
+  /* ---- Accent ---- */
+  --satra-accent: #0B0B0C;
+  --satra-accent-contrast: #F7F6F3;
+  --satra-accent-soft: rgba(11,11,12,.06);
+
+  /* ---- Buttons ---- */
+  --satra-btn-primary-bg: #0B0B0C;
+  --satra-btn-primary-text: #F7F6F3;
+  --satra-btn-primary-hover: #2C2C30;
+  --satra-btn-primary-disabled-bg: #D9D8D4;
+  --satra-btn-primary-disabled-text: #8E8E93;
+  --satra-btn-secondary-bg: transparent;
+  --satra-btn-secondary-border: #D9D8D4;
+  --satra-btn-secondary-text: #131316;
+  --satra-btn-secondary-hover-bg: rgba(11,11,12,.05);
+
+  /* ---- Icons ---- */
+  --satra-icon-primary: #0B0B0C;
+  --satra-icon-secondary: rgba(11,11,12,.4);
+
+  /* ---- Status ---- */
+  --satra-success: #2E7D5A;
+  --satra-success-bg: #E7F1EC;
+  --satra-success-text: #1E5E42;
+  --satra-warning: #B07C2A;
+  --satra-warning-bg: #F7EFDF;
+  --satra-warning-text: #7E5717;
+  --satra-error: #B3452E;
+  --satra-error-bg: #F6E7E3;
+  --satra-error-text: #8C3421;
+
+  /* ---- Misc ---- */
+  --satra-focus-ring: rgba(11,11,12,.35);
+  --satra-scrim: rgba(11,11,12,.5);
+  --satra-shadow-card: 0 1px 3px rgba(11,11,12,.06);
+}
+
+[data-theme="dark"] {
+  --satra-bg-app: #0B0B0C;
+  --satra-bg-subtle: #0F0F11;
+  --satra-surface-card: #141416;
+  --satra-surface-card-nested: #1D1D20;
+  --satra-surface-list: #141416;
+  --satra-surface-list-hover: #1A1A1D;
+  --satra-border: #26262A;
+  --satra-divider: #1F1F23;
+  --satra-text-title: #F7F6F3;
+  --satra-text-body: #D9D8D4;
+  --satra-text-subtitle: #A8A8AD;
+  --satra-text-muted: #8E8E93;
+  --satra-text-inverse: #0B0B0C;
+  --satra-accent: #F7F6F3;
+  --satra-accent-contrast: #0B0B0C;
+  --satra-accent-soft: rgba(247,246,243,.08);
+  --satra-btn-primary-bg: #F7F6F3;
+  --satra-btn-primary-text: #0B0B0C;
+  --satra-btn-primary-hover: #FFFFFF;
+  --satra-btn-primary-disabled-bg: #2C2C30;
+  --satra-btn-primary-disabled-text: #55555A;
+  --satra-btn-secondary-border: #3A3A3F;
+  --satra-btn-secondary-text: #F7F6F3;
+  --satra-btn-secondary-hover-bg: rgba(247,246,243,.07);
+  --satra-icon-primary: #F7F6F3;
+  --satra-icon-secondary: rgba(247,246,243,.4);
+  --satra-success: #4E9E76;
+  --satra-success-bg: rgba(46,125,90,.18);
+  --satra-success-text: #7FC9A6;
+  --satra-warning: #C99A4B;
+  --satra-warning-bg: rgba(176,124,42,.16);
+  --satra-warning-text: #DFB878;
+  --satra-error: #C96A54;
+  --satra-error-bg: rgba(179,69,46,.16);
+  --satra-error-text: #E19180;
+  --satra-focus-ring: rgba(247,246,243,.4);
+  --satra-scrim: rgba(0,0,0,.6);
+  --satra-shadow-card: none;
+}
+
+/* Automatic dark mode when the OS asks for it and no explicit
+   data-theme="light" is set on <html>. Keep in sync with block above. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --satra-bg-app: #0B0B0C;
+    --satra-bg-subtle: #0F0F11;
+    --satra-surface-card: #141416;
+    --satra-surface-card-nested: #1D1D20;
+    --satra-surface-list: #141416;
+    --satra-surface-list-hover: #1A1A1D;
+    --satra-border: #26262A;
+    --satra-divider: #1F1F23;
+    --satra-text-title: #F7F6F3;
+    --satra-text-body: #D9D8D4;
+    --satra-text-subtitle: #A8A8AD;
+    --satra-text-muted: #8E8E93;
+    --satra-text-inverse: #0B0B0C;
+    --satra-accent: #F7F6F3;
+    --satra-accent-contrast: #0B0B0C;
+    --satra-accent-soft: rgba(247,246,243,.08);
+    --satra-btn-primary-bg: #F7F6F3;
+    --satra-btn-primary-text: #0B0B0C;
+    --satra-btn-primary-hover: #FFFFFF;
+    --satra-btn-primary-disabled-bg: #2C2C30;
+    --satra-btn-primary-disabled-text: #55555A;
+    --satra-btn-secondary-border: #3A3A3F;
+    --satra-btn-secondary-text: #F7F6F3;
+    --satra-btn-secondary-hover-bg: rgba(247,246,243,.07);
+    --satra-icon-primary: #F7F6F3;
+    --satra-icon-secondary: rgba(247,246,243,.4);
+    --satra-success: #4E9E76;
+    --satra-success-bg: rgba(46,125,90,.18);
+    --satra-success-text: #7FC9A6;
+    --satra-warning: #C99A4B;
+    --satra-warning-bg: rgba(176,124,42,.16);
+    --satra-warning-text: #DFB878;
+    --satra-error: #C96A54;
+    --satra-error-bg: rgba(179,69,46,.16);
+    --satra-error-text: #E19180;
+    --satra-focus-ring: rgba(247,246,243,.4);
+    --satra-scrim: rgba(0,0,0,.6);
+    --satra-shadow-card: none;
+  }
+}

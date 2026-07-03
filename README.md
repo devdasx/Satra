@@ -8,6 +8,7 @@ The project is starting with product design and screen implementation first, the
 
 - Android project scaffolded.
 - First onboarding screen implemented in Compose.
+- Brand kit added under `brand/satra-brand-kit` and applied to the current UI, app icon, splash theme, colors, typography, and icon resources.
 - Multi-chain wallet core not implemented yet.
 - Supported assets and networks documented in `docs/SUPPORTED_ASSETS.md`.
 
@@ -24,6 +25,8 @@ The project is starting with product design and screen implementation first, the
 Satra supports only the networks, native coins, and tokens listed in `docs/SUPPORTED_ASSETS.md`.
 
 ## Development
+
+Satra's visual identity comes from `brand/satra-brand-kit/README.md`; use the kit's semantic tokens and assets instead of ad hoc colors, fonts, or logo treatments.
 
 Open the project in Android Studio, or build from the command line after installing an Android SDK:
 

@@ -5,19 +5,19 @@
     <string name="wallet_scope_label">Multi-chain</string>
     <string name="onboarding_action_create_wallet">Create wallet</string>
     <string name="onboarding_action_restore_wallet">Restore wallet</string>
-    <string name="onboarding_footer">No account. Local keys. Open source.</string>
+    <string name="onboarding_footer">Non-custodial. Open source. Multi-chain.</string>
     <string name="onboarding_receive_label">Receive</string>
     <string name="onboarding_receive_address_preview">0x… / bc1…</string>
     <string name="onboarding_page_self_custody_eyebrow">Self-custody</string>
     <string name="onboarding_page_self_custody_title">Your assets stay yours.</string>
-    <string name="onboarding_page_self_custody_body">Create a wallet where recovery, signing, and privacy are designed around your device across supported networks.</string>
+    <string name="onboarding_page_self_custody_body">Create a quiet instrument of ownership where recovery, signing, and privacy are designed around your device across supported networks.</string>
     <string name="onboarding_page_clarity_eyebrow">Clarity first</string>
     <string name="onboarding_page_clarity_title">Know before you send.</string>
     <string name="onboarding_page_clarity_body">Review the asset, network, address, fee, and activity in a calm flow before any transaction moves.</string>
     <string name="onboarding_page_open_source_eyebrow">Open source</string>
     <string name="onboarding_page_open_source_title">Built in the open.</string>
     <string name="onboarding_page_open_source_body">Satra starts public from day one, with every design and code change visible as the wallet grows.</string>
-    <string name="onboarding_visual_self_custody_description">Native lock icon representing self-custody and local key protection.</string>
-    <string name="onboarding_visual_clarity_description">Native checklist icon representing transaction review before sending assets.</string>
-    <string name="onboarding_visual_open_source_description">Native code icon representing open development and public review.</string>
+    <string name="onboarding_visual_self_custody_description">Satra security icon representing self-custody and local key protection.</string>
+    <string name="onboarding_visual_clarity_description">Satra list icon representing transaction review before sending assets.</string>
+    <string name="onboarding_visual_open_source_description">Satra settings icon representing open development and public review.</string>
 </resources>

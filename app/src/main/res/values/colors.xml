@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="satra_icon_background">#F7931A</color>
+    <color name="satra_ink">#0B0B0C</color>
+    <color name="satra_graphite">#2C2C30</color>
+    <color name="satra_steel">#8E8E93</color>
+    <color name="satra_mist">#D9D8D4</color>
+    <color name="satra_bone">#F7F6F3</color>
+    <color name="satra_white">#FFFFFF</color>
+    <color name="satra_icon_background">@color/satra_ink</color>
+    <color name="satra_background_light">@color/satra_bone</color>
+    <color name="satra_background_dark">@color/satra_ink</color>
 </resources>
-

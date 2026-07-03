@@ -1,48 +1,84 @@
 package dev.satra.wallet.ui.theme
 
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 
 private val LightColorScheme = lightColorScheme(
-    primary = SatraLightPrimary,
-    onPrimary = SatraLightOnPrimary,
-    primaryContainer = SatraLightPrimaryContainer,
-    onPrimaryContainer = SatraLightOnPrimaryContainer,
-    secondary = SatraLightSecondary,
-    onSecondary = SatraLightOnSecondary,
-    secondaryContainer = SatraLightSecondaryContainer,
-    onSecondaryContainer = SatraLightOnSecondaryContainer,
-    tertiary = SatraLightTertiary,
-    onTertiary = SatraLightOnTertiary,
-    surface = SatraLightSurface,
-    onSurface = SatraLightOnSurface,
-    onSurfaceVariant = SatraLightOnSurfaceVariant,
+    primary = SatraLightAccent,
+    onPrimary = SatraLightAccentContrast,
+    primaryContainer = SatraLightAccentSoft,
+    onPrimaryContainer = SatraLightTextTitle,
+    secondary = SatraLightTextBody,
+    onSecondary = SatraLightAccentContrast,
+    secondaryContainer = SatraLightSurfaceCardNested,
+    onSecondaryContainer = SatraLightTextBody,
+    tertiary = SatraLightSuccess,
+    onTertiary = SatraLightAccentContrast,
+    tertiaryContainer = SatraLightSuccessBg,
+    onTertiaryContainer = SatraLightSuccess,
+    background = SatraLightBgApp,
+    onBackground = SatraLightTextBody,
+    surface = SatraLightBgApp,
+    onSurface = SatraLightTextTitle,
+    surfaceVariant = SatraLightSurfaceCard,
+    onSurfaceVariant = SatraLightTextSubtitle,
+    surfaceContainerLowest = SatraLightBgApp,
+    surfaceContainerLow = SatraLightBgSubtle,
+    surfaceContainer = SatraLightSurfaceCard,
+    surfaceContainerHigh = SatraLightSurfaceCardNested,
+    surfaceContainerHighest = SatraLightSurfaceCardNested,
+    outline = SatraLightBorder,
+    outlineVariant = SatraLightDivider,
+    error = SatraLightError,
+    onError = SatraLightAccentContrast,
+    errorContainer = SatraLightErrorBg,
+    onErrorContainer = SatraLightError,
+    scrim = SatraLightScrim,
+    inverseSurface = SatraLightAccent,
+    inverseOnSurface = SatraLightAccentContrast,
+    inversePrimary = SatraLightAccentContrast,
 )
 
 private val DarkColorScheme = darkColorScheme(
-    primary = SatraDarkPrimary,
-    onPrimary = SatraDarkOnPrimary,
-    primaryContainer = SatraDarkPrimaryContainer,
-    onPrimaryContainer = SatraDarkOnPrimaryContainer,
-    secondary = SatraDarkSecondary,
-    onSecondary = SatraDarkOnSecondary,
-    secondaryContainer = SatraDarkSecondaryContainer,
-    onSecondaryContainer = SatraDarkOnSecondaryContainer,
-    tertiary = SatraDarkTertiary,
-    onTertiary = SatraDarkOnTertiary,
-    surface = SatraDarkSurface,
-    onSurface = SatraDarkOnSurface,
-    onSurfaceVariant = SatraDarkOnSurfaceVariant,
+    primary = SatraDarkAccent,
+    onPrimary = SatraDarkAccentContrast,
+    primaryContainer = SatraDarkAccentSoft,
+    onPrimaryContainer = SatraDarkTextTitle,
+    secondary = SatraDarkTextBody,
+    onSecondary = SatraDarkAccentContrast,
+    secondaryContainer = SatraDarkSurfaceCardNested,
+    onSecondaryContainer = SatraDarkTextBody,
+    tertiary = SatraDarkSuccess,
+    onTertiary = SatraDarkAccentContrast,
+    tertiaryContainer = SatraDarkSuccessBg,
+    onTertiaryContainer = SatraDarkSuccess,
+    background = SatraDarkBgApp,
+    onBackground = SatraDarkTextBody,
+    surface = SatraDarkBgApp,
+    onSurface = SatraDarkTextTitle,
+    surfaceVariant = SatraDarkSurfaceCard,
+    onSurfaceVariant = SatraDarkTextSubtitle,
+    surfaceContainerLowest = SatraDarkBgApp,
+    surfaceContainerLow = SatraDarkBgSubtle,
+    surfaceContainer = SatraDarkSurfaceCard,
+    surfaceContainerHigh = SatraDarkSurfaceCardNested,
+    surfaceContainerHighest = SatraDarkSurfaceCardNested,
+    outline = SatraDarkBorder,
+    outlineVariant = SatraDarkDivider,
+    error = SatraDarkError,
+    onError = SatraDarkAccentContrast,
+    errorContainer = SatraDarkErrorBg,
+    onErrorContainer = SatraDarkError,
+    scrim = SatraDarkScrim,
+    inverseSurface = SatraDarkAccent,
+    inverseOnSurface = SatraDarkAccentContrast,
+    inversePrimary = SatraDarkAccentContrast,
 )
 
 private val SatraShapes = Shapes(
@@ -56,18 +92,12 @@ private val SatraShapes = Shapes(
 @Composable
 fun SatraTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit,
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
+    @Suppress("UNUSED_VARIABLE")
+    val keepMaterialSignatureStable = dynamicColor
+    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
 
     MaterialTheme(
         colorScheme = colorScheme,
@@ -76,4 +106,3 @@ fun SatraTheme(
         content = content,
     )
 }
-

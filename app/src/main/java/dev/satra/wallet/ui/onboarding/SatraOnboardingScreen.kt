@@ -2,9 +2,12 @@ package dev.satra.wallet.ui.onboarding
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -39,10 +42,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -349,18 +354,14 @@ private fun SatraHeader(modifier: Modifier = Modifier) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            SatraMark()
-            Text(
-                text = stringResource(R.string.app_name),
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.SemiBold,
-            )
-        }
+        Image(
+            painter = painterResource(R.drawable.satra_lockup_horizontal),
+            contentDescription = stringResource(R.string.app_name),
+            contentScale = ContentScale.Fit,
+            modifier = Modifier
+                .width(132.dp)
+                .height(48.dp),
+        )
 
         Text(
             text = stringResource(R.string.wallet_scope_label),
@@ -372,75 +373,57 @@ private fun SatraHeader(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun SatraMark(modifier: Modifier = Modifier) {
-    val colorScheme = MaterialTheme.colorScheme
-
-    Box(
-        modifier = modifier
-            .size(42.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .background(colorScheme.primary),
-        contentAlignment = Alignment.Center,
-    ) {
-        Canvas(modifier = Modifier.size(26.dp)) {
-            val strokeWidth = 3.dp.toPx()
-            drawCircle(
-                color = colorScheme.onPrimary,
-                radius = size.minDimension * 0.28f,
-                center = Offset(size.width * 0.38f, size.height * 0.38f),
-                style = Stroke(width = strokeWidth),
-            )
-            drawLine(
-                color = colorScheme.onPrimary,
-                start = Offset(size.width * 0.56f, size.height * 0.56f),
-                end = Offset(size.width * 0.86f, size.height * 0.86f),
-                strokeWidth = strokeWidth,
-                cap = StrokeCap.Round,
-            )
-            drawLine(
-                color = colorScheme.onPrimary,
-                start = Offset(size.width * 0.74f, size.height * 0.72f),
-                end = Offset(size.width * 0.88f, size.height * 0.58f),
-                strokeWidth = strokeWidth,
-                cap = StrokeCap.Round,
-            )
-        }
-    }
-}
-
-@Composable
 private fun OnboardingVisual(
     visual: OnboardingArtwork,
     modifier: Modifier = Modifier,
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    val shape = RoundedCornerShape(28.dp)
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(28.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerLow),
+            .clip(shape)
+            .background(colorScheme.surfaceContainer)
+            .border(1.dp, colorScheme.outlineVariant, shape),
         contentAlignment = Alignment.Center,
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             val center = Offset(size.width / 2f, size.height / 2f)
-            val radius = size.minDimension * 0.34f
+            val grid = 42.dp.toPx()
+            var y = -grid
+            while (y < size.height + grid) {
+                drawLine(
+                    color = colorScheme.outlineVariant.copy(alpha = 0.22f),
+                    start = Offset(0f, y),
+                    end = Offset(size.width, y),
+                    strokeWidth = 1.dp.toPx(),
+                )
+                y += grid
+            }
 
-            drawCircle(
-                color = colorScheme.primary.copy(alpha = 0.08f),
-                radius = radius,
-                center = center,
+            val tile = size.minDimension * 0.34f
+            val left = center.x - tile * 1.05f
+            val top = center.y - tile * 0.9f
+
+            drawArc(
+                color = colorScheme.primary.copy(alpha = 0.06f),
+                startAngle = 0f,
+                sweepAngle = 90f,
+                useCenter = true,
+                topLeft = Offset(left, top),
+                size = Size(tile, tile),
             )
-            drawCircle(
-                color = colorScheme.outlineVariant.copy(alpha = 0.42f),
-                radius = radius,
-                center = center,
-                style = Stroke(width = 1.dp.toPx()),
+            drawRoundRect(
+                color = colorScheme.primary.copy(alpha = 0.04f),
+                topLeft = Offset(left + tile * 1.18f, top),
+                size = Size(tile * 0.72f, tile * 0.72f),
+                cornerRadius = CornerRadius(8.dp.toPx(), 8.dp.toPx()),
             )
             drawLine(
-                color = colorScheme.outlineVariant.copy(alpha = 0.28f),
-                start = Offset(size.width * 0.22f, center.y),
-                end = Offset(size.width * 0.78f, center.y),
+                color = colorScheme.outlineVariant.copy(alpha = 0.36f),
+                start = Offset(size.width * 0.2f, center.y),
+                end = Offset(size.width * 0.8f, center.y),
                 strokeWidth = 1.dp.toPx(),
                 cap = StrokeCap.Round,
             )
@@ -456,8 +439,8 @@ private fun OnboardingVisual(
             IconBadge(
                 iconRes = visual.leadingIconRes,
                 size = supportSize,
-                containerColor = colorScheme.secondaryContainer,
-                iconColor = colorScheme.onSecondaryContainer,
+                containerColor = colorScheme.surfaceContainerHigh,
+                iconColor = colorScheme.onSurface.copy(alpha = 0.4f),
                 modifier = Modifier
                     .align(Alignment.CenterStart)
                     .padding(start = maxWidth * 0.16f)
@@ -467,8 +450,8 @@ private fun OnboardingVisual(
             IconBadge(
                 iconRes = visual.trailingIconRes,
                 size = supportSize,
-                containerColor = colorScheme.tertiaryContainer,
-                iconColor = colorScheme.onTertiaryContainer,
+                containerColor = colorScheme.surfaceContainerHigh,
+                iconColor = colorScheme.onSurface.copy(alpha = 0.4f),
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
                     .padding(end = maxWidth * 0.16f)
@@ -605,6 +588,8 @@ private fun OnboardingActions(
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
+                disabledContainerColor = MaterialTheme.colorScheme.outlineVariant,
+                disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
             ),
         ) {
             Text(
@@ -619,6 +604,11 @@ private fun OnboardingActions(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = MaterialTheme.colorScheme.onSurface,
+                disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            ),
         ) {
             Text(
                 text = stringResource(R.string.onboarding_action_restore_wallet),
@@ -691,21 +681,21 @@ private enum class OnboardingArtwork(
     @StringRes val contentDescriptionRes: Int,
 ) {
     SelfCustody(
-        primaryIconRes = R.drawable.ic_onboarding_lock,
-        leadingIconRes = R.drawable.ic_onboarding_key,
-        trailingIconRes = R.drawable.ic_onboarding_wallet,
+        primaryIconRes = R.drawable.ic_brand_security,
+        leadingIconRes = R.drawable.ic_brand_wallet,
+        trailingIconRes = R.drawable.ic_brand_assets,
         contentDescriptionRes = R.string.onboarding_visual_self_custody_description,
     ),
     Clarity(
-        primaryIconRes = R.drawable.ic_onboarding_checklist,
-        leadingIconRes = R.drawable.ic_onboarding_receipt,
-        trailingIconRes = R.drawable.ic_onboarding_send,
+        primaryIconRes = R.drawable.ic_brand_list,
+        leadingIconRes = R.drawable.ic_brand_receive,
+        trailingIconRes = R.drawable.ic_brand_move,
         contentDescriptionRes = R.string.onboarding_visual_clarity_description,
     ),
     OpenSource(
-        primaryIconRes = R.drawable.ic_onboarding_code,
-        leadingIconRes = R.drawable.ic_onboarding_branch,
-        trailingIconRes = R.drawable.ic_onboarding_shield_check,
+        primaryIconRes = R.drawable.ic_brand_settings,
+        leadingIconRes = R.drawable.ic_brand_history,
+        trailingIconRes = R.drawable.ic_brand_scan,
         contentDescriptionRes = R.string.onboarding_visual_open_source_description,
     ),
 }
