@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -560,16 +559,10 @@ private fun SetupContentFrame(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(56.dp),
         ) {
-            SetupHero(
-                page = page,
-                compactHeight = compactHeight,
-                modifier = Modifier
-                    .weight(0.9f)
-                    .fillMaxHeight(),
-            )
             SetupPageBody(
                 page = page,
-                modifier = Modifier.weight(1.1f),
+                compactHeight = compactHeight,
+                modifier = Modifier.weight(1f),
                 content = content,
             )
         }
@@ -579,18 +572,9 @@ private fun SetupContentFrame(
             modifier = modifier,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            SetupHero(
-                page = page,
-                compactHeight = compactHeight,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(if (compactHeight) 112.dp else 148.dp),
-            )
-
-            Spacer(modifier = Modifier.height(if (compactHeight) 10.dp else 16.dp))
-
             SetupPageBody(
                 page = page,
+                compactHeight = compactHeight,
                 modifier = Modifier.fillMaxWidth(),
                 content = content,
             )
@@ -599,36 +583,34 @@ private fun SetupContentFrame(
 }
 
 @Composable
-private fun SetupHero(
+private fun SetupPageIcon(
     page: SetupPageContent,
     compactHeight: Boolean,
     modifier: Modifier = Modifier,
 ) {
+    val iconContainerSize = if (compactHeight) 44.dp else 52.dp
+    val iconSize = if (compactHeight) 22.dp else 26.dp
+
     Box(
-        modifier = modifier,
+        modifier = modifier
+            .size(iconContainerSize)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
         contentAlignment = Alignment.Center,
     ) {
-        val iconSize = if (compactHeight) 112.dp else 156.dp
-        Box(
-            modifier = Modifier
-                .size(iconSize)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primaryContainer),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                painter = painterResource(page.iconRes),
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(iconSize * 0.52f),
-            )
-        }
+        Icon(
+            painter = painterResource(page.iconRes),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.62f),
+            modifier = Modifier.size(iconSize),
+        )
     }
 }
 
 @Composable
 private fun SetupPageBody(
     page: SetupPageContent,
+    compactHeight: Boolean,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
@@ -636,25 +618,35 @@ private fun SetupPageBody(
         modifier = modifier,
         horizontalAlignment = Alignment.Start,
     ) {
-        Text(
-            text = stringResource(page.eyebrowRes),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.Bold,
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = stringResource(page.titleRes),
-            style = MaterialTheme.typography.headlineLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.Bold,
-        )
-        Spacer(modifier = Modifier.height(10.dp))
-        Text(
-            text = stringResource(page.bodyRes),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.Top,
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            SetupPageIcon(
+                page = page,
+                compactHeight = compactHeight,
+            )
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(page.titleRes),
+                    style = if (compactHeight) {
+                        MaterialTheme.typography.headlineMedium
+                    } else {
+                        MaterialTheme.typography.headlineLarge
+                    },
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Bold,
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                    text = stringResource(page.bodyRes),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(20.dp))
         content()
@@ -703,7 +695,7 @@ private fun HiddenPhrasePanel() {
                         val wordNumber = rowIndex * 3 + columnIndex + 1
                         RecoveryWordChip(
                             number = wordNumber,
-                            text = stringResource(R.string.wallet_setup_hidden_word_placeholder),
+                            text = stringResource(R.string.wallet_setup_recovery_word_placeholder),
                             modifier = Modifier.weight(1f),
                         )
                     }
@@ -839,9 +831,6 @@ private fun RecoveryPhraseEntry(
                 isError = showError,
                 placeholder = {
                     Text(text = stringResource(R.string.wallet_setup_recovery_phrase_placeholder))
-                },
-                label = {
-                    Text(text = stringResource(R.string.wallet_setup_recovery_phrase_label))
                 },
                 supportingText = {
                     Text(
@@ -1335,7 +1324,6 @@ private fun SetupBackground(modifier: Modifier = Modifier) {
 }
 
 private data class SetupPageContent(
-    @StringRes val eyebrowRes: Int,
     @StringRes val titleRes: Int,
     @StringRes val bodyRes: Int,
     @DrawableRes val iconRes: Int,
@@ -1343,25 +1331,21 @@ private data class SetupPageContent(
 
 private val createWalletPages = listOf(
     SetupPageContent(
-        eyebrowRes = R.string.wallet_setup_create_step_intro_eyebrow,
         titleRes = R.string.wallet_setup_create_step_intro_title,
         bodyRes = R.string.wallet_setup_create_step_intro_body,
         iconRes = R.drawable.ic_brand_wallet,
     ),
     SetupPageContent(
-        eyebrowRes = R.string.wallet_setup_create_step_phrase_eyebrow,
         titleRes = R.string.wallet_setup_create_step_phrase_title,
         bodyRes = R.string.wallet_setup_create_step_phrase_body,
         iconRes = R.drawable.ic_brand_security,
     ),
     SetupPageContent(
-        eyebrowRes = R.string.wallet_setup_create_step_backup_eyebrow,
         titleRes = R.string.wallet_setup_create_step_backup_title,
         bodyRes = R.string.wallet_setup_create_step_backup_body,
         iconRes = R.drawable.ic_brand_list,
     ),
     SetupPageContent(
-        eyebrowRes = R.string.wallet_setup_create_step_security_eyebrow,
         titleRes = R.string.wallet_setup_create_step_security_title,
         bodyRes = R.string.wallet_setup_create_step_security_body,
         iconRes = R.drawable.ic_brand_settings,
@@ -1381,42 +1365,36 @@ private fun importSetupPage(
     method: WalletImportMethod,
 ): SetupPageContent = when (page) {
     ImportSetupPage.Method -> SetupPageContent(
-        eyebrowRes = R.string.wallet_setup_import_step_method_eyebrow,
         titleRes = R.string.wallet_setup_import_step_method_title,
         bodyRes = R.string.wallet_setup_import_step_method_body,
         iconRes = R.drawable.ic_brand_receive,
     )
 
     ImportSetupPage.Chain -> SetupPageContent(
-        eyebrowRes = R.string.wallet_setup_import_step_chain_eyebrow,
         titleRes = R.string.wallet_setup_import_step_chain_title,
         bodyRes = R.string.wallet_setup_import_step_chain_body,
         iconRes = R.drawable.ic_brand_assets,
     )
 
     ImportSetupPage.RecoveryPhrase -> SetupPageContent(
-        eyebrowRes = R.string.wallet_setup_import_step_phrase_eyebrow,
         titleRes = R.string.wallet_setup_import_step_phrase_title,
         bodyRes = R.string.wallet_setup_import_step_phrase_body,
         iconRes = R.drawable.ic_brand_wallet,
     )
 
     ImportSetupPage.PrivateKey -> SetupPageContent(
-        eyebrowRes = R.string.wallet_setup_import_step_private_key_eyebrow,
         titleRes = R.string.wallet_setup_import_step_private_key_title,
         bodyRes = R.string.wallet_setup_import_step_private_key_body,
         iconRes = R.drawable.ic_brand_security,
     )
 
     ImportSetupPage.WatchOnlyAddress -> SetupPageContent(
-        eyebrowRes = R.string.wallet_setup_import_step_watch_address_eyebrow,
         titleRes = R.string.wallet_setup_import_step_watch_address_title,
         bodyRes = R.string.wallet_setup_import_step_watch_address_body,
         iconRes = R.drawable.ic_brand_scan,
     )
 
     ImportSetupPage.Review -> SetupPageContent(
-        eyebrowRes = R.string.wallet_setup_import_step_review_eyebrow,
         titleRes = if (method == WalletImportMethod.RecoveryPhrase) {
             R.string.wallet_setup_import_step_review_title
         } else {
@@ -1427,7 +1405,6 @@ private fun importSetupPage(
     )
 
     ImportSetupPage.Security -> SetupPageContent(
-        eyebrowRes = R.string.wallet_setup_import_step_security_eyebrow,
         titleRes = R.string.wallet_setup_import_step_security_title,
         bodyRes = R.string.wallet_setup_import_step_security_body,
         iconRes = R.drawable.ic_brand_settings,
