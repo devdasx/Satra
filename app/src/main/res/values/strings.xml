@@ -68,7 +68,6 @@
     <string name="settings_language_gujarati">Gujarati</string>
     <string name="settings_language_polish">Polish</string>
     <string name="wallet_setup_back_content_description">Go back</string>
-    <string name="wallet_setup_screen_create_intro">Create wallet</string>
     <string name="wallet_setup_screen_create_phrase">Recovery phrase</string>
     <string name="wallet_setup_screen_create_backup">Backup check</string>
     <string name="wallet_setup_screen_create_security">Device security</string>
@@ -86,11 +85,6 @@
     <string name="wallet_setup_action_add_watch_only">Add watch-only wallet</string>
     <string name="wallet_setup_action_cancel">Cancel</string>
     <string name="wallet_setup_action_previous">Previous</string>
-    <string name="wallet_setup_create_step_intro_title">Create a recovery-ready wallet.</string>
-    <string name="wallet_setup_create_step_intro_body">Start with a wallet designed around local signing, clear backup guidance, and supported multi-chain assets.</string>
-    <string name="wallet_setup_create_chip_on_device">On-device keys</string>
-    <string name="wallet_setup_create_chip_non_custodial">Non-custodial</string>
-    <string name="wallet_setup_create_chip_multi_chain">Multi-chain</string>
     <string name="wallet_setup_create_step_phrase_title">Write it down before funds arrive.</string>
     <string name="wallet_setup_create_step_phrase_body">Satra will generate a recovery phrase on this device. Keep it offline and never share it with anyone.</string>
     <string name="wallet_setup_recovery_word_placeholder">word</string>

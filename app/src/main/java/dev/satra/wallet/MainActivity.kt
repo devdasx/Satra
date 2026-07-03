@@ -27,7 +27,6 @@ import dev.satra.wallet.settings.SatraSettingsDefaults
 import dev.satra.wallet.settings.SatraThemePreference
 import dev.satra.wallet.ui.onboarding.SatraOnboardingScreen
 import dev.satra.wallet.ui.setup.CreateWalletBackupScreen
-import dev.satra.wallet.ui.setup.CreateWalletIntroScreen
 import dev.satra.wallet.ui.setup.CreateWalletPhraseScreen
 import dev.satra.wallet.ui.setup.CreateWalletSecurityScreen
 import dev.satra.wallet.ui.setup.ImportChainScreen
@@ -121,7 +120,7 @@ class MainActivity : ComponentActivity() {
                                 applyAppLocale(tag)
                             },
                             onCreateWallet = {
-                                navController.navigate(SatraRoute.CREATE_WALLET_INTRO) {
+                                navController.navigate(SatraRoute.CREATE_WALLET_PHRASE) {
                                     launchSingleTop = true
                                 }
                             },
@@ -129,18 +128,6 @@ class MainActivity : ComponentActivity() {
                                 navController.navigate(SatraRoute.IMPORT_METHOD) {
                                     launchSingleTop = true
                                 }
-                            },
-                        )
-                    }
-
-                    composable(SatraRoute.CREATE_WALLET_INTRO) {
-                        CreateWalletIntroScreen(
-                            settings = settings,
-                            onBack = {
-                                navController.popBackStack()
-                            },
-                            onNext = {
-                                navController.navigate(SatraRoute.CREATE_WALLET_PHRASE)
                             },
                         )
                     }
@@ -373,7 +360,6 @@ private object SatraRoute {
     const val ARG_NETWORK = "network"
     private const val NO_NETWORK = "none"
     const val ONBOARDING = "onboarding"
-    const val CREATE_WALLET_INTRO = "create-wallet/intro"
     const val CREATE_WALLET_PHRASE = "create-wallet/recovery-phrase"
     const val CREATE_WALLET_BACKUP = "create-wallet/backup"
     const val CREATE_WALLET_SECURITY = "create-wallet/security"
