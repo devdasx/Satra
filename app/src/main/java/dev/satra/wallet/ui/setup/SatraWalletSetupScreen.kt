@@ -31,6 +31,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
@@ -206,13 +207,17 @@ fun CreateWalletPhraseScreen(
         primaryTextRes = R.string.wallet_setup_action_continue,
         onBack = onBack,
         onPrimaryClick = onNext,
+        topBarAction = { performHaptic ->
+            RecoveryPhraseOptionsIconButton(
+                onClick = {
+                    performHaptic()
+                    showRecoveryPhraseOptions = true
+                },
+            )
+        },
     ) { performHaptic ->
         HiddenPhrasePanel(
             mnemonic = mnemonic,
-            onOptionsClick = {
-                performHaptic()
-                showRecoveryPhraseOptions = true
-            },
             onCopyClick = {
                 performHaptic()
                 clipboardManager?.setPrimaryClip(
@@ -373,15 +378,19 @@ fun ImportRecoveryPhraseScreen(
         primaryEnabled = phraseValidation.isValid,
         onBack = onBack,
         onPrimaryClick = { onNext(recoveryPhrase.trim(), passphrase) },
+        topBarAction = { performHaptic ->
+            RecoveryPhraseOptionsIconButton(
+                onClick = {
+                    performHaptic()
+                    showRecoveryPhraseOptions = true
+                },
+            )
+        },
     ) { performHaptic ->
         RecoveryPhraseEntry(
             recoveryPhrase = recoveryPhrase,
             onRecoveryPhraseChange = { recoveryPhrase = it },
             validation = phraseValidation,
-            onOptionsClick = {
-                performHaptic()
-                showRecoveryPhraseOptions = true
-            },
             onPasteClick = {
                 performHaptic()
                 val pastedText = clipboardManager?.primaryClip
@@ -703,6 +712,7 @@ private fun WalletSetupRouteScreen(
     onBack: () -> Unit,
     onPrimaryClick: () -> Unit,
     onSecondaryClick: (() -> Unit)? = null,
+    topBarAction: @Composable (performHaptic: () -> Unit) -> Unit = {},
     content: @Composable (performHaptic: () -> Unit) -> Unit,
 ) {
     val hapticFeedback = LocalHapticFeedback.current
@@ -752,6 +762,9 @@ private fun WalletSetupRouteScreen(
                         performHaptic()
                         onBack()
                     },
+                    action = {
+                        topBarAction(performHaptic)
+                    },
                 )
 
                 Spacer(modifier = Modifier.height(if (compactHeight) 20.dp else 28.dp))
@@ -797,6 +810,7 @@ private fun WalletSetupRouteScreen(
 private fun SetupTopBar(
     @StringRes titleRes: Int,
     onBack: () -> Unit,
+    action: @Composable () -> Unit = {},
 ) {
     Row(
         modifier = Modifier
@@ -819,6 +833,21 @@ private fun SetupTopBar(
             color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.weight(1f),
+        )
+
+        action()
+    }
+}
+
+@Composable
+private fun RecoveryPhraseOptionsIconButton(
+    onClick: () -> Unit,
+) {
+    IconButton(onClick = onClick) {
+        Icon(
+            imageVector = Icons.Filled.Settings,
+            contentDescription = stringResource(R.string.wallet_setup_recovery_phrase_options),
+            tint = MaterialTheme.colorScheme.onSurface,
         )
     }
 }
@@ -928,7 +957,6 @@ private fun SetupPageBody(
 @Composable
 private fun HiddenPhrasePanel(
     mnemonic: String,
-    onOptionsClick: () -> Unit,
     onCopyClick: () -> Unit,
 ) {
     val words = remember(mnemonic) {
@@ -954,16 +982,6 @@ private fun HiddenPhrasePanel(
                         Spacer(modifier = Modifier.weight(1f))
                     }
                 }
-            }
-            TextButton(
-                onClick = onOptionsClick,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(
-                    text = stringResource(R.string.wallet_setup_recovery_phrase_options),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                )
             }
             OutlinedButton(
                 onClick = onCopyClick,
@@ -1481,7 +1499,6 @@ private fun RecoveryPhraseEntry(
     recoveryPhrase: String,
     onRecoveryPhraseChange: (String) -> Unit,
     validation: Bip39MnemonicValidation,
-    onOptionsClick: () -> Unit,
     onPasteClick: () -> Unit,
     onScanClick: () -> Unit,
 ) {
@@ -1513,16 +1530,6 @@ private fun RecoveryPhraseEntry(
                 },
                 minLines = 4,
             )
-            TextButton(
-                onClick = onOptionsClick,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(
-                    text = stringResource(R.string.wallet_setup_recovery_phrase_options),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
