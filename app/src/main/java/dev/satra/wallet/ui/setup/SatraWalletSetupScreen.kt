@@ -74,6 +74,74 @@ enum class WalletSetupMode {
     Import,
 }
 
+enum class WalletImportMethod(val routeSegment: String, @StringRes val labelRes: Int) {
+    RecoveryPhrase(
+        routeSegment = "recovery-phrase",
+        labelRes = R.string.wallet_setup_import_method_recovery_phrase,
+    ),
+    PrivateKey(
+        routeSegment = "private-key",
+        labelRes = R.string.wallet_setup_import_method_private_key,
+    ),
+    WatchOnly(
+        routeSegment = "watch-only",
+        labelRes = R.string.wallet_setup_import_method_watch_only,
+    );
+
+    companion object {
+        fun fromRoute(routeSegment: String?): WalletImportMethod =
+            entries.firstOrNull { it.routeSegment == routeSegment } ?: RecoveryPhrase
+    }
+}
+
+enum class WalletImportNetwork(
+    val routeSegment: String,
+    @StringRes val labelRes: Int,
+    @StringRes val familyRes: Int,
+) {
+    Bitcoin("bitcoin", R.string.wallet_setup_network_bitcoin, R.string.wallet_setup_network_family_utxo),
+    BitcoinCash("bitcoin-cash", R.string.wallet_setup_network_bitcoin_cash, R.string.wallet_setup_network_family_utxo),
+    Dogecoin("dogecoin", R.string.wallet_setup_network_dogecoin, R.string.wallet_setup_network_family_utxo),
+    Litecoin("litecoin", R.string.wallet_setup_network_litecoin, R.string.wallet_setup_network_family_utxo),
+    Ethereum("ethereum", R.string.wallet_setup_network_ethereum, R.string.wallet_setup_network_family_evm),
+    Arbitrum("arbitrum", R.string.wallet_setup_network_arbitrum, R.string.wallet_setup_network_family_evm),
+    Base("base", R.string.wallet_setup_network_base, R.string.wallet_setup_network_family_evm),
+    Optimism("optimism", R.string.wallet_setup_network_optimism, R.string.wallet_setup_network_family_evm),
+    Scroll("scroll", R.string.wallet_setup_network_scroll, R.string.wallet_setup_network_family_evm),
+    ZkSync("zksync-era", R.string.wallet_setup_network_zksync, R.string.wallet_setup_network_family_evm),
+    Polygon("polygon", R.string.wallet_setup_network_polygon, R.string.wallet_setup_network_family_evm),
+    BnbChain("bnb-chain", R.string.wallet_setup_network_bnb_chain, R.string.wallet_setup_network_family_evm),
+    OpBnb("opbnb", R.string.wallet_setup_network_opbnb, R.string.wallet_setup_network_family_evm),
+    Avalanche("avalanche", R.string.wallet_setup_network_avalanche, R.string.wallet_setup_network_family_evm),
+    Celo("celo", R.string.wallet_setup_network_celo, R.string.wallet_setup_network_family_evm),
+    KavaEvm("kava-evm", R.string.wallet_setup_network_kava_evm, R.string.wallet_setup_network_family_evm),
+    Aptos("aptos", R.string.wallet_setup_network_aptos, R.string.wallet_setup_network_family_non_evm),
+    Near("near", R.string.wallet_setup_network_near, R.string.wallet_setup_network_family_non_evm),
+    Polkadot("polkadot", R.string.wallet_setup_network_polkadot, R.string.wallet_setup_network_family_non_evm),
+    XrpLedger("xrp-ledger", R.string.wallet_setup_network_xrp_ledger, R.string.wallet_setup_network_family_non_evm),
+    Solana("solana", R.string.wallet_setup_network_solana, R.string.wallet_setup_network_family_non_evm),
+    Stellar("stellar", R.string.wallet_setup_network_stellar, R.string.wallet_setup_network_family_non_evm),
+    Sui("sui", R.string.wallet_setup_network_sui, R.string.wallet_setup_network_family_non_evm),
+    Ton("ton", R.string.wallet_setup_network_ton, R.string.wallet_setup_network_family_non_evm),
+    Tron("tron", R.string.wallet_setup_network_tron, R.string.wallet_setup_network_family_non_evm),
+    Kava("kava", R.string.wallet_setup_network_kava, R.string.wallet_setup_network_family_non_evm);
+
+    companion object {
+        fun fromRoute(routeSegment: String?): WalletImportNetwork? =
+            entries.firstOrNull { it.routeSegment == routeSegment }
+    }
+}
+
+enum class ImportSetupStep {
+    Method,
+    Chain,
+    RecoveryPhrase,
+    PrivateKey,
+    WatchOnlyAddress,
+    Review,
+    Security,
+}
+
 @Composable
 fun SatraWalletSetupScreen(
     mode: WalletSetupMode,
@@ -144,12 +212,9 @@ fun SatraWalletSetupScreen(
                 Spacer(modifier = Modifier.height(if (compactHeight) 16.dp else 24.dp))
 
                 SetupContentFrame(
-                    mode = mode,
                     step = steps[currentStepIndex],
-                    stepIndex = currentStepIndex,
                     windowSize = windowSize,
                     compactHeight = compactHeight,
-                    performHaptic = performHaptic,
                     modifier = if (scrollFallback) {
                         Modifier.fillMaxWidth()
                     } else {
@@ -157,18 +222,174 @@ fun SatraWalletSetupScreen(
                             .fillMaxWidth()
                             .weight(1f)
                     },
-                )
+                ) {
+                    when (mode) {
+                        WalletSetupMode.Create -> CreateWalletStepContent(
+                            stepIndex = currentStepIndex,
+                            performHaptic = performHaptic,
+                        )
+
+                        WalletSetupMode.Import -> ImportWalletStepContent(
+                            stepIndex = currentStepIndex,
+                            performHaptic = performHaptic,
+                        )
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(if (compactHeight) 14.dp else 22.dp))
 
                 SetupActions(
-                    mode = mode,
-                    stepIndex = currentStepIndex,
-                    stepCount = steps.size,
+                    primaryTextRes = setupPrimaryActionRes(
+                        mode = mode,
+                        stepIndex = currentStepIndex,
+                        stepCount = steps.size,
+                    ),
+                    secondaryTextRes = if (currentStepIndex == 0) {
+                        R.string.wallet_setup_action_cancel
+                    } else {
+                        R.string.wallet_setup_action_previous
+                    },
                     onPrimaryClick = {
                         performHaptic()
                         if (currentStepIndex < steps.lastIndex) {
                             onNextStep(currentStepIndex + 1)
+                        }
+                    },
+                    onSecondaryClick = {
+                        performHaptic()
+                        onBack()
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun SatraImportWalletSetupScreen(
+    step: ImportSetupStep,
+    method: WalletImportMethod = WalletImportMethod.RecoveryPhrase,
+    network: WalletImportNetwork? = null,
+    settings: SatraSettings = SatraSettings(),
+    onBack: () -> Unit = {},
+    onMethodContinue: (WalletImportMethod) -> Unit = {},
+    onNetworkContinue: (WalletImportNetwork) -> Unit = {},
+    onNext: () -> Unit = {},
+) {
+    val hapticFeedback = LocalHapticFeedback.current
+    val performHaptic = remember(settings.hapticsEnabled, hapticFeedback) {
+        { performSetupHaptic(hapticFeedback, settings.hapticsEnabled) }
+    }
+    var selectedMethod by rememberSaveable { mutableStateOf(method) }
+    var selectedNetwork by rememberSaveable { mutableStateOf(network ?: WalletImportNetwork.Bitcoin) }
+    val progressMethod = if (step == ImportSetupStep.Method) selectedMethod else method
+    val stepCount = importStepCount(method = progressMethod, step = step)
+    val stepNumber = importStepNumber(method = progressMethod, step = step)
+    val setupStep = importSetupStep(
+        step = step,
+        method = method,
+    )
+
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface),
+    ) {
+        val windowSize = remember(maxWidth) { SetupWindowSize.from(maxWidth) }
+        val compactHeight = maxHeight < 780.dp
+        val scrollFallback = maxHeight < 640.dp
+        val contentMaxWidth = when (windowSize) {
+            SetupWindowSize.Compact -> 520.dp
+            SetupWindowSize.Medium -> 640.dp
+            SetupWindowSize.Expanded -> 1120.dp
+        }
+
+        SetupBackground()
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .safeDrawingPadding()
+                .padding(
+                    horizontal = when (windowSize) {
+                        SetupWindowSize.Compact -> 24.dp
+                        SetupWindowSize.Medium -> 48.dp
+                        SetupWindowSize.Expanded -> 72.dp
+                    },
+                    vertical = if (compactHeight) 16.dp else 24.dp,
+                ),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Column(
+                modifier = Modifier
+                    .widthIn(max = contentMaxWidth)
+                    .fillMaxSize()
+                    .then(if (scrollFallback) Modifier.verticalScroll(rememberScrollState()) else Modifier),
+            ) {
+                SetupTopBar(
+                    stepIndex = stepNumber - 1,
+                    stepCount = stepCount,
+                    onBack = {
+                        performHaptic()
+                        onBack()
+                    },
+                )
+
+                Spacer(modifier = Modifier.height(if (compactHeight) 12.dp else 18.dp))
+
+                SetupProgress(
+                    stepIndex = stepNumber - 1,
+                    stepCount = stepCount,
+                )
+
+                Spacer(modifier = Modifier.height(if (compactHeight) 16.dp else 24.dp))
+
+                SetupContentFrame(
+                    step = setupStep,
+                    windowSize = windowSize,
+                    compactHeight = compactHeight,
+                    modifier = if (scrollFallback) {
+                        Modifier.fillMaxWidth()
+                    } else {
+                        Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                    },
+                ) {
+                    ImportStepContent(
+                        step = step,
+                        method = method,
+                        network = network,
+                        selectedMethod = selectedMethod,
+                        selectedNetwork = selectedNetwork,
+                        onMethodSelected = { nextMethod ->
+                            performHaptic()
+                            selectedMethod = nextMethod
+                        },
+                        onNetworkSelected = { nextNetwork ->
+                            performHaptic()
+                            selectedNetwork = nextNetwork
+                        },
+                        performHaptic = performHaptic,
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(if (compactHeight) 14.dp else 22.dp))
+
+                SetupActions(
+                    primaryTextRes = importPrimaryActionRes(step = step, method = method),
+                    secondaryTextRes = if (step == ImportSetupStep.Method) {
+                        R.string.wallet_setup_action_cancel
+                    } else {
+                        R.string.wallet_setup_action_previous
+                    },
+                    onPrimaryClick = {
+                        performHaptic()
+                        when (step) {
+                            ImportSetupStep.Method -> onMethodContinue(selectedMethod)
+                            ImportSetupStep.Chain -> onNetworkContinue(selectedNetwork)
+                            ImportSetupStep.Security -> Unit
+                            else -> onNext()
                         }
                     },
                     onSecondaryClick = {
@@ -239,13 +460,11 @@ private fun SetupProgress(
 
 @Composable
 private fun SetupContentFrame(
-    mode: WalletSetupMode,
     step: SetupStep,
-    stepIndex: Int,
     windowSize: SetupWindowSize,
     compactHeight: Boolean,
-    performHaptic: () -> Unit,
     modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
 ) {
     when (windowSize) {
         SetupWindowSize.Expanded -> Row(
@@ -261,11 +480,9 @@ private fun SetupContentFrame(
                     .fillMaxHeight(),
             )
             SetupStepBody(
-                mode = mode,
-                stepIndex = stepIndex,
                 step = step,
-                performHaptic = performHaptic,
                 modifier = Modifier.weight(1.1f),
+                content = content,
             )
         }
 
@@ -285,11 +502,9 @@ private fun SetupContentFrame(
             Spacer(modifier = Modifier.height(if (compactHeight) 10.dp else 16.dp))
 
             SetupStepBody(
-                mode = mode,
-                stepIndex = stepIndex,
                 step = step,
-                performHaptic = performHaptic,
                 modifier = Modifier.fillMaxWidth(),
+                content = content,
             )
         }
     }
@@ -325,11 +540,9 @@ private fun SetupHero(
 
 @Composable
 private fun SetupStepBody(
-    mode: WalletSetupMode,
-    stepIndex: Int,
     step: SetupStep,
-    performHaptic: () -> Unit,
     modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
 ) {
     Column(
         modifier = modifier,
@@ -356,18 +569,7 @@ private fun SetupStepBody(
         )
 
         Spacer(modifier = Modifier.height(20.dp))
-
-        when (mode) {
-            WalletSetupMode.Create -> CreateWalletStepContent(
-                stepIndex = stepIndex,
-                performHaptic = performHaptic,
-            )
-
-            WalletSetupMode.Import -> ImportWalletStepContent(
-                stepIndex = stepIndex,
-                performHaptic = performHaptic,
-            )
-        }
+        content()
     }
 }
 
@@ -398,11 +600,56 @@ private fun ImportWalletStepContent(
     stepIndex: Int,
     performHaptic: () -> Unit,
 ) {
+    var selectedMethod by rememberSaveable { mutableStateOf(WalletImportMethod.RecoveryPhrase) }
+
     when (stepIndex) {
-        0 -> ImportMethodPanel(performHaptic = performHaptic)
+        0 -> ImportMethodPanel(
+            selectedMethod = selectedMethod,
+            onMethodSelected = {
+                performHaptic()
+                selectedMethod = it
+            },
+        )
         1 -> RecoveryPhraseEntry()
         2 -> ImportReviewPanel()
         else -> ImportSecurityPanel(performHaptic = performHaptic)
+    }
+}
+
+@Composable
+private fun ImportStepContent(
+    step: ImportSetupStep,
+    method: WalletImportMethod,
+    network: WalletImportNetwork?,
+    selectedMethod: WalletImportMethod,
+    selectedNetwork: WalletImportNetwork,
+    onMethodSelected: (WalletImportMethod) -> Unit,
+    onNetworkSelected: (WalletImportNetwork) -> Unit,
+    performHaptic: () -> Unit,
+) {
+    when (step) {
+        ImportSetupStep.Method -> ImportMethodPanel(
+            selectedMethod = selectedMethod,
+            onMethodSelected = onMethodSelected,
+        )
+
+        ImportSetupStep.Chain -> NetworkSelectionPanel(
+            selectedNetwork = selectedNetwork,
+            onNetworkSelected = onNetworkSelected,
+        )
+
+        ImportSetupStep.RecoveryPhrase -> RecoveryPhraseEntry()
+
+        ImportSetupStep.PrivateKey -> PrivateKeyEntry(selectedNetwork = selectedNetwork)
+
+        ImportSetupStep.WatchOnlyAddress -> WatchOnlyAddressEntry(selectedNetwork = selectedNetwork)
+
+        ImportSetupStep.Review -> ImportReviewPanel(
+            method = method,
+            network = network,
+        )
+
+        ImportSetupStep.Security -> ImportSecurityPanel(performHaptic = performHaptic)
     }
 }
 
@@ -525,27 +772,34 @@ private fun CreateReviewPanel(performHaptic: () -> Unit) {
 }
 
 @Composable
-private fun ImportMethodPanel(performHaptic: () -> Unit) {
-    var selectedMethod by rememberSaveable { mutableStateOf(ImportMethod.RecoveryPhrase) }
-
+private fun ImportMethodPanel(
+    selectedMethod: WalletImportMethod,
+    onMethodSelected: (WalletImportMethod) -> Unit,
+) {
     FramedTool {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             ImportMethodRow(
                 titleRes = R.string.wallet_setup_import_method_recovery_phrase,
                 bodyRes = R.string.wallet_setup_import_method_recovery_phrase_body,
-                selected = selectedMethod == ImportMethod.RecoveryPhrase,
+                selected = selectedMethod == WalletImportMethod.RecoveryPhrase,
                 onClick = {
-                    performHaptic()
-                    selectedMethod = ImportMethod.RecoveryPhrase
+                    onMethodSelected(WalletImportMethod.RecoveryPhrase)
                 },
             )
             ImportMethodRow(
-                titleRes = R.string.wallet_setup_import_method_view_only,
-                bodyRes = R.string.wallet_setup_import_method_view_only_body,
-                selected = selectedMethod == ImportMethod.ViewOnly,
+                titleRes = R.string.wallet_setup_import_method_private_key,
+                bodyRes = R.string.wallet_setup_import_method_private_key_body,
+                selected = selectedMethod == WalletImportMethod.PrivateKey,
                 onClick = {
-                    performHaptic()
-                    selectedMethod = ImportMethod.ViewOnly
+                    onMethodSelected(WalletImportMethod.PrivateKey)
+                },
+            )
+            ImportMethodRow(
+                titleRes = R.string.wallet_setup_import_method_watch_only,
+                bodyRes = R.string.wallet_setup_import_method_watch_only_body,
+                selected = selectedMethod == WalletImportMethod.WatchOnly,
+                onClick = {
+                    onMethodSelected(WalletImportMethod.WatchOnly)
                 },
             )
         }
@@ -592,20 +846,112 @@ private fun RecoveryPhraseEntry() {
 }
 
 @Composable
-private fun ImportReviewPanel() {
+private fun NetworkSelectionPanel(
+    selectedNetwork: WalletImportNetwork,
+    onNetworkSelected: (WalletImportNetwork) -> Unit,
+) {
+    FramedTool {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = 320.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            WalletImportNetwork.entries.forEach { network ->
+                NetworkRow(
+                    network = network,
+                    selected = selectedNetwork == network,
+                    onClick = { onNetworkSelected(network) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PrivateKeyEntry(selectedNetwork: WalletImportNetwork) {
+    var privateKey by rememberSaveable(selectedNetwork.routeSegment) { mutableStateOf("") }
+
+    SecretEntryPanel(
+        value = privateKey,
+        onValueChange = { privateKey = it },
+        labelRes = R.string.wallet_setup_private_key_label,
+        placeholderRes = R.string.wallet_setup_private_key_placeholder,
+        noteRes = R.string.wallet_setup_private_key_note,
+        selectedNetwork = selectedNetwork,
+    )
+}
+
+@Composable
+private fun WatchOnlyAddressEntry(selectedNetwork: WalletImportNetwork) {
+    var address by rememberSaveable(selectedNetwork.routeSegment) { mutableStateOf("") }
+
+    SecretEntryPanel(
+        value = address,
+        onValueChange = { address = it },
+        labelRes = R.string.wallet_setup_watch_address_label,
+        placeholderRes = R.string.wallet_setup_watch_address_placeholder,
+        noteRes = R.string.wallet_setup_watch_address_note,
+        selectedNetwork = selectedNetwork,
+    )
+}
+
+@Composable
+private fun SecretEntryPanel(
+    value: String,
+    onValueChange: (String) -> Unit,
+    @StringRes labelRes: Int,
+    @StringRes placeholderRes: Int,
+    @StringRes noteRes: Int,
+    selectedNetwork: WalletImportNetwork,
+) {
     FramedTool {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            ReviewRow(
+            SelectedNetworkPill(selectedNetwork = selectedNetwork)
+            OutlinedTextField(
+                value = value,
+                onValueChange = onValueChange,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(148.dp),
+                textStyle = MaterialTheme.typography.bodyLarge,
+                placeholder = {
+                    Text(text = stringResource(placeholderRes))
+                },
+                label = {
+                    Text(text = stringResource(labelRes))
+                },
+                minLines = 4,
+            )
+            Text(
+                text = stringResource(noteRes),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ImportReviewPanel(
+    method: WalletImportMethod = WalletImportMethod.RecoveryPhrase,
+    network: WalletImportNetwork? = null,
+) {
+    FramedTool {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            ReviewTextRow(
                 titleRes = R.string.wallet_setup_review_source,
-                valueRes = R.string.wallet_setup_review_source_recovery_phrase,
+                value = stringResource(importReviewSourceRes(method)),
             )
-            ReviewRow(
+            ReviewTextRow(
                 titleRes = R.string.wallet_setup_review_networks,
-                valueRes = R.string.wallet_setup_review_networks_supported,
+                value = network?.let { stringResource(it.labelRes) }
+                    ?: stringResource(R.string.wallet_setup_review_networks_supported),
             )
-            ReviewRow(
+            ReviewTextRow(
                 titleRes = R.string.wallet_setup_review_privacy,
-                valueRes = R.string.wallet_setup_review_privacy_local,
+                value = stringResource(R.string.wallet_setup_review_privacy_local),
             )
         }
     }
@@ -794,9 +1140,78 @@ private fun ImportMethodRow(
 }
 
 @Composable
-private fun ReviewRow(
+private fun NetworkRow(
+    network: WalletImportNetwork,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .background(
+                if (selected) {
+                    MaterialTheme.colorScheme.primaryContainer
+                } else {
+                    Color.Transparent
+                },
+            )
+            .clickable(onClick = onClick)
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .size(18.dp)
+                .clip(CircleShape)
+                .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent),
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(network.labelRes),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = stringResource(network.familyRes),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SelectedNetworkPill(selectedNetwork: WalletImportNetwork) {
+    Row(
+        modifier = Modifier
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.primaryContainer)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.wallet_setup_selected_network),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.Bold,
+        )
+        Text(
+            text = stringResource(selectedNetwork.labelRes),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+        )
+    }
+}
+
+@Composable
+private fun ReviewTextRow(
     @StringRes titleRes: Int,
-    @StringRes valueRes: Int,
+    value: String,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -810,7 +1225,7 @@ private fun ReviewRow(
             modifier = Modifier.weight(1f),
         )
         Text(
-            text = stringResource(valueRes),
+            text = value,
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.Bold,
@@ -821,19 +1236,11 @@ private fun ReviewRow(
 
 @Composable
 private fun SetupActions(
-    mode: WalletSetupMode,
-    stepIndex: Int,
-    stepCount: Int,
+    @StringRes primaryTextRes: Int,
+    @StringRes secondaryTextRes: Int,
     onPrimaryClick: () -> Unit,
     onSecondaryClick: () -> Unit,
 ) {
-    val isLastStep = stepIndex == stepCount - 1
-    val primaryTextRes = when {
-        !isLastStep -> R.string.wallet_setup_action_continue
-        mode == WalletSetupMode.Create -> R.string.wallet_setup_action_create_wallet
-        else -> R.string.wallet_setup_action_import_wallet
-    }
-
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -864,13 +1271,7 @@ private fun SetupActions(
             border = BorderStroke(1.dp, SatraButtonSecondaryBorder),
         ) {
             Text(
-                text = stringResource(
-                    if (stepIndex == 0) {
-                        R.string.wallet_setup_action_cancel
-                    } else {
-                        R.string.wallet_setup_action_previous
-                    },
-                ),
+                text = stringResource(secondaryTextRes),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
             )
@@ -958,9 +1359,114 @@ private val importWalletSteps = listOf(
     ),
 )
 
-private enum class ImportMethod {
-    RecoveryPhrase,
-    ViewOnly,
+private fun setupPrimaryActionRes(
+    mode: WalletSetupMode,
+    stepIndex: Int,
+    stepCount: Int,
+): Int {
+    val isLastStep = stepIndex == stepCount - 1
+    return when {
+        !isLastStep -> R.string.wallet_setup_action_continue
+        mode == WalletSetupMode.Create -> R.string.wallet_setup_action_create_wallet
+        else -> R.string.wallet_setup_action_import_wallet
+    }
+}
+
+private fun importPrimaryActionRes(
+    step: ImportSetupStep,
+    method: WalletImportMethod,
+): Int = when {
+    step != ImportSetupStep.Security -> R.string.wallet_setup_action_continue
+    method == WalletImportMethod.PrivateKey -> R.string.wallet_setup_action_import_private_key
+    method == WalletImportMethod.WatchOnly -> R.string.wallet_setup_action_add_watch_only
+    else -> R.string.wallet_setup_action_import_wallet
+}
+
+private fun importStepCount(
+    method: WalletImportMethod,
+    step: ImportSetupStep,
+): Int = if (method == WalletImportMethod.RecoveryPhrase || step == ImportSetupStep.Method) {
+    4
+} else {
+    5
+}
+
+private fun importStepNumber(
+    method: WalletImportMethod,
+    step: ImportSetupStep,
+): Int = when (step) {
+    ImportSetupStep.Method -> 1
+    ImportSetupStep.Chain -> 2
+    ImportSetupStep.RecoveryPhrase -> 2
+    ImportSetupStep.PrivateKey,
+    ImportSetupStep.WatchOnlyAddress -> 3
+    ImportSetupStep.Review -> if (method == WalletImportMethod.RecoveryPhrase) 3 else 4
+    ImportSetupStep.Security -> if (method == WalletImportMethod.RecoveryPhrase) 4 else 5
+}
+
+private fun importSetupStep(
+    step: ImportSetupStep,
+    method: WalletImportMethod,
+): SetupStep = when (step) {
+    ImportSetupStep.Method -> SetupStep(
+        eyebrowRes = R.string.wallet_setup_import_step_method_eyebrow,
+        titleRes = R.string.wallet_setup_import_step_method_title,
+        bodyRes = R.string.wallet_setup_import_step_method_body,
+        iconRes = R.drawable.ic_brand_receive,
+    )
+
+    ImportSetupStep.Chain -> SetupStep(
+        eyebrowRes = R.string.wallet_setup_import_step_chain_eyebrow,
+        titleRes = R.string.wallet_setup_import_step_chain_title,
+        bodyRes = R.string.wallet_setup_import_step_chain_body,
+        iconRes = R.drawable.ic_brand_assets,
+    )
+
+    ImportSetupStep.RecoveryPhrase -> SetupStep(
+        eyebrowRes = R.string.wallet_setup_import_step_phrase_eyebrow,
+        titleRes = R.string.wallet_setup_import_step_phrase_title,
+        bodyRes = R.string.wallet_setup_import_step_phrase_body,
+        iconRes = R.drawable.ic_brand_wallet,
+    )
+
+    ImportSetupStep.PrivateKey -> SetupStep(
+        eyebrowRes = R.string.wallet_setup_import_step_private_key_eyebrow,
+        titleRes = R.string.wallet_setup_import_step_private_key_title,
+        bodyRes = R.string.wallet_setup_import_step_private_key_body,
+        iconRes = R.drawable.ic_brand_security,
+    )
+
+    ImportSetupStep.WatchOnlyAddress -> SetupStep(
+        eyebrowRes = R.string.wallet_setup_import_step_watch_address_eyebrow,
+        titleRes = R.string.wallet_setup_import_step_watch_address_title,
+        bodyRes = R.string.wallet_setup_import_step_watch_address_body,
+        iconRes = R.drawable.ic_brand_scan,
+    )
+
+    ImportSetupStep.Review -> SetupStep(
+        eyebrowRes = R.string.wallet_setup_import_step_review_eyebrow,
+        titleRes = if (method == WalletImportMethod.RecoveryPhrase) {
+            R.string.wallet_setup_import_step_review_title
+        } else {
+            R.string.wallet_setup_import_step_branch_review_title
+        },
+        bodyRes = R.string.wallet_setup_import_step_review_body,
+        iconRes = R.drawable.ic_brand_list,
+    )
+
+    ImportSetupStep.Security -> SetupStep(
+        eyebrowRes = R.string.wallet_setup_import_step_security_eyebrow,
+        titleRes = R.string.wallet_setup_import_step_security_title,
+        bodyRes = R.string.wallet_setup_import_step_security_body,
+        iconRes = R.drawable.ic_brand_settings,
+    )
+}
+
+@StringRes
+private fun importReviewSourceRes(method: WalletImportMethod): Int = when (method) {
+    WalletImportMethod.RecoveryPhrase -> R.string.wallet_setup_review_source_recovery_phrase
+    WalletImportMethod.PrivateKey -> R.string.wallet_setup_review_source_private_key
+    WalletImportMethod.WatchOnly -> R.string.wallet_setup_review_source_watch_only
 }
 
 private enum class SetupWindowSize {
@@ -998,7 +1504,30 @@ private fun CreateWalletSetupPreview() {
 @Composable
 private fun ImportWalletSetupPreview() {
     SatraTheme {
-        SatraWalletSetupScreen(mode = WalletSetupMode.Import)
+        SatraImportWalletSetupScreen(step = ImportSetupStep.Method)
+    }
+}
+
+@Preview(showBackground = true, widthDp = 393, heightDp = 852)
+@Composable
+private fun PrivateKeyChainSetupPreview() {
+    SatraTheme {
+        SatraImportWalletSetupScreen(
+            step = ImportSetupStep.Chain,
+            method = WalletImportMethod.PrivateKey,
+        )
+    }
+}
+
+@Preview(showBackground = true, widthDp = 393, heightDp = 852)
+@Composable
+private fun WatchOnlyAddressSetupPreview() {
+    SatraTheme {
+        SatraImportWalletSetupScreen(
+            step = ImportSetupStep.WatchOnlyAddress,
+            method = WalletImportMethod.WatchOnly,
+            network = WalletImportNetwork.Ethereum,
+        )
     }
 }
 
