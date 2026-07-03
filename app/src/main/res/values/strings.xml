@@ -247,6 +247,7 @@
     <string name="main_nav_markets">Markets</string>
     <string name="main_nav_settings">Settings</string>
     <string name="home_wallet_status_ready">Ready</string>
+    <string name="home_wallet_status_syncing">Syncing</string>
     <string name="home_wallet_label">Main wallet</string>
     <string name="home_balance_title">Total balance</string>
     <string name="home_balance_currency_usd">USD</string>
@@ -258,6 +259,7 @@
     <string name="home_chart_range">7-day view</string>
     <string name="home_chart_value_placeholder">No activity yet</string>
     <string name="home_assets_title">Coins &amp; tokens</string>
+    <string name="home_assets_count">%1$d assets</string>
     <string name="home_assets_count_placeholder">5 shown</string>
     <string name="home_ready_body">Your Satra wallet is ready. Asset, account, and transaction screens will be connected as wallet core work begins.</string>
     <string name="onboarding_receive_label">Receive</string>

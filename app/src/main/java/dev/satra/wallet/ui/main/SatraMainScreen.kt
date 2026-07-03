@@ -36,8 +36,11 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -57,9 +60,19 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import dev.satra.wallet.R
+import dev.satra.wallet.data.assets.SupportedAssetCatalog
+import dev.satra.wallet.data.db.SatraWalletRepository
+import dev.satra.wallet.data.db.WalletAssetRecord
+import dev.satra.wallet.data.db.WalletRecord
+import java.math.BigDecimal
+import java.text.NumberFormat
+import java.util.Currency
+import java.util.Locale
 
 @Composable
-fun SatraMainScreen() {
+fun SatraMainScreen(
+    walletRepository: SatraWalletRepository,
+) {
     val tabNavController = rememberNavController()
     val tabs = remember { SatraMainTab.entries }
     val backStackEntry by tabNavController.currentBackStackEntryAsState()
@@ -92,7 +105,7 @@ fun SatraMainScreen() {
                 .padding(paddingValues),
         ) {
             composable(SatraMainTab.Home.route) {
-                SatraHomeDashboard()
+                SatraHomeDashboard(walletRepository = walletRepository)
             }
             composable(SatraMainTab.Activity.route) {
                 SatraMainPlaceholderTab(title = stringResource(R.string.main_nav_activity))
@@ -148,50 +161,48 @@ private fun SatraBottomNavigationBar(
 }
 
 @Composable
-private fun SatraHomeDashboard() {
-    val assets = remember {
-        listOf(
-            HomeAssetRow(
-                iconRes = R.drawable.ic_chain_bitcoin,
-                symbol = "BTC",
-                name = "Bitcoin",
-                network = "Bitcoin",
-                amount = "0 BTC",
-                fiatValue = "$0.00",
-            ),
-            HomeAssetRow(
-                iconRes = R.drawable.ic_chain_ethereum,
-                symbol = "ETH",
-                name = "Ether",
-                network = "Ethereum",
-                amount = "0 ETH",
-                fiatValue = "$0.00",
-            ),
-            HomeAssetRow(
-                iconRes = R.drawable.ic_chain_base,
-                symbol = "USDC",
-                name = "USD Coin",
-                network = "Base",
-                amount = "0 USDC",
-                fiatValue = "$0.00",
-            ),
-            HomeAssetRow(
-                iconRes = R.drawable.ic_chain_bnb_chain,
-                symbol = "BNB",
-                name = "BNB",
-                network = "BNB Chain",
-                amount = "0 BNB",
-                fiatValue = "$0.00",
-            ),
-            HomeAssetRow(
-                iconRes = R.drawable.ic_chain_solana,
-                symbol = "SOL",
-                name = "Solana",
-                network = "Solana",
-                amount = "0 SOL",
-                fiatValue = "$0.00",
-            ),
+private fun SatraHomeDashboard(
+    walletRepository: SatraWalletRepository,
+) {
+    var homeState by remember { mutableStateOf<HomeDashboardState>(HomeDashboardState.Loading) }
+
+    LaunchedEffect(walletRepository) {
+        val wallet = walletRepository.getPrimaryWallet()
+        if (wallet == null) {
+            homeState = HomeDashboardState.Content(
+                walletName = "",
+                status = HomeSyncStatus.Ready,
+                totalBalance = formatFiat("0", "USD"),
+                currencyCode = "USD",
+                assets = emptyList(),
+            )
+            return@LaunchedEffect
+        }
+
+        suspend fun loadContent(status: HomeSyncStatus) {
+            val walletAssets = walletRepository.getWalletAssets(wallet.walletId)
+            homeState = wallet.toHomeDashboardState(
+                walletAssets = walletAssets,
+                status = status,
+            )
+        }
+
+        loadContent(HomeSyncStatus.Syncing)
+        runCatching {
+            walletRepository.syncEvmWallet(wallet.walletId)
+        }
+        loadContent(HomeSyncStatus.Ready)
+    }
+
+    val content = when (val state = homeState) {
+        HomeDashboardState.Loading -> HomeDashboardState.Content(
+            walletName = "",
+            status = HomeSyncStatus.Syncing,
+            totalBalance = formatFiat("0", "USD"),
+            currencyCode = "USD",
+            assets = emptyList(),
         )
+        is HomeDashboardState.Content -> state
     }
 
     LazyColumn(
@@ -207,18 +218,26 @@ private fun SatraHomeDashboard() {
                     .widthIn(max = HomeContentMaxWidth)
                     .padding(horizontal = 20.dp, vertical = 20.dp),
             ) {
-                SatraHomeHeader()
+                SatraHomeHeader(
+                    walletName = content.walletName.ifBlank {
+                        stringResource(R.string.home_wallet_label)
+                    },
+                    status = content.status,
+                )
                 Spacer(modifier = Modifier.height(20.dp))
-                HomeBalanceCard()
+                HomeBalanceCard(
+                    totalBalance = content.totalBalance,
+                    currencyCode = content.currencyCode,
+                )
                 Spacer(modifier = Modifier.height(14.dp))
-                HomeChartCard()
+                HomeChartCard(totalBalance = content.totalBalance)
                 Spacer(modifier = Modifier.height(22.dp))
-                HomeAssetsHeader()
+                HomeAssetsHeader(assetCount = content.assets.size)
             }
         }
         items(
-            items = assets,
-            key = { asset -> "${asset.symbol}-${asset.network}" },
+            items = content.assets,
+            key = { asset -> asset.assetId },
         ) { asset ->
             HomeAssetListRow(
                 asset = asset,
@@ -235,7 +254,10 @@ private fun SatraHomeDashboard() {
 }
 
 @Composable
-private fun SatraHomeHeader() {
+private fun SatraHomeHeader(
+    walletName: String,
+    status: HomeSyncStatus,
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -249,7 +271,7 @@ private fun SatraHomeHeader() {
                 fontWeight = FontWeight.Bold,
             )
             Text(
-                text = stringResource(R.string.home_wallet_label),
+                text = walletName,
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Bold,
@@ -270,7 +292,7 @@ private fun SatraHomeHeader() {
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = stringResource(R.string.home_wallet_status_ready),
+                text = stringResource(status.labelRes),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold,
@@ -280,7 +302,10 @@ private fun SatraHomeHeader() {
 }
 
 @Composable
-private fun HomeBalanceCard() {
+private fun HomeBalanceCard(
+    totalBalance: String,
+    currencyCode: String,
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -304,7 +329,7 @@ private fun HomeBalanceCard() {
                         fontWeight = FontWeight.Bold,
                     )
                     Text(
-                        text = stringResource(R.string.home_balance_currency_usd),
+                        text = currencyCode,
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.inverseOnSurface.copy(alpha = 0.58f),
                         fontWeight = FontWeight.Bold,
@@ -319,7 +344,7 @@ private fun HomeBalanceCard() {
             }
             Spacer(modifier = Modifier.height(18.dp))
             Text(
-                text = stringResource(R.string.home_balance_placeholder),
+                text = totalBalance,
                 style = MaterialTheme.typography.displayLarge,
                 color = MaterialTheme.colorScheme.inverseOnSurface,
                 fontWeight = FontWeight.Bold,
@@ -407,7 +432,9 @@ private fun HomeSecondaryActionButton(
 }
 
 @Composable
-private fun HomeChartCard() {
+private fun HomeChartCard(
+    totalBalance: String,
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -437,7 +464,7 @@ private fun HomeChartCard() {
                     )
                 }
                 Text(
-                    text = stringResource(R.string.home_chart_value_placeholder),
+                    text = totalBalance,
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Bold,
@@ -511,7 +538,9 @@ private fun HomeBalanceChart(
 }
 
 @Composable
-private fun HomeAssetsHeader() {
+private fun HomeAssetsHeader(
+    assetCount: Int,
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -524,7 +553,7 @@ private fun HomeAssetsHeader() {
             fontWeight = FontWeight.Bold,
         )
         Text(
-            text = stringResource(R.string.home_assets_count_placeholder),
+            text = stringResource(R.string.home_assets_count, assetCount),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = FontWeight.Bold,
@@ -623,13 +652,132 @@ private fun SatraMainPlaceholderTab(
 }
 
 private data class HomeAssetRow(
+    val assetId: String,
     @DrawableRes val iconRes: Int,
     val symbol: String,
     val name: String,
     val network: String,
     val amount: String,
     val fiatValue: String,
+    val hasBalance: Boolean,
+    val isNative: Boolean,
 )
+
+private sealed interface HomeDashboardState {
+    data object Loading : HomeDashboardState
+
+    data class Content(
+        val walletName: String,
+        val status: HomeSyncStatus,
+        val totalBalance: String,
+        val currencyCode: String,
+        val assets: List<HomeAssetRow>,
+    ) : HomeDashboardState
+}
+
+private enum class HomeSyncStatus(@StringRes val labelRes: Int) {
+    Ready(R.string.home_wallet_status_ready),
+    Syncing(R.string.home_wallet_status_syncing),
+}
+
+private fun WalletRecord.toHomeDashboardState(
+    walletAssets: List<WalletAssetRecord>,
+    status: HomeSyncStatus,
+): HomeDashboardState.Content {
+    val totalFiat = walletAssets.fold(BigDecimal.ZERO) { total, asset ->
+        total + asset.balanceFiatValue.toBigDecimalOrZero()
+    }
+    return HomeDashboardState.Content(
+        walletName = walletName,
+        status = status,
+        totalBalance = formatFiat(totalFiat.toPlainString(), localCurrencyCode),
+        currencyCode = localCurrencyCode,
+        assets = walletAssets.toHomeAssetRows(localCurrencyCode),
+    )
+}
+
+private fun List<WalletAssetRecord>.toHomeAssetRows(localCurrencyCode: String): List<HomeAssetRow> {
+    val catalogAssetsById = SupportedAssetCatalog.assets.associateBy { it.assetId }
+    val networksById = SupportedAssetCatalog.networks.associateBy { it.networkId }
+    return mapNotNull { walletAsset ->
+        val asset = catalogAssetsById[walletAsset.assetId] ?: return@mapNotNull null
+        val network = networksById[walletAsset.networkId] ?: return@mapNotNull null
+        val balance = walletAsset.balanceDecimal.toBigDecimalOrZero()
+        HomeAssetRow(
+            assetId = walletAsset.assetId,
+            iconRes = networkIconRes(walletAsset.networkId),
+            symbol = asset.symbol,
+            name = asset.name,
+            network = network.displayName,
+            amount = "${formatCryptoAmount(walletAsset.balanceDecimal)} ${asset.symbol}",
+            fiatValue = formatFiat(walletAsset.balanceFiatValue, localCurrencyCode),
+            hasBalance = balance > BigDecimal.ZERO,
+            isNative = asset.assetType == "NATIVE",
+        )
+    }.sortedWith(
+        compareByDescending<HomeAssetRow> { it.hasBalance }
+            .thenByDescending { it.isNative }
+            .thenBy { it.network }
+            .thenBy { it.symbol },
+    )
+}
+
+private fun formatCryptoAmount(value: String): String {
+    val decimal = value.toBigDecimalOrZero().stripTrailingZeros()
+    return if (decimal.compareTo(BigDecimal.ZERO) == 0) {
+        "0"
+    } else {
+        decimal.toPlainString()
+    }
+}
+
+private fun formatFiat(
+    value: String,
+    currencyCode: String,
+): String {
+    val amount = value.toBigDecimalOrZero()
+    val formatter = NumberFormat.getCurrencyInstance(Locale.US).apply {
+        runCatching {
+            currency = Currency.getInstance(currencyCode)
+        }
+    }
+    return formatter.format(amount)
+}
+
+private fun String.toBigDecimalOrZero(): BigDecimal =
+    runCatching { BigDecimal(this) }.getOrDefault(BigDecimal.ZERO)
+
+@DrawableRes
+private fun networkIconRes(networkId: String): Int =
+    when (networkId) {
+        "bitcoin" -> R.drawable.ic_chain_bitcoin
+        "bitcoinCash" -> R.drawable.ic_chain_bitcoin_cash
+        "dogecoin" -> R.drawable.ic_chain_dogecoin
+        "litecoin" -> R.drawable.ic_chain_litecoin
+        "ethereum" -> R.drawable.ic_chain_ethereum
+        "arbitrum" -> R.drawable.ic_chain_arbitrum
+        "base" -> R.drawable.ic_chain_base
+        "optimism" -> R.drawable.ic_chain_optimism
+        "scroll" -> R.drawable.ic_chain_scroll
+        "zkSync" -> R.drawable.ic_chain_zksync
+        "polygon" -> R.drawable.ic_chain_polygon
+        "bnbChain" -> R.drawable.ic_chain_bnb_chain
+        "opBNB" -> R.drawable.ic_chain_opbnb
+        "avalanche" -> R.drawable.ic_chain_avalanche
+        "celo" -> R.drawable.ic_chain_celo
+        "kavaEvm" -> R.drawable.ic_chain_kava_evm
+        "aptos" -> R.drawable.ic_chain_aptos
+        "near" -> R.drawable.ic_chain_near
+        "polkadot" -> R.drawable.ic_chain_polkadot
+        "ripple" -> R.drawable.ic_chain_xrp_ledger
+        "solana" -> R.drawable.ic_chain_solana
+        "stellar" -> R.drawable.ic_chain_stellar
+        "sui" -> R.drawable.ic_chain_sui
+        "ton" -> R.drawable.ic_chain_ton
+        "tron" -> R.drawable.ic_chain_tron
+        "kava" -> R.drawable.ic_chain_kava
+        else -> R.drawable.ic_brand_assets
+    }
 
 private enum class SatraMainTab(
     val route: String,

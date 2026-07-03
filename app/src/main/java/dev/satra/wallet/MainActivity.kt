@@ -649,7 +649,7 @@ class MainActivity : ComponentActivity() {
                     }
 
                     composable(SatraRoute.MAIN) {
-                        SatraMainScreen()
+                        SatraMainScreen(walletRepository = walletRepository)
                     }
                 }
             }

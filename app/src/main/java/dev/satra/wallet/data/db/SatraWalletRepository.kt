@@ -122,6 +122,17 @@ class SatraWalletRepository(
         return walletId
     }
 
+    suspend fun getPrimaryWallet(): WalletRecord? =
+        withContext(Dispatchers.IO) {
+            val wallets = walletDao.getWallets()
+            wallets.firstOrNull { it.isActive } ?: wallets.firstOrNull()
+        }
+
+    suspend fun getWalletAssets(walletId: String): List<WalletAssetRecord> =
+        withContext(Dispatchers.IO) {
+            walletDao.getWalletAssets(walletId)
+        }
+
     suspend fun syncEvmWallet(walletId: String): EvmWalletSyncResult =
         withContext(Dispatchers.IO) {
             val wallet = walletDao.getWallet(walletId)
