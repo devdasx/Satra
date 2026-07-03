@@ -23,19 +23,26 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,11 +54,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -360,6 +368,8 @@ fun SetupPasscodeScreen(
     onSkip: () -> Unit = {},
 ) {
     var passcode by rememberSaveable { mutableStateOf("") }
+    var passcodeLength by rememberSaveable { mutableStateOf(DEFAULT_PASSCODE_LENGTH) }
+    var showPasscodeOptions by rememberSaveable { mutableStateOf(false) }
 
     WalletSetupRouteScreen(
         titleRes = R.string.wallet_setup_screen_create_passcode,
@@ -369,19 +379,41 @@ fun SetupPasscodeScreen(
         ),
         settings = settings,
         primaryTextRes = R.string.wallet_setup_action_set_passcode,
-        secondaryTextRes = R.string.wallet_setup_action_skip_for_now,
-        primaryEnabled = passcode.length == PASSCODE_LENGTH,
+        primaryEnabled = passcode.length == passcodeLength,
         onBack = onBack,
         onPrimaryClick = { onPasscodeCreated(passcode) },
-        onSecondaryClick = onSkip,
-    ) {
+    ) { performHaptic ->
         PasscodeEntryPanel(
             passcode = passcode,
+            passcodeLength = passcodeLength,
             onPasscodeChange = { value ->
-                passcode = value.filter(Char::isDigit).take(PASSCODE_LENGTH)
+                passcode = value.filter(Char::isDigit).take(passcodeLength)
             },
             noteRes = R.string.wallet_setup_passcode_note,
+            onOptionsClick = {
+                performHaptic()
+                showPasscodeOptions = true
+            },
         )
+
+        if (showPasscodeOptions) {
+            PasscodeOptionsBottomSheet(
+                selectedPasscodeLength = passcodeLength,
+                onPasscodeLengthSelected = { selectedLength ->
+                    passcodeLength = selectedLength
+                    passcode = passcode.take(selectedLength)
+                    showPasscodeOptions = false
+                },
+                onSkip = {
+                    showPasscodeOptions = false
+                    onSkip()
+                },
+                onDismissRequest = {
+                    showPasscodeOptions = false
+                },
+                performHaptic = performHaptic,
+            )
+        }
     }
 }
 
@@ -394,7 +426,9 @@ fun SetupConfirmPasscodeScreen(
     onConfirmed: () -> Unit = {},
 ) {
     var confirmation by rememberSaveable(expectedPasscode) { mutableStateOf("") }
-    val isComplete = confirmation.length == PASSCODE_LENGTH
+    val passcodeLength = expectedPasscode.length.takeIf { it in supportedPasscodeLengths }
+        ?: DEFAULT_PASSCODE_LENGTH
+    val isComplete = confirmation.length == passcodeLength
     val matches = expectedPasscode.isNotBlank() && confirmation == expectedPasscode
 
     WalletSetupRouteScreen(
@@ -411,8 +445,9 @@ fun SetupConfirmPasscodeScreen(
     ) {
         PasscodeEntryPanel(
             passcode = confirmation,
+            passcodeLength = passcodeLength,
             onPasscodeChange = { value ->
-                confirmation = value.filter(Char::isDigit).take(PASSCODE_LENGTH)
+                confirmation = value.filter(Char::isDigit).take(passcodeLength)
             },
             noteRes = if (isComplete && !matches) {
                 R.string.wallet_setup_passcode_mismatch
@@ -774,44 +809,84 @@ private fun BackupChecklist(performHaptic: () -> Unit) {
 @Composable
 private fun PasscodeEntryPanel(
     passcode: String,
+    passcodeLength: Int,
     onPasscodeChange: (String) -> Unit,
     @StringRes noteRes: Int,
     isError: Boolean = false,
+    onOptionsClick: (() -> Unit)? = null,
 ) {
     FramedTool {
-        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
-            ) {
-                repeat(PASSCODE_LENGTH) { index ->
-                    PasscodeDot(filled = index < passcode.length)
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            PasscodePinInput(
+                passcode = passcode,
+                passcodeLength = passcodeLength,
+                onPasscodeChange = onPasscodeChange,
+            )
+
+            onOptionsClick?.let {
+                TextButton(onClick = it) {
+                    Text(
+                        text = stringResource(R.string.wallet_setup_passcode_options),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                    )
                 }
             }
 
-            OutlinedTextField(
-                value = passcode,
-                onValueChange = onPasscodeChange,
+            Text(
+                text = stringResource(noteRes),
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (isError) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
                 modifier = Modifier.fillMaxWidth(),
-                textStyle = MaterialTheme.typography.headlineSmall,
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-                singleLine = true,
-                isError = isError,
-                placeholder = {
-                    Text(text = stringResource(R.string.wallet_setup_passcode_placeholder))
-                },
-                supportingText = {
-                    Text(
-                        text = stringResource(noteRes),
-                        color = if (isError) {
-                            MaterialTheme.colorScheme.error
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        },
-                    )
-                },
             )
+        }
+    }
+}
+
+@Composable
+private fun PasscodePinInput(
+    passcode: String,
+    passcodeLength: Int,
+    onPasscodeChange: (String) -> Unit,
+) {
+    val focusRequester = remember { FocusRequester() }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .clip(MaterialTheme.shapes.medium)
+            .clickable {
+                focusRequester.requestFocus()
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        BasicTextField(
+            value = passcode,
+            onValueChange = onPasscodeChange,
+            modifier = Modifier
+                .fillMaxSize()
+                .focusRequester(focusRequester),
+            textStyle = MaterialTheme.typography.bodyLarge.copy(color = Color.Transparent),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+            cursorBrush = SolidColor(Color.Transparent),
+            singleLine = true,
+        )
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            repeat(passcodeLength) { index ->
+                PasscodeDot(filled = index < passcode.length)
+            }
         }
     }
 }
@@ -835,6 +910,105 @@ private fun PasscodeDot(filled: Boolean) {
                 shape = CircleShape,
             ),
     )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PasscodeOptionsBottomSheet(
+    selectedPasscodeLength: Int,
+    onPasscodeLengthSelected: (Int) -> Unit,
+    onSkip: () -> Unit,
+    onDismissRequest: () -> Unit,
+    performHaptic: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismissRequest,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 32.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.wallet_setup_passcode_options_sheet_title),
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 12.dp),
+            )
+            PasscodeOptionRow(
+                titleRes = R.string.wallet_setup_passcode_use_six,
+                bodyRes = R.string.wallet_setup_passcode_use_six_body,
+                selected = selectedPasscodeLength == DEFAULT_PASSCODE_LENGTH,
+                onClick = {
+                    performHaptic()
+                    onPasscodeLengthSelected(DEFAULT_PASSCODE_LENGTH)
+                },
+            )
+            PasscodeOptionRow(
+                titleRes = R.string.wallet_setup_passcode_use_four,
+                bodyRes = R.string.wallet_setup_passcode_use_four_body,
+                selected = selectedPasscodeLength == SHORT_PASSCODE_LENGTH,
+                onClick = {
+                    performHaptic()
+                    onPasscodeLengthSelected(SHORT_PASSCODE_LENGTH)
+                },
+            )
+            PasscodeOptionRow(
+                titleRes = R.string.wallet_setup_action_skip_for_now,
+                bodyRes = R.string.wallet_setup_passcode_skip_body,
+                selected = null,
+                onClick = {
+                    performHaptic()
+                    onSkip()
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun PasscodeOptionRow(
+    @StringRes titleRes: Int,
+    @StringRes bodyRes: Int,
+    selected: Boolean?,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .clickable(onClick = onClick)
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        selected?.let {
+            RadioButton(
+                selected = it,
+                onClick = null,
+            )
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(titleRes),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = stringResource(bodyRes),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
 }
 
 @Composable
@@ -1531,7 +1705,12 @@ private enum class SetupWindowSize {
     }
 }
 
-private const val PASSCODE_LENGTH = 6
+private const val DEFAULT_PASSCODE_LENGTH = 6
+private const val SHORT_PASSCODE_LENGTH = 4
+private val supportedPasscodeLengths = setOf(
+    SHORT_PASSCODE_LENGTH,
+    DEFAULT_PASSCODE_LENGTH,
+)
 
 private fun performSetupHaptic(
     hapticFeedback: HapticFeedback,
