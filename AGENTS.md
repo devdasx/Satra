@@ -4,5 +4,8 @@
 - GitHub repository: `devdasx/Satra`.
 - After any file edit, run the relevant available checks, commit the edit, and push to `origin` before ending the turn, unless the user explicitly says not to push.
 - Keep the Android app UI in Kotlin, Jetpack Compose, and Material 3.
+- Support system light and dark mode using native Material 3 behavior and dynamic color where available.
+- Every screen must be responsive across compact phones, tablets, foldables, and desktop-class/windowed Android surfaces.
+- Put every user-facing string in English resource keys under `app/src/main/res/values/strings.xml` as soon as it is added. Do not leave visible text hardcoded in Compose.
+- Track future localization for the top 25 languages by total speakers; keep English as the source language until the full-app translation pass.
 - Keep the wallet-core direction non-custodial with Rust and BDK. Do not introduce custodial wallet assumptions.
-

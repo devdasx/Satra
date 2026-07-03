@@ -1,5 +1,6 @@
 package dev.satra.wallet.ui.onboarding
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -43,10 +44,13 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import dev.satra.wallet.R
 import dev.satra.wallet.ui.theme.SatraTheme
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -64,48 +68,195 @@ fun SatraOnboardingScreen(
             .background(MaterialTheme.colorScheme.surface),
     ) {
         val screenHeight = maxHeight
-        val compact = screenHeight < 740.dp
-        val artworkHeight = if (compact) 218.dp else 292.dp
+        val windowSize = remember(maxWidth) { OnboardingWindowSize.from(maxWidth) }
+        val compactHeight = screenHeight < 740.dp
 
         Box(modifier = Modifier.fillMaxSize()) {
             AmbientLedgerBackground()
 
-            Column(
+            when (windowSize) {
+                OnboardingWindowSize.Compact -> OnboardingSinglePaneLayout(
+                    pages = pages,
+                    selectedPage = pagerState.currentPage,
+                    pageContent = {
+                        HorizontalPager(
+                            state = pagerState,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 164.dp),
+                            pageSpacing = 18.dp,
+                        ) { pageIndex ->
+                            OnboardingCopy(page = pages[pageIndex])
+                        }
+                    },
+                    onCreateWallet = onCreateWallet,
+                    onRestoreWallet = onRestoreWallet,
+                    screenHeight = screenHeight,
+                    contentMaxWidth = 460.dp,
+                    horizontalPadding = 24.dp,
+                    artworkHeight = if (compactHeight) 218.dp else 292.dp,
+                    compactHeight = compactHeight,
+                )
+
+                OnboardingWindowSize.Medium -> OnboardingSinglePaneLayout(
+                    pages = pages,
+                    selectedPage = pagerState.currentPage,
+                    pageContent = {
+                        HorizontalPager(
+                            state = pagerState,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 174.dp),
+                            pageSpacing = 22.dp,
+                        ) { pageIndex ->
+                            OnboardingCopy(page = pages[pageIndex])
+                        }
+                    },
+                    onCreateWallet = onCreateWallet,
+                    onRestoreWallet = onRestoreWallet,
+                    screenHeight = screenHeight,
+                    contentMaxWidth = 560.dp,
+                    horizontalPadding = 48.dp,
+                    artworkHeight = 340.dp,
+                    compactHeight = compactHeight,
+                )
+
+                OnboardingWindowSize.Expanded -> OnboardingExpandedLayout(
+                    pages = pages,
+                    selectedPage = pagerState.currentPage,
+                    pageContent = {
+                        HorizontalPager(
+                            state = pagerState,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 210.dp),
+                            pageSpacing = 24.dp,
+                        ) { pageIndex ->
+                            OnboardingCopy(page = pages[pageIndex])
+                        }
+                    },
+                    onCreateWallet = onCreateWallet,
+                    onRestoreWallet = onRestoreWallet,
+                    screenHeight = screenHeight,
+                    compactHeight = compactHeight,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun OnboardingSinglePaneLayout(
+    pages: List<OnboardingPage>,
+    selectedPage: Int,
+    pageContent: @Composable () -> Unit,
+    onCreateWallet: () -> Unit,
+    onRestoreWallet: () -> Unit,
+    screenHeight: Dp,
+    contentMaxWidth: Dp,
+    horizontalPadding: Dp,
+    artworkHeight: Dp,
+    compactHeight: Boolean,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .safeDrawingPadding()
+            .padding(horizontal = horizontalPadding, vertical = 20.dp),
+        contentAlignment = Alignment.TopCenter,
+    ) {
+        Column(
+            modifier = Modifier
+                .widthIn(max = contentMaxWidth)
+                .fillMaxWidth()
+                .heightIn(min = screenHeight),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween,
+        ) {
+            SatraHeader(modifier = Modifier.fillMaxWidth())
+
+            Spacer(modifier = Modifier.height(if (compactHeight) 16.dp else 28.dp))
+
+            WalletArtwork(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = screenHeight)
-                    .verticalScroll(rememberScrollState())
-                    .safeDrawingPadding()
-                    .padding(horizontal = 24.dp, vertical = 20.dp),
+                    .height(artworkHeight),
+            )
+
+            Spacer(modifier = Modifier.height(if (compactHeight) 18.dp else 26.dp))
+
+            pageContent()
+
+            PagerDots(
+                selectedPage = selectedPage,
+                count = pages.size,
+                modifier = Modifier.padding(top = 10.dp, bottom = if (compactHeight) 18.dp else 26.dp),
+            )
+
+            OnboardingActions(
+                onCreateWallet = onCreateWallet,
+                onRestoreWallet = onRestoreWallet,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+}
+
+@Composable
+private fun OnboardingExpandedLayout(
+    pages: List<OnboardingPage>,
+    selectedPage: Int,
+    pageContent: @Composable () -> Unit,
+    onCreateWallet: () -> Unit,
+    onRestoreWallet: () -> Unit,
+    screenHeight: Dp,
+    compactHeight: Boolean,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .safeDrawingPadding()
+            .padding(horizontal = 72.dp, vertical = 28.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Row(
+            modifier = Modifier
+                .widthIn(max = 1180.dp)
+                .fillMaxWidth()
+                .heightIn(min = screenHeight),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(64.dp),
+        ) {
+            Column(
+                modifier = Modifier.weight(1.1f),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.SpaceBetween,
             ) {
                 SatraHeader(modifier = Modifier.fillMaxWidth())
 
-                Spacer(modifier = Modifier.height(if (compact) 16.dp else 28.dp))
+                Spacer(modifier = Modifier.height(if (compactHeight) 28.dp else 48.dp))
 
                 WalletArtwork(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(artworkHeight),
+                        .height(if (compactHeight) 320.dp else 430.dp),
                 )
+            }
 
-                Spacer(modifier = Modifier.height(if (compact) 18.dp else 26.dp))
-
-                HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 164.dp),
-                    pageSpacing = 18.dp,
-                ) { page ->
-                    OnboardingCopy(page = pages[page])
-                }
+            Column(
+                modifier = Modifier
+                    .weight(0.9f)
+                    .widthIn(max = 460.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                pageContent()
 
                 PagerDots(
-                    selectedPage = pagerState.currentPage,
+                    selectedPage = selectedPage,
                     count = pages.size,
-                    modifier = Modifier.padding(top = 10.dp, bottom = if (compact) 18.dp else 26.dp),
+                    modifier = Modifier.padding(top = 14.dp, bottom = 30.dp),
                 )
 
                 OnboardingActions(
@@ -131,7 +282,7 @@ private fun SatraHeader(modifier: Modifier = Modifier) {
         ) {
             SatraMark()
             Text(
-                text = "Satra",
+                text = stringResource(R.string.app_name),
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.SemiBold,
@@ -139,7 +290,7 @@ private fun SatraHeader(modifier: Modifier = Modifier) {
         }
 
         Text(
-            text = "Bitcoin",
+            text = stringResource(R.string.bitcoin_label),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.SemiBold,
@@ -265,7 +416,7 @@ private fun WalletArtwork(modifier: Modifier = Modifier) {
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = "₿",
+                text = stringResource(R.string.bitcoin_symbol),
                 style = MaterialTheme.typography.displayMedium,
                 color = colorScheme.onPrimary,
                 fontWeight = FontWeight.Bold,
@@ -291,12 +442,12 @@ private fun WalletArtwork(modifier: Modifier = Modifier) {
             ) {
                 Column {
                     Text(
-                        text = "Receive",
+                        text = stringResource(R.string.onboarding_receive_label),
                         style = MaterialTheme.typography.labelMedium,
                         color = colorScheme.onSurfaceVariant,
                     )
                     Text(
-                        text = "bc1q...satra",
+                        text = stringResource(R.string.onboarding_receive_address_preview),
                         style = MaterialTheme.typography.titleMedium,
                         color = colorScheme.onSurface,
                         fontWeight = FontWeight.SemiBold,
@@ -348,7 +499,7 @@ private fun OnboardingCopy(page: OnboardingPage) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = page.eyebrow,
+            text = stringResource(page.eyebrowRes),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.SemiBold,
@@ -356,7 +507,7 @@ private fun OnboardingCopy(page: OnboardingPage) {
         )
         Spacer(modifier = Modifier.height(10.dp))
         Text(
-            text = page.title,
+            text = stringResource(page.titleRes),
             style = MaterialTheme.typography.displaySmall,
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
@@ -364,7 +515,7 @@ private fun OnboardingCopy(page: OnboardingPage) {
         )
         Spacer(modifier = Modifier.height(12.dp))
         Text(
-            text = page.body,
+            text = stringResource(page.bodyRes),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -431,7 +582,7 @@ private fun OnboardingActions(
             ),
         ) {
             Text(
-                text = "Create wallet",
+                text = stringResource(R.string.onboarding_action_create_wallet),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
@@ -444,14 +595,14 @@ private fun OnboardingActions(
                 .height(56.dp),
         ) {
             Text(
-                text = "Restore wallet",
+                text = stringResource(R.string.onboarding_action_restore_wallet),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
         }
 
         Text(
-            text = "No account. Local keys. Open source.",
+            text = stringResource(R.string.onboarding_footer),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -480,32 +631,62 @@ private fun AmbientLedgerBackground(modifier: Modifier = Modifier) {
 }
 
 private data class OnboardingPage(
-    val eyebrow: String,
-    val title: String,
-    val body: String,
+    @StringRes val eyebrowRes: Int,
+    @StringRes val titleRes: Int,
+    @StringRes val bodyRes: Int,
 )
 
 private val onboardingPages = listOf(
     OnboardingPage(
-        eyebrow = "Self-custody",
-        title = "Your bitcoin stays yours.",
-        body = "Create a wallet where recovery, signing, and privacy are designed around your device.",
+        eyebrowRes = R.string.onboarding_page_self_custody_eyebrow,
+        titleRes = R.string.onboarding_page_self_custody_title,
+        bodyRes = R.string.onboarding_page_self_custody_body,
     ),
     OnboardingPage(
-        eyebrow = "Clarity first",
-        title = "Know before you send.",
-        body = "Review addresses, network fees, and activity in a calm flow before any transaction moves.",
+        eyebrowRes = R.string.onboarding_page_clarity_eyebrow,
+        titleRes = R.string.onboarding_page_clarity_title,
+        bodyRes = R.string.onboarding_page_clarity_body,
     ),
     OnboardingPage(
-        eyebrow = "Open source",
-        title = "Built in the open.",
-        body = "Satra starts public from day one, with every design and code change visible as the wallet grows.",
+        eyebrowRes = R.string.onboarding_page_open_source_eyebrow,
+        titleRes = R.string.onboarding_page_open_source_title,
+        bodyRes = R.string.onboarding_page_open_source_body,
     ),
 )
+
+private enum class OnboardingWindowSize {
+    Compact,
+    Medium,
+    Expanded;
+
+    companion object {
+        fun from(width: Dp): OnboardingWindowSize = when {
+            width >= 840.dp -> Expanded
+            width >= 600.dp -> Medium
+            else -> Compact
+        }
+    }
+}
 
 @Preview(showBackground = true, widthDp = 393, heightDp = 852)
 @Composable
 private fun SatraOnboardingPreview() {
+    SatraTheme(dynamicColor = false) {
+        SatraOnboardingScreen()
+    }
+}
+
+@Preview(showBackground = true, widthDp = 800, heightDp = 1280)
+@Composable
+private fun SatraOnboardingTabletPreview() {
+    SatraTheme(dynamicColor = false) {
+        SatraOnboardingScreen()
+    }
+}
+
+@Preview(showBackground = true, widthDp = 1280, heightDp = 800)
+@Composable
+private fun SatraOnboardingExpandedPreview() {
     SatraTheme(dynamicColor = false) {
         SatraOnboardingScreen()
     }

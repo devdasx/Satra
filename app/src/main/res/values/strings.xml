@@ -1,5 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Satra</string>
+    <string name="bitcoin_symbol">₿</string>
+    <string name="bitcoin_label">Bitcoin</string>
+    <string name="onboarding_action_create_wallet">Create wallet</string>
+    <string name="onboarding_action_restore_wallet">Restore wallet</string>
+    <string name="onboarding_footer">No account. Local keys. Open source.</string>
+    <string name="onboarding_receive_label">Receive</string>
+    <string name="onboarding_receive_address_preview">bc1q…satra</string>
+    <string name="onboarding_page_self_custody_eyebrow">Self-custody</string>
+    <string name="onboarding_page_self_custody_title">Your bitcoin stays yours.</string>
+    <string name="onboarding_page_self_custody_body">Create a wallet where recovery, signing, and privacy are designed around your device.</string>
+    <string name="onboarding_page_clarity_eyebrow">Clarity first</string>
+    <string name="onboarding_page_clarity_title">Know before you send.</string>
+    <string name="onboarding_page_clarity_body">Review addresses, network fees, and activity in a calm flow before any transaction moves.</string>
+    <string name="onboarding_page_open_source_eyebrow">Open source</string>
+    <string name="onboarding_page_open_source_title">Built in the open.</string>
+    <string name="onboarding_page_open_source_body">Satra starts public from day one, with every design and code change visible as the wallet grows.</string>
 </resources>
-
