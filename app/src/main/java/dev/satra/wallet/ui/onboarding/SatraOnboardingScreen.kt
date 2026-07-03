@@ -701,10 +701,46 @@ private val onboardingPages = listOf(
         bodyRes = R.string.onboarding_page_self_custody_body,
     ),
     OnboardingPage(
+        visual = OnboardingArtwork.Import,
+        eyebrowRes = R.string.onboarding_page_import_eyebrow,
+        titleRes = R.string.onboarding_page_import_title,
+        bodyRes = R.string.onboarding_page_import_body,
+    ),
+    OnboardingPage(
+        visual = OnboardingArtwork.Assets,
+        eyebrowRes = R.string.onboarding_page_assets_eyebrow,
+        titleRes = R.string.onboarding_page_assets_title,
+        bodyRes = R.string.onboarding_page_assets_body,
+    ),
+    OnboardingPage(
+        visual = OnboardingArtwork.Receive,
+        eyebrowRes = R.string.onboarding_page_receive_eyebrow,
+        titleRes = R.string.onboarding_page_receive_title,
+        bodyRes = R.string.onboarding_page_receive_body,
+    ),
+    OnboardingPage(
         visual = OnboardingArtwork.Clarity,
         eyebrowRes = R.string.onboarding_page_clarity_eyebrow,
         titleRes = R.string.onboarding_page_clarity_title,
         bodyRes = R.string.onboarding_page_clarity_body,
+    ),
+    OnboardingPage(
+        visual = OnboardingArtwork.Scan,
+        eyebrowRes = R.string.onboarding_page_scan_eyebrow,
+        titleRes = R.string.onboarding_page_scan_title,
+        bodyRes = R.string.onboarding_page_scan_body,
+    ),
+    OnboardingPage(
+        visual = OnboardingArtwork.History,
+        eyebrowRes = R.string.onboarding_page_history_eyebrow,
+        titleRes = R.string.onboarding_page_history_title,
+        bodyRes = R.string.onboarding_page_history_body,
+    ),
+    OnboardingPage(
+        visual = OnboardingArtwork.Move,
+        eyebrowRes = R.string.onboarding_page_move_eyebrow,
+        titleRes = R.string.onboarding_page_move_title,
+        bodyRes = R.string.onboarding_page_move_body,
     ),
     OnboardingPage(
         visual = OnboardingArtwork.OpenSource,
@@ -723,9 +759,33 @@ private enum class OnboardingArtwork(
         primaryIconRes = R.drawable.ic_brand_security,
         contentDescriptionRes = R.string.onboarding_visual_self_custody_description,
     ),
+    Import(
+        primaryIconRes = R.drawable.ic_brand_wallet,
+        contentDescriptionRes = R.string.onboarding_visual_import_description,
+    ),
+    Assets(
+        primaryIconRes = R.drawable.ic_brand_assets,
+        contentDescriptionRes = R.string.onboarding_visual_assets_description,
+    ),
+    Receive(
+        primaryIconRes = R.drawable.ic_brand_receive,
+        contentDescriptionRes = R.string.onboarding_visual_receive_description,
+    ),
     Clarity(
         primaryIconRes = R.drawable.ic_brand_list,
         contentDescriptionRes = R.string.onboarding_visual_clarity_description,
+    ),
+    Scan(
+        primaryIconRes = R.drawable.ic_brand_scan,
+        contentDescriptionRes = R.string.onboarding_visual_scan_description,
+    ),
+    History(
+        primaryIconRes = R.drawable.ic_brand_history,
+        contentDescriptionRes = R.string.onboarding_visual_history_description,
+    ),
+    Move(
+        primaryIconRes = R.drawable.ic_brand_move,
+        contentDescriptionRes = R.string.onboarding_visual_move_description,
     ),
     OpenSource(
         primaryIconRes = R.drawable.ic_brand_settings,
