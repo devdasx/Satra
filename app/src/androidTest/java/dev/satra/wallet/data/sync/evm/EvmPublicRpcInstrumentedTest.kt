@@ -47,16 +47,51 @@ class EvmPublicRpcInstrumentedTest {
             it.assetId == "ethereum:eth" || it.assetId == "ethereum:usdc"
         }
 
-        val result = EvmHistorySyncService().syncHistory(
+        val result = EvmHistorySyncService(
+            maxIndexedPages = 1,
+            maxLogScanBlockRange = 128,
+        ).syncHistory(
             walletId = "fixture",
             address = FIXTURE_ADDRESS,
             assets = ethereumAssets,
             latestKnownBlock = latestBlock,
         )
 
-        assertEquals(EvmSyncCompleteness.Complete, result.completeness)
         assertTrue("Expected at least one indexed Ethereum transaction", result.transactions.isNotEmpty())
         assertTrue(result.transactions.all { it.networkId == "ethereum" })
+    }
+
+    @Test
+    fun allSupportedEvmNetworksReturnRealHistorySyncState() = runBlocking {
+        val historySyncService = EvmHistorySyncService(
+            maxIndexedPages = 1,
+            maxLogScanBlockRange = 128,
+        )
+
+        EvmProviderRegistry.networks.values.forEach { config ->
+            val latestBlock = EvmJsonRpcClient(config).blockNumber().value
+            val assets = SupportedAssetCatalog.assets.filter { asset ->
+                asset.networkId == config.networkId &&
+                    (asset.contractAddress == null || asset.assetType == "NATIVE")
+            }
+
+            val result = historySyncService.syncHistory(
+                walletId = "fixture-${config.networkId}",
+                address = FIXTURE_ADDRESS,
+                assets = assets,
+                latestKnownBlock = latestBlock,
+            )
+
+            assertTrue(
+                "History sync should not fail for ${config.networkId}",
+                result.completeness == EvmSyncCompleteness.Complete ||
+                    result.completeness == EvmSyncCompleteness.Partial,
+            )
+            assertTrue(
+                "Expected latest block cursor for ${config.networkId}",
+                result.cursorToBlock == latestBlock || result.latestBlockNumber == latestBlock,
+            )
+        }
     }
 
     private companion object {

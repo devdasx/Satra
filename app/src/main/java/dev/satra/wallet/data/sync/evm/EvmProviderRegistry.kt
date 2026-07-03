@@ -154,6 +154,11 @@ object EvmProviderRegistry {
                     baseUrl = "https://avalanche.blockscout.com",
                     style = EvmExplorerApiStyle.BlockscoutV2,
                 ),
+                EvmExplorerApi(
+                    name = "Routescan Avalanche",
+                    baseUrl = "https://api.routescan.io/v2/network/mainnet/evm/43114/etherscan",
+                    style = EvmExplorerApiStyle.EtherscanCompatible,
+                ),
             ),
         ),
         EvmNetworkConfig(

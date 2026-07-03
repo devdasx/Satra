@@ -1,5 +1,6 @@
 package dev.satra.wallet.ui.main
 
+import android.content.res.Resources
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
@@ -27,6 +28,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -48,6 +50,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -64,8 +67,16 @@ import dev.satra.wallet.data.assets.SupportedAssetCatalog
 import dev.satra.wallet.data.db.SatraWalletRepository
 import dev.satra.wallet.data.db.WalletAssetRecord
 import dev.satra.wallet.data.db.WalletRecord
+import dev.satra.wallet.data.db.WalletTransactionDirection
+import dev.satra.wallet.data.db.WalletTransactionRecord
+import dev.satra.wallet.data.db.WalletTransactionStatus
+import dev.satra.wallet.data.sync.evm.EvmProviderRegistry
+import dev.satra.wallet.data.sync.evm.EvmSyncCompleteness
 import java.math.BigDecimal
 import java.text.NumberFormat
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Currency
 import java.util.Locale
 
@@ -111,7 +122,7 @@ fun SatraMainScreen(
                 )
             }
             composable(SatraMainTab.Activity.route) {
-                SatraMainPlaceholderTab(title = stringResource(R.string.main_nav_activity))
+                SatraActivityScreen(walletRepository = walletRepository)
             }
             composable(SatraMainTab.Markets.route) {
                 SatraMainPlaceholderTab(title = stringResource(R.string.main_nav_markets))
@@ -260,6 +271,460 @@ private fun SatraHomeDashboard(
         }
         item {
             Spacer(modifier = Modifier.height(20.dp))
+        }
+    }
+}
+
+@Composable
+private fun SatraActivityScreen(
+    walletRepository: SatraWalletRepository,
+) {
+    val resources = LocalContext.current.resources
+    var activityState by remember {
+        mutableStateOf<ActivityScreenState>(ActivityScreenState.Loading)
+    }
+
+    LaunchedEffect(walletRepository) {
+        val wallet = walletRepository.getPrimaryWallet()
+        if (wallet == null) {
+            activityState = ActivityScreenState.Content(
+                walletName = "",
+                status = HomeSyncStatus.Ready,
+                transactions = emptyList(),
+                syncedNetworkCount = 0,
+                error = null,
+            )
+            return@LaunchedEffect
+        }
+
+        suspend fun loadContent(status: HomeSyncStatus, error: String? = null) {
+            val latestWallet = walletRepository.getPrimaryWallet() ?: wallet
+            val transactions = walletRepository.getWalletTransactions(wallet.walletId)
+                .toActivityRows(latestWallet.localCurrencyCode, resources)
+            activityState = ActivityScreenState.Content(
+                walletName = latestWallet.walletName,
+                status = status,
+                transactions = transactions,
+                syncedNetworkCount = latestWallet.evmSyncedNetworkCount(),
+                error = error,
+            )
+        }
+
+        loadContent(HomeSyncStatus.Syncing)
+        val syncError = runCatching {
+            val result = walletRepository.syncEvmWallet(wallet.walletId)
+            if (result.networkResults.any { network ->
+                    network.error != null ||
+                        network.balanceCompleteness != EvmSyncCompleteness.Complete ||
+                        network.historyCompleteness != EvmSyncCompleteness.Complete
+                }
+            ) {
+                "Partial EVM sync"
+            } else {
+                null
+            }
+        }.getOrElse { error ->
+            error.message
+        }
+        loadContent(HomeSyncStatus.Ready, syncError)
+    }
+
+    val content = when (val state = activityState) {
+        ActivityScreenState.Loading -> ActivityScreenState.Content(
+            walletName = "",
+            status = HomeSyncStatus.Syncing,
+            transactions = emptyList(),
+            syncedNetworkCount = 0,
+            error = null,
+        )
+
+        is ActivityScreenState.Content -> state
+    }
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        item {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = HomeContentMaxWidth)
+                    .padding(horizontal = 20.dp, vertical = 20.dp),
+            ) {
+                SatraActivityHeader(
+                    walletName = content.walletName.ifBlank {
+                        stringResource(R.string.home_wallet_label)
+                    },
+                    status = content.status,
+                )
+                Spacer(modifier = Modifier.height(18.dp))
+                ActivitySummaryCard(
+                    transactionCount = content.transactions.size,
+                    syncedNetworkCount = content.syncedNetworkCount,
+                    error = content.error,
+                )
+                Spacer(modifier = Modifier.height(22.dp))
+                ActivityTransactionsHeader(transactionCount = content.transactions.size)
+            }
+        }
+        if (content.transactions.isEmpty()) {
+            item {
+                ActivityEmptyState(
+                    isSyncing = content.status == HomeSyncStatus.Syncing,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .widthIn(max = HomeContentMaxWidth)
+                        .padding(horizontal = 20.dp),
+                )
+            }
+        } else {
+            items(
+                items = content.transactions,
+                key = { transaction -> transaction.transactionId },
+            ) { transaction ->
+                ActivityTransactionCard(
+                    transaction = transaction,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .widthIn(max = HomeContentMaxWidth)
+                        .padding(horizontal = 20.dp, vertical = 6.dp),
+                )
+            }
+        }
+        item {
+            Spacer(modifier = Modifier.height(20.dp))
+        }
+    }
+}
+
+@Composable
+private fun SatraActivityHeader(
+    walletName: String,
+    status: HomeSyncStatus,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.Top,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.activity_title),
+                style = MaterialTheme.typography.headlineLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = walletName,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Bold,
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = stringResource(R.string.activity_body),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Row(
+            modifier = Modifier
+                .clip(RoundedCornerShape(100.dp))
+                .background(MaterialTheme.colorScheme.surfaceContainer)
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (status == HomeSyncStatus.Syncing) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(14.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.tertiary),
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = stringResource(status.labelRes),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ActivitySummaryCard(
+    transactionCount: Int,
+    syncedNetworkCount: Int,
+    error: String?,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+    ) {
+        Column(
+            modifier = Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            ActivitySummaryRow(
+                label = stringResource(R.string.activity_summary_networks),
+                value = stringResource(
+                    R.string.activity_summary_networks_value,
+                    syncedNetworkCount,
+                    EvmProviderRegistry.supportedNetworkIds.size,
+                ),
+            )
+            ActivitySummaryRow(
+                label = stringResource(R.string.activity_summary_transactions),
+                value = stringResource(R.string.activity_summary_transactions_value, transactionCount),
+            )
+            if (!error.isNullOrBlank()) {
+                Text(
+                    text = stringResource(R.string.activity_summary_partial),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ActivitySummaryRow(
+    label: String,
+    value: String,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.End,
+        )
+    }
+}
+
+@Composable
+private fun ActivityTransactionsHeader(transactionCount: Int) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = stringResource(R.string.activity_transactions_title),
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Bold,
+        )
+        Text(
+            text = stringResource(R.string.activity_transactions_count, transactionCount),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.Bold,
+        )
+    }
+}
+
+@Composable
+private fun ActivityEmptyState(
+    isSyncing: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(22.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            if (isSyncing) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            } else {
+                Icon(
+                    painter = painterResource(R.drawable.ic_brand_history),
+                    contentDescription = null,
+                    modifier = Modifier.size(30.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Text(
+                text = stringResource(
+                    if (isSyncing) {
+                        R.string.activity_syncing_title
+                    } else {
+                        R.string.activity_empty_title
+                    },
+                ),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = stringResource(
+                    if (isSyncing) {
+                        R.string.activity_syncing_body
+                    } else {
+                        R.string.activity_empty_body
+                    },
+                ),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ActivityTransactionCard(
+    transaction: ActivityTransactionRow,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Image(
+                        painter = painterResource(transaction.iconRes),
+                        contentDescription = null,
+                        modifier = Modifier.size(28.dp),
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    Text(
+                        text = transaction.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = transaction.subtitle,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    Text(
+                        text = transaction.amount,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = when (transaction.direction) {
+                            WalletTransactionDirection.Incoming.value -> MaterialTheme.colorScheme.tertiary
+                            WalletTransactionDirection.Outgoing.value -> MaterialTheme.colorScheme.onSurface
+                            WalletTransactionDirection.Self.value -> MaterialTheme.colorScheme.primary
+                            else -> MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                    )
+                    Text(
+                        text = transaction.fiatValue,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                    )
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = transaction.counterparty,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = transaction.hash,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                )
+            }
+            if (transaction.fee.isNotBlank()) {
+                Text(
+                    text = transaction.fee,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 }
@@ -677,6 +1142,19 @@ private data class HomeAssetRow(
     val isNative: Boolean,
 )
 
+private data class ActivityTransactionRow(
+    val transactionId: String,
+    @DrawableRes val iconRes: Int,
+    val direction: String,
+    val title: String,
+    val subtitle: String,
+    val amount: String,
+    val fiatValue: String,
+    val counterparty: String,
+    val hash: String,
+    val fee: String,
+)
+
 private sealed interface HomeDashboardState {
     data object Loading : HomeDashboardState
 
@@ -687,6 +1165,18 @@ private sealed interface HomeDashboardState {
         val currencyCode: String,
         val assets: List<HomeAssetRow>,
     ) : HomeDashboardState
+}
+
+private sealed interface ActivityScreenState {
+    data object Loading : ActivityScreenState
+
+    data class Content(
+        val walletName: String,
+        val status: HomeSyncStatus,
+        val transactions: List<ActivityTransactionRow>,
+        val syncedNetworkCount: Int,
+        val error: String?,
+    ) : ActivityScreenState
 }
 
 private enum class HomeSyncStatus(@StringRes val labelRes: Int) {
@@ -708,6 +1198,44 @@ private fun WalletRecord.toHomeDashboardState(
         currencyCode = localCurrencyCode,
         assets = walletAssets.toHomeAssetRows(localCurrencyCode),
     )
+}
+
+private fun List<WalletTransactionRecord>.toActivityRows(
+    localCurrencyCode: String,
+    resources: Resources,
+): List<ActivityTransactionRow> {
+    val catalogAssetsById = SupportedAssetCatalog.assets.associateBy { it.assetId }
+    val networksById = SupportedAssetCatalog.networks.associateBy { it.networkId }
+    return filter { transaction -> transaction.networkId in EvmProviderRegistry.supportedNetworkIds }
+        .mapNotNull { transaction ->
+            val asset = catalogAssetsById[transaction.assetId] ?: return@mapNotNull null
+            val network = networksById[transaction.networkId] ?: return@mapNotNull null
+            val status = transaction.status.activityStatusLabel(resources)
+            val direction = transaction.direction.activityDirectionLabel(resources)
+            ActivityTransactionRow(
+                transactionId = transaction.transactionId,
+                iconRes = networkIconRes(transaction.networkId),
+                direction = transaction.direction,
+                title = "$direction ${asset.symbol}",
+                subtitle = "${network.displayName} · $status · ${formatActivityTime(transaction.timestamp, resources)}",
+                amount = "${transaction.direction.activityAmountPrefix()}${formatCryptoAmount(transaction.amountDecimal)} ${asset.symbol}",
+                fiatValue = transaction.fiatValue?.takeIf(String::isNotBlank)?.let {
+                    formatFiat(it, localCurrencyCode)
+                } ?: formatFiat("0", localCurrencyCode),
+                counterparty = transaction.activityCounterparty(resources),
+                hash = transaction.transactionHash?.shortHash().orEmpty(),
+                fee = transaction.feeDecimal?.takeIf { it.toBigDecimalOrZero() > BigDecimal.ZERO }
+                    ?.let { fee ->
+                        val feeAsset = transaction.feeAssetId?.let(catalogAssetsById::get)
+                        resources.getString(
+                            R.string.activity_fee,
+                            formatCryptoAmount(fee),
+                            feeAsset?.symbol.orEmpty(),
+                        ).trim()
+                    }
+                    .orEmpty(),
+            )
+        }
 }
 
 private fun List<WalletAssetRecord>.toHomeAssetRows(localCurrencyCode: String): List<HomeAssetRow> {
@@ -757,6 +1285,83 @@ private fun formatFiat(
     }
     return formatter.format(amount)
 }
+
+private fun String.activityDirectionLabel(resources: Resources): String =
+    when (this) {
+        WalletTransactionDirection.Incoming.value -> resources.getString(R.string.activity_direction_received)
+        WalletTransactionDirection.Outgoing.value -> resources.getString(R.string.activity_direction_sent)
+        WalletTransactionDirection.Self.value -> resources.getString(R.string.activity_direction_self)
+        else -> resources.getString(R.string.activity_direction_transaction)
+    }
+
+private fun String.activityAmountPrefix(): String =
+    when (this) {
+        WalletTransactionDirection.Incoming.value -> "+"
+        WalletTransactionDirection.Outgoing.value -> "-"
+        else -> ""
+    }
+
+private fun String.activityStatusLabel(resources: Resources): String =
+    when (this) {
+        WalletTransactionStatus.Success.value -> resources.getString(R.string.activity_status_success)
+        WalletTransactionStatus.Pending.value -> resources.getString(R.string.activity_status_pending)
+        WalletTransactionStatus.Canceled.value -> resources.getString(R.string.activity_status_canceled)
+        WalletTransactionStatus.Failed.value -> resources.getString(R.string.activity_status_failed)
+        else -> replaceFirstChar { character ->
+            if (character.isLowerCase()) character.titlecase(Locale.US) else character.toString()
+        }
+    }
+
+private fun WalletTransactionRecord.activityCounterparty(resources: Resources): String =
+    when (direction) {
+        WalletTransactionDirection.Incoming.value -> toAddress?.shortAddress()?.let {
+            resources.getString(R.string.activity_counterparty_to, it)
+        }
+        WalletTransactionDirection.Outgoing.value -> toAddress?.shortAddress()?.let {
+            resources.getString(R.string.activity_counterparty_to, it)
+        }
+        WalletTransactionDirection.Self.value -> resources.getString(R.string.activity_direction_self)
+        else -> {
+            val from = fromAddress?.shortAddress()
+            val to = toAddress?.shortAddress()
+            if (from != null && to != null) {
+                resources.getString(R.string.activity_counterparty_route, from, to)
+            } else {
+                listOfNotNull(from, to).firstOrNull()
+            }
+        }
+    } ?: resources.getString(R.string.activity_counterparty_unavailable)
+
+private fun WalletRecord.evmSyncedNetworkCount(): Int =
+    runCatching {
+        org.json.JSONObject(metadataJson)
+            .optJSONObject("evmSync")
+            ?.optInt("syncedNetworkCount")
+    }.getOrNull() ?: 0
+
+private fun formatActivityTime(
+    timestampMillis: Long,
+    resources: Resources,
+): String =
+    if (timestampMillis <= 0L) {
+        resources.getString(R.string.activity_status_pending)
+    } else {
+        ActivityDateFormatter.format(Instant.ofEpochMilli(timestampMillis))
+    }
+
+private fun String.shortHash(): String =
+    if (length <= 14) {
+        this
+    } else {
+        "${take(8)}...${takeLast(6)}"
+    }
+
+private fun String.shortAddress(): String =
+    if (length <= 14) {
+        this
+    } else {
+        "${take(6)}...${takeLast(4)}"
+    }
 
 private fun String.toBigDecimalOrZero(): BigDecimal =
     runCatching { BigDecimal(this) }.getOrDefault(BigDecimal.ZERO)
@@ -825,3 +1430,6 @@ private object SatraMainRoute {
 }
 
 private val HomeContentMaxWidth = 720.dp
+private val ActivityDateFormatter: DateTimeFormatter =
+    DateTimeFormatter.ofPattern("MMM d, HH:mm", Locale.US)
+        .withZone(ZoneId.systemDefault())

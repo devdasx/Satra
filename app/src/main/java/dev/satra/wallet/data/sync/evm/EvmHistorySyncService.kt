@@ -61,6 +61,7 @@ class EvmHistorySyncService(
     private val httpGetTransport: EvmHttpGetTransport = HttpUrlConnectionEvmHttpGetTransport(),
     private val timeoutMillis: Int = 8_000,
     private val maxLogScanBlockRange: Long = 25_000,
+    private val maxIndexedPages: Int = 1_000,
 ) {
     suspend fun syncHistory(
         walletId: String,
@@ -128,7 +129,7 @@ class EvmHistorySyncService(
         val failures = mutableListOf<String>()
         config.explorerApis.forEach { api ->
             try {
-                val transactions = when (api.style) {
+                val indexedFetch = when (api.style) {
                     EvmExplorerApiStyle.BlockscoutV2 -> fetchBlockscoutV2History(
                         walletId = walletId,
                         address = address,
@@ -145,17 +146,18 @@ class EvmHistorySyncService(
                         config = config,
                         api = api,
                         nativeAsset = nativeAsset,
+                        supportedAssetsByContract = supportedAssetsByContract,
                         latestKnownBlock = latestKnownBlock,
                     )
                 }
                 return EvmNetworkHistoryResult(
-                    transactions = transactions.deduplicate(),
+                    transactions = indexedFetch.transactions.deduplicate(),
                     providerName = api.name,
                     latestBlockNumber = latestKnownBlock,
-                    completeness = EvmSyncCompleteness.Complete,
+                    completeness = indexedFetch.completeness,
                     cursorFromBlock = null,
                     cursorToBlock = latestKnownBlock,
-                    error = null,
+                    error = indexedFetch.error,
                 )
             } catch (error: Throwable) {
                 failures += "${api.name}: ${error.message}"
@@ -181,56 +183,50 @@ class EvmHistorySyncService(
         nativeAsset: SupportedAsset?,
         supportedAssetsByContract: Map<String, SupportedAsset>,
         latestKnownBlock: Long?,
-    ): List<EvmNormalizedTransaction> {
+    ): EvmIndexedHistoryFetch {
         val nativeTransactions = if (nativeAsset == null) {
-            emptyList()
+            EvmBlockscoutPageResult(emptyList(), complete = true)
         } else {
-            val response = httpGetTransport.get(
-                url = "${api.baseUrl.trimEnd('/')}/api/v2/addresses/${address.urlEncoded()}/transactions",
-                timeoutMillis = timeoutMillis,
-            )
-            val items = JSONObject(response).optJSONArray("items") ?: JSONArray()
-            buildList {
-                for (index in 0 until items.length()) {
-                    val item = items.optJSONObject(index) ?: continue
-                    add(
-                        item.toBlockscoutNativeTransaction(
-                            walletId = walletId,
-                            networkId = config.networkId,
-                            asset = nativeAsset,
-                            walletAddress = address,
-                            providerName = api.name,
-                            latestKnownBlock = latestKnownBlock,
-                        ),
-                    )
-                }
-            }
-        }
-
-        val tokenResponse = httpGetTransport.get(
-            url = "${api.baseUrl.trimEnd('/')}/api/v2/addresses/${address.urlEncoded()}/token-transfers?type=ERC-20",
-            timeoutMillis = timeoutMillis,
-        )
-        val tokenItems = JSONObject(tokenResponse).optJSONArray("items") ?: JSONArray()
-        val tokenTransactions = buildList {
-            for (index in 0 until tokenItems.length()) {
-                val item = tokenItems.optJSONObject(index) ?: continue
-                val token = item.optJSONObject("token") ?: continue
-                val contract = token.optString("address").takeIf(String::isNotBlank) ?: continue
-                val asset = supportedAssetsByContract[EvmAbi.normalizeAddress(contract)] ?: continue
-                add(
-                    item.toBlockscoutTokenTransfer(
-                        walletId = walletId,
-                        networkId = config.networkId,
-                        asset = asset,
-                        walletAddress = address,
-                        providerName = api.name,
-                        latestKnownBlock = latestKnownBlock,
-                    ),
+            fetchBlockscoutPagedItems(
+                initialUrl = "${api.baseUrl.trimEnd('/')}/api/v2/addresses/${address.urlEncoded()}/transactions",
+            ).mapItems { item ->
+                item.toBlockscoutNativeTransaction(
+                    walletId = walletId,
+                    networkId = config.networkId,
+                    asset = nativeAsset,
+                    walletAddress = address,
+                    providerName = api.name,
+                    latestKnownBlock = latestKnownBlock,
                 )
             }
         }
-        return nativeTransactions + tokenTransactions
+
+        val tokenTransactions = fetchBlockscoutPagedItems(
+            initialUrl = "${api.baseUrl.trimEnd('/')}/api/v2/addresses/${address.urlEncoded()}/token-transfers?type=ERC-20",
+        ).mapItems { item ->
+            val token = item.optJSONObject("token") ?: return@mapItems null
+            val contract = token.optString("address").takeIf(String::isNotBlank) ?: return@mapItems null
+            val asset = supportedAssetsByContract[EvmAbi.normalizeAddress(contract)] ?: return@mapItems null
+            item.toBlockscoutTokenTransfer(
+                walletId = walletId,
+                networkId = config.networkId,
+                asset = asset,
+                walletAddress = address,
+                providerName = api.name,
+                latestKnownBlock = latestKnownBlock,
+            )
+        }
+        return EvmIndexedHistoryFetch(
+            transactions = nativeTransactions.transactions + tokenTransactions.transactions,
+            completeness = if (nativeTransactions.complete && tokenTransactions.complete) {
+                EvmSyncCompleteness.Complete
+            } else {
+                EvmSyncCompleteness.Partial
+            },
+            error = listOfNotNull(nativeTransactions.error, tokenTransactions.error)
+                .joinToString(" | ")
+                .ifBlank { null },
+        )
     }
 
     private suspend fun fetchEtherscanCompatibleHistory(
@@ -239,27 +235,111 @@ class EvmHistorySyncService(
         config: EvmNetworkConfig,
         api: EvmExplorerApi,
         nativeAsset: SupportedAsset?,
+        supportedAssetsByContract: Map<String, SupportedAsset>,
         latestKnownBlock: Long?,
-    ): List<EvmNormalizedTransaction> {
-        if (nativeAsset == null) return emptyList()
-        val url = "${api.baseUrl.trimEnd('/')}/api?module=account&action=txlist&address=${address.urlEncoded()}&sort=asc"
-        val response = JSONObject(httpGetTransport.get(url, timeoutMillis))
-        val result = response.optJSONArray("result") ?: JSONArray()
-        return buildList {
-            for (index in 0 until result.length()) {
-                val item = result.optJSONObject(index) ?: continue
-                add(
-                    item.toEtherscanNativeTransaction(
+    ): EvmIndexedHistoryFetch {
+        val nativeTransactions = if (nativeAsset == null) {
+            EvmBlockscoutPageResult(emptyList(), complete = true)
+        } else {
+            fetchEtherscanCompatiblePagedItems { page ->
+                "${api.baseUrl.trimEnd('/')}/api?module=account&action=txlist&address=${address.urlEncoded()}&sort=asc&page=$page&offset=$ETHERSCAN_COMPATIBLE_PAGE_SIZE"
+            }.mapItems { item ->
+                item.toEtherscanNativeTransaction(
                         walletId = walletId,
                         networkId = config.networkId,
                         asset = nativeAsset,
                         walletAddress = address,
                         providerName = api.name,
                         latestKnownBlock = latestKnownBlock,
-                    ),
                 )
             }
         }
+        val tokenTransactions = fetchEtherscanCompatiblePagedItems { page ->
+            "${api.baseUrl.trimEnd('/')}/api?module=account&action=tokentx&address=${address.urlEncoded()}&sort=asc&page=$page&offset=$ETHERSCAN_COMPATIBLE_PAGE_SIZE"
+        }.mapItems { item ->
+            val contract = item.optString("contractAddress").takeIf(String::isNotBlank) ?: return@mapItems null
+            val asset = supportedAssetsByContract[EvmAbi.normalizeAddress(contract)] ?: return@mapItems null
+            item.toEtherscanTokenTransfer(
+                walletId = walletId,
+                networkId = config.networkId,
+                asset = asset,
+                walletAddress = address,
+                providerName = api.name,
+                latestKnownBlock = latestKnownBlock,
+            )
+        }
+        return EvmIndexedHistoryFetch(
+            transactions = nativeTransactions.transactions + tokenTransactions.transactions,
+            completeness = if (nativeTransactions.complete && tokenTransactions.complete) {
+                EvmSyncCompleteness.Complete
+            } else {
+                EvmSyncCompleteness.Partial
+            },
+            error = listOfNotNull(nativeTransactions.error, tokenTransactions.error)
+                .joinToString(" | ")
+                .ifBlank { null },
+        )
+    }
+
+    private suspend fun fetchBlockscoutPagedItems(initialUrl: String): EvmBlockscoutPageResult<JSONObject> {
+        val items = mutableListOf<JSONObject>()
+        var nextUrl: String? = initialUrl
+        var pageCount = 0
+        while (nextUrl != null && pageCount < maxIndexedPages) {
+            val response = JSONObject(
+                httpGetTransport.get(
+                    url = checkNotNull(nextUrl),
+                    timeoutMillis = timeoutMillis,
+                ),
+            )
+            val pageItems = response.optJSONArray("items") ?: JSONArray()
+            for (index in 0 until pageItems.length()) {
+                pageItems.optJSONObject(index)?.let(items::add)
+            }
+            nextUrl = response.nextBlockscoutPageUrl(initialUrl)
+            pageCount += 1
+        }
+        val complete = nextUrl == null
+        return EvmBlockscoutPageResult(
+            transactions = items,
+            complete = complete,
+            error = if (complete) {
+                null
+            } else {
+                "Blockscout pagination reached the local page limit of $maxIndexedPages pages."
+            },
+        )
+    }
+
+    private suspend fun fetchEtherscanCompatiblePagedItems(
+        pageUrl: (Int) -> String,
+    ): EvmBlockscoutPageResult<JSONObject> {
+        val items = mutableListOf<JSONObject>()
+        var page = 1
+        while (page <= maxIndexedPages) {
+            val response = JSONObject(
+                httpGetTransport.get(
+                    url = pageUrl(page),
+                    timeoutMillis = timeoutMillis,
+                ),
+            )
+            val pageItems = response.etherscanCompatibleResultArray()
+            for (index in 0 until pageItems.length()) {
+                pageItems.optJSONObject(index)?.let(items::add)
+            }
+            if (pageItems.length() < ETHERSCAN_COMPATIBLE_PAGE_SIZE) {
+                return EvmBlockscoutPageResult(
+                    transactions = items,
+                    complete = true,
+                )
+            }
+            page += 1
+        }
+        return EvmBlockscoutPageResult(
+            transactions = items,
+            complete = false,
+            error = "Etherscan-compatible pagination reached the local page limit of $maxIndexedPages pages.",
+        )
     }
 
     private suspend fun scanTokenTransferLogs(
@@ -367,6 +447,10 @@ class EvmHistorySyncService(
             .put("toBlock", "0x${toBlock.toString(16)}")
             .put("topics", topics)
     }
+
+    private companion object {
+        const val ETHERSCAN_COMPATIBLE_PAGE_SIZE = 10_000
+    }
 }
 
 data class EvmNetworkHistoryResult(
@@ -378,6 +462,27 @@ data class EvmNetworkHistoryResult(
     val cursorToBlock: Long?,
     val error: String?,
 )
+
+private data class EvmIndexedHistoryFetch(
+    val transactions: List<EvmNormalizedTransaction>,
+    val completeness: EvmSyncCompleteness,
+    val error: String? = null,
+)
+
+private data class EvmBlockscoutPageResult<T>(
+    val transactions: List<T>,
+    val complete: Boolean,
+    val error: String? = null,
+)
+
+private fun <T, R> EvmBlockscoutPageResult<T>.mapItems(
+    mapper: (T) -> R?,
+): EvmBlockscoutPageResult<R> =
+    EvmBlockscoutPageResult(
+        transactions = transactions.mapNotNull(mapper),
+        complete = complete,
+        error = error,
+    )
 
 private fun JSONObject.toBlockscoutNativeTransaction(
     walletId: String,
@@ -516,6 +621,45 @@ private fun JSONObject.toEtherscanNativeTransaction(
     )
 }
 
+private fun JSONObject.toEtherscanTokenTransfer(
+    walletId: String,
+    networkId: String,
+    asset: SupportedAsset,
+    walletAddress: String,
+    providerName: String,
+    latestKnownBlock: Long?,
+): EvmNormalizedTransaction {
+    val from = optString("from")
+    val to = optString("to")
+    val valueRaw = optString("value").ifBlank { "0" }
+    val blockHeight = optString("blockNumber").toLongOrNull()
+    return EvmNormalizedTransaction(
+        walletId = walletId,
+        assetId = asset.assetId,
+        networkId = networkId,
+        transactionHash = optString("hash"),
+        direction = directionFor(walletAddress, from, to),
+        status = WalletTransactionStatus.Success,
+        amountRaw = valueRaw,
+        amountDecimal = EvmAbi.rawToDecimalString(valueRaw, asset.decimals),
+        feeRaw = null,
+        feeDecimal = null,
+        feeAssetId = null,
+        fromAddress = from.takeIf(String::isNotBlank),
+        toAddress = to.takeIf(String::isNotBlank),
+        blockHeight = blockHeight,
+        blockHash = optString("blockHash").takeIf(String::isNotBlank),
+        confirmations = confirmations(latestKnownBlock, blockHeight),
+        nonce = optString("nonce").takeIf(String::isNotBlank),
+        timestampMillis = optString("timeStamp").toLongOrNull()?.times(1000L) ?: 0L,
+        providerName = providerName,
+        metadataJson = JSONObject()
+            .put("syncProvider", providerName)
+            .put("syncSource", "etherscan-compatible-token-transfer")
+            .toString(),
+    )
+}
+
 private fun JSONArray.toTransferTransactions(
     walletId: String,
     networkId: String,
@@ -610,6 +754,25 @@ private fun String.topicToAddress(): String? {
 private fun String.urlEncoded(): String =
     URLEncoder.encode(this, "UTF-8")
 
+private fun JSONObject.nextBlockscoutPageUrl(initialUrl: String): String? {
+    val nextPageParams = optJSONObject("next_page_params") ?: return null
+    if (nextPageParams.length() == 0) return null
+
+    val query = nextPageParams.keys().asSequence()
+        .mapNotNull { key ->
+            val value = nextPageParams.opt(key)
+            if (value == null || value == JSONObject.NULL) {
+                null
+            } else {
+                "${key.urlEncoded()}=${value.toString().urlEncoded()}"
+            }
+        }
+        .joinToString("&")
+        .takeIf(String::isNotBlank) ?: return null
+    val separator = if (initialUrl.contains("?")) "&" else "?"
+    return "$initialUrl$separator$query"
+}
+
 private fun String.toBigIntegerOrNullSafe(): BigInteger? =
     takeIf(String::isNotBlank)?.let {
         runCatching {
@@ -631,6 +794,26 @@ private fun JSONObject.optLongOrNull(key: String): Long? =
     } else {
         null
     }
+
+private fun JSONObject.etherscanCompatibleResultArray(): JSONArray {
+    val result = opt("result")
+    if (result is JSONArray) return result
+
+    val message = optString("message")
+    val resultText = result?.toString().orEmpty()
+    val noTransactions = message.contains("No transactions", ignoreCase = true) ||
+        resultText.contains("No transactions", ignoreCase = true)
+    if (noTransactions) return JSONArray()
+
+    error(
+        listOf(
+            optString("message").takeIf(String::isNotBlank),
+            resultText.takeIf(String::isNotBlank),
+        ).filterNotNull().joinToString(": ").ifBlank {
+            "Malformed Etherscan-compatible response."
+        },
+    )
+}
 
 private fun String.parseTimestampMillis(): Long =
     when {

@@ -174,6 +174,11 @@ class SatraWalletRepository(
             walletDao.getWalletAddresses(walletId)
         }
 
+    suspend fun getWalletTransactions(walletId: String): List<WalletTransactionRecord> =
+        withContext(Dispatchers.IO) {
+            walletDao.getWalletTransactions(walletId)
+        }
+
     suspend fun ensureMnemonicReceiveAddresses(walletId: String): List<WalletAddressRecord> =
         withContext(Dispatchers.IO) {
             val wallet = walletDao.getWallet(walletId) ?: return@withContext emptyList()

@@ -69,6 +69,75 @@ class EvmHistorySyncServiceTest {
         assertEquals(WalletTransactionDirection.Outgoing, result.transactions.first { it.transactionHash == "0xtoken" }.direction)
     }
 
+    @Test
+    fun blockscoutHistoryFollowsNextPageParams() = runBlocking {
+        val http = FakeGetTransport { url ->
+            when {
+                url.contains("/token-transfers") -> JSONObject()
+                    .put("items", JSONArray())
+                    .toString()
+
+                url.contains("block_number=10") -> JSONObject()
+                    .put(
+                        "items",
+                        JSONArray().put(
+                            JSONObject()
+                                .put("hash", "0xnative-page-two")
+                                .put("from", JSONObject().put("hash", WALLET_ADDRESS))
+                                .put("to", JSONObject().put("hash", OTHER_ADDRESS))
+                                .put("value", "2000000000000000000")
+                                .put("block_number", 9)
+                                .put("timestamp", "2026-01-01T00:02:00Z")
+                                .put("status", "ok"),
+                        ),
+                    )
+                    .toString()
+
+                url.contains("/transactions") -> JSONObject()
+                    .put(
+                        "items",
+                        JSONArray().put(
+                            JSONObject()
+                                .put("hash", "0xnative-page-one")
+                                .put("from", JSONObject().put("hash", OTHER_ADDRESS))
+                                .put("to", JSONObject().put("hash", WALLET_ADDRESS))
+                                .put("value", "1000000000000000000")
+                                .put("block_number", 10)
+                                .put("timestamp", "2026-01-01T00:00:00Z")
+                                .put("status", "ok"),
+                        ),
+                    )
+                    .put(
+                        "next_page_params",
+                        JSONObject()
+                            .put("block_number", 10)
+                            .put("index", 0)
+                            .put("items_count", 50),
+                    )
+                    .toString()
+
+                else -> error("Unexpected URL: $url")
+            }
+        }
+        val service = EvmHistorySyncService(
+            httpGetTransport = http,
+        )
+
+        val result = service.syncHistory(
+            walletId = "wallet",
+            address = WALLET_ADDRESS,
+            assets = listOf(ETH_ASSET),
+            latestKnownBlock = 20,
+            nowMillis = 1L,
+        )
+
+        assertEquals(EvmSyncCompleteness.Complete, result.completeness)
+        assertEquals(
+            listOf("0xnative-page-one", "0xnative-page-two"),
+            result.transactions.map { it.transactionHash }.sorted(),
+        )
+    }
+
     private class FakeGetTransport(
         private val responder: (String) -> String,
     ) : EvmHttpGetTransport {
