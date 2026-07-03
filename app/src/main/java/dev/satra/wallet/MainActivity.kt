@@ -575,6 +575,15 @@ class MainActivity : ComponentActivity() {
                             onConfirmed = {
                                 navController.navigate(SatraRoute.setupBiometrics(flow))
                             },
+                            onMismatch = {
+                                pendingSetupPasscode = ""
+                                navController.navigate(SatraRoute.setupPasscode(flow)) {
+                                    popUpTo(SatraRoute.setupPasscode(flow)) {
+                                        inclusive = true
+                                    }
+                                    launchSingleTop = true
+                                }
+                            },
                         )
                     }
 

@@ -568,16 +568,19 @@ fun SetupPasscodeScreen(
             page = SecuritySetupPage.Passcode,
         ),
         settings = settings,
-        primaryTextRes = R.string.wallet_setup_action_set_passcode,
-        primaryEnabled = passcode.length == passcodeLength,
+        primaryTextRes = null,
         onBack = onBack,
-        onPrimaryClick = { onPasscodeCreated(passcode) },
     ) { performHaptic ->
         PasscodeEntryPanel(
             passcode = passcode,
             passcodeLength = passcodeLength,
             onPasscodeChange = { value ->
-                passcode = value.filter(Char::isDigit).take(passcodeLength)
+                val nextPasscode = value.filter(Char::isDigit).take(passcodeLength)
+                passcode = nextPasscode
+                if (nextPasscode.length == passcodeLength) {
+                    performHaptic()
+                    onPasscodeCreated(nextPasscode)
+                }
             },
             onOptionsClick = {
                 performHaptic()
@@ -613,6 +616,7 @@ fun SetupConfirmPasscodeScreen(
     settings: SatraSettings = SatraSettings(),
     onBack: () -> Unit = {},
     onConfirmed: () -> Unit = {},
+    onMismatch: () -> Unit = {},
 ) {
     var confirmation by rememberSaveable(expectedPasscode) { mutableStateOf("") }
     val passcodeLength = expectedPasscode.length.takeIf { it in supportedPasscodeLengths }
@@ -627,16 +631,23 @@ fun SetupConfirmPasscodeScreen(
             page = SecuritySetupPage.ConfirmPasscode,
         ),
         settings = settings,
-        primaryTextRes = R.string.wallet_setup_action_confirm_passcode,
-        primaryEnabled = matches,
+        primaryTextRes = null,
         onBack = onBack,
-        onPrimaryClick = onConfirmed,
-    ) {
+    ) { performHaptic ->
         PasscodeEntryPanel(
             passcode = confirmation,
             passcodeLength = passcodeLength,
             onPasscodeChange = { value ->
-                confirmation = value.filter(Char::isDigit).take(passcodeLength)
+                val nextConfirmation = value.filter(Char::isDigit).take(passcodeLength)
+                confirmation = nextConfirmation
+                if (nextConfirmation.length == passcodeLength) {
+                    performHaptic()
+                    if (expectedPasscode.isNotBlank() && nextConfirmation == expectedPasscode) {
+                        onConfirmed()
+                    } else {
+                        onMismatch()
+                    }
+                }
             },
             noteRes = if (isComplete && !matches) {
                 R.string.wallet_setup_passcode_mismatch
@@ -708,11 +719,11 @@ private fun WalletSetupRouteScreen(
     @StringRes titleRes: Int,
     page: SetupPageContent,
     settings: SatraSettings,
-    @StringRes primaryTextRes: Int,
+    @StringRes primaryTextRes: Int?,
     @StringRes secondaryTextRes: Int? = null,
     primaryEnabled: Boolean = true,
     onBack: () -> Unit,
-    onPrimaryClick: () -> Unit,
+    onPrimaryClick: () -> Unit = {},
     onSecondaryClick: (() -> Unit)? = null,
     topBarAction: @Composable (performHaptic: () -> Unit) -> Unit = {},
     content: @Composable (performHaptic: () -> Unit) -> Unit,
@@ -786,23 +797,25 @@ private fun WalletSetupRouteScreen(
                     content(performHaptic)
                 }
 
-                Spacer(modifier = Modifier.height(if (compactHeight) 14.dp else 22.dp))
+                if (primaryTextRes != null || secondaryTextRes != null) {
+                    Spacer(modifier = Modifier.height(if (compactHeight) 14.dp else 22.dp))
 
-                SetupActions(
-                    primaryTextRes = primaryTextRes,
-                    secondaryTextRes = secondaryTextRes,
-                    primaryEnabled = primaryEnabled,
-                    onPrimaryClick = {
-                        performHaptic()
-                        onPrimaryClick()
-                    },
-                    onSecondaryClick = onSecondaryClick?.let { secondaryClick ->
-                        {
+                    SetupActions(
+                        primaryTextRes = primaryTextRes,
+                        secondaryTextRes = secondaryTextRes,
+                        primaryEnabled = primaryEnabled,
+                        onPrimaryClick = {
                             performHaptic()
-                            secondaryClick()
-                        }
-                    },
-                )
+                            onPrimaryClick()
+                        },
+                        onSecondaryClick = onSecondaryClick?.let { secondaryClick ->
+                            {
+                                performHaptic()
+                                secondaryClick()
+                            }
+                        },
+                    )
+                }
             }
         }
     }
@@ -1994,7 +2007,7 @@ private fun ReviewTextRow(
 
 @Composable
 private fun SetupActions(
-    @StringRes primaryTextRes: Int,
+    @StringRes primaryTextRes: Int?,
     @StringRes secondaryTextRes: Int?,
     primaryEnabled: Boolean,
     onPrimaryClick: () -> Unit,
@@ -2005,22 +2018,24 @@ private fun SetupActions(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Button(
-            onClick = onPrimaryClick,
-            enabled = primaryEnabled,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-            ),
-        ) {
-            Text(
-                text = stringResource(primaryTextRes),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-            )
+        if (primaryTextRes != null) {
+            Button(
+                onClick = onPrimaryClick,
+                enabled = primaryEnabled,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                ),
+            ) {
+                Text(
+                    text = stringResource(primaryTextRes),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
         }
 
         if (secondaryTextRes != null && onSecondaryClick != null) {
