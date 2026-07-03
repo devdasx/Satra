@@ -520,7 +520,7 @@ private fun OnboardingCopy(
             style = MaterialTheme.typography.displaySmall,
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Bold,
         )
         Spacer(modifier = Modifier.height(12.dp))
         Text(
@@ -595,7 +595,7 @@ private fun OnboardingActions(
             Text(
                 text = stringResource(R.string.onboarding_action_create_wallet),
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Bold,
             )
         }
 
@@ -613,7 +613,7 @@ private fun OnboardingActions(
             Text(
                 text = stringResource(R.string.onboarding_action_restore_wallet),
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Bold,
             )
         }
 
