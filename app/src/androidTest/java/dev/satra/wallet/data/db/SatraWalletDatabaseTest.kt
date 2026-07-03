@@ -5,6 +5,7 @@ import android.database.sqlite.SQLiteDatabase
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import dev.satra.wallet.data.assets.SupportedAssetCatalog
+import dev.satra.wallet.data.sync.evm.EvmProviderRegistry
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -247,13 +248,25 @@ class SatraWalletDatabaseTest {
             assertTrue(wallet.isBackedUp)
             assertEquals(TEST_PASSPHRASE, wallet.passphrase)
             assertEquals(TEST_METADATA, wallet.metadataJson)
+            assertEquals(8, wallet.walletKeyFingerprint?.length)
+            assertEquals("m/44'/60'/0'/0/0", wallet.walletKeyDerivationPath)
         }
+        assertEquals(EvmProviderRegistry.supportedNetworkIds.size, dao.getWalletAddresses(createdWalletId).size)
+        assertEquals(EvmProviderRegistry.supportedNetworkIds.size, dao.getWalletPrivateKeys(createdWalletId).size)
+        assertTrue(
+            dao.getWalletAddresses(createdWalletId).all {
+                it.address.isEvmAddress() &&
+                    it.derivationPath == "m/44'/60'/0'/0/0"
+            },
+        )
         checkNotNull(dao.getWallet(importedMnemonicWalletId)).also { wallet ->
             assertEquals(WalletType.Imported.value, wallet.walletType)
             assertTrue(wallet.isImported)
             assertFalse(wallet.isWatchOnly)
             assertEquals(" imported passphrase ", wallet.passphrase)
         }
+        assertEquals(EvmProviderRegistry.supportedNetworkIds.size, dao.getWalletAddresses(importedMnemonicWalletId).size)
+        assertEquals(EvmProviderRegistry.supportedNetworkIds.size, dao.getWalletPrivateKeys(importedMnemonicWalletId).size)
 
         SupportedAssetCatalog.networks.forEach { network ->
             val walletId = repository.importPrivateKeyWallet(
@@ -274,6 +287,12 @@ class SatraWalletDatabaseTest {
             assertEquals(network.networkId, privateKeys.single().networkId)
             assertEquals(TEST_PRIVATE_KEY_HEX, privateKeys.single().keyMaterial)
             assertEquals("hex", privateKeys.single().keyFormat)
+            if (network.networkId in EvmProviderRegistry.supportedNetworkIds) {
+                val addresses = dao.getWalletAddresses(walletId)
+                assertEquals(1, addresses.size)
+                assertEquals(addresses.single().addressId, privateKeys.single().addressId)
+                assertEquals("0x19e7e376e7c213b7e7e7e46cc70a5dd086daff2a", addresses.single().address)
+            }
         }
     }
 
@@ -326,3 +345,12 @@ private fun SQLiteDatabase.hasColumn(
         }
         false
     }
+
+private fun String.isEvmAddress(): Boolean {
+    val normalized = removePrefix("0x")
+    return startsWith("0x") &&
+        normalized.length == 40 &&
+        normalized.all { character ->
+            character in '0'..'9' || character in 'a'..'f' || character in 'A'..'F'
+        }
+}
