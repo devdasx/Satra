@@ -17,4 +17,7 @@
     <string name="onboarding_page_open_source_eyebrow">Open source</string>
     <string name="onboarding_page_open_source_title">Built in the open.</string>
     <string name="onboarding_page_open_source_body">Satra starts public from day one, with every design and code change visible as the wallet grows.</string>
+    <string name="onboarding_visual_self_custody_description">A password, lock, and key illustration representing self-custody and local key protection.</string>
+    <string name="onboarding_visual_clarity_description">A payment receipt illustration representing transaction review before sending assets.</string>
+    <string name="onboarding_visual_open_source_description">A developer programming illustration representing open development and public review.</string>
 </resources>

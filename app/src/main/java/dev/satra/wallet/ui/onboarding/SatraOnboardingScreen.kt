@@ -1,9 +1,10 @@
 package dev.satra.wallet.ui.onboarding
 
+import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,7 +16,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
@@ -32,19 +32,17 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -414,416 +412,21 @@ private fun OnboardingVisual(
     visual: OnboardingArtwork,
     modifier: Modifier = Modifier,
 ) {
-    when (visual) {
-        OnboardingArtwork.SelfCustody -> SelfCustodyArtwork(modifier = modifier)
-        OnboardingArtwork.Clarity -> ClarityArtwork(modifier = modifier)
-        OnboardingArtwork.OpenSource -> OpenSourceArtwork(modifier = modifier)
-    }
-}
-
-@Composable
-private fun SelfCustodyArtwork(modifier: Modifier = Modifier) {
-    val colorScheme = MaterialTheme.colorScheme
-
     Box(
-        modifier = modifier,
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(28.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerLow),
         contentAlignment = Alignment.Center,
     ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val grid = 32.dp.toPx()
-            val stroke = 1.dp.toPx()
-
-            var x = -grid
-            while (x <= size.width + grid) {
-                drawLine(
-                    color = colorScheme.outlineVariant.copy(alpha = 0.16f),
-                    start = Offset(x, 0f),
-                    end = Offset(x + grid, size.height),
-                    strokeWidth = stroke,
-                )
-                x += grid
-            }
-
-            val cardWidth = size.width * 0.78f
-            val cardHeight = size.height * 0.62f
-            val cardLeft = (size.width - cardWidth) / 2f
-            val cardTop = size.height * 0.16f
-            val corner = 28.dp.toPx()
-
-            drawRoundRect(
-                color = colorScheme.primaryContainer.copy(alpha = 0.72f),
-                topLeft = Offset(cardLeft + 14.dp.toPx(), cardTop - 12.dp.toPx()),
-                size = Size(cardWidth, cardHeight),
-                cornerRadius = CornerRadius(corner, corner),
-            )
-            drawRoundRect(
-                color = colorScheme.surfaceContainerHighest.copy(alpha = 0.94f),
-                topLeft = Offset(cardLeft, cardTop),
-                size = Size(cardWidth, cardHeight),
-                cornerRadius = CornerRadius(corner, corner),
-            )
-            drawRoundRect(
-                color = colorScheme.outlineVariant.copy(alpha = 0.56f),
-                topLeft = Offset(cardLeft, cardTop),
-                size = Size(cardWidth, cardHeight),
-                cornerRadius = CornerRadius(corner, corner),
-                style = Stroke(width = 1.dp.toPx()),
-            )
-
-            val path = Path().apply {
-                moveTo(cardLeft + cardWidth * 0.16f, cardTop + cardHeight * 0.68f)
-                cubicTo(
-                    cardLeft + cardWidth * 0.34f,
-                    cardTop + cardHeight * 0.28f,
-                    cardLeft + cardWidth * 0.58f,
-                    cardTop + cardHeight * 0.84f,
-                    cardLeft + cardWidth * 0.84f,
-                    cardTop + cardHeight * 0.36f,
-                )
-            }
-            drawPath(
-                path = path,
-                color = colorScheme.tertiary.copy(alpha = 0.34f),
-                style = Stroke(width = 5.dp.toPx(), cap = StrokeCap.Round),
-            )
-
-            drawCircle(
-                color = colorScheme.secondary.copy(alpha = 0.16f),
-                radius = cardHeight * 0.34f,
-                center = Offset(cardLeft + cardWidth * 0.72f, cardTop + cardHeight * 0.42f),
-            )
-        }
-
-        Box(
+        Image(
+            painter = painterResource(visual.drawableRes),
+            contentDescription = stringResource(visual.contentDescriptionRes),
+            contentScale = ContentScale.Fit,
             modifier = Modifier
-                .size(108.dp)
-                .clip(CircleShape)
-                .background(colorScheme.primary),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = stringResource(R.string.wallet_symbol),
-                style = MaterialTheme.typography.displayMedium,
-                color = colorScheme.onPrimary,
-                fontWeight = FontWeight.Bold,
-            )
-        }
-
-        Surface(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .offset(y = (-6).dp)
-                .fillMaxWidth(0.74f)
-                .widthIn(max = 320.dp),
-            shape = RoundedCornerShape(8.dp),
-            color = colorScheme.surface,
-            tonalElevation = 4.dp,
-            shadowElevation = 10.dp,
-            border = BorderStroke(1.dp, colorScheme.outlineVariant.copy(alpha = 0.42f)),
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Column {
-                    Text(
-                        text = stringResource(R.string.onboarding_receive_label),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        text = stringResource(R.string.onboarding_receive_address_preview),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = colorScheme.onSurface,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                }
-
-                Box(
-                    modifier = Modifier
-                        .size(34.dp)
-                        .clip(CircleShape)
-                        .background(colorScheme.secondaryContainer),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Canvas(modifier = Modifier.size(18.dp)) {
-                        drawLine(
-                            color = colorScheme.onSecondaryContainer,
-                            start = Offset(size.width * 0.2f, size.height * 0.5f),
-                            end = Offset(size.width * 0.8f, size.height * 0.5f),
-                            strokeWidth = 2.6.dp.toPx(),
-                            cap = StrokeCap.Round,
-                        )
-                        drawLine(
-                            color = colorScheme.onSecondaryContainer,
-                            start = Offset(size.width * 0.54f, size.height * 0.22f),
-                            end = Offset(size.width * 0.82f, size.height * 0.5f),
-                            strokeWidth = 2.6.dp.toPx(),
-                            cap = StrokeCap.Round,
-                        )
-                        drawLine(
-                            color = colorScheme.onSecondaryContainer,
-                            start = Offset(size.width * 0.54f, size.height * 0.78f),
-                            end = Offset(size.width * 0.82f, size.height * 0.5f),
-                            strokeWidth = 2.6.dp.toPx(),
-                            cap = StrokeCap.Round,
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ClarityArtwork(modifier: Modifier = Modifier) {
-    val colorScheme = MaterialTheme.colorScheme
-
-    Box(
-        modifier = modifier,
-        contentAlignment = Alignment.Center,
-    ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val grid = 34.dp.toPx()
-            val stroke = 1.dp.toPx()
-
-            var x = -grid
-            while (x <= size.width + grid) {
-                drawLine(
-                    color = colorScheme.outlineVariant.copy(alpha = 0.14f),
-                    start = Offset(x, size.height),
-                    end = Offset(x + grid, 0f),
-                    strokeWidth = stroke,
-                )
-                x += grid
-            }
-
-            val panelWidth = size.width * 0.76f
-            val panelHeight = size.height * 0.72f
-            val panelLeft = (size.width - panelWidth) / 2f
-            val panelTop = size.height * 0.1f
-            val corner = 24.dp.toPx()
-
-            drawRoundRect(
-                color = colorScheme.secondaryContainer.copy(alpha = 0.58f),
-                topLeft = Offset(panelLeft - 16.dp.toPx(), panelTop + 18.dp.toPx()),
-                size = Size(panelWidth, panelHeight),
-                cornerRadius = CornerRadius(corner, corner),
-            )
-            drawRoundRect(
-                color = colorScheme.surfaceContainerHighest.copy(alpha = 0.96f),
-                topLeft = Offset(panelLeft, panelTop),
-                size = Size(panelWidth, panelHeight),
-                cornerRadius = CornerRadius(corner, corner),
-            )
-            drawRoundRect(
-                color = colorScheme.outlineVariant.copy(alpha = 0.48f),
-                topLeft = Offset(panelLeft, panelTop),
-                size = Size(panelWidth, panelHeight),
-                cornerRadius = CornerRadius(corner, corner),
-                style = Stroke(width = 1.dp.toPx()),
-            )
-
-            val route = Path().apply {
-                moveTo(panelLeft + panelWidth * 0.18f, panelTop + panelHeight * 0.68f)
-                cubicTo(
-                    panelLeft + panelWidth * 0.34f,
-                    panelTop + panelHeight * 0.34f,
-                    panelLeft + panelWidth * 0.62f,
-                    panelTop + panelHeight * 0.82f,
-                    panelLeft + panelWidth * 0.82f,
-                    panelTop + panelHeight * 0.32f,
-                )
-            }
-            drawPath(
-                path = route,
-                color = colorScheme.primary.copy(alpha = 0.32f),
-                style = Stroke(width = 6.dp.toPx(), cap = StrokeCap.Round),
-            )
-
-            repeat(3) { row ->
-                val rowTop = panelTop + panelHeight * (0.18f + row * 0.2f)
-                val dotCenter = Offset(panelLeft + panelWidth * 0.2f, rowTop + 12.dp.toPx())
-                val rowColor = when (row) {
-                    0 -> colorScheme.primary
-                    1 -> colorScheme.tertiary
-                    else -> colorScheme.secondary
-                }
-
-                drawCircle(
-                    color = rowColor.copy(alpha = 0.18f),
-                    radius = 16.dp.toPx(),
-                    center = dotCenter,
-                )
-                drawCircle(
-                    color = rowColor,
-                    radius = 6.dp.toPx(),
-                    center = dotCenter,
-                )
-                drawRoundRect(
-                    color = colorScheme.onSurfaceVariant.copy(alpha = 0.24f),
-                    topLeft = Offset(panelLeft + panelWidth * 0.32f, rowTop),
-                    size = Size(panelWidth * 0.36f, 7.dp.toPx()),
-                    cornerRadius = CornerRadius(12.dp.toPx(), 12.dp.toPx()),
-                )
-                drawRoundRect(
-                    color = colorScheme.outlineVariant.copy(alpha = 0.62f),
-                    topLeft = Offset(panelLeft + panelWidth * 0.32f, rowTop + 16.dp.toPx()),
-                    size = Size(panelWidth * (0.26f + row * 0.05f), 6.dp.toPx()),
-                    cornerRadius = CornerRadius(12.dp.toPx(), 12.dp.toPx()),
-                )
-            }
-
-            val badgeCenter = Offset(panelLeft + panelWidth * 0.82f, panelTop + panelHeight * 0.7f)
-            drawCircle(
-                color = colorScheme.primary,
-                radius = 34.dp.toPx(),
-                center = badgeCenter,
-            )
-            drawLine(
-                color = colorScheme.onPrimary,
-                start = Offset(badgeCenter.x - 14.dp.toPx(), badgeCenter.y),
-                end = Offset(badgeCenter.x - 3.dp.toPx(), badgeCenter.y + 10.dp.toPx()),
-                strokeWidth = 4.dp.toPx(),
-                cap = StrokeCap.Round,
-            )
-            drawLine(
-                color = colorScheme.onPrimary,
-                start = Offset(badgeCenter.x - 3.dp.toPx(), badgeCenter.y + 10.dp.toPx()),
-                end = Offset(badgeCenter.x + 16.dp.toPx(), badgeCenter.y - 14.dp.toPx()),
-                strokeWidth = 4.dp.toPx(),
-                cap = StrokeCap.Round,
-            )
-        }
-    }
-}
-
-@Composable
-private fun OpenSourceArtwork(modifier: Modifier = Modifier) {
-    val colorScheme = MaterialTheme.colorScheme
-
-    Box(
-        modifier = modifier,
-        contentAlignment = Alignment.Center,
-    ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val grid = 40.dp.toPx()
-            val stroke = 1.dp.toPx()
-
-            var y = -grid
-            while (y <= size.height + grid) {
-                drawLine(
-                    color = colorScheme.outlineVariant.copy(alpha = 0.13f),
-                    start = Offset(0f, y),
-                    end = Offset(size.width, y + grid),
-                    strokeWidth = stroke,
-                )
-                y += grid
-            }
-
-            val panelWidth = size.width * 0.78f
-            val panelHeight = size.height * 0.66f
-            val panelLeft = (size.width - panelWidth) / 2f
-            val panelTop = size.height * 0.15f
-            val corner = 22.dp.toPx()
-
-            drawRoundRect(
-                color = colorScheme.tertiaryContainer.copy(alpha = 0.58f),
-                topLeft = Offset(panelLeft + 18.dp.toPx(), panelTop - 14.dp.toPx()),
-                size = Size(panelWidth, panelHeight),
-                cornerRadius = CornerRadius(corner, corner),
-            )
-            drawRoundRect(
-                color = colorScheme.surfaceContainerHighest.copy(alpha = 0.96f),
-                topLeft = Offset(panelLeft, panelTop),
-                size = Size(panelWidth, panelHeight),
-                cornerRadius = CornerRadius(corner, corner),
-            )
-            drawRoundRect(
-                color = colorScheme.outlineVariant.copy(alpha = 0.5f),
-                topLeft = Offset(panelLeft, panelTop),
-                size = Size(panelWidth, panelHeight),
-                cornerRadius = CornerRadius(corner, corner),
-                style = Stroke(width = 1.dp.toPx()),
-            )
-
-            repeat(3) { index ->
-                drawCircle(
-                    color = when (index) {
-                        0 -> colorScheme.primary
-                        1 -> colorScheme.tertiary
-                        else -> colorScheme.secondary
-                    }.copy(alpha = 0.72f),
-                    radius = 5.dp.toPx(),
-                    center = Offset(
-                        x = panelLeft + 24.dp.toPx() + index * 16.dp.toPx(),
-                        y = panelTop + 24.dp.toPx(),
-                    ),
-                )
-            }
-
-            repeat(5) { row ->
-                val rowTop = panelTop + 58.dp.toPx() + row * 24.dp.toPx()
-                val indent = if (row % 2 == 0) 0.dp.toPx() else 24.dp.toPx()
-                val widthFraction = when (row) {
-                    0 -> 0.5f
-                    1 -> 0.34f
-                    2 -> 0.58f
-                    3 -> 0.42f
-                    else -> 0.28f
-                }
-
-                drawRoundRect(
-                    color = colorScheme.primary.copy(alpha = if (row == 2) 0.38f else 0.18f),
-                    topLeft = Offset(panelLeft + 30.dp.toPx() + indent, rowTop),
-                    size = Size(panelWidth * widthFraction, 8.dp.toPx()),
-                    cornerRadius = CornerRadius(12.dp.toPx(), 12.dp.toPx()),
-                )
-            }
-
-            val leftNode = Offset(panelLeft + panelWidth * 0.25f, panelTop + panelHeight * 0.82f)
-            val centerNode = Offset(panelLeft + panelWidth * 0.5f, panelTop + panelHeight * 0.68f)
-            val rightNode = Offset(panelLeft + panelWidth * 0.75f, panelTop + panelHeight * 0.82f)
-
-            drawLine(
-                color = colorScheme.secondary.copy(alpha = 0.34f),
-                start = leftNode,
-                end = centerNode,
-                strokeWidth = 4.dp.toPx(),
-                cap = StrokeCap.Round,
-            )
-            drawLine(
-                color = colorScheme.secondary.copy(alpha = 0.34f),
-                start = centerNode,
-                end = rightNode,
-                strokeWidth = 4.dp.toPx(),
-                cap = StrokeCap.Round,
-            )
-
-            listOf(leftNode, centerNode, rightNode).forEachIndexed { index, node ->
-                drawCircle(
-                    color = if (index == 1) colorScheme.primary else colorScheme.secondaryContainer,
-                    radius = if (index == 1) 22.dp.toPx() else 14.dp.toPx(),
-                    center = node,
-                )
-            }
-        }
-
-        Box(
-            modifier = Modifier
-                .size(64.dp)
-                .clip(CircleShape)
-                .background(colorScheme.primary),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = stringResource(R.string.wallet_symbol),
-                style = MaterialTheme.typography.headlineLarge,
-                color = colorScheme.onPrimary,
-                fontWeight = FontWeight.Bold,
-            )
-        }
+                .fillMaxSize()
+                .padding(16.dp),
+        )
     }
 }
 
@@ -999,10 +602,22 @@ private val onboardingPages = listOf(
     ),
 )
 
-private enum class OnboardingArtwork {
-    SelfCustody,
-    Clarity,
-    OpenSource,
+private enum class OnboardingArtwork(
+    @DrawableRes val drawableRes: Int,
+    @StringRes val contentDescriptionRes: Int,
+) {
+    SelfCustody(
+        drawableRes = R.drawable.onboarding_self_custody,
+        contentDescriptionRes = R.string.onboarding_visual_self_custody_description,
+    ),
+    Clarity(
+        drawableRes = R.drawable.onboarding_clarity,
+        contentDescriptionRes = R.string.onboarding_visual_clarity_description,
+    ),
+    OpenSource(
+        drawableRes = R.drawable.onboarding_open_source,
+        contentDescriptionRes = R.string.onboarding_visual_open_source_description,
+    ),
 }
 
 private enum class OnboardingWindowSize {
