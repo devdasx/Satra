@@ -29,7 +29,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -50,6 +49,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -130,7 +132,23 @@ enum class ImportSetupPage {
     PrivateKey,
     WatchOnlyAddress,
     Review,
-    Security,
+}
+
+enum class WalletSetupFlow(val routeSegment: String) {
+    Create("create"),
+    Import("import");
+
+    companion object {
+        fun fromRoute(routeSegment: String?): WalletSetupFlow =
+            entries.firstOrNull { it.routeSegment == routeSegment } ?: Create
+    }
+}
+
+private enum class SecuritySetupPage {
+    Passcode,
+    ConfirmPasscode,
+    Biometrics,
+    Success,
 }
 
 @Composable
@@ -170,26 +188,6 @@ fun CreateWalletBackupScreen(
         onSecondaryClick = onBack,
     ) { performHaptic ->
         BackupChecklist(performHaptic = performHaptic)
-    }
-}
-
-@Composable
-fun CreateWalletSecurityScreen(
-    settings: SatraSettings = SatraSettings(),
-    onBack: () -> Unit = {},
-    onFinish: () -> Unit = {},
-) {
-    WalletSetupRouteScreen(
-        titleRes = R.string.wallet_setup_screen_create_security,
-        page = createWalletPages[2],
-        settings = settings,
-        primaryTextRes = R.string.wallet_setup_action_create_wallet,
-        secondaryTextRes = R.string.wallet_setup_action_previous,
-        onBack = onBack,
-        onPrimaryClick = onFinish,
-        onSecondaryClick = onBack,
-    ) { performHaptic ->
-        CreateReviewPanel(performHaptic = performHaptic)
     }
 }
 
@@ -366,27 +364,134 @@ fun ImportReviewScreen(
 }
 
 @Composable
-fun ImportSecurityScreen(
-    method: WalletImportMethod,
-    network: WalletImportNetwork? = null,
+fun SetupPasscodeScreen(
+    flow: WalletSetupFlow,
     settings: SatraSettings = SatraSettings(),
     onBack: () -> Unit = {},
-    onFinish: () -> Unit = {},
+    onPasscodeCreated: (String) -> Unit = {},
+    onSkip: () -> Unit = {},
 ) {
+    var passcode by rememberSaveable { mutableStateOf("") }
+
     WalletSetupRouteScreen(
-        titleRes = R.string.wallet_setup_screen_import_security,
-        page = importSetupPage(
-            page = ImportSetupPage.Security,
-            method = method,
+        titleRes = R.string.wallet_setup_screen_create_passcode,
+        page = securitySetupPage(
+            flow = flow,
+            page = SecuritySetupPage.Passcode,
         ),
         settings = settings,
-        primaryTextRes = importPrimaryActionRes(method = method),
+        primaryTextRes = R.string.wallet_setup_action_set_passcode,
+        secondaryTextRes = R.string.wallet_setup_action_skip_for_now,
+        primaryEnabled = passcode.length == PASSCODE_LENGTH,
+        onBack = onBack,
+        onPrimaryClick = { onPasscodeCreated(passcode) },
+        onSecondaryClick = onSkip,
+    ) {
+        PasscodeEntryPanel(
+            passcode = passcode,
+            onPasscodeChange = { value ->
+                passcode = value.filter(Char::isDigit).take(PASSCODE_LENGTH)
+            },
+            noteRes = R.string.wallet_setup_passcode_note,
+        )
+    }
+}
+
+@Composable
+fun SetupConfirmPasscodeScreen(
+    flow: WalletSetupFlow,
+    expectedPasscode: String,
+    settings: SatraSettings = SatraSettings(),
+    onBack: () -> Unit = {},
+    onConfirmed: () -> Unit = {},
+) {
+    var confirmation by rememberSaveable(expectedPasscode) { mutableStateOf("") }
+    val isComplete = confirmation.length == PASSCODE_LENGTH
+    val matches = expectedPasscode.isNotBlank() && confirmation == expectedPasscode
+
+    WalletSetupRouteScreen(
+        titleRes = R.string.wallet_setup_screen_confirm_passcode,
+        page = securitySetupPage(
+            flow = flow,
+            page = SecuritySetupPage.ConfirmPasscode,
+        ),
+        settings = settings,
+        primaryTextRes = R.string.wallet_setup_action_confirm_passcode,
+        secondaryTextRes = R.string.wallet_setup_action_previous,
+        primaryEnabled = matches,
+        onBack = onBack,
+        onPrimaryClick = onConfirmed,
+        onSecondaryClick = onBack,
+    ) {
+        PasscodeEntryPanel(
+            passcode = confirmation,
+            onPasscodeChange = { value ->
+                confirmation = value.filter(Char::isDigit).take(PASSCODE_LENGTH)
+            },
+            noteRes = if (isComplete && !matches) {
+                R.string.wallet_setup_passcode_mismatch
+            } else {
+                R.string.wallet_setup_confirm_passcode_note
+            },
+            isError = isComplete && !matches,
+        )
+    }
+}
+
+@Composable
+fun SetupBiometricsScreen(
+    flow: WalletSetupFlow,
+    settings: SatraSettings = SatraSettings(),
+    onBack: () -> Unit = {},
+    onContinue: () -> Unit = {},
+    onSkip: () -> Unit = {},
+) {
+    var biometricsEnabled by rememberSaveable { mutableStateOf(true) }
+
+    WalletSetupRouteScreen(
+        titleRes = R.string.wallet_setup_screen_biometrics,
+        page = securitySetupPage(
+            flow = flow,
+            page = SecuritySetupPage.Biometrics,
+        ),
+        settings = settings,
+        primaryTextRes = R.string.wallet_setup_action_continue,
+        secondaryTextRes = R.string.wallet_setup_action_skip_for_now,
+        onBack = onBack,
+        onPrimaryClick = onContinue,
+        onSecondaryClick = onSkip,
+    ) { performHaptic ->
+        BiometricChoicePanel(
+            biometricsEnabled = biometricsEnabled,
+            onBiometricsEnabledChange = { enabled ->
+                performHaptic()
+                biometricsEnabled = enabled
+            },
+        )
+    }
+}
+
+@Composable
+fun SetupSuccessScreen(
+    flow: WalletSetupFlow,
+    settings: SatraSettings = SatraSettings(),
+    onBack: () -> Unit = {},
+    onOpenWallet: () -> Unit = {},
+) {
+    WalletSetupRouteScreen(
+        titleRes = R.string.wallet_setup_screen_success,
+        page = securitySetupPage(
+            flow = flow,
+            page = SecuritySetupPage.Success,
+        ),
+        settings = settings,
+        primaryTextRes = R.string.wallet_setup_action_open_wallet,
         secondaryTextRes = R.string.wallet_setup_action_previous,
         onBack = onBack,
-        onPrimaryClick = onFinish,
+        onPrimaryClick = onOpenWallet,
         onSecondaryClick = onBack,
-    ) { performHaptic ->
-        ImportSecurityPanel(performHaptic = performHaptic)
+    ) {
+        SuccessSummaryPanel(flow = flow)
     }
 }
 
@@ -681,30 +786,114 @@ private fun BackupChecklist(performHaptic: () -> Unit) {
 }
 
 @Composable
-private fun CreateReviewPanel(performHaptic: () -> Unit) {
-    var deviceLockEnabled by rememberSaveable { mutableStateOf(true) }
-    var hideBalancesEnabled by rememberSaveable { mutableStateOf(false) }
+private fun PasscodeEntryPanel(
+    passcode: String,
+    onPasscodeChange: (String) -> Unit,
+    @StringRes noteRes: Int,
+    isError: Boolean = false,
+) {
+    FramedTool {
+        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
+            ) {
+                repeat(PASSCODE_LENGTH) { index ->
+                    PasscodeDot(filled = index < passcode.length)
+                }
+            }
 
+            OutlinedTextField(
+                value = passcode,
+                onValueChange = onPasscodeChange,
+                modifier = Modifier.fillMaxWidth(),
+                textStyle = MaterialTheme.typography.headlineSmall,
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                singleLine = true,
+                isError = isError,
+                placeholder = {
+                    Text(text = stringResource(R.string.wallet_setup_passcode_placeholder))
+                },
+                supportingText = {
+                    Text(
+                        text = stringResource(noteRes),
+                        color = if (isError) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                    )
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun PasscodeDot(filled: Boolean) {
+    Box(
+        modifier = Modifier
+            .size(16.dp)
+            .clip(CircleShape)
+            .background(
+                if (filled) {
+                    MaterialTheme.colorScheme.onSurface
+                } else {
+                    MaterialTheme.colorScheme.surfaceContainerHigh
+                },
+            )
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outline,
+                shape = CircleShape,
+            ),
+    )
+}
+
+@Composable
+private fun BiometricChoicePanel(
+    biometricsEnabled: Boolean,
+    onBiometricsEnabledChange: (Boolean) -> Unit,
+) {
     FramedTool {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             SetupSwitchRow(
-                titleRes = R.string.wallet_setup_security_device_lock,
-                bodyRes = R.string.wallet_setup_security_device_lock_body,
-                checked = deviceLockEnabled,
-                onCheckedChange = {
-                    performHaptic()
-                    deviceLockEnabled = it
-                },
+                titleRes = R.string.wallet_setup_biometrics_toggle,
+                bodyRes = R.string.wallet_setup_biometrics_toggle_body,
+                checked = biometricsEnabled,
+                onCheckedChange = onBiometricsEnabledChange,
             )
-            HorizontalDivider()
-            SetupSwitchRow(
-                titleRes = R.string.wallet_setup_security_hide_balances,
-                bodyRes = R.string.wallet_setup_security_hide_balances_body,
-                checked = hideBalancesEnabled,
-                onCheckedChange = {
-                    performHaptic()
-                    hideBalancesEnabled = it
-                },
+            Text(
+                text = stringResource(R.string.wallet_setup_biometrics_note),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SuccessSummaryPanel(flow: WalletSetupFlow) {
+    FramedTool {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            ReviewTextRow(
+                titleRes = R.string.wallet_setup_success_wallet,
+                value = stringResource(
+                    if (flow == WalletSetupFlow.Create) {
+                        R.string.wallet_setup_success_wallet_created
+                    } else {
+                        R.string.wallet_setup_success_wallet_imported
+                    },
+                ),
+            )
+            ReviewTextRow(
+                titleRes = R.string.wallet_setup_success_security,
+                value = stringResource(R.string.wallet_setup_success_security_optional),
+            )
+            ReviewTextRow(
+                titleRes = R.string.wallet_setup_success_access,
+                value = stringResource(R.string.wallet_setup_success_access_ready),
             )
         }
     }
@@ -914,36 +1103,6 @@ private fun ImportReviewPanel(
             ReviewTextRow(
                 titleRes = R.string.wallet_setup_review_privacy,
                 value = stringResource(R.string.wallet_setup_review_privacy_local),
-            )
-        }
-    }
-}
-
-@Composable
-private fun ImportSecurityPanel(performHaptic: () -> Unit) {
-    var scanAccountsEnabled by rememberSaveable { mutableStateOf(true) }
-    var labelImportedWallet by rememberSaveable { mutableStateOf(true) }
-
-    FramedTool {
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            SetupSwitchRow(
-                titleRes = R.string.wallet_setup_import_scan_accounts,
-                bodyRes = R.string.wallet_setup_import_scan_accounts_body,
-                checked = scanAccountsEnabled,
-                onCheckedChange = {
-                    performHaptic()
-                    scanAccountsEnabled = it
-                },
-            )
-            HorizontalDivider()
-            SetupSwitchRow(
-                titleRes = R.string.wallet_setup_import_label_wallet,
-                bodyRes = R.string.wallet_setup_import_label_wallet_body,
-                checked = labelImportedWallet,
-                onCheckedChange = {
-                    performHaptic()
-                    labelImportedWallet = it
-                },
             )
         }
     }
@@ -1279,20 +1438,7 @@ private val createWalletPages = listOf(
         bodyRes = R.string.wallet_setup_create_step_phrase_body,
         iconRes = R.drawable.ic_brand_security,
     ),
-    SetupPageContent(
-        titleRes = R.string.wallet_setup_create_step_security_title,
-        bodyRes = R.string.wallet_setup_create_step_security_body,
-        iconRes = R.drawable.ic_brand_settings,
-    ),
 )
-
-private fun importPrimaryActionRes(
-    method: WalletImportMethod,
-): Int = when (method) {
-    WalletImportMethod.PrivateKey -> R.string.wallet_setup_action_import_private_key
-    WalletImportMethod.WatchOnly -> R.string.wallet_setup_action_add_watch_only
-    WalletImportMethod.RecoveryPhrase -> R.string.wallet_setup_action_import_wallet
-}
 
 private fun importSetupPage(
     page: ImportSetupPage,
@@ -1337,11 +1483,42 @@ private fun importSetupPage(
         bodyRes = R.string.wallet_setup_import_step_review_body,
         iconRes = R.drawable.ic_brand_list,
     )
+}
 
-    ImportSetupPage.Security -> SetupPageContent(
-        titleRes = R.string.wallet_setup_import_step_security_title,
-        bodyRes = R.string.wallet_setup_import_step_security_body,
-        iconRes = R.drawable.ic_brand_settings,
+private fun securitySetupPage(
+    flow: WalletSetupFlow,
+    page: SecuritySetupPage,
+): SetupPageContent = when (page) {
+    SecuritySetupPage.Passcode -> SetupPageContent(
+        titleRes = if (flow == WalletSetupFlow.Create) {
+            R.string.wallet_setup_passcode_create_title
+        } else {
+            R.string.wallet_setup_passcode_import_title
+        },
+        bodyRes = R.string.wallet_setup_passcode_body,
+        iconRes = R.drawable.ic_brand_security,
+    )
+
+    SecuritySetupPage.ConfirmPasscode -> SetupPageContent(
+        titleRes = R.string.wallet_setup_confirm_passcode_title,
+        bodyRes = R.string.wallet_setup_confirm_passcode_body,
+        iconRes = R.drawable.ic_brand_security,
+    )
+
+    SecuritySetupPage.Biometrics -> SetupPageContent(
+        titleRes = R.string.wallet_setup_biometrics_title,
+        bodyRes = R.string.wallet_setup_biometrics_body,
+        iconRes = R.drawable.ic_brand_scan,
+    )
+
+    SecuritySetupPage.Success -> SetupPageContent(
+        titleRes = if (flow == WalletSetupFlow.Create) {
+            R.string.wallet_setup_success_create_title
+        } else {
+            R.string.wallet_setup_success_import_title
+        },
+        bodyRes = R.string.wallet_setup_success_body,
+        iconRes = R.drawable.ic_brand_wallet,
     )
 }
 
@@ -1365,6 +1542,8 @@ private enum class SetupWindowSize {
         }
     }
 }
+
+private const val PASSCODE_LENGTH = 6
 
 private fun performSetupHaptic(
     hapticFeedback: HapticFeedback,
