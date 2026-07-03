@@ -506,7 +506,6 @@ fun SetupPasscodeScreen(
             onPasscodeChange = { value ->
                 passcode = value.filter(Char::isDigit).take(passcodeLength)
             },
-            noteRes = R.string.wallet_setup_passcode_note,
             onOptionsClick = {
                 performHaptic()
                 showPasscodeOptions = true
@@ -1015,7 +1014,7 @@ private fun PasscodeEntryPanel(
     passcode: String,
     passcodeLength: Int,
     onPasscodeChange: (String) -> Unit,
-    @StringRes noteRes: Int,
+    @StringRes noteRes: Int? = null,
     isError: Boolean = false,
     onOptionsClick: (() -> Unit)? = null,
 ) {
@@ -1040,16 +1039,18 @@ private fun PasscodeEntryPanel(
                 }
             }
 
-            Text(
-                text = stringResource(noteRes),
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (isError) {
-                    MaterialTheme.colorScheme.error
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
-                modifier = Modifier.fillMaxWidth(),
-            )
+            noteRes?.let { messageRes ->
+                Text(
+                    text = stringResource(messageRes),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (isError) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
         }
     }
 }

@@ -107,7 +107,6 @@
     <string name="wallet_setup_passcode_create_title">Protect your new wallet.</string>
     <string name="wallet_setup_passcode_import_title">Protect this imported wallet.</string>
     <string name="wallet_setup_passcode_body">Add an optional four- or six-digit passcode for this device, or skip and enable it later.</string>
-    <string name="wallet_setup_passcode_note">Enter digits with the device keyboard. Passcode protection can be changed later.</string>
     <string name="wallet_setup_passcode_options">Passcode Options</string>
     <string name="wallet_setup_passcode_options_sheet_title">Passcode options</string>
     <string name="wallet_setup_passcode_use_four">Use 4-digit passcode</string>
