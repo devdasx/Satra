@@ -2,6 +2,7 @@ package dev.satra.wallet
 
 import android.app.Activity
 import android.app.LocaleManager
+import android.content.pm.ActivityInfo
 import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
@@ -80,6 +81,7 @@ class MainActivity : ComponentActivity() {
         applyAppLocale(readLanguageTag(settingsStore))
 
         super.onCreate(savedInstanceState)
+        applyOrientationPolicy()
         enableEdgeToEdge()
 
         setContent {
@@ -624,6 +626,14 @@ class MainActivity : ComponentActivity() {
             val config = resources.configuration
             config.setLocales(LocaleList(locale))
             resources.updateConfiguration(config, resources.displayMetrics)
+        }
+    }
+
+    private fun applyOrientationPolicy() {
+        requestedOrientation = if (resources.getBoolean(R.bool.lock_compact_phone_to_portrait)) {
+            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        } else {
+            ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         }
     }
 
