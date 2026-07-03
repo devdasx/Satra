@@ -77,11 +77,13 @@ enum class WalletSetupMode {
 @Composable
 fun SatraWalletSetupScreen(
     mode: WalletSetupMode,
+    stepIndex: Int = 0,
     settings: SatraSettings = SatraSettings(),
-    onExit: () -> Unit = {},
+    onBack: () -> Unit = {},
+    onNextStep: (Int) -> Unit = {},
 ) {
     val steps = remember(mode) { if (mode == WalletSetupMode.Create) createWalletSteps else importWalletSteps }
-    var stepIndex by rememberSaveable(mode.name) { mutableIntStateOf(0) }
+    val currentStepIndex = stepIndex.coerceIn(0, steps.lastIndex)
     val hapticFeedback = LocalHapticFeedback.current
     val performHaptic = remember(settings.hapticsEnabled, hapticFeedback) {
         { performSetupHaptic(hapticFeedback, settings.hapticsEnabled) }
@@ -124,22 +126,18 @@ fun SatraWalletSetupScreen(
                     .then(if (scrollFallback) Modifier.verticalScroll(rememberScrollState()) else Modifier),
             ) {
                 SetupTopBar(
-                    stepIndex = stepIndex,
+                    stepIndex = currentStepIndex,
                     stepCount = steps.size,
                     onBack = {
                         performHaptic()
-                        if (stepIndex > 0) {
-                            stepIndex -= 1
-                        } else {
-                            onExit()
-                        }
+                        onBack()
                     },
                 )
 
                 Spacer(modifier = Modifier.height(if (compactHeight) 12.dp else 18.dp))
 
                 SetupProgress(
-                    stepIndex = stepIndex,
+                    stepIndex = currentStepIndex,
                     stepCount = steps.size,
                 )
 
@@ -147,8 +145,8 @@ fun SatraWalletSetupScreen(
 
                 SetupContentFrame(
                     mode = mode,
-                    step = steps[stepIndex],
-                    stepIndex = stepIndex,
+                    step = steps[currentStepIndex],
+                    stepIndex = currentStepIndex,
                     windowSize = windowSize,
                     compactHeight = compactHeight,
                     performHaptic = performHaptic,
@@ -165,21 +163,17 @@ fun SatraWalletSetupScreen(
 
                 SetupActions(
                     mode = mode,
-                    stepIndex = stepIndex,
+                    stepIndex = currentStepIndex,
                     stepCount = steps.size,
                     onPrimaryClick = {
                         performHaptic()
-                        if (stepIndex < steps.lastIndex) {
-                            stepIndex += 1
+                        if (currentStepIndex < steps.lastIndex) {
+                            onNextStep(currentStepIndex + 1)
                         }
                     },
                     onSecondaryClick = {
                         performHaptic()
-                        if (stepIndex > 0) {
-                            stepIndex -= 1
-                        } else {
-                            onExit()
-                        }
+                        onBack()
                     },
                 )
             }

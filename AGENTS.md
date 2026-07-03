@@ -10,6 +10,7 @@
 - Use the native Android system font for app UI text unless the user explicitly asks otherwise. Keep Satra wordmark/logo text as the provided brand image assets, not retyped UI text.
 - Onboarding page titles and primary wallet actions must use bold typography.
 - Every screen must be responsive across compact phones, tablets, foldables, and desktop-class/windowed Android surfaces.
+- Screen-level and multi-step-flow navigation must use real Android navigation with Jetpack Navigation Compose and a back stack. Do not switch app screens or flow steps by manually swapping root composables with local state.
 - Each screen should fit inside the visible viewport without vertical scrolling whenever the content can reasonably fit; primary actions must be visible without scrolling. Use scroll only as a fallback for genuinely cramped window sizes.
 - In paged onboarding/tutorial UI, keep visuals and copy in fixed-size page slots so swiping never shifts the header, dots, actions, or other surrounding layout; every page must have its own meaningful visual.
 - Use real Android haptic feedback for meaningful user actions where it helps confirm interaction, and always respect the app-level haptic feedback setting. Avoid decorative or automatic haptics.

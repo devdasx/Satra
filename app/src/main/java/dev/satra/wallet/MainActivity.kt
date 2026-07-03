@@ -8,13 +8,20 @@ import android.os.LocaleList
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import dev.satra.wallet.settings.SatraSettings
 import dev.satra.wallet.settings.SatraSettingsDefaults
 import dev.satra.wallet.settings.SatraThemePreference
@@ -38,7 +45,7 @@ class MainActivity : ComponentActivity() {
             var themePreference by remember { mutableStateOf(readThemePreference(settingsStore)) }
             var hapticsEnabled by remember { mutableStateOf(readHapticsEnabled(settingsStore)) }
             var languageTag by remember { mutableStateOf(readLanguageTag(settingsStore)) }
-            var activeScreen by rememberSaveable { mutableStateOf(SatraRootScreen.Onboarding.name) }
+            val navController = rememberNavController()
             val settings = SatraSettings(
                 themePreference = themePreference,
                 hapticsEnabled = hapticsEnabled,
@@ -51,52 +58,123 @@ class MainActivity : ComponentActivity() {
             }
 
             SatraTheme(darkTheme = darkTheme) {
-                when (SatraRootScreen.valueOf(activeScreen)) {
-                    SatraRootScreen.Onboarding -> SatraOnboardingScreen(
-                        settings = settings,
-                        appVersion = BuildConfig.VERSION_NAME,
-                        onThemePreferenceChange = { preference ->
-                            themePreference = preference
-                            settingsStore.edit()
-                                .putString(KEY_THEME_PREFERENCE, preference.name)
-                                .apply()
-                        },
-                        onHapticsEnabledChange = { enabled ->
-                            hapticsEnabled = enabled
-                            settingsStore.edit()
-                                .putBoolean(KEY_HAPTICS_ENABLED, enabled)
-                                .apply()
-                        },
-                        onLanguageTagChange = { tag ->
-                            languageTag = tag
-                            settingsStore.edit()
-                                .putString(KEY_LANGUAGE_TAG, tag)
-                                .apply()
-                            applyAppLocale(tag)
-                        },
-                        onCreateWallet = {
-                            activeScreen = SatraRootScreen.CreateWallet.name
-                        },
-                        onRestoreWallet = {
-                            activeScreen = SatraRootScreen.ImportWallet.name
-                        },
-                    )
+                NavHost(
+                    navController = navController,
+                    startDestination = SatraRoute.ONBOARDING,
+                    enterTransition = {
+                        slideInHorizontally(
+                            animationSpec = tween(NAV_ANIMATION_MILLIS),
+                            initialOffsetX = { fullWidth -> fullWidth },
+                        )
+                    },
+                    exitTransition = {
+                        slideOutHorizontally(
+                            animationSpec = tween(NAV_ANIMATION_MILLIS),
+                            targetOffsetX = { fullWidth -> -fullWidth / 3 },
+                        )
+                    },
+                    popEnterTransition = {
+                        slideInHorizontally(
+                            animationSpec = tween(NAV_ANIMATION_MILLIS),
+                            initialOffsetX = { fullWidth -> -fullWidth / 3 },
+                        )
+                    },
+                    popExitTransition = {
+                        slideOutHorizontally(
+                            animationSpec = tween(NAV_ANIMATION_MILLIS),
+                            targetOffsetX = { fullWidth -> fullWidth },
+                        )
+                    },
+                ) {
+                    composable(SatraRoute.ONBOARDING) {
+                        SatraOnboardingScreen(
+                            settings = settings,
+                            appVersion = BuildConfig.VERSION_NAME,
+                            onThemePreferenceChange = { preference ->
+                                themePreference = preference
+                                settingsStore.edit()
+                                    .putString(KEY_THEME_PREFERENCE, preference.name)
+                                    .apply()
+                            },
+                            onHapticsEnabledChange = { enabled ->
+                                hapticsEnabled = enabled
+                                settingsStore.edit()
+                                    .putBoolean(KEY_HAPTICS_ENABLED, enabled)
+                                    .apply()
+                            },
+                            onLanguageTagChange = { tag ->
+                                languageTag = tag
+                                settingsStore.edit()
+                                    .putString(KEY_LANGUAGE_TAG, tag)
+                                    .apply()
+                                applyAppLocale(tag)
+                            },
+                            onCreateWallet = {
+                                navController.navigate(SatraRoute.createWalletStep(0)) {
+                                    launchSingleTop = true
+                                }
+                            },
+                            onRestoreWallet = {
+                                navController.navigate(SatraRoute.importWalletStep(0)) {
+                                    launchSingleTop = true
+                                }
+                            },
+                        )
+                    }
 
-                    SatraRootScreen.CreateWallet -> SatraWalletSetupScreen(
-                        mode = WalletSetupMode.Create,
-                        settings = settings,
-                        onExit = {
-                            activeScreen = SatraRootScreen.Onboarding.name
-                        },
-                    )
+                    composable(
+                        route = SatraRoute.CREATE_WALLET_STEP,
+                        arguments = listOf(
+                            navArgument(SatraRoute.ARG_STEP) {
+                                type = NavType.IntType
+                            },
+                        ),
+                    ) { backStackEntry ->
+                        val stepIndex = backStackEntry.arguments
+                            ?.getInt(SatraRoute.ARG_STEP)
+                            ?: 0
 
-                    SatraRootScreen.ImportWallet -> SatraWalletSetupScreen(
-                        mode = WalletSetupMode.Import,
-                        settings = settings,
-                        onExit = {
-                            activeScreen = SatraRootScreen.Onboarding.name
-                        },
-                    )
+                        SatraWalletSetupScreen(
+                            mode = WalletSetupMode.Create,
+                            stepIndex = stepIndex,
+                            settings = settings,
+                            onBack = {
+                                navController.popBackStack()
+                            },
+                            onNextStep = { nextStep ->
+                                navController.navigate(SatraRoute.createWalletStep(nextStep)) {
+                                    launchSingleTop = true
+                                }
+                            },
+                        )
+                    }
+
+                    composable(
+                        route = SatraRoute.IMPORT_WALLET_STEP,
+                        arguments = listOf(
+                            navArgument(SatraRoute.ARG_STEP) {
+                                type = NavType.IntType
+                            },
+                        ),
+                    ) { backStackEntry ->
+                        val stepIndex = backStackEntry.arguments
+                            ?.getInt(SatraRoute.ARG_STEP)
+                            ?: 0
+
+                        SatraWalletSetupScreen(
+                            mode = WalletSetupMode.Import,
+                            stepIndex = stepIndex,
+                            settings = settings,
+                            onBack = {
+                                navController.popBackStack()
+                            },
+                            onNextStep = { nextStep ->
+                                navController.navigate(SatraRoute.importWalletStep(nextStep)) {
+                                    launchSingleTop = true
+                                }
+                            },
+                        )
+                    }
                 }
             }
         }
@@ -122,11 +200,17 @@ private const val SETTINGS_PREFS_NAME = "satra_settings"
 private const val KEY_THEME_PREFERENCE = "theme_preference"
 private const val KEY_HAPTICS_ENABLED = "haptics_enabled"
 private const val KEY_LANGUAGE_TAG = "language_tag"
+private const val NAV_ANIMATION_MILLIS = 280
 
-private enum class SatraRootScreen {
-    Onboarding,
-    CreateWallet,
-    ImportWallet,
+private object SatraRoute {
+    const val ARG_STEP = "step"
+    const val ONBOARDING = "onboarding"
+    const val CREATE_WALLET_STEP = "create-wallet/{$ARG_STEP}"
+    const val IMPORT_WALLET_STEP = "import-wallet/{$ARG_STEP}"
+
+    fun createWalletStep(step: Int): String = "create-wallet/$step"
+
+    fun importWalletStep(step: Int): String = "import-wallet/$step"
 }
 
 private fun readThemePreference(settingsStore: SharedPreferences): SatraThemePreference {
