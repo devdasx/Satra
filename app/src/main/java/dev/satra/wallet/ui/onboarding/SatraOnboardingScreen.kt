@@ -490,15 +490,39 @@ private fun OnboardingVisual(
         ) {
             val primarySize = (maxHeight * 0.78f).coerceIn(132.dp, 220.dp)
 
-            IconBadge(
-                iconRes = visual.primaryIconRes,
-                size = primarySize,
-                iconColor = colorScheme.primary,
-                contentDescription = stringResource(visual.contentDescriptionRes),
-                modifier = Modifier.align(Alignment.Center),
-            )
+            if (visual.useBrandMark) {
+                BrandMark(
+                    markRes = visual.primaryIconRes,
+                    size = primarySize,
+                    contentDescription = stringResource(visual.contentDescriptionRes),
+                    modifier = Modifier.align(Alignment.Center),
+                )
+            } else {
+                IconBadge(
+                    iconRes = visual.primaryIconRes,
+                    size = primarySize,
+                    iconColor = colorScheme.primary,
+                    contentDescription = stringResource(visual.contentDescriptionRes),
+                    modifier = Modifier.align(Alignment.Center),
+                )
+            }
         }
     }
+}
+
+@Composable
+private fun BrandMark(
+    @DrawableRes markRes: Int,
+    size: Dp,
+    modifier: Modifier = Modifier,
+    contentDescription: String? = null,
+) {
+    Image(
+        painter = painterResource(markRes),
+        contentDescription = contentDescription,
+        contentScale = ContentScale.Fit,
+        modifier = modifier.size(size),
+    )
 }
 
 @Composable
@@ -1355,6 +1379,7 @@ private val supportedLanguageOptions = listOf(
 private enum class OnboardingArtwork(
     @DrawableRes val primaryIconRes: Int,
     @StringRes val contentDescriptionRes: Int,
+    val useBrandMark: Boolean = false,
 ) {
     SelfCustody(
         primaryIconRes = R.drawable.ic_brand_security,
@@ -1365,8 +1390,9 @@ private enum class OnboardingArtwork(
         contentDescriptionRes = R.string.onboarding_visual_import_description,
     ),
     Assets(
-        primaryIconRes = R.drawable.ic_brand_assets,
+        primaryIconRes = R.drawable.satra_mark,
         contentDescriptionRes = R.string.onboarding_visual_assets_description,
+        useBrandMark = true,
     ),
     Receive(
         primaryIconRes = R.drawable.ic_brand_receive,

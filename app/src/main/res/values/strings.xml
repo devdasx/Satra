@@ -98,7 +98,7 @@
     <string name="onboarding_page_open_source_body">Satra starts public from day one, with every design and code change visible as the wallet grows.</string>
     <string name="onboarding_visual_self_custody_description">Satra security icon representing self-custody and local key protection.</string>
     <string name="onboarding_visual_import_description">Satra wallet icon representing wallet creation and import.</string>
-    <string name="onboarding_visual_assets_description">Satra assets icon representing supported crypto assets.</string>
+    <string name="onboarding_visual_assets_description">Satra brand mark representing supported crypto assets.</string>
     <string name="onboarding_visual_receive_description">Satra receive icon representing network-aware receiving.</string>
     <string name="onboarding_visual_clarity_description">Satra list icon representing transaction review before sending assets.</string>
     <string name="onboarding_visual_scan_description">Satra scan icon representing careful address scanning.</string>
