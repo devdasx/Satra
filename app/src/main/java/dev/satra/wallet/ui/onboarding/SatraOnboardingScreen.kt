@@ -481,11 +481,10 @@ private fun SourceCodePill(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(
-            painter = painterResource(R.drawable.ic_brand_scan),
+        Image(
+            painter = painterResource(R.drawable.ic_github_invertocat),
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(17.dp),
+            modifier = Modifier.size(18.dp),
         )
         Text(
             text = label,
