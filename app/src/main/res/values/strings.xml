@@ -2,7 +2,6 @@
 <resources>
     <string name="app_name">Satra</string>
     <string name="wallet_symbol">◎</string>
-    <string name="wallet_scope_label">Multi-chain</string>
     <string name="onboarding_action_create_wallet">Create wallet</string>
     <string name="onboarding_action_restore_wallet">Import wallet</string>
     <string name="onboarding_footer">Non-custodial. Open source. Multi-chain.</string>

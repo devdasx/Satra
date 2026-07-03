@@ -352,7 +352,7 @@ private fun SatraHeader(modifier: Modifier = Modifier) {
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
+        horizontalArrangement = Arrangement.Start,
     ) {
         Image(
             painter = painterResource(R.drawable.satra_lockup_horizontal),
@@ -361,13 +361,6 @@ private fun SatraHeader(modifier: Modifier = Modifier) {
             modifier = Modifier
                 .width(132.dp)
                 .height(48.dp),
-        )
-
-        Text(
-            text = stringResource(R.string.wallet_scope_label),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.SemiBold,
         )
     }
 }
