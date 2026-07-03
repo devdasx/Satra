@@ -8,4 +8,6 @@
 - Every screen must be responsive across compact phones, tablets, foldables, and desktop-class/windowed Android surfaces.
 - Put every user-facing string in English resource keys under `app/src/main/res/values/strings.xml` as soon as it is added. Do not leave visible text hardcoded in Compose.
 - Track future localization for the top 25 languages by total speakers; keep English as the source language until the full-app translation pass.
-- Keep the wallet-core direction non-custodial with Rust and BDK. Do not introduce custodial wallet assumptions.
+- Satra is a multi-chain, multi-asset wallet. Do not describe it as Bitcoin-only.
+- Supported assets and networks are defined in `docs/SUPPORTED_ASSETS.md`; do not add, remove, substitute, or imply support for assets outside that document.
+- Keep the wallet-core direction non-custodial. Do not introduce custodial wallet assumptions.

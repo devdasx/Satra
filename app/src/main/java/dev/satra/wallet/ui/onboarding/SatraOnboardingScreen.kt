@@ -290,7 +290,7 @@ private fun SatraHeader(modifier: Modifier = Modifier) {
         }
 
         Text(
-            text = stringResource(R.string.bitcoin_label),
+            text = stringResource(R.string.wallet_scope_label),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.SemiBold,
@@ -416,7 +416,7 @@ private fun WalletArtwork(modifier: Modifier = Modifier) {
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = stringResource(R.string.bitcoin_symbol),
+                text = stringResource(R.string.wallet_symbol),
                 style = MaterialTheme.typography.displayMedium,
                 color = colorScheme.onPrimary,
                 fontWeight = FontWeight.Bold,

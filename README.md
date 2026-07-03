@@ -1,14 +1,15 @@
 # Satra
 
-Satra is an open-source Android Bitcoin wallet project.
+Satra is an open-source Android crypto wallet project.
 
-The project is starting with product design and screen implementation first, then wallet behavior will be added step by step. The Android app is built with Kotlin, Jetpack Compose, and Material 3. The wallet core is planned for Rust and BDK.
+The project is starting with product design and screen implementation first, then wallet behavior will be added step by step. The Android app is built with Kotlin, Jetpack Compose, and Material 3. The wallet core will be non-custodial and multi-chain.
 
 ## Current Status
 
 - Android project scaffolded.
 - First onboarding screen implemented in Compose.
-- Rust and BDK wallet core not implemented yet.
+- Multi-chain wallet core not implemented yet.
+- Supported assets and networks documented in `docs/SUPPORTED_ASSETS.md`.
 
 ## Tech Stack
 
@@ -16,7 +17,11 @@ The project is starting with product design and screen implementation first, the
 - Jetpack Compose
 - Material 3
 - Android Gradle Plugin
-- Rust and BDK planned for wallet core
+- Multi-chain wallet core planned
+
+## Supported Assets
+
+Satra supports only the networks, native coins, and tokens listed in `docs/SUPPORTED_ASSETS.md`.
 
 ## Development
 
@@ -31,4 +36,3 @@ The project uses the Gradle wrapper and expects Android SDK platform 37 with And
 ## License
 
 Apache License 2.0
-
