@@ -70,6 +70,7 @@ fun SatraOnboardingScreen(
         val screenHeight = maxHeight
         val windowSize = remember(maxWidth) { OnboardingWindowSize.from(maxWidth) }
         val compactHeight = screenHeight < 740.dp
+        val scrollFallback = screenHeight < 620.dp
 
         Box(modifier = Modifier.fillMaxSize()) {
             AmbientLedgerBackground()
@@ -83,7 +84,7 @@ fun SatraOnboardingScreen(
                             state = pagerState,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .heightIn(min = 164.dp),
+                                .heightIn(min = if (compactHeight) 136.dp else 154.dp),
                             pageSpacing = 18.dp,
                         ) { pageIndex ->
                             OnboardingCopy(page = pages[pageIndex])
@@ -94,8 +95,9 @@ fun SatraOnboardingScreen(
                     screenHeight = screenHeight,
                     contentMaxWidth = 460.dp,
                     horizontalPadding = 24.dp,
-                    artworkHeight = if (compactHeight) 218.dp else 292.dp,
+                    artworkHeight = if (compactHeight) 184.dp else 248.dp,
                     compactHeight = compactHeight,
+                    scrollFallback = scrollFallback,
                 )
 
                 OnboardingWindowSize.Medium -> OnboardingSinglePaneLayout(
@@ -106,7 +108,7 @@ fun SatraOnboardingScreen(
                             state = pagerState,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .heightIn(min = 174.dp),
+                                .heightIn(min = 164.dp),
                             pageSpacing = 22.dp,
                         ) { pageIndex ->
                             OnboardingCopy(page = pages[pageIndex])
@@ -117,8 +119,9 @@ fun SatraOnboardingScreen(
                     screenHeight = screenHeight,
                     contentMaxWidth = 560.dp,
                     horizontalPadding = 48.dp,
-                    artworkHeight = 340.dp,
+                    artworkHeight = if (compactHeight) 240.dp else 304.dp,
                     compactHeight = compactHeight,
+                    scrollFallback = scrollFallback,
                 )
 
                 OnboardingWindowSize.Expanded -> OnboardingExpandedLayout(
@@ -129,7 +132,7 @@ fun SatraOnboardingScreen(
                             state = pagerState,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .heightIn(min = 210.dp),
+                                .heightIn(min = if (compactHeight) 164.dp else 196.dp),
                             pageSpacing = 24.dp,
                         ) { pageIndex ->
                             OnboardingCopy(page = pages[pageIndex])
@@ -139,6 +142,7 @@ fun SatraOnboardingScreen(
                     onRestoreWallet = onRestoreWallet,
                     screenHeight = screenHeight,
                     compactHeight = compactHeight,
+                    scrollFallback = scrollFallback,
                 )
             }
         }
@@ -157,26 +161,28 @@ private fun OnboardingSinglePaneLayout(
     horizontalPadding: Dp,
     artworkHeight: Dp,
     compactHeight: Boolean,
+    scrollFallback: Boolean,
 ) {
+    val verticalPadding = if (compactHeight) 14.dp else 20.dp
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
             .safeDrawingPadding()
-            .padding(horizontal = horizontalPadding, vertical = 20.dp),
+            .padding(horizontal = horizontalPadding, vertical = verticalPadding)
+            .then(if (scrollFallback) Modifier.verticalScroll(rememberScrollState()) else Modifier),
         contentAlignment = Alignment.TopCenter,
     ) {
         Column(
             modifier = Modifier
                 .widthIn(max = contentMaxWidth)
                 .fillMaxWidth()
-                .heightIn(min = screenHeight),
+                .then(if (scrollFallback) Modifier.heightIn(min = screenHeight) else Modifier.fillMaxSize()),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween,
         ) {
             SatraHeader(modifier = Modifier.fillMaxWidth())
 
-            Spacer(modifier = Modifier.height(if (compactHeight) 16.dp else 28.dp))
+            Spacer(modifier = Modifier.height(if (compactHeight) 10.dp else 18.dp))
 
             WalletArtwork(
                 modifier = Modifier
@@ -184,15 +190,21 @@ private fun OnboardingSinglePaneLayout(
                     .height(artworkHeight),
             )
 
-            Spacer(modifier = Modifier.height(if (compactHeight) 18.dp else 26.dp))
+            Spacer(modifier = Modifier.height(if (compactHeight) 12.dp else 18.dp))
 
             pageContent()
 
             PagerDots(
                 selectedPage = selectedPage,
                 count = pages.size,
-                modifier = Modifier.padding(top = 10.dp, bottom = if (compactHeight) 18.dp else 26.dp),
+                modifier = Modifier.padding(top = 8.dp, bottom = if (compactHeight) 12.dp else 18.dp),
             )
+
+            if (scrollFallback) {
+                Spacer(modifier = Modifier.height(12.dp))
+            } else {
+                Spacer(modifier = Modifier.weight(1f))
+            }
 
             OnboardingActions(
                 onCreateWallet = onCreateWallet,
@@ -212,20 +224,21 @@ private fun OnboardingExpandedLayout(
     onRestoreWallet: () -> Unit,
     screenHeight: Dp,
     compactHeight: Boolean,
+    scrollFallback: Boolean,
 ) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
             .safeDrawingPadding()
-            .padding(horizontal = 72.dp, vertical = 28.dp),
+            .padding(horizontal = 72.dp, vertical = if (compactHeight) 20.dp else 28.dp)
+            .then(if (scrollFallback) Modifier.verticalScroll(rememberScrollState()) else Modifier),
         contentAlignment = Alignment.Center,
     ) {
         Row(
             modifier = Modifier
                 .widthIn(max = 1180.dp)
                 .fillMaxWidth()
-                .heightIn(min = screenHeight),
+                .then(if (scrollFallback) Modifier.heightIn(min = screenHeight) else Modifier.fillMaxSize()),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(64.dp),
         ) {
@@ -240,7 +253,7 @@ private fun OnboardingExpandedLayout(
                 WalletArtwork(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(if (compactHeight) 320.dp else 430.dp),
+                        .height(if (compactHeight) 280.dp else 380.dp),
                 )
             }
 
