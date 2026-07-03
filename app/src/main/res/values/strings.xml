@@ -4,7 +4,16 @@
     <string name="wallet_symbol">◎</string>
     <string name="onboarding_action_create_wallet">Create wallet</string>
     <string name="onboarding_action_restore_wallet">Import wallet</string>
-    <string name="onboarding_footer">Non-custodial. Open source. Multi-chain.</string>
+    <string name="onboarding_footer_non_custodial">Non-custodial.</string>
+    <string name="onboarding_footer_open_source">Open-source</string>
+    <string name="onboarding_footer_multi_chain">Multi-chain.</string>
+    <string name="onboarding_legal_prefix">By continuing, you accept our</string>
+    <string name="onboarding_privacy_policy">Privacy Policy</string>
+    <string name="onboarding_legal_connector">and</string>
+    <string name="onboarding_terms_of_use">Terms of Use</string>
+    <string name="onboarding_open_source_url" translatable="false">https://github.com/devdasx/Satra</string>
+    <string name="onboarding_privacy_policy_url" translatable="false">https://satra.app/privacy</string>
+    <string name="onboarding_terms_of_use_url" translatable="false">https://satra.app/terms</string>
     <string name="onboarding_receive_label">Receive</string>
     <string name="onboarding_receive_address_preview">0x… / bc1…</string>
     <string name="onboarding_page_self_custody_eyebrow">Self-custody</string>

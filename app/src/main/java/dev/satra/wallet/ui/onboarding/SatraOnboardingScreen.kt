@@ -7,7 +7,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -29,7 +28,6 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -42,16 +40,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -371,57 +373,11 @@ private fun OnboardingVisual(
     modifier: Modifier = Modifier,
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    val shape = RoundedCornerShape(28.dp)
 
     Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .background(colorScheme.surfaceContainer)
-            .border(1.dp, colorScheme.outlineVariant, shape),
+        modifier = modifier.fillMaxWidth(),
         contentAlignment = Alignment.Center,
     ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val center = Offset(size.width / 2f, size.height / 2f)
-            val grid = 42.dp.toPx()
-            var y = -grid
-            while (y < size.height + grid) {
-                drawLine(
-                    color = colorScheme.outlineVariant.copy(alpha = 0.22f),
-                    start = Offset(0f, y),
-                    end = Offset(size.width, y),
-                    strokeWidth = 1.dp.toPx(),
-                )
-                y += grid
-            }
-
-            val tile = size.minDimension * 0.34f
-            val left = center.x - tile * 1.05f
-            val top = center.y - tile * 0.9f
-
-            drawArc(
-                color = colorScheme.primary.copy(alpha = 0.06f),
-                startAngle = 0f,
-                sweepAngle = 90f,
-                useCenter = true,
-                topLeft = Offset(left, top),
-                size = Size(tile, tile),
-            )
-            drawRoundRect(
-                color = colorScheme.primary.copy(alpha = 0.04f),
-                topLeft = Offset(left + tile * 1.18f, top),
-                size = Size(tile * 0.72f, tile * 0.72f),
-                cornerRadius = CornerRadius(8.dp.toPx(), 8.dp.toPx()),
-            )
-            drawLine(
-                color = colorScheme.outlineVariant.copy(alpha = 0.36f),
-                start = Offset(size.width * 0.2f, center.y),
-                end = Offset(size.width * 0.8f, center.y),
-                strokeWidth = 1.dp.toPx(),
-                cap = StrokeCap.Round,
-            )
-        }
-
         BoxWithConstraints(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center,
@@ -432,7 +388,6 @@ private fun OnboardingVisual(
             IconBadge(
                 iconRes = visual.leadingIconRes,
                 size = supportSize,
-                containerColor = colorScheme.surfaceContainerHigh,
                 iconColor = colorScheme.onSurface.copy(alpha = 0.4f),
                 modifier = Modifier
                     .align(Alignment.CenterStart)
@@ -443,7 +398,6 @@ private fun OnboardingVisual(
             IconBadge(
                 iconRes = visual.trailingIconRes,
                 size = supportSize,
-                containerColor = colorScheme.surfaceContainerHigh,
                 iconColor = colorScheme.onSurface.copy(alpha = 0.4f),
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
@@ -454,8 +408,7 @@ private fun OnboardingVisual(
             IconBadge(
                 iconRes = visual.primaryIconRes,
                 size = primarySize,
-                containerColor = colorScheme.primary,
-                iconColor = colorScheme.onPrimary,
+                iconColor = colorScheme.primary,
                 contentDescription = stringResource(visual.contentDescriptionRes),
                 modifier = Modifier.align(Alignment.Center),
             )
@@ -467,23 +420,19 @@ private fun OnboardingVisual(
 private fun IconBadge(
     @DrawableRes iconRes: Int,
     size: Dp,
-    containerColor: Color,
     iconColor: Color,
     modifier: Modifier = Modifier,
     contentDescription: String? = null,
 ) {
     Box(
-        modifier = modifier
-            .size(size)
-            .clip(RoundedCornerShape(size * 0.28f))
-            .background(containerColor),
+        modifier = modifier.size(size),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
             painter = painterResource(iconRes),
             contentDescription = contentDescription,
             tint = iconColor,
-            modifier = Modifier.size(size * 0.48f),
+            modifier = Modifier.size(size * 0.62f),
         )
     }
 }
@@ -610,13 +559,89 @@ private fun OnboardingActions(
             )
         }
 
-        Text(
-            text = stringResource(R.string.onboarding_footer),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 2.dp),
+        OnboardingFooterLinks(modifier = Modifier.padding(top = 2.dp))
+    }
+}
+
+@Composable
+private fun OnboardingFooterLinks(modifier: Modifier = Modifier) {
+    val linkColor = MaterialTheme.colorScheme.primary
+    val bodyColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val footerStyle = MaterialTheme.typography.labelLarge.copy(
+        color = bodyColor,
+        textAlign = TextAlign.Center,
+    )
+    val legalStyle = MaterialTheme.typography.labelMedium.copy(
+        color = bodyColor,
+        textAlign = TextAlign.Center,
+    )
+    val sourceUrl = stringResource(R.string.onboarding_open_source_url)
+    val privacyUrl = stringResource(R.string.onboarding_privacy_policy_url)
+    val termsUrl = stringResource(R.string.onboarding_terms_of_use_url)
+    val footerText = buildAnnotatedString {
+        append(stringResource(R.string.onboarding_footer_non_custodial))
+        append(" ")
+        appendLink(
+            text = stringResource(R.string.onboarding_footer_open_source),
+            url = sourceUrl,
+            color = linkColor,
         )
+        append(". ")
+        append(stringResource(R.string.onboarding_footer_multi_chain))
+    }
+    val legalText = buildAnnotatedString {
+        append(stringResource(R.string.onboarding_legal_prefix))
+        append(" ")
+        appendLink(
+            text = stringResource(R.string.onboarding_privacy_policy),
+            url = privacyUrl,
+            color = linkColor,
+        )
+        append(" ")
+        append(stringResource(R.string.onboarding_legal_connector))
+        append(" ")
+        appendLink(
+            text = stringResource(R.string.onboarding_terms_of_use),
+            url = termsUrl,
+            color = linkColor,
+        )
+        append(".")
+    }
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Text(
+            text = footerText,
+            style = footerStyle,
+        )
+        Text(
+            text = legalText,
+            style = legalStyle,
+        )
+    }
+}
+
+private fun AnnotatedString.Builder.appendLink(
+    text: String,
+    url: String,
+    color: Color,
+) {
+    withLink(
+        LinkAnnotation.Url(
+            url = url,
+            styles = TextLinkStyles(
+                style = SpanStyle(
+                    color = color,
+                    fontWeight = FontWeight.Bold,
+                    textDecoration = TextDecoration.Underline,
+                ),
+            ),
+        ),
+    ) {
+        append(text)
     }
 }
 
