@@ -588,8 +588,8 @@ private fun SetupPageIcon(
     compactHeight: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val iconContainerSize = if (compactHeight) 50.dp else 58.dp
-    val iconSize = if (compactHeight) 28.dp else 32.dp
+    val iconContainerSize = if (compactHeight) 58.dp else 66.dp
+    val iconSize = if (compactHeight) 34.dp else 38.dp
 
     Box(
         modifier = modifier
