@@ -16,6 +16,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -43,7 +44,6 @@ import dev.satra.wallet.ui.setup.ImportChainScreen
 import dev.satra.wallet.ui.setup.ImportMethodScreen
 import dev.satra.wallet.ui.setup.ImportPrivateKeyScreen
 import dev.satra.wallet.ui.setup.ImportRecoveryPhraseScreen
-import dev.satra.wallet.ui.setup.ImportReviewScreen
 import dev.satra.wallet.ui.setup.ImportWatchOnlyAddressScreen
 import dev.satra.wallet.ui.setup.SetupBiometricsScreen
 import dev.satra.wallet.ui.setup.SetupConfirmPasscodeScreen
@@ -217,7 +217,7 @@ class MainActivity : ComponentActivity() {
             SatraTheme(darkTheme = darkTheme) {
                 NavHost(
                     navController = navController,
-                    startDestination = SatraRoute.ONBOARDING,
+                    startDestination = SatraRoute.STARTUP,
                     enterTransition = {
                         slideInHorizontally(
                             animationSpec = tween(NAV_ANIMATION_MILLIS),
@@ -243,6 +243,22 @@ class MainActivity : ComponentActivity() {
                         )
                     },
                 ) {
+                    composable(SatraRoute.STARTUP) {
+                        LaunchedEffect(walletRepository) {
+                            val destination = if (walletRepository.getPrimaryWallet() != null) {
+                                SatraRoute.MAIN
+                            } else {
+                                SatraRoute.ONBOARDING
+                            }
+                            navController.navigate(destination) {
+                                popUpTo(SatraRoute.STARTUP) {
+                                    inclusive = true
+                                }
+                                launchSingleTop = true
+                            }
+                        }
+                    }
+
                     composable(SatraRoute.ONBOARDING) {
                         SatraOnboardingScreen(
                             settings = settings,
@@ -374,12 +390,7 @@ class MainActivity : ComponentActivity() {
                                 pendingImportPassphrase = passphrase
                                 pendingImportPrivateKey = ""
                                 pendingImportWatchAddress = ""
-                                navController.navigate(
-                                    SatraRoute.importReview(
-                                        method = WalletImportMethod.RecoveryPhrase,
-                                        network = null,
-                                    ),
-                                )
+                                navController.navigate(SatraRoute.setupPasscode(WalletSetupFlow.Import))
                             },
                         )
                     }
@@ -470,7 +481,7 @@ class MainActivity : ComponentActivity() {
                                     pendingImportPassphrase = ""
                                     pendingImportPrivateKey = privateKey
                                     pendingImportWatchAddress = ""
-                                    navController.navigate(SatraRoute.importReview(method, network))
+                                    navController.navigate(SatraRoute.setupPasscode(WalletSetupFlow.Import))
                                 },
                             )
                         } else {
@@ -487,41 +498,10 @@ class MainActivity : ComponentActivity() {
                                     pendingImportPassphrase = ""
                                     pendingImportPrivateKey = ""
                                     pendingImportWatchAddress = address
-                                    navController.navigate(SatraRoute.importReview(method, network))
+                                    navController.navigate(SatraRoute.setupPasscode(WalletSetupFlow.Import))
                                 },
                             )
                         }
-                    }
-
-                    composable(
-                        route = SatraRoute.IMPORT_REVIEW,
-                        arguments = listOf(
-                            navArgument(SatraRoute.ARG_METHOD) {
-                                type = NavType.StringType
-                            },
-                            navArgument(SatraRoute.ARG_NETWORK) {
-                                type = NavType.StringType
-                            },
-                        ),
-                    ) { backStackEntry ->
-                        val method = WalletImportMethod.fromRoute(
-                            backStackEntry.arguments?.getString(SatraRoute.ARG_METHOD),
-                        )
-                        val network = WalletImportNetwork.fromRoute(
-                            backStackEntry.arguments?.getString(SatraRoute.ARG_NETWORK),
-                        )
-
-                        ImportReviewScreen(
-                            method = method,
-                            network = network,
-                            settings = settings,
-                            onBack = {
-                                navController.popBackStack()
-                            },
-                            onNext = {
-                                navController.navigate(SatraRoute.setupPasscode(WalletSetupFlow.Import))
-                            },
-                        )
                     }
 
                     composable(
@@ -548,7 +528,9 @@ class MainActivity : ComponentActivity() {
                             },
                             onSkip = {
                                 pendingSetupPasscode = ""
-                                navController.navigate(SatraRoute.setupBiometrics(flow))
+                                if (persistPendingWalletSetup(flow, biometricsEnabled = false)) {
+                                    navController.navigate(SatraRoute.setupSuccess(flow))
+                                }
                             },
                         )
                     }
@@ -735,7 +717,7 @@ private object SatraRoute {
     const val SCAN_RESULT_KIND = "scan_result_kind"
     const val SCAN_RESULT_AMOUNT = "scan_result_amount"
     const val SCAN_RESULT_SCHEME = "scan_result_scheme"
-    private const val NO_NETWORK = "none"
+    const val STARTUP = "startup"
     const val MAIN = "main"
     const val ONBOARDING = "onboarding"
     const val CREATE_WALLET_BACKUP = "create-wallet/backup"
@@ -744,7 +726,6 @@ private object SatraRoute {
     const val IMPORT_RECOVERY_PHRASE = "import-wallet/recovery-phrase"
     const val IMPORT_CHAIN = "import-wallet/{$ARG_METHOD}/chain"
     const val IMPORT_ENTRY = "import-wallet/{$ARG_METHOD}/entry/{$ARG_NETWORK}"
-    const val IMPORT_REVIEW = "import-wallet/{$ARG_METHOD}/review/{$ARG_NETWORK}"
     const val SCANNER = "scanner/{$ARG_SCAN_PURPOSE}"
     const val SETUP_PASSCODE = "setup/{$ARG_FLOW}/passcode"
     const val SETUP_CONFIRM_PASSCODE = "setup/{$ARG_FLOW}/confirm-passcode"
@@ -758,11 +739,6 @@ private object SatraRoute {
         method: WalletImportMethod,
         network: WalletImportNetwork,
     ): String = "import-wallet/${method.routeSegment}/entry/${network.routeSegment}"
-
-    fun importReview(
-        method: WalletImportMethod,
-        network: WalletImportNetwork?,
-    ): String = "import-wallet/${method.routeSegment}/review/${network?.routeSegment ?: NO_NETWORK}"
 
     fun scanner(purpose: SatraScanPurpose): String =
         "scanner/${purpose.routeSegment}"

@@ -75,7 +75,6 @@
     <string name="wallet_setup_screen_import_chain">Choose network</string>
     <string name="wallet_setup_screen_import_private_key">Private key</string>
     <string name="wallet_setup_screen_import_watch_only">Watch-only address</string>
-    <string name="wallet_setup_screen_import_review">Review import</string>
     <string name="wallet_setup_screen_create_passcode">Create passcode</string>
     <string name="wallet_setup_screen_confirm_passcode">Confirm passcode</string>
     <string name="wallet_setup_screen_biometrics">Biometrics</string>
@@ -184,17 +183,6 @@
     <string name="wallet_setup_watch_address_placeholder">Paste the address for the selected chain…</string>
     <string name="wallet_setup_watch_address_note">This address can be monitored, but it cannot sign or spend from this device.</string>
     <string name="wallet_setup_selected_network">Network</string>
-    <string name="wallet_setup_import_step_review_title">Check what Satra will scan.</string>
-    <string name="wallet_setup_import_step_branch_review_title">Check what Satra will add.</string>
-    <string name="wallet_setup_import_step_review_body">Keep source, supported networks, and privacy context visible before import starts.</string>
-    <string name="wallet_setup_review_source">Source</string>
-    <string name="wallet_setup_review_source_recovery_phrase">Recovery phrase</string>
-    <string name="wallet_setup_review_source_private_key">Private key</string>
-    <string name="wallet_setup_review_source_watch_only">Watch-only address</string>
-    <string name="wallet_setup_review_networks">Networks</string>
-    <string name="wallet_setup_review_networks_supported">Supported list</string>
-    <string name="wallet_setup_review_privacy">Privacy</string>
-    <string name="wallet_setup_review_privacy_local">Local scan</string>
     <string name="wallet_setup_network_family_utxo">Bitcoin-family network</string>
     <string name="wallet_setup_network_family_evm">EVM network</string>
     <string name="wallet_setup_network_family_non_evm">Non-EVM network</string>

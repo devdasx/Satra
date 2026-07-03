@@ -151,7 +151,6 @@ enum class ImportSetupPage {
     RecoveryPhrase,
     PrivateKey,
     WatchOnlyAddress,
-    Review,
 }
 
 enum class WalletSetupFlow(val routeSegment: String) {
@@ -520,32 +519,6 @@ fun ImportWatchOnlyAddressScreen(
             selectedNetwork = network,
             address = address,
             onAddressChange = { address = it },
-        )
-    }
-}
-
-@Composable
-fun ImportReviewScreen(
-    method: WalletImportMethod,
-    network: WalletImportNetwork? = null,
-    settings: SatraSettings = SatraSettings(),
-    onBack: () -> Unit = {},
-    onNext: () -> Unit = {},
-) {
-    WalletSetupRouteScreen(
-        titleRes = R.string.wallet_setup_screen_import_review,
-        page = importSetupPage(
-            page = ImportSetupPage.Review,
-            method = method,
-        ),
-        settings = settings,
-        primaryTextRes = R.string.wallet_setup_action_continue,
-        onBack = onBack,
-        onPrimaryClick = onNext,
-    ) {
-        ImportReviewPanel(
-            method = method,
-            network = network,
         )
     }
 }
@@ -1957,30 +1930,6 @@ private fun SecretEntryPanel(
 }
 
 @Composable
-private fun ImportReviewPanel(
-    method: WalletImportMethod = WalletImportMethod.RecoveryPhrase,
-    network: WalletImportNetwork? = null,
-) {
-    FramedTool {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            ReviewTextRow(
-                titleRes = R.string.wallet_setup_review_source,
-                value = stringResource(importReviewSourceRes(method)),
-            )
-            ReviewTextRow(
-                titleRes = R.string.wallet_setup_review_networks,
-                value = network?.let { stringResource(it.labelRes) }
-                    ?: stringResource(R.string.wallet_setup_review_networks_supported),
-            )
-            ReviewTextRow(
-                titleRes = R.string.wallet_setup_review_privacy,
-                value = stringResource(R.string.wallet_setup_review_privacy_local),
-            )
-        }
-    }
-}
-
-@Composable
 private fun FramedTool(content: @Composable () -> Unit) {
     Box(
         modifier = Modifier
@@ -2213,32 +2162,6 @@ private fun SelectedNetworkPill(selectedNetwork: WalletImportNetwork) {
 }
 
 @Composable
-private fun ReviewTextRow(
-    @StringRes titleRes: Int,
-    value: String,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Text(
-            text = stringResource(titleRes),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(1f),
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.End,
-        )
-    }
-}
-
-@Composable
 private fun SetupActions(
     @StringRes primaryTextRes: Int?,
     @StringRes secondaryTextRes: Int?,
@@ -2361,15 +2284,6 @@ private fun importSetupPage(
         iconRes = R.drawable.ic_brand_scan,
     )
 
-    ImportSetupPage.Review -> SetupPageContent(
-        titleRes = if (method == WalletImportMethod.RecoveryPhrase) {
-            R.string.wallet_setup_import_step_review_title
-        } else {
-            R.string.wallet_setup_import_step_branch_review_title
-        },
-        bodyRes = R.string.wallet_setup_import_step_review_body,
-        iconRes = R.drawable.ic_brand_list,
-    )
 }
 
 private fun securitySetupPage(
@@ -2407,13 +2321,6 @@ private fun securitySetupPage(
         bodyRes = R.string.wallet_setup_success_body,
         iconRes = R.drawable.ic_brand_wallet,
     )
-}
-
-@StringRes
-private fun importReviewSourceRes(method: WalletImportMethod): Int = when (method) {
-    WalletImportMethod.RecoveryPhrase -> R.string.wallet_setup_review_source_recovery_phrase
-    WalletImportMethod.PrivateKey -> R.string.wallet_setup_review_source_private_key
-    WalletImportMethod.WatchOnly -> R.string.wallet_setup_review_source_watch_only
 }
 
 private enum class SetupWindowSize {
