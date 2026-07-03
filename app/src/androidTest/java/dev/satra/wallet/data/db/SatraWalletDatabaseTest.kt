@@ -149,10 +149,62 @@ class SatraWalletDatabaseTest {
         assertEquals("3500.00", transactions.single().fiatValue)
     }
 
+    @Test
+    fun repositoryPersistsCreateImportAndPrivateKeyFlowsForEveryNetwork() {
+        val repository = SatraWalletRepository(dao)
+        val createdWalletId = repository.createMnemonicWallet(
+            walletName = "Created",
+            mnemonic = TEST_MNEMONIC,
+            isBackedUp = true,
+            metadataJson = TEST_METADATA,
+        )
+        val importedMnemonicWalletId = repository.importMnemonicWallet(
+            walletName = "Imported phrase",
+            mnemonic = TEST_MNEMONIC,
+            metadataJson = TEST_METADATA,
+        )
+
+        checkNotNull(dao.getWallet(createdWalletId)).also { wallet ->
+            assertEquals(WalletType.Standard.value, wallet.walletType)
+            assertTrue(wallet.isBackedUp)
+            assertEquals(TEST_METADATA, wallet.metadataJson)
+        }
+        checkNotNull(dao.getWallet(importedMnemonicWalletId)).also { wallet ->
+            assertEquals(WalletType.Imported.value, wallet.walletType)
+            assertTrue(wallet.isImported)
+            assertFalse(wallet.isWatchOnly)
+        }
+
+        SupportedAssetCatalog.networks.forEach { network ->
+            val walletId = repository.importPrivateKeyWallet(
+                walletName = "Imported ${network.displayName}",
+                networkId = network.networkId,
+                privateKey = TEST_PRIVATE_KEY_HEX,
+                metadataJson = TEST_METADATA,
+            )
+            val wallet = checkNotNull(dao.getWallet(walletId))
+            val privateKeys = dao.getWalletPrivateKeys(walletId)
+
+            assertEquals(WalletType.Imported.value, wallet.walletType)
+            assertEquals(WalletKeyType.PrivateKey.value, wallet.walletKeyType)
+            assertTrue(wallet.isImported)
+            assertFalse(wallet.isWatchOnly)
+            assertEquals(SupportedAssetCatalog.assets.size, dao.getWalletAssets(walletId).size)
+            assertEquals(1, privateKeys.size)
+            assertEquals(network.networkId, privateKeys.single().networkId)
+            assertEquals(TEST_PRIVATE_KEY_HEX, privateKeys.single().keyMaterial)
+            assertEquals("hex", privateKeys.single().keyFormat)
+        }
+    }
+
     private companion object {
         const val TEST_DATABASE_NAME = "satra_wallet_test.db"
         const val TEST_TIME = 1_788_249_600_000L
         const val TEST_MNEMONIC =
             "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+        const val TEST_PRIVATE_KEY_HEX =
+            "1111111111111111111111111111111111111111111111111111111111111111"
+        const val TEST_METADATA =
+            "{\"passcodeEnabled\":true,\"passcodeLength\":6,\"biometricsEnabled\":true}"
     }
 }

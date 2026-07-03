@@ -97,35 +97,36 @@ enum class WalletImportMethod(val routeSegment: String, @StringRes val labelRes:
 
 enum class WalletImportNetwork(
     val routeSegment: String,
+    val networkId: String,
     @StringRes val labelRes: Int,
     @StringRes val familyRes: Int,
 ) {
-    Bitcoin("bitcoin", R.string.wallet_setup_network_bitcoin, R.string.wallet_setup_network_family_utxo),
-    BitcoinCash("bitcoin-cash", R.string.wallet_setup_network_bitcoin_cash, R.string.wallet_setup_network_family_utxo),
-    Dogecoin("dogecoin", R.string.wallet_setup_network_dogecoin, R.string.wallet_setup_network_family_utxo),
-    Litecoin("litecoin", R.string.wallet_setup_network_litecoin, R.string.wallet_setup_network_family_utxo),
-    Ethereum("ethereum", R.string.wallet_setup_network_ethereum, R.string.wallet_setup_network_family_evm),
-    Arbitrum("arbitrum", R.string.wallet_setup_network_arbitrum, R.string.wallet_setup_network_family_evm),
-    Base("base", R.string.wallet_setup_network_base, R.string.wallet_setup_network_family_evm),
-    Optimism("optimism", R.string.wallet_setup_network_optimism, R.string.wallet_setup_network_family_evm),
-    Scroll("scroll", R.string.wallet_setup_network_scroll, R.string.wallet_setup_network_family_evm),
-    ZkSync("zksync-era", R.string.wallet_setup_network_zksync, R.string.wallet_setup_network_family_evm),
-    Polygon("polygon", R.string.wallet_setup_network_polygon, R.string.wallet_setup_network_family_evm),
-    BnbChain("bnb-chain", R.string.wallet_setup_network_bnb_chain, R.string.wallet_setup_network_family_evm),
-    OpBnb("opbnb", R.string.wallet_setup_network_opbnb, R.string.wallet_setup_network_family_evm),
-    Avalanche("avalanche", R.string.wallet_setup_network_avalanche, R.string.wallet_setup_network_family_evm),
-    Celo("celo", R.string.wallet_setup_network_celo, R.string.wallet_setup_network_family_evm),
-    KavaEvm("kava-evm", R.string.wallet_setup_network_kava_evm, R.string.wallet_setup_network_family_evm),
-    Aptos("aptos", R.string.wallet_setup_network_aptos, R.string.wallet_setup_network_family_non_evm),
-    Near("near", R.string.wallet_setup_network_near, R.string.wallet_setup_network_family_non_evm),
-    Polkadot("polkadot", R.string.wallet_setup_network_polkadot, R.string.wallet_setup_network_family_non_evm),
-    XrpLedger("xrp-ledger", R.string.wallet_setup_network_xrp_ledger, R.string.wallet_setup_network_family_non_evm),
-    Solana("solana", R.string.wallet_setup_network_solana, R.string.wallet_setup_network_family_non_evm),
-    Stellar("stellar", R.string.wallet_setup_network_stellar, R.string.wallet_setup_network_family_non_evm),
-    Sui("sui", R.string.wallet_setup_network_sui, R.string.wallet_setup_network_family_non_evm),
-    Ton("ton", R.string.wallet_setup_network_ton, R.string.wallet_setup_network_family_non_evm),
-    Tron("tron", R.string.wallet_setup_network_tron, R.string.wallet_setup_network_family_non_evm),
-    Kava("kava", R.string.wallet_setup_network_kava, R.string.wallet_setup_network_family_non_evm);
+    Bitcoin("bitcoin", "bitcoin", R.string.wallet_setup_network_bitcoin, R.string.wallet_setup_network_family_utxo),
+    BitcoinCash("bitcoin-cash", "bitcoinCash", R.string.wallet_setup_network_bitcoin_cash, R.string.wallet_setup_network_family_utxo),
+    Dogecoin("dogecoin", "dogecoin", R.string.wallet_setup_network_dogecoin, R.string.wallet_setup_network_family_utxo),
+    Litecoin("litecoin", "litecoin", R.string.wallet_setup_network_litecoin, R.string.wallet_setup_network_family_utxo),
+    Ethereum("ethereum", "ethereum", R.string.wallet_setup_network_ethereum, R.string.wallet_setup_network_family_evm),
+    Arbitrum("arbitrum", "arbitrum", R.string.wallet_setup_network_arbitrum, R.string.wallet_setup_network_family_evm),
+    Base("base", "base", R.string.wallet_setup_network_base, R.string.wallet_setup_network_family_evm),
+    Optimism("optimism", "optimism", R.string.wallet_setup_network_optimism, R.string.wallet_setup_network_family_evm),
+    Scroll("scroll", "scroll", R.string.wallet_setup_network_scroll, R.string.wallet_setup_network_family_evm),
+    ZkSync("zksync-era", "zkSync", R.string.wallet_setup_network_zksync, R.string.wallet_setup_network_family_evm),
+    Polygon("polygon", "polygon", R.string.wallet_setup_network_polygon, R.string.wallet_setup_network_family_evm),
+    BnbChain("bnb-chain", "bnbChain", R.string.wallet_setup_network_bnb_chain, R.string.wallet_setup_network_family_evm),
+    OpBnb("opbnb", "opBNB", R.string.wallet_setup_network_opbnb, R.string.wallet_setup_network_family_evm),
+    Avalanche("avalanche", "avalanche", R.string.wallet_setup_network_avalanche, R.string.wallet_setup_network_family_evm),
+    Celo("celo", "celo", R.string.wallet_setup_network_celo, R.string.wallet_setup_network_family_evm),
+    KavaEvm("kava-evm", "kavaEvm", R.string.wallet_setup_network_kava_evm, R.string.wallet_setup_network_family_evm),
+    Aptos("aptos", "aptos", R.string.wallet_setup_network_aptos, R.string.wallet_setup_network_family_non_evm),
+    Near("near", "near", R.string.wallet_setup_network_near, R.string.wallet_setup_network_family_non_evm),
+    Polkadot("polkadot", "polkadot", R.string.wallet_setup_network_polkadot, R.string.wallet_setup_network_family_non_evm),
+    XrpLedger("xrp-ledger", "ripple", R.string.wallet_setup_network_xrp_ledger, R.string.wallet_setup_network_family_non_evm),
+    Solana("solana", "solana", R.string.wallet_setup_network_solana, R.string.wallet_setup_network_family_non_evm),
+    Stellar("stellar", "stellar", R.string.wallet_setup_network_stellar, R.string.wallet_setup_network_family_non_evm),
+    Sui("sui", "sui", R.string.wallet_setup_network_sui, R.string.wallet_setup_network_family_non_evm),
+    Ton("ton", "ton", R.string.wallet_setup_network_ton, R.string.wallet_setup_network_family_non_evm),
+    Tron("tron", "tron", R.string.wallet_setup_network_tron, R.string.wallet_setup_network_family_non_evm),
+    Kava("kava", "kava", R.string.wallet_setup_network_kava, R.string.wallet_setup_network_family_non_evm);
 
     companion object {
         fun fromRoute(routeSegment: String?): WalletImportNetwork? =
@@ -161,6 +162,7 @@ private enum class SecuritySetupPage {
 
 @Composable
 fun CreateWalletPhraseScreen(
+    mnemonic: String,
     settings: SatraSettings = SatraSettings(),
     onBack: () -> Unit = {},
     onNext: () -> Unit = {},
@@ -173,7 +175,7 @@ fun CreateWalletPhraseScreen(
         onBack = onBack,
         onPrimaryClick = onNext,
     ) {
-        HiddenPhrasePanel()
+        HiddenPhrasePanel(mnemonic = mnemonic)
     }
 }
 
@@ -232,7 +234,7 @@ fun ImportMethodScreen(
 fun ImportRecoveryPhraseScreen(
     settings: SatraSettings = SatraSettings(),
     onBack: () -> Unit = {},
-    onNext: () -> Unit = {},
+    onNext: (String) -> Unit = {},
 ) {
     var recoveryPhrase by rememberSaveable { mutableStateOf("") }
     val phraseValidation = remember(recoveryPhrase) {
@@ -249,7 +251,7 @@ fun ImportRecoveryPhraseScreen(
         primaryTextRes = R.string.wallet_setup_action_continue,
         primaryEnabled = phraseValidation.isValid,
         onBack = onBack,
-        onPrimaryClick = onNext,
+        onPrimaryClick = { onNext(recoveryPhrase.trim()) },
     ) {
         RecoveryPhraseEntry(
             recoveryPhrase = recoveryPhrase,
@@ -294,8 +296,11 @@ fun ImportPrivateKeyScreen(
     network: WalletImportNetwork,
     settings: SatraSettings = SatraSettings(),
     onBack: () -> Unit = {},
-    onNext: () -> Unit = {},
+    onNext: (String) -> Unit = {},
 ) {
+    var privateKey by rememberSaveable(network.routeSegment) { mutableStateOf("") }
+    val isPrivateKeyValid = privateKey.trim().isNotEmpty()
+
     WalletSetupRouteScreen(
         titleRes = R.string.wallet_setup_screen_import_private_key,
         page = importSetupPage(
@@ -304,10 +309,15 @@ fun ImportPrivateKeyScreen(
         ),
         settings = settings,
         primaryTextRes = R.string.wallet_setup_action_continue,
+        primaryEnabled = isPrivateKeyValid,
         onBack = onBack,
-        onPrimaryClick = onNext,
+        onPrimaryClick = { onNext(privateKey.trim()) },
     ) {
-        PrivateKeyEntry(selectedNetwork = network)
+        PrivateKeyEntry(
+            selectedNetwork = network,
+            privateKey = privateKey,
+            onPrivateKeyChange = { privateKey = it },
+        )
     }
 }
 
@@ -316,8 +326,11 @@ fun ImportWatchOnlyAddressScreen(
     network: WalletImportNetwork,
     settings: SatraSettings = SatraSettings(),
     onBack: () -> Unit = {},
-    onNext: () -> Unit = {},
+    onNext: (String) -> Unit = {},
 ) {
+    var address by rememberSaveable(network.routeSegment) { mutableStateOf("") }
+    val isAddressValid = address.trim().isNotEmpty()
+
     WalletSetupRouteScreen(
         titleRes = R.string.wallet_setup_screen_import_watch_only,
         page = importSetupPage(
@@ -326,10 +339,15 @@ fun ImportWatchOnlyAddressScreen(
         ),
         settings = settings,
         primaryTextRes = R.string.wallet_setup_action_continue,
+        primaryEnabled = isAddressValid,
         onBack = onBack,
-        onPrimaryClick = onNext,
+        onPrimaryClick = { onNext(address.trim()) },
     ) {
-        WatchOnlyAddressEntry(selectedNetwork = network)
+        WatchOnlyAddressEntry(
+            selectedNetwork = network,
+            address = address,
+            onAddressChange = { address = it },
+        )
     }
 }
 
@@ -464,7 +482,7 @@ fun SetupBiometricsScreen(
     flow: WalletSetupFlow,
     settings: SatraSettings = SatraSettings(),
     onBack: () -> Unit = {},
-    onContinue: () -> Unit = {},
+    onContinue: (Boolean) -> Unit = {},
     onSkip: () -> Unit = {},
 ) {
     var biometricsEnabled by rememberSaveable { mutableStateOf(true) }
@@ -479,7 +497,7 @@ fun SetupBiometricsScreen(
         primaryTextRes = R.string.wallet_setup_action_continue,
         secondaryTextRes = R.string.wallet_setup_action_skip_for_now,
         onBack = onBack,
-        onPrimaryClick = onContinue,
+        onPrimaryClick = { onContinue(biometricsEnabled) },
         onSecondaryClick = onSkip,
     ) { performHaptic ->
         BiometricChoicePanel(
@@ -748,21 +766,28 @@ private fun SetupPageBody(
 }
 
 @Composable
-private fun HiddenPhrasePanel() {
+private fun HiddenPhrasePanel(mnemonic: String) {
+    val words = remember(mnemonic) {
+        mnemonic.split(Regex("\\s+")).filter(String::isNotBlank)
+    }
+
     FramedTool {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            repeat(4) { rowIndex ->
+            words.chunked(3).forEachIndexed { rowIndex, rowWords ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    repeat(3) { columnIndex ->
+                    rowWords.forEachIndexed { columnIndex, word ->
                         val wordNumber = rowIndex * 3 + columnIndex + 1
                         RecoveryWordChip(
                             number = wordNumber,
-                            text = stringResource(R.string.wallet_setup_recovery_word_placeholder),
+                            text = word,
                             modifier = Modifier.weight(1f),
                         )
+                    }
+                    repeat(3 - rowWords.size) {
+                        Spacer(modifier = Modifier.weight(1f))
                     }
                 }
             }
@@ -1181,12 +1206,14 @@ private fun NetworkSelectionPanel(
 }
 
 @Composable
-private fun PrivateKeyEntry(selectedNetwork: WalletImportNetwork) {
-    var privateKey by rememberSaveable(selectedNetwork.routeSegment) { mutableStateOf("") }
-
+private fun PrivateKeyEntry(
+    selectedNetwork: WalletImportNetwork,
+    privateKey: String,
+    onPrivateKeyChange: (String) -> Unit,
+) {
     SecretEntryPanel(
         value = privateKey,
-        onValueChange = { privateKey = it },
+        onValueChange = onPrivateKeyChange,
         labelRes = R.string.wallet_setup_private_key_label,
         placeholderRes = R.string.wallet_setup_private_key_placeholder,
         noteRes = R.string.wallet_setup_private_key_note,
@@ -1195,12 +1222,14 @@ private fun PrivateKeyEntry(selectedNetwork: WalletImportNetwork) {
 }
 
 @Composable
-private fun WatchOnlyAddressEntry(selectedNetwork: WalletImportNetwork) {
-    var address by rememberSaveable(selectedNetwork.routeSegment) { mutableStateOf("") }
-
+private fun WatchOnlyAddressEntry(
+    selectedNetwork: WalletImportNetwork,
+    address: String,
+    onAddressChange: (String) -> Unit,
+) {
     SecretEntryPanel(
         value = address,
-        onValueChange = { address = it },
+        onValueChange = onAddressChange,
         labelRes = R.string.wallet_setup_watch_address_label,
         placeholderRes = R.string.wallet_setup_watch_address_placeholder,
         noteRes = R.string.wallet_setup_watch_address_note,

@@ -80,6 +80,7 @@
     <string name="wallet_setup_screen_confirm_passcode">Confirm passcode</string>
     <string name="wallet_setup_screen_biometrics">Biometrics</string>
     <string name="wallet_setup_screen_success">Success</string>
+    <string name="wallet_setup_save_failed">Wallet setup could not be saved. Please try again.</string>
     <string name="wallet_setup_action_continue">Continue</string>
     <string name="wallet_setup_action_cancel">Cancel</string>
     <string name="wallet_setup_action_set_passcode">Set passcode</string>

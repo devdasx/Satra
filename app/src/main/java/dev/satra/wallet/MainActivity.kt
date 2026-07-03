@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
 import android.os.LocaleList
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -23,6 +24,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import dev.satra.wallet.data.db.SatraDatabaseProvider
 import dev.satra.wallet.settings.SatraSettings
 import dev.satra.wallet.settings.SatraSettingsDefaults
 import dev.satra.wallet.settings.SatraThemePreference
@@ -44,6 +46,8 @@ import dev.satra.wallet.ui.setup.WalletImportMethod
 import dev.satra.wallet.ui.setup.WalletImportNetwork
 import dev.satra.wallet.ui.setup.WalletSetupFlow
 import dev.satra.wallet.ui.theme.SatraTheme
+import dev.satra.wallet.wallet.bip39.Bip39MnemonicGenerator
+import dev.satra.wallet.wallet.bip39.Bip39MnemonicValidator
 import java.util.Locale
 
 class MainActivity : ComponentActivity() {
@@ -61,7 +65,17 @@ class MainActivity : ComponentActivity() {
             var hapticsEnabled by remember { mutableStateOf(readHapticsEnabled(settingsStore)) }
             var languageTag by remember { mutableStateOf(readLanguageTag(settingsStore)) }
             var pendingSetupPasscode by rememberSaveable { mutableStateOf("") }
+            var pendingGeneratedMnemonic by rememberSaveable { mutableStateOf("") }
+            var pendingImportMethodSegment by rememberSaveable { mutableStateOf("") }
+            var pendingImportNetworkSegment by rememberSaveable { mutableStateOf("") }
+            var pendingImportRecoveryPhrase by rememberSaveable { mutableStateOf("") }
+            var pendingImportPrivateKey by rememberSaveable { mutableStateOf("") }
+            var pendingImportWatchAddress by rememberSaveable { mutableStateOf("") }
+            var pendingWalletId by rememberSaveable { mutableStateOf("") }
             val navController = rememberNavController()
+            val walletRepository = remember {
+                SatraDatabaseProvider.walletRepository(this@MainActivity)
+            }
             val settings = SatraSettings(
                 themePreference = themePreference,
                 hapticsEnabled = hapticsEnabled,
@@ -71,6 +85,87 @@ class MainActivity : ComponentActivity() {
                 SatraThemePreference.System -> systemDarkTheme
                 SatraThemePreference.Light -> false
                 SatraThemePreference.Dark -> true
+            }
+            fun resetPendingWalletSetup() {
+                pendingSetupPasscode = ""
+                pendingGeneratedMnemonic = ""
+                pendingImportMethodSegment = ""
+                pendingImportNetworkSegment = ""
+                pendingImportRecoveryPhrase = ""
+                pendingImportPrivateKey = ""
+                pendingImportWatchAddress = ""
+                pendingWalletId = ""
+            }
+
+            fun persistPendingWalletSetup(
+                flow: WalletSetupFlow,
+                biometricsEnabled: Boolean,
+            ): Boolean {
+                if (pendingWalletId.isNotBlank()) {
+                    return true
+                }
+
+                return try {
+                    val metadataJson = setupMetadataJson(
+                        passcodeEnabled = pendingSetupPasscode.isNotBlank(),
+                        passcodeLength = pendingSetupPasscode.length.takeIf { it > 0 },
+                        biometricsEnabled = biometricsEnabled,
+                    )
+                    pendingWalletId = if (flow == WalletSetupFlow.Create) {
+                        val mnemonic = pendingGeneratedMnemonic.ifBlank {
+                            Bip39MnemonicGenerator.generate().also { generatedMnemonic ->
+                                pendingGeneratedMnemonic = generatedMnemonic
+                            }
+                        }
+                        walletRepository.createMnemonicWallet(
+                            walletName = DEFAULT_CREATED_WALLET_NAME,
+                            mnemonic = mnemonic,
+                            isBackedUp = true,
+                            metadataJson = metadataJson,
+                        )
+                    } else {
+                        when (WalletImportMethod.fromRoute(pendingImportMethodSegment)) {
+                            WalletImportMethod.RecoveryPhrase -> {
+                                require(Bip39MnemonicValidator.validate(pendingImportRecoveryPhrase).isValid)
+                                walletRepository.importMnemonicWallet(
+                                    walletName = DEFAULT_IMPORTED_WALLET_NAME,
+                                    mnemonic = pendingImportRecoveryPhrase,
+                                    metadataJson = metadataJson,
+                                )
+                            }
+
+                            WalletImportMethod.PrivateKey -> {
+                                require(pendingImportPrivateKey.isNotBlank())
+                                walletRepository.importPrivateKeyWallet(
+                                    walletName = DEFAULT_IMPORTED_WALLET_NAME,
+                                    networkId = WalletImportNetwork.fromRoute(pendingImportNetworkSegment)
+                                        ?.networkId ?: WalletImportNetwork.Bitcoin.networkId,
+                                    privateKey = pendingImportPrivateKey,
+                                    metadataJson = metadataJson,
+                                )
+                            }
+
+                            WalletImportMethod.WatchOnly -> {
+                                require(pendingImportWatchAddress.isNotBlank())
+                                walletRepository.importWatchOnlyWallet(
+                                    walletName = DEFAULT_WATCH_ONLY_WALLET_NAME,
+                                    networkId = WalletImportNetwork.fromRoute(pendingImportNetworkSegment)
+                                        ?.networkId ?: WalletImportNetwork.Bitcoin.networkId,
+                                    address = pendingImportWatchAddress,
+                                    metadataJson = metadataJson,
+                                )
+                            }
+                        }
+                    }
+                    true
+                } catch (_: Exception) {
+                    Toast.makeText(
+                        this@MainActivity,
+                        getString(R.string.wallet_setup_save_failed),
+                        Toast.LENGTH_LONG,
+                    ).show()
+                    false
+                }
             }
 
             SatraTheme(darkTheme = darkTheme) {
@@ -126,11 +221,14 @@ class MainActivity : ComponentActivity() {
                                 applyAppLocale(tag)
                             },
                             onCreateWallet = {
+                                resetPendingWalletSetup()
+                                pendingGeneratedMnemonic = Bip39MnemonicGenerator.generate()
                                 navController.navigate(SatraRoute.CREATE_WALLET_BACKUP) {
                                     launchSingleTop = true
                                 }
                             },
                             onRestoreWallet = {
+                                resetPendingWalletSetup()
                                 navController.navigate(SatraRoute.IMPORT_METHOD) {
                                     launchSingleTop = true
                                 }
@@ -140,6 +238,7 @@ class MainActivity : ComponentActivity() {
 
                     composable(SatraRoute.CREATE_WALLET_PHRASE) {
                         CreateWalletPhraseScreen(
+                            mnemonic = pendingGeneratedMnemonic,
                             settings = settings,
                             onBack = {
                                 navController.popBackStack()
@@ -189,7 +288,12 @@ class MainActivity : ComponentActivity() {
                             onBack = {
                                 navController.popBackStack()
                             },
-                            onNext = {
+                            onNext = { recoveryPhrase ->
+                                pendingImportMethodSegment = WalletImportMethod.RecoveryPhrase.routeSegment
+                                pendingImportNetworkSegment = ""
+                                pendingImportRecoveryPhrase = recoveryPhrase
+                                pendingImportPrivateKey = ""
+                                pendingImportWatchAddress = ""
                                 navController.navigate(
                                     SatraRoute.importReview(
                                         method = WalletImportMethod.RecoveryPhrase,
@@ -249,7 +353,12 @@ class MainActivity : ComponentActivity() {
                                 onBack = {
                                     navController.popBackStack()
                                 },
-                                onNext = {
+                                onNext = { privateKey ->
+                                    pendingImportMethodSegment = method.routeSegment
+                                    pendingImportNetworkSegment = network.routeSegment
+                                    pendingImportRecoveryPhrase = ""
+                                    pendingImportPrivateKey = privateKey
+                                    pendingImportWatchAddress = ""
                                     navController.navigate(SatraRoute.importReview(method, network))
                                 },
                             )
@@ -260,7 +369,12 @@ class MainActivity : ComponentActivity() {
                                 onBack = {
                                     navController.popBackStack()
                                 },
-                                onNext = {
+                                onNext = { address ->
+                                    pendingImportMethodSegment = method.routeSegment
+                                    pendingImportNetworkSegment = network.routeSegment
+                                    pendingImportRecoveryPhrase = ""
+                                    pendingImportPrivateKey = ""
+                                    pendingImportWatchAddress = address
                                     navController.navigate(SatraRoute.importReview(method, network))
                                 },
                             )
@@ -370,11 +484,15 @@ class MainActivity : ComponentActivity() {
                             onBack = {
                                 navController.popBackStack()
                             },
-                            onContinue = {
-                                navController.navigate(SatraRoute.setupSuccess(flow))
+                            onContinue = { biometricsEnabled ->
+                                if (persistPendingWalletSetup(flow, biometricsEnabled)) {
+                                    navController.navigate(SatraRoute.setupSuccess(flow))
+                                }
                             },
                             onSkip = {
-                                navController.navigate(SatraRoute.setupSuccess(flow))
+                                if (persistPendingWalletSetup(flow, biometricsEnabled = false)) {
+                                    navController.navigate(SatraRoute.setupSuccess(flow))
+                                }
                             },
                         )
                     }
@@ -398,6 +516,7 @@ class MainActivity : ComponentActivity() {
                                 navController.popBackStack()
                             },
                             onOpenWallet = {
+                                resetPendingWalletSetup()
                                 navController.navigate(SatraRoute.MAIN) {
                                     popUpTo(SatraRoute.ONBOARDING) {
                                         inclusive = true
@@ -437,6 +556,25 @@ private const val KEY_THEME_PREFERENCE = "theme_preference"
 private const val KEY_HAPTICS_ENABLED = "haptics_enabled"
 private const val KEY_LANGUAGE_TAG = "language_tag"
 private const val NAV_ANIMATION_MILLIS = 280
+private const val DEFAULT_CREATED_WALLET_NAME = "Satra Wallet"
+private const val DEFAULT_IMPORTED_WALLET_NAME = "Imported Wallet"
+private const val DEFAULT_WATCH_ONLY_WALLET_NAME = "Watch-only Wallet"
+
+private fun setupMetadataJson(
+    passcodeEnabled: Boolean,
+    passcodeLength: Int?,
+    biometricsEnabled: Boolean,
+): String =
+    buildString {
+        append("{")
+        append("\"passcodeEnabled\":")
+        append(passcodeEnabled)
+        append(",\"passcodeLength\":")
+        append(passcodeLength ?: 0)
+        append(",\"biometricsEnabled\":")
+        append(biometricsEnabled)
+        append("}")
+    }
 
 private object SatraRoute {
     const val ARG_FLOW = "flow"

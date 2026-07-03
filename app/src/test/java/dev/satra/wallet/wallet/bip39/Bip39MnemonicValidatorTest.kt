@@ -7,6 +7,26 @@ import org.junit.Test
 
 class Bip39MnemonicValidatorTest {
     @Test
+    fun generatesValidMnemonicFromEntropy() {
+        val entropy = ByteArray(16)
+        val mnemonic = Bip39MnemonicGenerator.mnemonicFromEntropy(entropy)
+
+        assertEquals(
+            "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+            mnemonic,
+        )
+        assertTrue(Bip39MnemonicValidator.validate(mnemonic).isValid)
+    }
+
+    @Test
+    fun generatedMnemonicPassesValidation() {
+        val mnemonic = Bip39MnemonicGenerator.generate()
+
+        assertTrue(Bip39MnemonicValidator.validate(mnemonic).isValid)
+        assertEquals(12, mnemonic.split(" ").size)
+    }
+
+    @Test
     fun validatesSupportedBip39WordCounts() {
         val validMnemonics = mapOf(
             12 to "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",

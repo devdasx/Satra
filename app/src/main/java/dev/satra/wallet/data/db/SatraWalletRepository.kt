@@ -10,6 +10,7 @@ class SatraWalletRepository(
         mnemonic: String,
         isBackedUp: Boolean = false,
         localCurrencyCode: String = DEFAULT_LOCAL_CURRENCY_CODE,
+        metadataJson: String = EMPTY_JSON,
     ): String =
         walletDao.createWallet(
             NewWalletRecord(
@@ -21,6 +22,7 @@ class SatraWalletRepository(
                 isBackedUp = isBackedUp,
                 isImported = false,
                 isWatchOnly = false,
+                metadataJson = metadataJson,
             ),
         )
 
@@ -28,6 +30,7 @@ class SatraWalletRepository(
         walletName: String,
         mnemonic: String,
         localCurrencyCode: String = DEFAULT_LOCAL_CURRENCY_CODE,
+        metadataJson: String = EMPTY_JSON,
     ): String =
         walletDao.createWallet(
             NewWalletRecord(
@@ -38,15 +41,18 @@ class SatraWalletRepository(
                 localCurrencyCode = localCurrencyCode,
                 isImported = true,
                 isWatchOnly = false,
+                metadataJson = metadataJson,
             ),
         )
 
     fun importPrivateKeyWallet(
         walletName: String,
+        networkId: String,
         privateKey: String,
         localCurrencyCode: String = DEFAULT_LOCAL_CURRENCY_CODE,
-    ): String =
-        walletDao.createWallet(
+        metadataJson: String = EMPTY_JSON,
+    ): String {
+        val walletId = walletDao.createWallet(
             NewWalletRecord(
                 walletName = walletName,
                 walletType = WalletType.Imported.value,
@@ -55,15 +61,30 @@ class SatraWalletRepository(
                 localCurrencyCode = localCurrencyCode,
                 isImported = true,
                 isWatchOnly = false,
+                metadataJson = metadataJson,
             ),
         )
+        walletDao.insertWalletPrivateKey(
+            NewWalletPrivateKeyRecord(
+                walletId = walletId,
+                networkId = networkId,
+                keyMaterial = privateKey,
+                keyFormat = inferPrivateKeyFormat(privateKey),
+                keySource = WalletPrivateKeySource.Imported.value,
+                isImported = true,
+            ),
+        )
+        return walletId
+    }
 
     fun importWatchOnlyWallet(
         walletName: String,
+        networkId: String,
         address: String,
         localCurrencyCode: String = DEFAULT_LOCAL_CURRENCY_CODE,
-    ): String =
-        walletDao.createWallet(
+        metadataJson: String = EMPTY_JSON,
+    ): String {
+        val walletId = walletDao.createWallet(
             NewWalletRecord(
                 walletName = walletName,
                 walletType = WalletType.WatchOnly.value,
@@ -72,9 +93,33 @@ class SatraWalletRepository(
                 localCurrencyCode = localCurrencyCode,
                 isImported = true,
                 isWatchOnly = true,
+                metadataJson = metadataJson,
             ),
         )
+        walletDao.insertWalletAddress(
+            NewWalletAddressRecord(
+                walletId = walletId,
+                networkId = networkId,
+                address = address,
+                addressType = WalletAddressType.WatchOnly.value,
+                isPrimary = true,
+            ),
+        )
+        return walletId
+    }
+
+    private fun inferPrivateKeyFormat(privateKey: String): String {
+        val normalized = privateKey.removePrefix("0x")
+        return when {
+            normalized.length == 64 && normalized.all(Char::isHexDigit) -> "hex"
+            privateKey.length in 51..52 -> "wif"
+            else -> "raw"
+        }
+    }
 }
+
+private fun Char.isHexDigit(): Boolean =
+    this in '0'..'9' || this in 'a'..'f' || this in 'A'..'F'
 
 object SatraDatabaseProvider {
     @Volatile
