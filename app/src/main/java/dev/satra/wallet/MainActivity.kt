@@ -12,12 +12,15 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import dev.satra.wallet.settings.SatraSettings
 import dev.satra.wallet.settings.SatraSettingsDefaults
 import dev.satra.wallet.settings.SatraThemePreference
 import dev.satra.wallet.ui.onboarding.SatraOnboardingScreen
+import dev.satra.wallet.ui.setup.SatraWalletSetupScreen
+import dev.satra.wallet.ui.setup.WalletSetupMode
 import dev.satra.wallet.ui.theme.SatraTheme
 import java.util.Locale
 
@@ -35,6 +38,7 @@ class MainActivity : ComponentActivity() {
             var themePreference by remember { mutableStateOf(readThemePreference(settingsStore)) }
             var hapticsEnabled by remember { mutableStateOf(readHapticsEnabled(settingsStore)) }
             var languageTag by remember { mutableStateOf(readLanguageTag(settingsStore)) }
+            var activeScreen by rememberSaveable { mutableStateOf(SatraRootScreen.Onboarding.name) }
             val settings = SatraSettings(
                 themePreference = themePreference,
                 hapticsEnabled = hapticsEnabled,
@@ -47,29 +51,53 @@ class MainActivity : ComponentActivity() {
             }
 
             SatraTheme(darkTheme = darkTheme) {
-                SatraOnboardingScreen(
-                    settings = settings,
-                    appVersion = BuildConfig.VERSION_NAME,
-                    onThemePreferenceChange = { preference ->
-                        themePreference = preference
-                        settingsStore.edit()
-                            .putString(KEY_THEME_PREFERENCE, preference.name)
-                            .apply()
-                    },
-                    onHapticsEnabledChange = { enabled ->
-                        hapticsEnabled = enabled
-                        settingsStore.edit()
-                            .putBoolean(KEY_HAPTICS_ENABLED, enabled)
-                            .apply()
-                    },
-                    onLanguageTagChange = { tag ->
-                        languageTag = tag
-                        settingsStore.edit()
-                            .putString(KEY_LANGUAGE_TAG, tag)
-                            .apply()
-                        applyAppLocale(tag)
-                    },
-                )
+                when (SatraRootScreen.valueOf(activeScreen)) {
+                    SatraRootScreen.Onboarding -> SatraOnboardingScreen(
+                        settings = settings,
+                        appVersion = BuildConfig.VERSION_NAME,
+                        onThemePreferenceChange = { preference ->
+                            themePreference = preference
+                            settingsStore.edit()
+                                .putString(KEY_THEME_PREFERENCE, preference.name)
+                                .apply()
+                        },
+                        onHapticsEnabledChange = { enabled ->
+                            hapticsEnabled = enabled
+                            settingsStore.edit()
+                                .putBoolean(KEY_HAPTICS_ENABLED, enabled)
+                                .apply()
+                        },
+                        onLanguageTagChange = { tag ->
+                            languageTag = tag
+                            settingsStore.edit()
+                                .putString(KEY_LANGUAGE_TAG, tag)
+                                .apply()
+                            applyAppLocale(tag)
+                        },
+                        onCreateWallet = {
+                            activeScreen = SatraRootScreen.CreateWallet.name
+                        },
+                        onRestoreWallet = {
+                            activeScreen = SatraRootScreen.ImportWallet.name
+                        },
+                    )
+
+                    SatraRootScreen.CreateWallet -> SatraWalletSetupScreen(
+                        mode = WalletSetupMode.Create,
+                        settings = settings,
+                        onExit = {
+                            activeScreen = SatraRootScreen.Onboarding.name
+                        },
+                    )
+
+                    SatraRootScreen.ImportWallet -> SatraWalletSetupScreen(
+                        mode = WalletSetupMode.Import,
+                        settings = settings,
+                        onExit = {
+                            activeScreen = SatraRootScreen.Onboarding.name
+                        },
+                    )
+                }
             }
         }
     }
@@ -94,6 +122,12 @@ private const val SETTINGS_PREFS_NAME = "satra_settings"
 private const val KEY_THEME_PREFERENCE = "theme_preference"
 private const val KEY_HAPTICS_ENABLED = "haptics_enabled"
 private const val KEY_LANGUAGE_TAG = "language_tag"
+
+private enum class SatraRootScreen {
+    Onboarding,
+    CreateWallet,
+    ImportWallet,
+}
 
 private fun readThemePreference(settingsStore: SharedPreferences): SatraThemePreference {
     val storedValue = settingsStore.getString(
