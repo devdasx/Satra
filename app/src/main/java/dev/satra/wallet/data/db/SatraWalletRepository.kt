@@ -6,6 +6,7 @@ import dev.satra.wallet.data.sync.evm.EvmNetworkSyncResult
 import dev.satra.wallet.data.sync.evm.EvmNormalizedTransaction
 import dev.satra.wallet.data.sync.evm.EvmWalletSyncResult
 import dev.satra.wallet.data.sync.evm.EvmWalletSyncService
+import dev.satra.wallet.settings.SatraPasscodeHasher
 import dev.satra.wallet.wallet.bip39.Bip39MnemonicValidator
 import dev.satra.wallet.wallet.derivation.DerivedReceiveAccount
 import dev.satra.wallet.wallet.derivation.SatraAddressDerivation
@@ -157,6 +158,110 @@ class SatraWalletRepository(
         )
         return walletId
     }
+
+    suspend fun getAppSettings(): AppSettingsRecord =
+        withContext(Dispatchers.IO) {
+            walletDao.getAppSettings()
+        }
+
+    suspend fun updateAppSettings(update: AppSettingsUpdate): AppSettingsRecord =
+        withContext(Dispatchers.IO) {
+            val updated = walletDao.updateAppSettings(update)
+            update.localCurrencyCode?.let(walletDao::updateLocalCurrencyForWalletData)
+            updated
+        }
+
+    suspend fun setAppPasscode(passcode: String): AppSettingsRecord =
+        withContext(Dispatchers.IO) {
+            val passcodeHash = SatraPasscodeHasher.hash(passcode)
+            walletDao.updateAppSettings(
+                AppSettingsUpdate(
+                    passcodeEnabled = true,
+                    passcodeHash = passcodeHash.hash,
+                    passcodeSalt = passcodeHash.salt,
+                    passcodeLength = passcode.length,
+                    failedPasscodeAttempts = 0,
+                ),
+            )
+        }
+
+    fun saveSetupSecurity(
+        passcode: String,
+        biometricsEnabled: Boolean,
+    ) {
+        if (passcode.isBlank()) {
+            walletDao.updateAppSettings(
+                AppSettingsUpdate(
+                    clearPasscode = true,
+                    biometricsEnabled = false,
+                ),
+            )
+            return
+        }
+        val passcodeHash = SatraPasscodeHasher.hash(passcode)
+        walletDao.updateAppSettings(
+            AppSettingsUpdate(
+                passcodeEnabled = true,
+                passcodeHash = passcodeHash.hash,
+                passcodeSalt = passcodeHash.salt,
+                passcodeLength = passcode.length,
+                biometricsEnabled = biometricsEnabled,
+                failedPasscodeAttempts = 0,
+            ),
+        )
+    }
+
+    suspend fun verifyAppPasscode(passcode: String): Boolean =
+        withContext(Dispatchers.IO) {
+            val settings = walletDao.getAppSettings()
+            val valid = SatraPasscodeHasher.verify(
+                passcode = passcode,
+                expectedHash = settings.passcodeHash,
+                salt = settings.passcodeSalt,
+            )
+            val nextFailedAttempts = if (valid) 0 else settings.failedPasscodeAttempts + 1
+            walletDao.updateAppSettings(
+                AppSettingsUpdate(
+                    failedPasscodeAttempts = nextFailedAttempts,
+                ),
+            )
+            if (!valid &&
+                settings.eraseWalletEnabled &&
+                settings.passcodeEnabled &&
+                nextFailedAttempts >= settings.eraseWalletAttemptLimit
+            ) {
+                walletDao.resetUserData()
+            }
+            valid
+        }
+
+    suspend fun clearAppPasscode(): AppSettingsRecord =
+        withContext(Dispatchers.IO) {
+            walletDao.updateAppSettings(AppSettingsUpdate(clearPasscode = true))
+        }
+
+    suspend fun getAddressBookEntries(): List<AddressBookEntryRecord> =
+        withContext(Dispatchers.IO) {
+            walletDao.getAddressBookEntries()
+        }
+
+    suspend fun upsertAddressBookEntry(
+        entry: NewAddressBookEntryRecord,
+        existingEntryId: String? = null,
+    ): String =
+        withContext(Dispatchers.IO) {
+            walletDao.upsertAddressBookEntry(entry, existingEntryId)
+        }
+
+    suspend fun deleteAddressBookEntry(entryId: String) =
+        withContext(Dispatchers.IO) {
+            walletDao.deleteAddressBookEntry(entryId)
+        }
+
+    suspend fun resetUserData() =
+        withContext(Dispatchers.IO) {
+            walletDao.resetUserData()
+        }
 
     suspend fun getPrimaryWallet(): WalletRecord? =
         withContext(Dispatchers.IO) {

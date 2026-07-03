@@ -2,10 +2,12 @@ package dev.satra.wallet.data.db
 
 object SatraDatabaseContract {
     const val DATABASE_NAME = "satra_wallet.db"
-    const val DATABASE_VERSION = 2
+    const val DATABASE_VERSION = 3
 
     const val TABLE_SUPPORTED_NETWORKS = "supported_networks"
     const val TABLE_SUPPORTED_ASSETS = "supported_assets"
+    const val TABLE_APP_SETTINGS = "app_settings"
+    const val TABLE_ADDRESS_BOOK = "address_book_entries"
     const val TABLE_WALLETS = "wallets"
     const val TABLE_WALLET_ASSETS = "wallet_assets"
     const val TABLE_WALLET_ADDRESSES = "wallet_addresses"
@@ -43,6 +45,45 @@ object SatraDatabaseContract {
             source TEXT NOT NULL,
             FOREIGN KEY(network_id) REFERENCES $TABLE_SUPPORTED_NETWORKS(network_id)
                 ON DELETE RESTRICT
+        )
+        """,
+        """
+        CREATE TABLE $TABLE_APP_SETTINGS (
+            settings_id TEXT NOT NULL PRIMARY KEY,
+            local_currency_code TEXT NOT NULL DEFAULT '$DEFAULT_LOCAL_CURRENCY_CODE',
+            language_tag TEXT NOT NULL DEFAULT 'en',
+            theme_preference TEXT NOT NULL DEFAULT 'System',
+            haptics_enabled INTEGER NOT NULL DEFAULT 1,
+            passcode_enabled INTEGER NOT NULL DEFAULT 0,
+            passcode_hash TEXT,
+            passcode_salt TEXT,
+            passcode_length INTEGER,
+            biometrics_enabled INTEGER NOT NULL DEFAULT 0,
+            auto_lock_timeout_millis INTEGER NOT NULL DEFAULT 0,
+            erase_wallet_enabled INTEGER NOT NULL DEFAULT 1,
+            erase_wallet_attempt_limit INTEGER NOT NULL DEFAULT 10,
+            failed_passcode_attempts INTEGER NOT NULL DEFAULT 0,
+            notifications_news_enabled INTEGER NOT NULL DEFAULT 1,
+            notifications_prices_enabled INTEGER NOT NULL DEFAULT 1,
+            notifications_transactions_enabled INTEGER NOT NULL DEFAULT 1,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL,
+            metadata_json TEXT NOT NULL DEFAULT '$EMPTY_JSON'
+        )
+        """,
+        """
+        CREATE TABLE $TABLE_ADDRESS_BOOK (
+            entry_id TEXT NOT NULL PRIMARY KEY,
+            label TEXT NOT NULL,
+            network_id TEXT NOT NULL,
+            address TEXT NOT NULL,
+            notes TEXT,
+            is_favorite INTEGER NOT NULL DEFAULT 0,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL,
+            metadata_json TEXT NOT NULL DEFAULT '$EMPTY_JSON',
+            UNIQUE(network_id, address),
+            FOREIGN KEY(network_id) REFERENCES $TABLE_SUPPORTED_NETWORKS(network_id) ON DELETE RESTRICT
         )
         """,
         """
@@ -178,6 +219,8 @@ object SatraDatabaseContract {
 
     val indexStatements = listOf(
         "CREATE INDEX index_supported_assets_network_id ON $TABLE_SUPPORTED_ASSETS(network_id)",
+        "CREATE INDEX index_address_book_network ON $TABLE_ADDRESS_BOOK(network_id)",
+        "CREATE INDEX index_address_book_label ON $TABLE_ADDRESS_BOOK(label)",
         "CREATE INDEX index_wallet_assets_wallet_id ON $TABLE_WALLET_ASSETS(wallet_id)",
         "CREATE INDEX index_wallet_assets_asset_id ON $TABLE_WALLET_ASSETS(asset_id)",
         "CREATE INDEX index_wallet_addresses_wallet_network ON $TABLE_WALLET_ADDRESSES(wallet_id, network_id)",

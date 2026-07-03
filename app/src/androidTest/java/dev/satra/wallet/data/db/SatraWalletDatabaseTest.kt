@@ -10,10 +10,12 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import kotlinx.coroutines.runBlocking
 
 @RunWith(AndroidJUnit4::class)
 class SatraWalletDatabaseTest {
@@ -41,6 +43,23 @@ class SatraWalletDatabaseTest {
         assertEquals(SupportedAssetCatalog.assets.size.toLong(), dao.supportedAssetCount())
         assertEquals(26, SupportedAssetCatalog.networks.size)
         assertEquals(128, SupportedAssetCatalog.assets.size)
+    }
+
+    @Test
+    fun databaseSeedsDefaultAppSettings() {
+        val settings = dao.getAppSettings()
+
+        assertEquals(DEFAULT_APP_SETTINGS_ID, settings.settingsId)
+        assertEquals("USD", settings.localCurrencyCode)
+        assertEquals("en", settings.languageTag)
+        assertEquals("System", settings.themePreference)
+        assertTrue(settings.hapticsEnabled)
+        assertFalse(settings.passcodeEnabled)
+        assertTrue(settings.eraseWalletEnabled)
+        assertEquals(10, settings.eraseWalletAttemptLimit)
+        assertTrue(settings.notificationsNewsEnabled)
+        assertTrue(settings.notificationsPricesEnabled)
+        assertTrue(settings.notificationsTransactionsEnabled)
     }
 
     @Test
@@ -75,6 +94,83 @@ class SatraWalletDatabaseTest {
         assertTrue(wallet.isActive)
         assertEquals(SupportedAssetCatalog.assets.size, walletAssets.size)
         assertTrue(walletAssets.all { it.balanceRaw == "0" && it.localCurrencyCode == "USD" })
+    }
+
+    @Test
+    fun repositoryUpdatesCurrencyAcrossWalletData() = runBlocking {
+        val repository = SatraWalletRepository(dao)
+        val walletId = dao.createWallet(
+            NewWalletRecord(
+                walletName = "Currency",
+                walletType = WalletType.Standard.value,
+                walletKeyType = WalletKeyType.Mnemonic.value,
+                walletKeyMaterial = TEST_MNEMONIC,
+            ),
+            nowMillis = TEST_TIME,
+        )
+        dao.insertWalletTransaction(
+            NewWalletTransactionRecord(
+                walletId = walletId,
+                assetId = "ethereum:eth",
+                networkId = "ethereum",
+                transactionHash = "0xlocalcurrency",
+                direction = WalletTransactionDirection.Incoming.value,
+                status = WalletTransactionStatus.Success.value,
+                amountRaw = "1",
+                amountDecimal = "0.000000000000000001",
+                timestamp = TEST_TIME,
+            ),
+            nowMillis = TEST_TIME,
+        )
+
+        val updated = repository.updateAppSettings(AppSettingsUpdate(localCurrencyCode = "EUR"))
+
+        assertEquals("EUR", updated.localCurrencyCode)
+        assertEquals("EUR", checkNotNull(dao.getWallet(walletId)).localCurrencyCode)
+        assertTrue(dao.getWalletAssets(walletId).all { it.localCurrencyCode == "EUR" })
+        assertTrue(dao.getWalletTransactions(walletId).all { it.localCurrencyCode == "EUR" })
+    }
+
+    @Test
+    fun addressBookPersistsUpdatesAndDeletesEntries() {
+        val entryId = dao.upsertAddressBookEntry(
+            NewAddressBookEntryRecord(
+                label = "Cold storage",
+                networkId = "ethereum",
+                address = "0x1111111111111111111111111111111111111111",
+                notes = "Hardware wallet",
+                isFavorite = true,
+            ),
+            nowMillis = TEST_TIME,
+        )
+
+        var entries = dao.getAddressBookEntries()
+        assertEquals(1, entries.size)
+        assertEquals(entryId, entries.single().entryId)
+        assertEquals("Cold storage", entries.single().label)
+        assertEquals("ethereum", entries.single().networkId)
+        assertEquals("Hardware wallet", entries.single().notes)
+        assertTrue(entries.single().isFavorite)
+
+        dao.upsertAddressBookEntry(
+            NewAddressBookEntryRecord(
+                label = "Treasury",
+                networkId = "ethereum",
+                address = "0x1111111111111111111111111111111111111111",
+                notes = null,
+                isFavorite = false,
+            ),
+            existingEntryId = entryId,
+            nowMillis = TEST_TIME + 1,
+        )
+        entries = dao.getAddressBookEntries()
+        assertEquals(1, entries.size)
+        assertEquals("Treasury", entries.single().label)
+        assertNull(entries.single().notes)
+        assertFalse(entries.single().isFavorite)
+
+        dao.deleteAddressBookEntry(entryId)
+        assertEquals(emptyList<AddressBookEntryRecord>(), dao.getAddressBookEntries())
     }
 
     @Test
@@ -227,6 +323,90 @@ class SatraWalletDatabaseTest {
     }
 
     @Test
+    fun resetUserDataClearsWalletsAddressBookAndRestoresSettings() {
+        val walletId = dao.createWallet(
+            NewWalletRecord(
+                walletName = "Reset",
+                walletType = WalletType.Standard.value,
+                walletKeyType = WalletKeyType.Mnemonic.value,
+                walletKeyMaterial = TEST_MNEMONIC,
+            ),
+            nowMillis = TEST_TIME,
+        )
+        dao.insertWalletAddress(
+            NewWalletAddressRecord(
+                walletId = walletId,
+                networkId = "ethereum",
+                address = "0x1111111111111111111111111111111111111111",
+            ),
+            nowMillis = TEST_TIME,
+        )
+        dao.upsertAddressBookEntry(
+            NewAddressBookEntryRecord(
+                label = "Friend",
+                networkId = "ethereum",
+                address = "0x2222222222222222222222222222222222222222",
+            ),
+            nowMillis = TEST_TIME,
+        )
+        dao.updateAppSettings(
+            AppSettingsUpdate(
+                localCurrencyCode = "EUR",
+                passcodeEnabled = true,
+                passcodeHash = "hash",
+                passcodeSalt = "salt",
+                passcodeLength = 6,
+                biometricsEnabled = true,
+            ),
+            nowMillis = TEST_TIME,
+        )
+
+        dao.resetUserData(nowMillis = TEST_TIME + 1)
+
+        assertEquals(emptyList<WalletRecord>(), dao.getWallets())
+        assertEquals(emptyList<AddressBookEntryRecord>(), dao.getAddressBookEntries())
+        val settings = dao.getAppSettings()
+        assertEquals("USD", settings.localCurrencyCode)
+        assertFalse(settings.passcodeEnabled)
+        assertNull(settings.passcodeHash)
+        assertFalse(settings.biometricsEnabled)
+        assertTrue(settings.eraseWalletEnabled)
+        assertEquals(10, settings.eraseWalletAttemptLimit)
+    }
+
+    @Test
+    fun repositoryErasesWalletAfterConfiguredFailedPasscodeAttempts() = runBlocking {
+        val repository = SatraWalletRepository(dao)
+        dao.createWallet(
+            NewWalletRecord(
+                walletName = "Protected",
+                walletType = WalletType.Standard.value,
+                walletKeyType = WalletKeyType.Mnemonic.value,
+                walletKeyMaterial = TEST_MNEMONIC,
+            ),
+            nowMillis = TEST_TIME,
+        )
+        repository.saveSetupSecurity(passcode = "123456", biometricsEnabled = true)
+        dao.updateAppSettings(
+            AppSettingsUpdate(
+                eraseWalletEnabled = true,
+                eraseWalletAttemptLimit = 2,
+            ),
+            nowMillis = TEST_TIME,
+        )
+
+        assertFalse(repository.verifyAppPasscode("000000"))
+        assertEquals(1, dao.getWallets().size)
+        assertEquals(1, dao.getAppSettings().failedPasscodeAttempts)
+
+        assertFalse(repository.verifyAppPasscode("111111"))
+        assertEquals(emptyList<WalletRecord>(), dao.getWallets())
+        val resetSettings = dao.getAppSettings()
+        assertFalse(resetSettings.passcodeEnabled)
+        assertEquals(0, resetSettings.failedPasscodeAttempts)
+    }
+
+    @Test
     fun repositoryPersistsCreateImportAndPrivateKeyFlowsForEveryNetwork() {
         val repository = SatraWalletRepository(dao)
         val createdWalletId = repository.createMnemonicWallet(
@@ -323,6 +503,11 @@ class SatraWalletDatabaseTest {
         val migrationHelper = SatraDatabaseOpenHelper(context, migrationDatabaseName)
         migrationHelper.writableDatabase.use { db ->
             assertTrue(db.hasColumn(SatraDatabaseContract.TABLE_WALLETS, "passphrase"))
+            assertTrue(db.hasTable(SatraDatabaseContract.TABLE_APP_SETTINGS))
+            assertTrue(db.hasTable(SatraDatabaseContract.TABLE_ADDRESS_BOOK))
+            assertTrue(db.hasColumn(SatraDatabaseContract.TABLE_APP_SETTINGS, "local_currency_code"))
+            assertTrue(db.hasColumn(SatraDatabaseContract.TABLE_APP_SETTINGS, "erase_wallet_attempt_limit"))
+            assertTrue(db.hasColumn(SatraDatabaseContract.TABLE_ADDRESS_BOOK, "address"))
             assertEquals(SatraDatabaseContract.DATABASE_VERSION, db.version)
         }
         migrationHelper.close()
@@ -375,6 +560,14 @@ private fun SQLiteDatabase.hasColumn(
             }
         }
         false
+    }
+
+private fun SQLiteDatabase.hasTable(tableName: String): Boolean =
+    rawQuery(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",
+        arrayOf(tableName),
+    ).use { cursor ->
+        cursor.moveToFirst()
     }
 
 private fun String.isEvmAddress(): Boolean {

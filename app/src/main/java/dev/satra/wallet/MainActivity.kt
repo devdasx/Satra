@@ -203,6 +203,10 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     }
+                    walletRepository.saveSetupSecurity(
+                        passcode = pendingSetupPasscode,
+                        biometricsEnabled = pendingSetupPasscode.isNotBlank() && biometricsEnabled,
+                    )
                     true
                 } catch (_: Exception) {
                     Toast.makeText(
@@ -631,7 +635,43 @@ class MainActivity : ComponentActivity() {
                     }
 
                     composable(SatraRoute.MAIN) {
-                        SatraMainScreen(walletRepository = walletRepository)
+                        SatraMainScreen(
+                            walletRepository = walletRepository,
+                            settings = settings,
+                            appVersion = BuildConfig.VERSION_NAME,
+                            onThemePreferenceChange = { preference ->
+                                themePreference = preference
+                                settingsStore.edit()
+                                    .putString(KEY_THEME_PREFERENCE, preference.name)
+                                    .apply()
+                            },
+                            onHapticsEnabledChange = { enabled ->
+                                hapticsEnabled = enabled
+                                settingsStore.edit()
+                                    .putBoolean(KEY_HAPTICS_ENABLED, enabled)
+                                    .apply()
+                            },
+                            onLanguageTagChange = { tag ->
+                                languageTag = tag
+                                settingsStore.edit()
+                                    .putString(KEY_LANGUAGE_TAG, tag)
+                                    .apply()
+                                applyAppLocale(tag)
+                            },
+                            onResetComplete = {
+                                themePreference = SatraThemePreference.System
+                                hapticsEnabled = true
+                                languageTag = SatraSettingsDefaults.DEFAULT_LANGUAGE_TAG
+                                settingsStore.edit().clear().apply()
+                                applyAppLocale(SatraSettingsDefaults.DEFAULT_LANGUAGE_TAG)
+                                navController.navigate(SatraRoute.ONBOARDING) {
+                                    popUpTo(SatraRoute.MAIN) {
+                                        inclusive = true
+                                    }
+                                    launchSingleTop = true
+                                }
+                            },
+                        )
                     }
                 }
             }

@@ -41,6 +41,71 @@ data class NewWalletRecord(
     val metadataJson: String = EMPTY_JSON,
 )
 
+data class AppSettingsRecord(
+    val settingsId: String,
+    val localCurrencyCode: String,
+    val languageTag: String,
+    val themePreference: String,
+    val hapticsEnabled: Boolean,
+    val passcodeEnabled: Boolean,
+    val passcodeHash: String?,
+    val passcodeSalt: String?,
+    val passcodeLength: Int?,
+    val biometricsEnabled: Boolean,
+    val autoLockTimeoutMillis: Long,
+    val eraseWalletEnabled: Boolean,
+    val eraseWalletAttemptLimit: Int,
+    val failedPasscodeAttempts: Int,
+    val notificationsNewsEnabled: Boolean,
+    val notificationsPricesEnabled: Boolean,
+    val notificationsTransactionsEnabled: Boolean,
+    val createdAt: Long,
+    val updatedAt: Long,
+    val metadataJson: String,
+)
+
+data class AppSettingsUpdate(
+    val localCurrencyCode: String? = null,
+    val languageTag: String? = null,
+    val themePreference: String? = null,
+    val hapticsEnabled: Boolean? = null,
+    val passcodeEnabled: Boolean? = null,
+    val passcodeHash: String? = null,
+    val passcodeSalt: String? = null,
+    val clearPasscode: Boolean = false,
+    val passcodeLength: Int? = null,
+    val biometricsEnabled: Boolean? = null,
+    val autoLockTimeoutMillis: Long? = null,
+    val eraseWalletEnabled: Boolean? = null,
+    val eraseWalletAttemptLimit: Int? = null,
+    val failedPasscodeAttempts: Int? = null,
+    val notificationsNewsEnabled: Boolean? = null,
+    val notificationsPricesEnabled: Boolean? = null,
+    val notificationsTransactionsEnabled: Boolean? = null,
+    val metadataJson: String? = null,
+)
+
+data class AddressBookEntryRecord(
+    val entryId: String,
+    val label: String,
+    val networkId: String,
+    val address: String,
+    val notes: String?,
+    val isFavorite: Boolean,
+    val createdAt: Long,
+    val updatedAt: Long,
+    val metadataJson: String,
+)
+
+data class NewAddressBookEntryRecord(
+    val label: String,
+    val networkId: String,
+    val address: String,
+    val notes: String? = null,
+    val isFavorite: Boolean = false,
+    val metadataJson: String = EMPTY_JSON,
+)
+
 data class WalletAssetRecord(
     val walletAssetId: String,
     val walletId: String,

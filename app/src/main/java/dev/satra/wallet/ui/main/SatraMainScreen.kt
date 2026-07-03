@@ -72,6 +72,8 @@ import dev.satra.wallet.data.db.WalletTransactionRecord
 import dev.satra.wallet.data.db.WalletTransactionStatus
 import dev.satra.wallet.data.sync.evm.EvmProviderRegistry
 import dev.satra.wallet.data.sync.evm.EvmSyncCompleteness
+import dev.satra.wallet.settings.SatraSettings
+import dev.satra.wallet.settings.SatraThemePreference
 import java.math.BigDecimal
 import java.text.NumberFormat
 import java.time.Instant
@@ -83,6 +85,12 @@ import java.util.Locale
 @Composable
 fun SatraMainScreen(
     walletRepository: SatraWalletRepository,
+    settings: SatraSettings,
+    appVersion: String,
+    onThemePreferenceChange: (SatraThemePreference) -> Unit,
+    onHapticsEnabledChange: (Boolean) -> Unit,
+    onLanguageTagChange: (String) -> Unit,
+    onResetComplete: () -> Unit,
 ) {
     val tabNavController = rememberNavController()
     val tabs = remember { SatraMainTab.entries }
@@ -128,7 +136,76 @@ fun SatraMainScreen(
                 SatraMainPlaceholderTab(title = stringResource(R.string.main_nav_markets))
             }
             composable(SatraMainTab.Settings.route) {
-                SatraMainPlaceholderTab(title = stringResource(R.string.main_nav_settings))
+                SatraSettingsRootScreen(
+                    walletRepository = walletRepository,
+                    settings = settings,
+                    onNavigate = tabNavController::navigate,
+                )
+            }
+            composable(SatraMainRoute.AddressBook) {
+                SatraAddressBookScreen(
+                    walletRepository = walletRepository,
+                    onBack = { tabNavController.popBackStack() },
+                )
+            }
+            composable(SatraMainRoute.Preferences) {
+                SatraPreferencesScreen(
+                    walletRepository = walletRepository,
+                    settings = settings,
+                    onBack = { tabNavController.popBackStack() },
+                    onNavigate = tabNavController::navigate,
+                    onHapticsEnabledChange = onHapticsEnabledChange,
+                )
+            }
+            composable(SatraMainRoute.Currency) {
+                SatraCurrencyScreen(
+                    walletRepository = walletRepository,
+                    onBack = { tabNavController.popBackStack() },
+                )
+            }
+            composable(SatraMainRoute.Language) {
+                SatraLanguageScreen(
+                    walletRepository = walletRepository,
+                    settings = settings,
+                    onBack = { tabNavController.popBackStack() },
+                    onLanguageTagChange = onLanguageTagChange,
+                )
+            }
+            composable(SatraMainRoute.Appearance) {
+                SatraAppearanceScreen(
+                    walletRepository = walletRepository,
+                    settings = settings,
+                    onBack = { tabNavController.popBackStack() },
+                    onThemePreferenceChange = onThemePreferenceChange,
+                )
+            }
+            composable(SatraMainRoute.Security) {
+                SatraSecurityScreen(
+                    walletRepository = walletRepository,
+                    onBack = { tabNavController.popBackStack() },
+                )
+            }
+            composable(SatraMainRoute.Notifications) {
+                SatraNotificationsScreen(
+                    walletRepository = walletRepository,
+                    onBack = { tabNavController.popBackStack() },
+                )
+            }
+            composable(SatraMainRoute.About) {
+                SatraAboutScreen(
+                    appVersion = appVersion,
+                    onBack = { tabNavController.popBackStack() },
+                )
+            }
+            composable(SatraMainRoute.Legal) {
+                SatraLegalScreen(onBack = { tabNavController.popBackStack() })
+            }
+            composable(SatraMainRoute.DangerZone) {
+                SatraDangerZoneScreen(
+                    walletRepository = walletRepository,
+                    onBack = { tabNavController.popBackStack() },
+                    onResetComplete = onResetComplete,
+                )
             }
             composable(SatraMainRoute.Receive) {
                 SatraReceiveScreen(
@@ -1425,8 +1502,18 @@ private enum class SatraMainTab(
     ),
 }
 
-private object SatraMainRoute {
+internal object SatraMainRoute {
     const val Receive = "main/receive"
+    const val AddressBook = "main/settings/address-book"
+    const val Preferences = "main/settings/preferences"
+    const val Currency = "main/settings/preferences/currency"
+    const val Language = "main/settings/preferences/language"
+    const val Appearance = "main/settings/preferences/appearance"
+    const val Security = "main/settings/security"
+    const val Notifications = "main/settings/notifications"
+    const val About = "main/settings/about"
+    const val Legal = "main/settings/legal"
+    const val DangerZone = "main/settings/danger-zone"
 }
 
 private val HomeContentMaxWidth = 720.dp

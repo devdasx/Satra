@@ -22,6 +22,66 @@ class SatraWalletDao(
             SatraDatabaseContract.TABLE_SUPPORTED_ASSETS,
         )
 
+    fun getAppSettings(): AppSettingsRecord =
+        databaseHelper.readableDatabase.query(
+            SatraDatabaseContract.TABLE_APP_SETTINGS,
+            null,
+            "settings_id = ?",
+            arrayOf(DEFAULT_APP_SETTINGS_ID),
+            null,
+            null,
+            null,
+            "1",
+        ).use { cursor ->
+            if (cursor.moveToFirst()) {
+                cursor.toAppSettingsRecord()
+            } else {
+                ensureDefaultAppSettings()
+            }
+        }
+
+    fun updateAppSettings(
+        update: AppSettingsUpdate,
+        nowMillis: Long = System.currentTimeMillis(),
+    ): AppSettingsRecord {
+        ensureDefaultAppSettings()
+        databaseHelper.writableDatabase.update(
+            SatraDatabaseContract.TABLE_APP_SETTINGS,
+            ContentValues().apply {
+                update.localCurrencyCode?.let { put("local_currency_code", it) }
+                update.languageTag?.let { put("language_tag", it) }
+                update.themePreference?.let { put("theme_preference", it) }
+                update.hapticsEnabled?.let { put("haptics_enabled", it.toInt()) }
+                update.passcodeEnabled?.let { put("passcode_enabled", it.toInt()) }
+                update.biometricsEnabled?.let { put("biometrics_enabled", it.toInt()) }
+                update.autoLockTimeoutMillis?.let { put("auto_lock_timeout_millis", it) }
+                update.eraseWalletEnabled?.let { put("erase_wallet_enabled", it.toInt()) }
+                update.eraseWalletAttemptLimit?.let { put("erase_wallet_attempt_limit", it) }
+                update.failedPasscodeAttempts?.let { put("failed_passcode_attempts", it) }
+                update.notificationsNewsEnabled?.let { put("notifications_news_enabled", it.toInt()) }
+                update.notificationsPricesEnabled?.let { put("notifications_prices_enabled", it.toInt()) }
+                update.notificationsTransactionsEnabled?.let { put("notifications_transactions_enabled", it.toInt()) }
+                if (update.clearPasscode) {
+                    put("passcode_enabled", 0)
+                    putNull("passcode_hash")
+                    putNull("passcode_salt")
+                    putNull("passcode_length")
+                    put("biometrics_enabled", 0)
+                    put("failed_passcode_attempts", 0)
+                } else {
+                    update.passcodeHash?.let { put("passcode_hash", it) }
+                    update.passcodeSalt?.let { put("passcode_salt", it) }
+                    update.passcodeLength?.let { put("passcode_length", it) }
+                }
+                update.metadataJson?.let { put("metadata_json", it) }
+                put("updated_at", nowMillis)
+            },
+            "settings_id = ?",
+            arrayOf(DEFAULT_APP_SETTINGS_ID),
+        )
+        return getAppSettings()
+    }
+
     fun createWallet(
         wallet: NewWalletRecord,
         includeAllSupportedAssets: Boolean = true,
@@ -311,6 +371,75 @@ class SatraWalletDao(
             }
         }
 
+    fun getAddressBookEntries(): List<AddressBookEntryRecord> =
+        databaseHelper.readableDatabase.query(
+            SatraDatabaseContract.TABLE_ADDRESS_BOOK,
+            null,
+            null,
+            null,
+            null,
+            null,
+            "is_favorite DESC, label COLLATE NOCASE ASC, created_at DESC",
+        ).use { cursor ->
+            buildList {
+                while (cursor.moveToNext()) {
+                    add(cursor.toAddressBookEntryRecord())
+                }
+            }
+        }
+
+    fun upsertAddressBookEntry(
+        entry: NewAddressBookEntryRecord,
+        existingEntryId: String? = null,
+        nowMillis: Long = System.currentTimeMillis(),
+    ): String {
+        val entryId = existingEntryId ?: findAddressBookEntryId(
+            networkId = entry.networkId,
+            address = entry.address,
+        ) ?: UUID.randomUUID().toString()
+        val existing = getAddressBookEntry(entryId)
+        val values = ContentValues().apply {
+            put("entry_id", entryId)
+            put("label", entry.label)
+            put("network_id", entry.networkId)
+            put("address", entry.address)
+            putNullable("notes", entry.notes)
+            put("is_favorite", entry.isFavorite.toInt())
+            put("created_at", existing?.createdAt ?: nowMillis)
+            put("updated_at", nowMillis)
+            put("metadata_json", entry.metadataJson)
+        }
+        databaseHelper.writableDatabase.insertWithOnConflict(
+            SatraDatabaseContract.TABLE_ADDRESS_BOOK,
+            null,
+            values,
+            SQLiteDatabase.CONFLICT_REPLACE,
+        )
+        return entryId
+    }
+
+    fun deleteAddressBookEntry(entryId: String) {
+        databaseHelper.writableDatabase.delete(
+            SatraDatabaseContract.TABLE_ADDRESS_BOOK,
+            "entry_id = ?",
+            arrayOf(entryId),
+        )
+    }
+
+    fun resetUserData(nowMillis: Long = System.currentTimeMillis()) {
+        val db = databaseHelper.writableDatabase
+        db.beginTransaction()
+        try {
+            db.delete(SatraDatabaseContract.TABLE_WALLETS, null, null)
+            db.delete(SatraDatabaseContract.TABLE_ADDRESS_BOOK, null, null)
+            db.delete(SatraDatabaseContract.TABLE_APP_SETTINGS, null, null)
+            insertDefaultAppSettings(db, nowMillis)
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+    }
+
     fun markWalletBackedUp(
         walletId: String,
         backedUp: Boolean,
@@ -373,6 +502,46 @@ class SatraWalletDao(
         )
     }
 
+    fun updateLocalCurrencyForWalletData(
+        localCurrencyCode: String,
+        nowMillis: Long = System.currentTimeMillis(),
+    ) {
+        val db = databaseHelper.writableDatabase
+        db.beginTransaction()
+        try {
+            db.update(
+                SatraDatabaseContract.TABLE_WALLETS,
+                ContentValues().apply {
+                    put("local_currency_code", localCurrencyCode)
+                    put("updated_at", nowMillis)
+                },
+                null,
+                null,
+            )
+            db.update(
+                SatraDatabaseContract.TABLE_WALLET_ASSETS,
+                ContentValues().apply {
+                    put("local_currency_code", localCurrencyCode)
+                    put("updated_at", nowMillis)
+                },
+                null,
+                null,
+            )
+            db.update(
+                SatraDatabaseContract.TABLE_WALLET_TRANSACTIONS,
+                ContentValues().apply {
+                    put("local_currency_code", localCurrencyCode)
+                    put("updated_at", nowMillis)
+                },
+                null,
+                null,
+            )
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+    }
+
     private fun findWalletTransactionId(
         walletId: String,
         networkId: String,
@@ -424,6 +593,88 @@ class SatraWalletDao(
             )
         }
     }
+
+    private fun ensureDefaultAppSettings(): AppSettingsRecord {
+        val nowMillis = System.currentTimeMillis()
+        insertDefaultAppSettings(databaseHelper.writableDatabase, nowMillis)
+        return databaseHelper.readableDatabase.query(
+            SatraDatabaseContract.TABLE_APP_SETTINGS,
+            null,
+            "settings_id = ?",
+            arrayOf(DEFAULT_APP_SETTINGS_ID),
+            null,
+            null,
+            null,
+            "1",
+        ).use { cursor ->
+            check(cursor.moveToFirst()) { "Default app settings could not be created." }
+            cursor.toAppSettingsRecord()
+        }
+    }
+
+    private fun insertDefaultAppSettings(
+        db: SQLiteDatabase,
+        nowMillis: Long,
+    ) {
+        db.insertWithOnConflict(
+            SatraDatabaseContract.TABLE_APP_SETTINGS,
+            null,
+            ContentValues().apply {
+                put("settings_id", DEFAULT_APP_SETTINGS_ID)
+                put("local_currency_code", DEFAULT_LOCAL_CURRENCY_CODE)
+                put("language_tag", "en")
+                put("theme_preference", "System")
+                put("haptics_enabled", 1)
+                put("passcode_enabled", 0)
+                putNull("passcode_hash")
+                putNull("passcode_salt")
+                putNull("passcode_length")
+                put("biometrics_enabled", 0)
+                put("auto_lock_timeout_millis", 0L)
+                put("erase_wallet_enabled", 1)
+                put("erase_wallet_attempt_limit", 10)
+                put("failed_passcode_attempts", 0)
+                put("notifications_news_enabled", 1)
+                put("notifications_prices_enabled", 1)
+                put("notifications_transactions_enabled", 1)
+                put("created_at", nowMillis)
+                put("updated_at", nowMillis)
+                put("metadata_json", EMPTY_JSON)
+            },
+            SQLiteDatabase.CONFLICT_IGNORE,
+        )
+    }
+
+    private fun getAddressBookEntry(entryId: String): AddressBookEntryRecord? =
+        databaseHelper.readableDatabase.query(
+            SatraDatabaseContract.TABLE_ADDRESS_BOOK,
+            null,
+            "entry_id = ?",
+            arrayOf(entryId),
+            null,
+            null,
+            null,
+            "1",
+        ).use { cursor ->
+            if (cursor.moveToFirst()) cursor.toAddressBookEntryRecord() else null
+        }
+
+    private fun findAddressBookEntryId(
+        networkId: String,
+        address: String,
+    ): String? =
+        databaseHelper.readableDatabase.query(
+            SatraDatabaseContract.TABLE_ADDRESS_BOOK,
+            arrayOf("entry_id"),
+            "network_id = ? AND address = ?",
+            arrayOf(networkId, address),
+            null,
+            null,
+            null,
+            "1",
+        ).use { cursor ->
+            if (cursor.moveToFirst()) cursor.string("entry_id") else null
+        }
 }
 
 private fun Cursor.toWalletRecord(): WalletRecord =
@@ -448,6 +699,43 @@ private fun Cursor.toWalletRecord(): WalletRecord =
         createdAt = long("created_at"),
         updatedAt = long("updated_at"),
         lastSyncedAt = nullableLong("last_synced_at"),
+        metadataJson = string("metadata_json"),
+    )
+
+private fun Cursor.toAppSettingsRecord(): AppSettingsRecord =
+    AppSettingsRecord(
+        settingsId = string("settings_id"),
+        localCurrencyCode = string("local_currency_code"),
+        languageTag = string("language_tag"),
+        themePreference = string("theme_preference"),
+        hapticsEnabled = boolean("haptics_enabled"),
+        passcodeEnabled = boolean("passcode_enabled"),
+        passcodeHash = nullableString("passcode_hash"),
+        passcodeSalt = nullableString("passcode_salt"),
+        passcodeLength = nullableInt("passcode_length"),
+        biometricsEnabled = boolean("biometrics_enabled"),
+        autoLockTimeoutMillis = long("auto_lock_timeout_millis"),
+        eraseWalletEnabled = boolean("erase_wallet_enabled"),
+        eraseWalletAttemptLimit = int("erase_wallet_attempt_limit"),
+        failedPasscodeAttempts = int("failed_passcode_attempts"),
+        notificationsNewsEnabled = boolean("notifications_news_enabled"),
+        notificationsPricesEnabled = boolean("notifications_prices_enabled"),
+        notificationsTransactionsEnabled = boolean("notifications_transactions_enabled"),
+        createdAt = long("created_at"),
+        updatedAt = long("updated_at"),
+        metadataJson = string("metadata_json"),
+    )
+
+private fun Cursor.toAddressBookEntryRecord(): AddressBookEntryRecord =
+    AddressBookEntryRecord(
+        entryId = string("entry_id"),
+        label = string("label"),
+        networkId = string("network_id"),
+        address = string("address"),
+        notes = nullableString("notes"),
+        isFavorite = boolean("is_favorite"),
+        createdAt = long("created_at"),
+        updatedAt = long("updated_at"),
         metadataJson = string("metadata_json"),
     )
 
