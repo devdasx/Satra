@@ -32,6 +32,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -699,18 +700,88 @@ fun SetupSuccessScreen(
     onBack: () -> Unit = {},
     onOpenWallet: () -> Unit = {},
 ) {
-    WalletSetupRouteScreen(
-        titleRes = R.string.wallet_setup_screen_success,
-        page = securitySetupPage(
-            flow = flow,
-            page = SecuritySetupPage.Success,
-        ),
-        settings = settings,
-        primaryTextRes = R.string.wallet_setup_action_open_wallet,
-        onBack = onBack,
-        onPrimaryClick = onOpenWallet,
+    val hapticFeedback = LocalHapticFeedback.current
+    val performHaptic = remember(settings.hapticsEnabled, hapticFeedback) {
+        { performSetupHaptic(hapticFeedback, settings.hapticsEnabled) }
+    }
+
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface),
     ) {
-        SuccessSummaryPanel(flow = flow)
+        val windowSize = remember(maxWidth) { SetupWindowSize.from(maxWidth) }
+        val compactHeight = maxHeight < 780.dp
+        val scrollFallback = maxHeight < 640.dp
+        val contentMaxWidth = when (windowSize) {
+            SetupWindowSize.Compact -> 520.dp
+            SetupWindowSize.Medium -> 640.dp
+            SetupWindowSize.Expanded -> 720.dp
+        }
+
+        SetupBackground()
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .safeDrawingPadding()
+                .padding(
+                    horizontal = when (windowSize) {
+                        SetupWindowSize.Compact -> 24.dp
+                        SetupWindowSize.Medium -> 48.dp
+                        SetupWindowSize.Expanded -> 72.dp
+                    },
+                    vertical = if (compactHeight) 16.dp else 24.dp,
+                ),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Column(
+                modifier = Modifier
+                    .widthIn(max = contentMaxWidth)
+                    .fillMaxSize()
+                    .then(if (scrollFallback) Modifier.verticalScroll(rememberScrollState()) else Modifier),
+            ) {
+                SetupTopBar(
+                    titleRes = R.string.wallet_setup_screen_success,
+                    onBack = {
+                        performHaptic()
+                        onBack()
+                    },
+                )
+
+                Spacer(modifier = Modifier.height(if (compactHeight) 20.dp else 28.dp))
+
+                Box(
+                    modifier = if (scrollFallback) {
+                        Modifier.fillMaxWidth()
+                    } else {
+                        Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                    },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    SuccessCompletionPanel(
+                        flow = flow,
+                        compactHeight = compactHeight,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(if (compactHeight) 14.dp else 22.dp))
+
+                SetupActions(
+                    primaryTextRes = R.string.wallet_setup_action_open_wallet,
+                    secondaryTextRes = null,
+                    primaryEnabled = true,
+                    onPrimaryClick = {
+                        performHaptic()
+                        onOpenWallet()
+                    },
+                    onSecondaryClick = null,
+                )
+            }
+        }
     }
 }
 
@@ -1449,28 +1520,190 @@ private fun BiometricChoicePanel(
 }
 
 @Composable
-private fun SuccessSummaryPanel(flow: WalletSetupFlow) {
-    FramedTool {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            ReviewTextRow(
-                titleRes = R.string.wallet_setup_success_wallet,
-                value = stringResource(
-                    if (flow == WalletSetupFlow.Create) {
-                        R.string.wallet_setup_success_wallet_created
+private fun SuccessCompletionPanel(
+    flow: WalletSetupFlow,
+    compactHeight: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val isCreateFlow = flow == WalletSetupFlow.Create
+
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(if (compactHeight) 16.dp else 20.dp),
+    ) {
+        SuccessBeacon(compactHeight = compactHeight)
+        Column(
+            modifier = Modifier.widthIn(max = 520.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.wallet_setup_success_kicker),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = stringResource(
+                    if (isCreateFlow) {
+                        R.string.wallet_setup_success_create_title
                     } else {
-                        R.string.wallet_setup_success_wallet_imported
+                        R.string.wallet_setup_success_import_title
                     },
                 ),
+                style = MaterialTheme.typography.headlineLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
             )
-            ReviewTextRow(
-                titleRes = R.string.wallet_setup_success_security,
-                value = stringResource(R.string.wallet_setup_success_security_optional),
-            )
-            ReviewTextRow(
-                titleRes = R.string.wallet_setup_success_access,
-                value = stringResource(R.string.wallet_setup_success_access_ready),
+            Text(
+                text = stringResource(
+                    if (isCreateFlow) {
+                        R.string.wallet_setup_success_create_body
+                    } else {
+                        R.string.wallet_setup_success_import_body
+                    },
+                ),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
             )
         }
+        SuccessStatusGrid(flow = flow)
+        SuccessNextPanel()
+    }
+}
+
+@Composable
+private fun SuccessBeacon(compactHeight: Boolean) {
+    val outerSize = if (compactHeight) 112.dp else 136.dp
+    val innerSize = if (compactHeight) 76.dp else 88.dp
+
+    Box(
+        modifier = Modifier.size(outerSize),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primaryContainer),
+        )
+        Box(
+            modifier = Modifier
+                .size(innerSize)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primary),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Check,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.size(if (compactHeight) 38.dp else 44.dp),
+            )
+        }
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .size(42.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surface)
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Image(
+                painter = painterResource(R.drawable.satra_mark),
+                contentDescription = null,
+                modifier = Modifier.size(22.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun SuccessStatusGrid(flow: WalletSetupFlow) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        SuccessStatusTile(
+            titleRes = R.string.wallet_setup_success_wallet,
+            valueRes = if (flow == WalletSetupFlow.Create) {
+                R.string.wallet_setup_success_wallet_created
+            } else {
+                R.string.wallet_setup_success_wallet_imported
+            },
+            modifier = Modifier.weight(1f),
+        )
+        SuccessStatusTile(
+            titleRes = R.string.wallet_setup_success_storage,
+            valueRes = R.string.wallet_setup_success_storage_local,
+            modifier = Modifier.weight(1f),
+        )
+        SuccessStatusTile(
+            titleRes = R.string.wallet_setup_success_access,
+            valueRes = R.string.wallet_setup_success_access_ready,
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+@Composable
+private fun SuccessStatusTile(
+    @StringRes titleRes: Int,
+    @StringRes valueRes: Int,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .clip(MaterialTheme.shapes.medium)
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, MaterialTheme.shapes.medium)
+            .padding(horizontal = 10.dp, vertical = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(
+            text = stringResource(titleRes),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+        Text(
+            text = stringResource(valueRes),
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+        )
+    }
+}
+
+@Composable
+private fun SuccessNextPanel() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, MaterialTheme.shapes.medium)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.wallet_setup_success_next_title),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Bold,
+        )
+        Text(
+            text = stringResource(R.string.wallet_setup_success_next_body),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
