@@ -7,6 +7,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,6 +38,7 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -50,6 +52,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -275,19 +279,33 @@ private fun SatraHomeDashboard(
                 totalBalance = formatFiat("0", "USD"),
                 currencyCode = "USD",
                 assets = emptyList(),
+                chartTransactions = emptyList(),
+                chartData = buildHomeBalanceChartData(
+                    transactions = emptyList(),
+                    range = HomeChartRange.OneWeek,
+                    nowMillis = System.currentTimeMillis(),
+                ),
             )
             return@LaunchedEffect
         }
 
         suspend fun loadContent(status: HomeSyncStatus) {
-            val (latestWallet, walletAssets) = coroutineScope {
+            val (latestWallet, walletAssets, walletTransactions) = coroutineScope {
                 val walletDeferred = async { walletRepository.getPrimaryWallet() }
                 val assetsDeferred = async { walletRepository.getWalletAssets(wallet.walletId) }
-                (walletDeferred.await() ?: wallet) to assetsDeferred.await()
+                val transactionsDeferred = async { walletRepository.getWalletTransactions(wallet.walletId) }
+                Triple(
+                    walletDeferred.await() ?: wallet,
+                    assetsDeferred.await(),
+                    transactionsDeferred.await(),
+                )
             }
             homeState = latestWallet.toHomeDashboardState(
                 walletAssets = walletAssets,
+                walletTransactions = walletTransactions,
                 status = status,
+                chartRange = HomeChartRange.OneWeek,
+                nowMillis = System.currentTimeMillis(),
             )
         }
 
@@ -305,6 +323,12 @@ private fun SatraHomeDashboard(
             totalBalance = formatFiat("0", "USD"),
             currencyCode = "USD",
             assets = emptyList(),
+            chartTransactions = emptyList(),
+            chartData = buildHomeBalanceChartData(
+                transactions = emptyList(),
+                range = HomeChartRange.OneWeek,
+                nowMillis = System.currentTimeMillis(),
+            ),
         )
         is HomeDashboardState.Content -> state
     }
@@ -335,7 +359,12 @@ private fun SatraHomeDashboard(
                     onReceiveClick = onReceiveClick,
                 )
                 Spacer(modifier = Modifier.height(14.dp))
-                HomeChartCard(totalBalance = content.totalBalance)
+                HomeChartCard(
+                    totalBalance = content.totalBalance,
+                    currencyCode = content.currencyCode,
+                    transactions = content.chartTransactions,
+                    initialChartData = content.chartData,
+                )
                 Spacer(modifier = Modifier.height(22.dp))
                 HomeAssetsHeader(assetCount = content.assets.size)
             }
@@ -999,7 +1028,23 @@ private fun HomeSecondaryActionButton(
 @Composable
 private fun HomeChartCard(
     totalBalance: String,
+    currencyCode: String,
+    transactions: List<WalletTransactionRecord>,
+    initialChartData: HomeBalanceChartData,
 ) {
+    var selectedRange by remember { mutableStateOf(initialChartData.range) }
+    val chartData = remember(transactions, selectedRange) {
+        buildHomeBalanceChartData(
+            transactions = transactions,
+            range = selectedRange,
+            nowMillis = System.currentTimeMillis(),
+        )
+    }
+    var selectedPointIndex by remember(chartData.points, selectedRange) {
+        mutableStateOf((chartData.points.lastIndex).coerceAtLeast(0))
+    }
+    val selectedPoint = chartData.points.getOrNull(selectedPointIndex)
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -1022,7 +1067,11 @@ private fun HomeChartCard(
                         fontWeight = FontWeight.Bold,
                     )
                     Text(
-                        text = stringResource(R.string.home_chart_range),
+                        text = if (chartData.hasActivity && selectedPoint != null) {
+                            formatChartPointTime(selectedPoint.timestampMillis, selectedRange)
+                        } else {
+                            stringResource(R.string.home_chart_value_placeholder)
+                        },
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Bold,
@@ -1036,37 +1085,174 @@ private fun HomeChartCard(
                 )
             }
             Spacer(modifier = Modifier.height(14.dp))
+            HomeChartRangeSelector(
+                selectedRange = selectedRange,
+                onRangeSelected = { range -> selectedRange = range },
+            )
+            Spacer(modifier = Modifier.height(14.dp))
             HomeBalanceChart(
+                chartData = chartData,
+                selectedPointIndex = selectedPointIndex,
+                onPointSelected = { index -> selectedPointIndex = index },
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(2.35f),
             )
+            Spacer(modifier = Modifier.height(14.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column {
+                    Text(
+                        text = stringResource(R.string.home_chart_selected_value),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = selectedPoint?.value?.let { value ->
+                            formatFiat(value.toPlainString(), currencyCode)
+                        } ?: stringResource(R.string.home_chart_value_placeholder),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = stringResource(R.string.home_chart_change_label),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = "${formatSignedFiat(chartData.changeValue, currencyCode)} · ${formatPercent(chartData.percentChange)}",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = if (chartData.changeValue.signum() >= 0) {
+                            MaterialTheme.colorScheme.tertiary
+                        } else {
+                            MaterialTheme.colorScheme.error
+                        },
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HomeChartRangeSelector(
+    selectedRange: HomeChartRange,
+    onRangeSelected: (HomeChartRange) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        HomeChartRange.entries.forEach { range ->
+            val selected = selectedRange == range
+            if (selected) {
+                Button(
+                    onClick = { onRangeSelected(range) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(36.dp),
+                    shape = RoundedCornerShape(100.dp),
+                    contentPadding = ButtonDefaults.ContentPadding,
+                ) {
+                    Text(
+                        text = stringResource(range.labelRes),
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                    )
+                }
+            } else {
+                TextButton(
+                    onClick = { onRangeSelected(range) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(36.dp),
+                    shape = RoundedCornerShape(100.dp),
+                ) {
+                    Text(
+                        text = stringResource(range.labelRes),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
 private fun HomeBalanceChart(
+    chartData: HomeBalanceChartData,
+    selectedPointIndex: Int,
+    onPointSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val lineColor = MaterialTheme.colorScheme.onSurface
     val gridColor = MaterialTheme.colorScheme.outlineVariant
     val fillColor = MaterialTheme.colorScheme.primaryContainer
-    val points = remember {
-        listOf(0.36f, 0.40f, 0.38f, 0.44f, 0.43f, 0.52f, 0.49f, 0.58f, 0.55f, 0.64f, 0.68f)
-    }
+    val selectedColor = MaterialTheme.colorScheme.primary
+    val surfaceColor = MaterialTheme.colorScheme.surface
+    var chartPixelWidth by remember { mutableStateOf(0f) }
 
-    Canvas(modifier = modifier) {
+    Canvas(
+        modifier = modifier
+            .onSizeChanged { size -> chartPixelWidth = size.width.toFloat() }
+            .pointerInput(chartData.points, chartPixelWidth) {
+                detectDragGestures(
+                    onDragStart = { offset ->
+                        onPointSelected(
+                            nearestHomeChartPointIndex(
+                                xPosition = offset.x,
+                                chartWidth = chartPixelWidth,
+                                pointCount = chartData.points.size,
+                            ),
+                        )
+                    },
+                    onDrag = { change, _ ->
+                        onPointSelected(
+                            nearestHomeChartPointIndex(
+                                xPosition = change.position.x,
+                                chartWidth = chartPixelWidth,
+                                pointCount = chartData.points.size,
+                            ),
+                        )
+                    },
+                )
+            },
+    ) {
         val horizontalPadding = 8.dp.toPx()
         val topPadding = 8.dp.toPx()
         val bottomPadding = 12.dp.toPx()
         val chartHeight = size.height - topPadding - bottomPadding
         val chartWidth = size.width - horizontalPadding * 2
-        val coordinates = points.mapIndexed { index, value ->
-            val x = horizontalPadding + chartWidth * (index.toFloat() / (points.lastIndex.toFloat()))
-            val y = topPadding + chartHeight * (1f - value)
+        val minValue = chartData.points.minOfOrNull { point -> point.value } ?: BigDecimal.ZERO
+        val maxValue = chartData.points.maxOfOrNull { point -> point.value } ?: BigDecimal.ZERO
+        val valueRange = (maxValue - minValue).takeIf { it.compareTo(BigDecimal.ZERO) != 0 }
+            ?: BigDecimal.ONE
+        val coordinates = chartData.points.mapIndexed { index, point ->
+            val progress = if (chartData.points.size == 1) {
+                1f
+            } else {
+                index.toFloat() / chartData.points.lastIndex.toFloat()
+            }
+            val normalizedValue = (point.value - minValue)
+                .divide(valueRange, 6, java.math.RoundingMode.HALF_UP)
+                .toFloat()
+                .coerceIn(0f, 1f)
+            val x = horizontalPadding + chartWidth * progress
+            val y = topPadding + chartHeight * (1f - normalizedValue)
             Offset(x, y)
         }
+        if (coordinates.isEmpty()) return@Canvas
         val path = Path().apply {
             coordinates.forEachIndexed { index, offset ->
                 if (index == 0) moveTo(offset.x, offset.y) else lineTo(offset.x, offset.y)
@@ -1094,10 +1280,22 @@ private fun HomeBalanceChart(
             color = lineColor,
             style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round),
         )
+        val selectedCoordinate = coordinates.getOrNull(selectedPointIndex) ?: coordinates.last()
+        drawLine(
+            color = selectedColor.copy(alpha = 0.42f),
+            start = Offset(selectedCoordinate.x, topPadding),
+            end = Offset(selectedCoordinate.x, size.height - bottomPadding),
+            strokeWidth = 1.dp.toPx(),
+        )
         drawCircle(
-            color = lineColor,
-            radius = 4.dp.toPx(),
-            center = coordinates.last(),
+            color = selectedColor,
+            radius = 5.dp.toPx(),
+            center = selectedCoordinate,
+        )
+        drawCircle(
+            color = surfaceColor,
+            radius = 2.4.dp.toPx(),
+            center = selectedCoordinate,
         )
     }
 }
@@ -1250,6 +1448,8 @@ private sealed interface HomeDashboardState {
         val totalBalance: String,
         val currencyCode: String,
         val assets: List<HomeAssetRow>,
+        val chartTransactions: List<WalletTransactionRecord>,
+        val chartData: HomeBalanceChartData,
     ) : HomeDashboardState
 }
 
@@ -1272,7 +1472,10 @@ private enum class HomeSyncStatus(@StringRes val labelRes: Int) {
 
 private fun WalletRecord.toHomeDashboardState(
     walletAssets: List<WalletAssetRecord>,
+    walletTransactions: List<WalletTransactionRecord>,
     status: HomeSyncStatus,
+    chartRange: HomeChartRange,
+    nowMillis: Long,
 ): HomeDashboardState.Content {
     val totalFiat = walletAssets.fold(BigDecimal.ZERO) { total, asset ->
         total + asset.balanceFiatValue.toBigDecimalOrZero()
@@ -1283,6 +1486,12 @@ private fun WalletRecord.toHomeDashboardState(
         totalBalance = formatFiat(totalFiat.toPlainString(), localCurrencyCode),
         currencyCode = localCurrencyCode,
         assets = walletAssets.toHomeAssetRows(localCurrencyCode),
+        chartTransactions = walletTransactions,
+        chartData = buildHomeBalanceChartData(
+            transactions = walletTransactions,
+            range = chartRange,
+            nowMillis = nowMillis,
+        ),
     )
 }
 
@@ -1371,6 +1580,46 @@ private fun formatFiat(
     }
     return formatter.format(amount)
 }
+
+private fun formatSignedFiat(
+    value: BigDecimal,
+    currencyCode: String,
+): String =
+    when {
+        value.signum() > 0 -> "+${formatFiat(value.abs().toPlainString(), currencyCode)}"
+        value.signum() < 0 -> "-${formatFiat(value.abs().toPlainString(), currencyCode)}"
+        else -> formatFiat("0", currencyCode)
+    }
+
+private fun formatPercent(value: BigDecimal): String {
+    val normalized = value.setScale(2, java.math.RoundingMode.HALF_UP).stripTrailingZeros()
+    val prefix = if (normalized.signum() > 0) "+" else ""
+    return "$prefix${normalized.toPlainString()}%"
+}
+
+private fun formatChartPointTime(
+    timestampMillis: Long,
+    range: HomeChartRange,
+): String {
+    val zone = ZoneId.systemDefault()
+    val formatter = when (range) {
+        HomeChartRange.OneDay -> DateTimeFormatter.ofPattern("HH:mm", Locale.US)
+        HomeChartRange.OneWeek,
+        HomeChartRange.OneMonth -> DateTimeFormatter.ofPattern("MMM d", Locale.US)
+        HomeChartRange.OneYear,
+        HomeChartRange.All -> DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.US)
+    }
+    return Instant.ofEpochMilli(timestampMillis).atZone(zone).format(formatter)
+}
+
+private val HomeChartRange.labelRes: Int
+    @StringRes get() = when (this) {
+        HomeChartRange.OneDay -> R.string.home_chart_range_1d
+        HomeChartRange.OneWeek -> R.string.home_chart_range_1w
+        HomeChartRange.OneMonth -> R.string.home_chart_range_1m
+        HomeChartRange.OneYear -> R.string.home_chart_range_1y
+        HomeChartRange.All -> R.string.home_chart_range_all
+    }
 
 private fun String.activityDirectionLabel(resources: Resources): String =
     when (this) {

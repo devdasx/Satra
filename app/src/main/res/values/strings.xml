@@ -245,6 +245,13 @@
     <string name="home_action_receive">Receive</string>
     <string name="home_chart_title">Balance chart</string>
     <string name="home_chart_range">7-day view</string>
+    <string name="home_chart_range_1d">1D</string>
+    <string name="home_chart_range_1w">1W</string>
+    <string name="home_chart_range_1m">1M</string>
+    <string name="home_chart_range_1y">1Y</string>
+    <string name="home_chart_range_all">ALL</string>
+    <string name="home_chart_selected_value">Selected value</string>
+    <string name="home_chart_change_label">Change</string>
     <string name="home_chart_value_placeholder">No activity yet</string>
     <string name="home_assets_title">Coins &amp; tokens</string>
     <string name="home_assets_count">%1$d assets</string>
