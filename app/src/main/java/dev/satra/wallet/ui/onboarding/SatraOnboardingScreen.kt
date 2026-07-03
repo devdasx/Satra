@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -69,7 +70,7 @@ fun SatraOnboardingScreen(
     ) {
         val screenHeight = maxHeight
         val windowSize = remember(maxWidth) { OnboardingWindowSize.from(maxWidth) }
-        val compactHeight = screenHeight < 740.dp
+        val compactHeight = screenHeight < 820.dp
         val scrollFallback = screenHeight < 620.dp
 
         Box(modifier = Modifier.fillMaxSize()) {
@@ -80,22 +81,20 @@ fun SatraOnboardingScreen(
                     pages = pages,
                     selectedPage = pagerState.currentPage,
                     pageContent = {
-                        HorizontalPager(
-                            state = pagerState,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(min = if (compactHeight) 136.dp else 154.dp),
+                        OnboardingPagedContent(
+                            pages = pages,
+                            pagerState = pagerState,
+                            artworkHeight = if (compactHeight) 170.dp else 232.dp,
+                            copyHeight = if (compactHeight) 204.dp else 236.dp,
+                            visualCopyGap = if (compactHeight) 8.dp else 14.dp,
                             pageSpacing = 18.dp,
-                        ) { pageIndex ->
-                            OnboardingCopy(page = pages[pageIndex])
-                        }
+                        )
                     },
                     onCreateWallet = onCreateWallet,
                     onRestoreWallet = onRestoreWallet,
                     screenHeight = screenHeight,
                     contentMaxWidth = 460.dp,
                     horizontalPadding = 24.dp,
-                    artworkHeight = if (compactHeight) 184.dp else 248.dp,
                     compactHeight = compactHeight,
                     scrollFallback = scrollFallback,
                 )
@@ -104,22 +103,20 @@ fun SatraOnboardingScreen(
                     pages = pages,
                     selectedPage = pagerState.currentPage,
                     pageContent = {
-                        HorizontalPager(
-                            state = pagerState,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(min = 164.dp),
+                        OnboardingPagedContent(
+                            pages = pages,
+                            pagerState = pagerState,
+                            artworkHeight = if (compactHeight) 218.dp else 286.dp,
+                            copyHeight = if (compactHeight) 204.dp else 224.dp,
+                            visualCopyGap = 18.dp,
                             pageSpacing = 22.dp,
-                        ) { pageIndex ->
-                            OnboardingCopy(page = pages[pageIndex])
-                        }
+                        )
                     },
                     onCreateWallet = onCreateWallet,
                     onRestoreWallet = onRestoreWallet,
                     screenHeight = screenHeight,
                     contentMaxWidth = 560.dp,
                     horizontalPadding = 48.dp,
-                    artworkHeight = if (compactHeight) 240.dp else 304.dp,
                     compactHeight = compactHeight,
                     scrollFallback = scrollFallback,
                 )
@@ -128,15 +125,13 @@ fun SatraOnboardingScreen(
                     pages = pages,
                     selectedPage = pagerState.currentPage,
                     pageContent = {
-                        HorizontalPager(
-                            state = pagerState,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(min = if (compactHeight) 164.dp else 196.dp),
+                        OnboardingExpandedPagedContent(
+                            pages = pages,
+                            pagerState = pagerState,
+                            artworkHeight = if (compactHeight) 320.dp else 400.dp,
+                            copyHeight = if (compactHeight) 216.dp else 244.dp,
                             pageSpacing = 24.dp,
-                        ) { pageIndex ->
-                            OnboardingCopy(page = pages[pageIndex])
-                        }
+                        )
                     },
                     onCreateWallet = onCreateWallet,
                     onRestoreWallet = onRestoreWallet,
@@ -159,7 +154,6 @@ private fun OnboardingSinglePaneLayout(
     screenHeight: Dp,
     contentMaxWidth: Dp,
     horizontalPadding: Dp,
-    artworkHeight: Dp,
     compactHeight: Boolean,
     scrollFallback: Boolean,
 ) {
@@ -183,14 +177,6 @@ private fun OnboardingSinglePaneLayout(
             SatraHeader(modifier = Modifier.fillMaxWidth())
 
             Spacer(modifier = Modifier.height(if (compactHeight) 10.dp else 18.dp))
-
-            WalletArtwork(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(artworkHeight),
-            )
-
-            Spacer(modifier = Modifier.height(if (compactHeight) 12.dp else 18.dp))
 
             pageContent()
 
@@ -234,50 +220,125 @@ private fun OnboardingExpandedLayout(
             .then(if (scrollFallback) Modifier.verticalScroll(rememberScrollState()) else Modifier),
         contentAlignment = Alignment.Center,
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .widthIn(max = 1180.dp)
                 .fillMaxWidth()
                 .then(if (scrollFallback) Modifier.heightIn(min = screenHeight) else Modifier.fillMaxSize()),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(64.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Column(
-                modifier = Modifier.weight(1.1f),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                SatraHeader(modifier = Modifier.fillMaxWidth())
+            SatraHeader(modifier = Modifier.fillMaxWidth())
 
-                Spacer(modifier = Modifier.height(if (compactHeight) 28.dp else 48.dp))
+            Spacer(modifier = Modifier.height(if (compactHeight) 28.dp else 44.dp))
 
-                WalletArtwork(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(if (compactHeight) 280.dp else 380.dp),
-                )
+            pageContent()
+
+            PagerDots(
+                selectedPage = selectedPage,
+                count = pages.size,
+                modifier = Modifier.padding(top = 20.dp, bottom = if (compactHeight) 20.dp else 30.dp),
+            )
+
+            if (scrollFallback) {
+                Spacer(modifier = Modifier.height(14.dp))
+            } else {
+                Spacer(modifier = Modifier.weight(1f))
             }
 
-            Column(
-                modifier = Modifier
-                    .weight(0.9f)
-                    .widthIn(max = 460.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.CenterEnd,
             ) {
-                pageContent()
-
-                PagerDots(
-                    selectedPage = selectedPage,
-                    count = pages.size,
-                    modifier = Modifier.padding(top = 14.dp, bottom = 30.dp),
-                )
-
                 OnboardingActions(
                     onCreateWallet = onCreateWallet,
                     onRestoreWallet = onRestoreWallet,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .widthIn(max = 460.dp)
+                        .fillMaxWidth(),
                 )
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun OnboardingPagedContent(
+    pages: List<OnboardingPage>,
+    pagerState: PagerState,
+    artworkHeight: Dp,
+    copyHeight: Dp,
+    visualCopyGap: Dp,
+    pageSpacing: Dp,
+) {
+    HorizontalPager(
+        state = pagerState,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(artworkHeight + visualCopyGap + copyHeight),
+        pageSpacing = pageSpacing,
+    ) { pageIndex ->
+        val page = pages[pageIndex]
+
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            OnboardingVisual(
+                visual = page.visual,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(artworkHeight),
+            )
+
+            Spacer(modifier = Modifier.height(visualCopyGap))
+
+            OnboardingCopy(
+                page = page,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(copyHeight),
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun OnboardingExpandedPagedContent(
+    pages: List<OnboardingPage>,
+    pagerState: PagerState,
+    artworkHeight: Dp,
+    copyHeight: Dp,
+    pageSpacing: Dp,
+) {
+    HorizontalPager(
+        state = pagerState,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(artworkHeight),
+        pageSpacing = pageSpacing,
+    ) { pageIndex ->
+        val page = pages[pageIndex]
+
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(64.dp),
+        ) {
+            OnboardingVisual(
+                visual = page.visual,
+                modifier = Modifier
+                    .weight(1.08f)
+                    .fillMaxSize(),
+            )
+
+            OnboardingCopy(
+                page = page,
+                modifier = Modifier
+                    .weight(0.92f)
+                    .height(copyHeight),
+            )
         }
     }
 }
@@ -349,7 +410,19 @@ private fun SatraMark(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun WalletArtwork(modifier: Modifier = Modifier) {
+private fun OnboardingVisual(
+    visual: OnboardingArtwork,
+    modifier: Modifier = Modifier,
+) {
+    when (visual) {
+        OnboardingArtwork.SelfCustody -> SelfCustodyArtwork(modifier = modifier)
+        OnboardingArtwork.Clarity -> ClarityArtwork(modifier = modifier)
+        OnboardingArtwork.OpenSource -> OpenSourceArtwork(modifier = modifier)
+    }
+}
+
+@Composable
+private fun SelfCustodyArtwork(modifier: Modifier = Modifier) {
     val colorScheme = MaterialTheme.colorScheme
 
     Box(
@@ -504,12 +577,267 @@ private fun WalletArtwork(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun OnboardingCopy(page: OnboardingPage) {
+private fun ClarityArtwork(modifier: Modifier = Modifier) {
+    val colorScheme = MaterialTheme.colorScheme
+
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center,
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val grid = 34.dp.toPx()
+            val stroke = 1.dp.toPx()
+
+            var x = -grid
+            while (x <= size.width + grid) {
+                drawLine(
+                    color = colorScheme.outlineVariant.copy(alpha = 0.14f),
+                    start = Offset(x, size.height),
+                    end = Offset(x + grid, 0f),
+                    strokeWidth = stroke,
+                )
+                x += grid
+            }
+
+            val panelWidth = size.width * 0.76f
+            val panelHeight = size.height * 0.72f
+            val panelLeft = (size.width - panelWidth) / 2f
+            val panelTop = size.height * 0.1f
+            val corner = 24.dp.toPx()
+
+            drawRoundRect(
+                color = colorScheme.secondaryContainer.copy(alpha = 0.58f),
+                topLeft = Offset(panelLeft - 16.dp.toPx(), panelTop + 18.dp.toPx()),
+                size = Size(panelWidth, panelHeight),
+                cornerRadius = CornerRadius(corner, corner),
+            )
+            drawRoundRect(
+                color = colorScheme.surfaceContainerHighest.copy(alpha = 0.96f),
+                topLeft = Offset(panelLeft, panelTop),
+                size = Size(panelWidth, panelHeight),
+                cornerRadius = CornerRadius(corner, corner),
+            )
+            drawRoundRect(
+                color = colorScheme.outlineVariant.copy(alpha = 0.48f),
+                topLeft = Offset(panelLeft, panelTop),
+                size = Size(panelWidth, panelHeight),
+                cornerRadius = CornerRadius(corner, corner),
+                style = Stroke(width = 1.dp.toPx()),
+            )
+
+            val route = Path().apply {
+                moveTo(panelLeft + panelWidth * 0.18f, panelTop + panelHeight * 0.68f)
+                cubicTo(
+                    panelLeft + panelWidth * 0.34f,
+                    panelTop + panelHeight * 0.34f,
+                    panelLeft + panelWidth * 0.62f,
+                    panelTop + panelHeight * 0.82f,
+                    panelLeft + panelWidth * 0.82f,
+                    panelTop + panelHeight * 0.32f,
+                )
+            }
+            drawPath(
+                path = route,
+                color = colorScheme.primary.copy(alpha = 0.32f),
+                style = Stroke(width = 6.dp.toPx(), cap = StrokeCap.Round),
+            )
+
+            repeat(3) { row ->
+                val rowTop = panelTop + panelHeight * (0.18f + row * 0.2f)
+                val dotCenter = Offset(panelLeft + panelWidth * 0.2f, rowTop + 12.dp.toPx())
+                val rowColor = when (row) {
+                    0 -> colorScheme.primary
+                    1 -> colorScheme.tertiary
+                    else -> colorScheme.secondary
+                }
+
+                drawCircle(
+                    color = rowColor.copy(alpha = 0.18f),
+                    radius = 16.dp.toPx(),
+                    center = dotCenter,
+                )
+                drawCircle(
+                    color = rowColor,
+                    radius = 6.dp.toPx(),
+                    center = dotCenter,
+                )
+                drawRoundRect(
+                    color = colorScheme.onSurfaceVariant.copy(alpha = 0.24f),
+                    topLeft = Offset(panelLeft + panelWidth * 0.32f, rowTop),
+                    size = Size(panelWidth * 0.36f, 7.dp.toPx()),
+                    cornerRadius = CornerRadius(12.dp.toPx(), 12.dp.toPx()),
+                )
+                drawRoundRect(
+                    color = colorScheme.outlineVariant.copy(alpha = 0.62f),
+                    topLeft = Offset(panelLeft + panelWidth * 0.32f, rowTop + 16.dp.toPx()),
+                    size = Size(panelWidth * (0.26f + row * 0.05f), 6.dp.toPx()),
+                    cornerRadius = CornerRadius(12.dp.toPx(), 12.dp.toPx()),
+                )
+            }
+
+            val badgeCenter = Offset(panelLeft + panelWidth * 0.82f, panelTop + panelHeight * 0.7f)
+            drawCircle(
+                color = colorScheme.primary,
+                radius = 34.dp.toPx(),
+                center = badgeCenter,
+            )
+            drawLine(
+                color = colorScheme.onPrimary,
+                start = Offset(badgeCenter.x - 14.dp.toPx(), badgeCenter.y),
+                end = Offset(badgeCenter.x - 3.dp.toPx(), badgeCenter.y + 10.dp.toPx()),
+                strokeWidth = 4.dp.toPx(),
+                cap = StrokeCap.Round,
+            )
+            drawLine(
+                color = colorScheme.onPrimary,
+                start = Offset(badgeCenter.x - 3.dp.toPx(), badgeCenter.y + 10.dp.toPx()),
+                end = Offset(badgeCenter.x + 16.dp.toPx(), badgeCenter.y - 14.dp.toPx()),
+                strokeWidth = 4.dp.toPx(),
+                cap = StrokeCap.Round,
+            )
+        }
+    }
+}
+
+@Composable
+private fun OpenSourceArtwork(modifier: Modifier = Modifier) {
+    val colorScheme = MaterialTheme.colorScheme
+
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center,
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val grid = 40.dp.toPx()
+            val stroke = 1.dp.toPx()
+
+            var y = -grid
+            while (y <= size.height + grid) {
+                drawLine(
+                    color = colorScheme.outlineVariant.copy(alpha = 0.13f),
+                    start = Offset(0f, y),
+                    end = Offset(size.width, y + grid),
+                    strokeWidth = stroke,
+                )
+                y += grid
+            }
+
+            val panelWidth = size.width * 0.78f
+            val panelHeight = size.height * 0.66f
+            val panelLeft = (size.width - panelWidth) / 2f
+            val panelTop = size.height * 0.15f
+            val corner = 22.dp.toPx()
+
+            drawRoundRect(
+                color = colorScheme.tertiaryContainer.copy(alpha = 0.58f),
+                topLeft = Offset(panelLeft + 18.dp.toPx(), panelTop - 14.dp.toPx()),
+                size = Size(panelWidth, panelHeight),
+                cornerRadius = CornerRadius(corner, corner),
+            )
+            drawRoundRect(
+                color = colorScheme.surfaceContainerHighest.copy(alpha = 0.96f),
+                topLeft = Offset(panelLeft, panelTop),
+                size = Size(panelWidth, panelHeight),
+                cornerRadius = CornerRadius(corner, corner),
+            )
+            drawRoundRect(
+                color = colorScheme.outlineVariant.copy(alpha = 0.5f),
+                topLeft = Offset(panelLeft, panelTop),
+                size = Size(panelWidth, panelHeight),
+                cornerRadius = CornerRadius(corner, corner),
+                style = Stroke(width = 1.dp.toPx()),
+            )
+
+            repeat(3) { index ->
+                drawCircle(
+                    color = when (index) {
+                        0 -> colorScheme.primary
+                        1 -> colorScheme.tertiary
+                        else -> colorScheme.secondary
+                    }.copy(alpha = 0.72f),
+                    radius = 5.dp.toPx(),
+                    center = Offset(
+                        x = panelLeft + 24.dp.toPx() + index * 16.dp.toPx(),
+                        y = panelTop + 24.dp.toPx(),
+                    ),
+                )
+            }
+
+            repeat(5) { row ->
+                val rowTop = panelTop + 58.dp.toPx() + row * 24.dp.toPx()
+                val indent = if (row % 2 == 0) 0.dp.toPx() else 24.dp.toPx()
+                val widthFraction = when (row) {
+                    0 -> 0.5f
+                    1 -> 0.34f
+                    2 -> 0.58f
+                    3 -> 0.42f
+                    else -> 0.28f
+                }
+
+                drawRoundRect(
+                    color = colorScheme.primary.copy(alpha = if (row == 2) 0.38f else 0.18f),
+                    topLeft = Offset(panelLeft + 30.dp.toPx() + indent, rowTop),
+                    size = Size(panelWidth * widthFraction, 8.dp.toPx()),
+                    cornerRadius = CornerRadius(12.dp.toPx(), 12.dp.toPx()),
+                )
+            }
+
+            val leftNode = Offset(panelLeft + panelWidth * 0.25f, panelTop + panelHeight * 0.82f)
+            val centerNode = Offset(panelLeft + panelWidth * 0.5f, panelTop + panelHeight * 0.68f)
+            val rightNode = Offset(panelLeft + panelWidth * 0.75f, panelTop + panelHeight * 0.82f)
+
+            drawLine(
+                color = colorScheme.secondary.copy(alpha = 0.34f),
+                start = leftNode,
+                end = centerNode,
+                strokeWidth = 4.dp.toPx(),
+                cap = StrokeCap.Round,
+            )
+            drawLine(
+                color = colorScheme.secondary.copy(alpha = 0.34f),
+                start = centerNode,
+                end = rightNode,
+                strokeWidth = 4.dp.toPx(),
+                cap = StrokeCap.Round,
+            )
+
+            listOf(leftNode, centerNode, rightNode).forEachIndexed { index, node ->
+                drawCircle(
+                    color = if (index == 1) colorScheme.primary else colorScheme.secondaryContainer,
+                    radius = if (index == 1) 22.dp.toPx() else 14.dp.toPx(),
+                    center = node,
+                )
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .size(64.dp)
+                .clip(CircleShape)
+                .background(colorScheme.primary),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = stringResource(R.string.wallet_symbol),
+                style = MaterialTheme.typography.headlineLarge,
+                color = colorScheme.onPrimary,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+    }
+}
+
+@Composable
+private fun OnboardingCopy(
+    page: OnboardingPage,
+    modifier: Modifier = Modifier,
+) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
     ) {
         Text(
             text = stringResource(page.eyebrowRes),
@@ -644,6 +972,7 @@ private fun AmbientLedgerBackground(modifier: Modifier = Modifier) {
 }
 
 private data class OnboardingPage(
+    val visual: OnboardingArtwork,
     @StringRes val eyebrowRes: Int,
     @StringRes val titleRes: Int,
     @StringRes val bodyRes: Int,
@@ -651,21 +980,30 @@ private data class OnboardingPage(
 
 private val onboardingPages = listOf(
     OnboardingPage(
+        visual = OnboardingArtwork.SelfCustody,
         eyebrowRes = R.string.onboarding_page_self_custody_eyebrow,
         titleRes = R.string.onboarding_page_self_custody_title,
         bodyRes = R.string.onboarding_page_self_custody_body,
     ),
     OnboardingPage(
+        visual = OnboardingArtwork.Clarity,
         eyebrowRes = R.string.onboarding_page_clarity_eyebrow,
         titleRes = R.string.onboarding_page_clarity_title,
         bodyRes = R.string.onboarding_page_clarity_body,
     ),
     OnboardingPage(
+        visual = OnboardingArtwork.OpenSource,
         eyebrowRes = R.string.onboarding_page_open_source_eyebrow,
         titleRes = R.string.onboarding_page_open_source_title,
         bodyRes = R.string.onboarding_page_open_source_body,
     ),
 )
+
+private enum class OnboardingArtwork {
+    SelfCustody,
+    Clarity,
+    OpenSource,
+}
 
 private enum class OnboardingWindowSize {
     Compact,
