@@ -7,10 +7,12 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -23,20 +25,27 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -269,6 +278,8 @@ private fun SatraHomeDashboard(
     onReceiveClick: () -> Unit,
 ) {
     var homeState by remember { mutableStateOf<HomeDashboardState>(HomeDashboardState.Loading) }
+    var assetFilterState by remember { mutableStateOf(HomeAssetFilterState()) }
+    var assetFilterSheetVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(walletRepository) {
         val wallet = walletRepository.getPrimaryWallet()
@@ -332,6 +343,24 @@ private fun SatraHomeDashboard(
         )
         is HomeDashboardState.Content -> state
     }
+    val visibleAssets = remember(content.assets, assetFilterState) {
+        content.assets.applyHomeAssetFilter(assetFilterState)
+    }
+    val assetNetworks = remember(content.assets) {
+        content.assets
+            .distinctBy { asset -> asset.networkId }
+            .sortedBy { asset -> asset.network.lowercase() }
+            .map { asset -> asset.networkId to asset.network }
+    }
+
+    if (assetFilterSheetVisible) {
+        HomeAssetFilterSheet(
+            networks = assetNetworks,
+            filterState = assetFilterState,
+            onFilterStateChange = { nextState -> assetFilterState = nextState },
+            onDismiss = { assetFilterSheetVisible = false },
+        )
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -366,11 +395,16 @@ private fun SatraHomeDashboard(
                     initialChartData = content.chartData,
                 )
                 Spacer(modifier = Modifier.height(22.dp))
-                HomeAssetsHeader(assetCount = content.assets.size)
+                HomeAssetsHeader(
+                    assetCount = visibleAssets.size,
+                    totalAssetCount = content.assets.size,
+                    isFiltered = assetFilterState.isActive,
+                    onFilterClick = { assetFilterSheetVisible = true },
+                )
             }
         }
         items(
-            items = content.assets,
+            items = visibleAssets,
             key = { asset -> asset.assetId },
         ) { asset ->
             HomeAssetListRow(
@@ -1303,6 +1337,9 @@ private fun HomeBalanceChart(
 @Composable
 private fun HomeAssetsHeader(
     assetCount: Int,
+    totalAssetCount: Int,
+    isFiltered: Boolean,
+    onFilterClick: () -> Unit,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -1315,11 +1352,226 @@ private fun HomeAssetsHeader(
             color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.Bold,
         )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = if (isFiltered) {
+                    stringResource(R.string.home_assets_filtered_count, assetCount, totalAssetCount)
+                } else {
+                    stringResource(R.string.home_assets_count, assetCount)
+                },
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Bold,
+            )
+            OutlinedButton(
+                onClick = onFilterClick,
+                modifier = Modifier.height(36.dp),
+                shape = RoundedCornerShape(100.dp),
+                border = BorderStroke(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.outline,
+                ),
+                contentPadding = ButtonDefaults.ContentPadding,
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_brand_settings),
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = stringResource(R.string.home_assets_filter_action),
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun HomeAssetFilterSheet(
+    networks: List<Pair<String, String>>,
+    filterState: HomeAssetFilterState,
+    onFilterStateChange: (HomeAssetFilterState) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surface,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .widthIn(max = HomeContentMaxWidth)
+                .align(Alignment.CenterHorizontally)
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 28.dp)
+                .verticalScroll(rememberScrollState()),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.home_assets_filter_title),
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = stringResource(R.string.home_assets_filter_body),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                TextButton(
+                    onClick = { onFilterStateChange(HomeAssetFilterState()) },
+                    enabled = filterState.isActive,
+                ) {
+                    Text(
+                        text = stringResource(R.string.home_assets_filter_reset),
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(18.dp))
+            HomeAssetFilterSectionTitle(R.string.home_assets_filter_show)
+            HomeAssetBalanceToggleRow(
+                checked = filterState.onlyWithBalance,
+                onCheckedChange = { checked ->
+                    onFilterStateChange(filterState.copy(onlyWithBalance = checked))
+                },
+            )
+            HomeAssetFilterDivider()
+            HomeAssetFilterSectionTitle(R.string.home_assets_filter_sort_by)
+            HomeAssetSortOption.entries.forEach { option ->
+                HomeAssetSelectableFilterRow(
+                    title = stringResource(option.labelRes),
+                    selected = filterState.sortOption == option,
+                    onClick = {
+                        onFilterStateChange(filterState.copy(sortOption = option))
+                    },
+                )
+            }
+            HomeAssetFilterDivider()
+            HomeAssetFilterSectionTitle(R.string.home_assets_filter_chain)
+            HomeAssetSelectableFilterRow(
+                title = stringResource(R.string.home_assets_filter_all_chains),
+                selected = filterState.networkId == null,
+                onClick = {
+                    onFilterStateChange(filterState.copy(networkId = null))
+                },
+            )
+            networks.forEach { (networkId, networkName) ->
+                HomeAssetSelectableFilterRow(
+                    title = networkName,
+                    selected = filterState.networkId == networkId,
+                    onClick = {
+                        onFilterStateChange(filterState.copy(networkId = networkId))
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ColumnScope.HomeAssetFilterDivider() {
+    Spacer(modifier = Modifier.height(8.dp))
+    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+    Spacer(modifier = Modifier.height(14.dp))
+}
+
+@Composable
+private fun HomeAssetFilterSectionTitle(
+    @StringRes titleRes: Int,
+) {
+    Text(
+        text = stringResource(titleRes),
+        modifier = Modifier.padding(bottom = 8.dp),
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        fontWeight = FontWeight.Bold,
+    )
+}
+
+@Composable
+private fun HomeAssetBalanceToggleRow(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(58.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .padding(horizontal = 14.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.home_assets_filter_only_balance),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = stringResource(R.string.home_assets_filter_only_balance_body),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+        )
+    }
+}
+
+@Composable
+private fun HomeAssetSelectableFilterRow(
+    title: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(52.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(
+                if (selected) {
+                    MaterialTheme.colorScheme.surfaceContainer
+                } else {
+                    MaterialTheme.colorScheme.surface
+                },
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 10.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         Text(
-            text = stringResource(R.string.home_assets_count, assetCount),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        RadioButton(
+            selected = selected,
+            onClick = onClick,
         )
     }
 }
@@ -1414,14 +1666,17 @@ private fun SatraMainPlaceholderTab(
     }
 }
 
-private data class HomeAssetRow(
+internal data class HomeAssetRow(
     val assetId: String,
+    val networkId: String,
     @DrawableRes val iconRes: Int,
     val symbol: String,
     val name: String,
     val network: String,
     val amount: String,
+    val amountValue: BigDecimal,
     val fiatValue: String,
+    val fiatValueAmount: BigDecimal,
     val hasBalance: Boolean,
     val isNative: Boolean,
 )
@@ -1540,23 +1795,22 @@ private fun List<WalletAssetRecord>.toHomeAssetRows(localCurrencyCode: String): 
         val asset = catalogAssetsById[walletAsset.assetId] ?: return@mapNotNull null
         val network = networksById[walletAsset.networkId] ?: return@mapNotNull null
         val balance = walletAsset.balanceDecimal.toBigDecimalOrZero()
+        val fiatValue = walletAsset.balanceFiatValue.toBigDecimalOrZero()
         HomeAssetRow(
             assetId = walletAsset.assetId,
+            networkId = walletAsset.networkId,
             iconRes = networkIconRes(walletAsset.networkId),
             symbol = asset.symbol,
             name = asset.name,
             network = network.displayName,
             amount = "${formatCryptoAmount(walletAsset.balanceDecimal)} ${asset.symbol}",
+            amountValue = balance,
             fiatValue = formatFiat(walletAsset.balanceFiatValue, localCurrencyCode),
+            fiatValueAmount = fiatValue,
             hasBalance = balance > BigDecimal.ZERO,
             isNative = asset.assetType == "NATIVE",
         )
-    }.sortedWith(
-        compareByDescending<HomeAssetRow> { it.hasBalance }
-            .thenByDescending { it.isNative }
-            .thenBy { it.network }
-            .thenBy { it.symbol },
-    )
+    }.applyHomeAssetFilter(HomeAssetFilterState())
 }
 
 private fun formatCryptoAmount(value: String): String {
@@ -1619,6 +1873,13 @@ private val HomeChartRange.labelRes: Int
         HomeChartRange.OneMonth -> R.string.home_chart_range_1m
         HomeChartRange.OneYear -> R.string.home_chart_range_1y
         HomeChartRange.All -> R.string.home_chart_range_all
+    }
+
+private val HomeAssetSortOption.labelRes: Int
+    @StringRes get() = when (this) {
+        HomeAssetSortOption.Value -> R.string.home_assets_sort_value
+        HomeAssetSortOption.Amount -> R.string.home_assets_sort_amount
+        HomeAssetSortOption.Name -> R.string.home_assets_sort_name
     }
 
 private fun String.activityDirectionLabel(resources: Resources): String =
