@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
@@ -385,28 +384,7 @@ private fun OnboardingVisual(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center,
         ) {
-            val primarySize = (maxHeight * 0.48f).coerceIn(96.dp, 156.dp)
-            val supportSize = (primarySize * 0.38f).coerceIn(42.dp, 58.dp)
-
-            IconBadge(
-                iconRes = visual.leadingIconRes,
-                size = supportSize,
-                iconColor = colorScheme.onSurface.copy(alpha = 0.4f),
-                modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .padding(start = maxWidth * 0.16f)
-                    .offset(y = -(primarySize * 0.24f)),
-            )
-
-            IconBadge(
-                iconRes = visual.trailingIconRes,
-                size = supportSize,
-                iconColor = colorScheme.onSurface.copy(alpha = 0.4f),
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .padding(end = maxWidth * 0.16f)
-                    .offset(y = primarySize * 0.24f),
-            )
+            val primarySize = (maxHeight * 0.78f).coerceIn(132.dp, 220.dp)
 
             IconBadge(
                 iconRes = visual.primaryIconRes,
@@ -435,7 +413,7 @@ private fun IconBadge(
             painter = painterResource(iconRes),
             contentDescription = contentDescription,
             tint = iconColor,
-            modifier = Modifier.size(size * 0.62f),
+            modifier = Modifier.size(size * 0.78f),
         )
     }
 }
@@ -740,26 +718,18 @@ private val onboardingPages = listOf(
 
 private enum class OnboardingArtwork(
     @DrawableRes val primaryIconRes: Int,
-    @DrawableRes val leadingIconRes: Int,
-    @DrawableRes val trailingIconRes: Int,
     @StringRes val contentDescriptionRes: Int,
 ) {
     SelfCustody(
         primaryIconRes = R.drawable.ic_brand_security,
-        leadingIconRes = R.drawable.ic_brand_wallet,
-        trailingIconRes = R.drawable.ic_brand_assets,
         contentDescriptionRes = R.string.onboarding_visual_self_custody_description,
     ),
     Clarity(
         primaryIconRes = R.drawable.ic_brand_list,
-        leadingIconRes = R.drawable.ic_brand_receive,
-        trailingIconRes = R.drawable.ic_brand_move,
         contentDescriptionRes = R.string.onboarding_visual_clarity_description,
     ),
     OpenSource(
         primaryIconRes = R.drawable.ic_brand_settings,
-        leadingIconRes = R.drawable.ic_brand_history,
-        trailingIconRes = R.drawable.ic_brand_scan,
         contentDescriptionRes = R.string.onboarding_visual_open_source_description,
     ),
 }
