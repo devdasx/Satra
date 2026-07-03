@@ -588,8 +588,8 @@ private fun SetupPageIcon(
     compactHeight: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val iconContainerSize = if (compactHeight) 44.dp else 52.dp
-    val iconSize = if (compactHeight) 22.dp else 26.dp
+    val iconContainerSize = if (compactHeight) 50.dp else 58.dp
+    val iconSize = if (compactHeight) 28.dp else 32.dp
 
     Box(
         modifier = modifier
@@ -618,35 +618,29 @@ private fun SetupPageBody(
         modifier = modifier,
         horizontalAlignment = Alignment.Start,
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.Top,
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            SetupPageIcon(
-                page = page,
-                compactHeight = compactHeight,
-            )
+        SetupPageIcon(
+            page = page,
+            compactHeight = compactHeight,
+        )
 
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(page.titleRes),
-                    style = if (compactHeight) {
-                        MaterialTheme.typography.headlineMedium
-                    } else {
-                        MaterialTheme.typography.headlineLarge
-                    },
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Bold,
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-                Text(
-                    text = stringResource(page.bodyRes),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
+        Spacer(modifier = Modifier.height(if (compactHeight) 12.dp else 14.dp))
+
+        Text(
+            text = stringResource(page.titleRes),
+            style = if (compactHeight) {
+                MaterialTheme.typography.headlineMedium
+            } else {
+                MaterialTheme.typography.headlineLarge
+            },
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Bold,
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+        Text(
+            text = stringResource(page.bodyRes),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
 
         Spacer(modifier = Modifier.height(20.dp))
         content()
