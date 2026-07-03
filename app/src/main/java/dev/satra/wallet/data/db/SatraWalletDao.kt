@@ -257,6 +257,43 @@ class SatraWalletDao(
         return transactionId
     }
 
+    fun upsertWalletTransaction(
+        transaction: NewWalletTransactionRecord,
+        nowMillis: Long = System.currentTimeMillis(),
+    ): String {
+        val existingTransactionId = transaction.transactionHash?.let { transactionHash ->
+            findWalletTransactionId(
+                walletId = transaction.walletId,
+                networkId = transaction.networkId,
+                transactionHash = transactionHash,
+                assetId = transaction.assetId,
+            )
+        }
+        val transactionId = existingTransactionId ?: UUID.randomUUID().toString()
+        val values = transaction.toContentValues(
+            transactionId = transactionId,
+            firstSeenAt = nowMillis,
+            updatedAt = nowMillis,
+        )
+
+        if (existingTransactionId == null) {
+            databaseHelper.writableDatabase.insertOrThrow(
+                SatraDatabaseContract.TABLE_WALLET_TRANSACTIONS,
+                null,
+                values,
+            )
+        } else {
+            values.remove("first_seen_at")
+            databaseHelper.writableDatabase.update(
+                SatraDatabaseContract.TABLE_WALLET_TRANSACTIONS,
+                values,
+                "transaction_id = ?",
+                arrayOf(transactionId),
+            )
+        }
+        return transactionId
+    }
+
     fun getWalletTransactions(walletId: String): List<WalletTransactionRecord> =
         databaseHelper.readableDatabase.query(
             SatraDatabaseContract.TABLE_WALLET_TRANSACTIONS,
@@ -298,6 +335,7 @@ class SatraWalletDao(
         balanceDecimal: String,
         balanceFiatValue: String,
         localCurrencyCode: String = DEFAULT_LOCAL_CURRENCY_CODE,
+        metadataJson: String? = null,
         nowMillis: Long = System.currentTimeMillis(),
     ) {
         databaseHelper.writableDatabase.update(
@@ -309,11 +347,50 @@ class SatraWalletDao(
                 put("local_currency_code", localCurrencyCode)
                 put("balance_updated_at", nowMillis)
                 put("updated_at", nowMillis)
+                if (metadataJson != null) {
+                    put("metadata_json", metadataJson)
+                }
             },
             "wallet_id = ? AND asset_id = ?",
             arrayOf(walletId, assetId),
         )
     }
+
+    fun updateWalletSyncMetadata(
+        walletId: String,
+        metadataJson: String,
+        nowMillis: Long = System.currentTimeMillis(),
+    ) {
+        databaseHelper.writableDatabase.update(
+            SatraDatabaseContract.TABLE_WALLETS,
+            ContentValues().apply {
+                put("metadata_json", metadataJson)
+                put("last_synced_at", nowMillis)
+                put("updated_at", nowMillis)
+            },
+            "wallet_id = ?",
+            arrayOf(walletId),
+        )
+    }
+
+    private fun findWalletTransactionId(
+        walletId: String,
+        networkId: String,
+        transactionHash: String,
+        assetId: String,
+    ): String? =
+        databaseHelper.readableDatabase.query(
+            SatraDatabaseContract.TABLE_WALLET_TRANSACTIONS,
+            arrayOf("transaction_id"),
+            "wallet_id = ? AND network_id = ? AND transaction_hash = ? AND asset_id = ?",
+            arrayOf(walletId, networkId, transactionHash, assetId),
+            null,
+            null,
+            null,
+            "1",
+        ).use { cursor ->
+            if (cursor.moveToFirst()) cursor.string("transaction_id") else null
+        }
 
     private fun insertDefaultWalletAssets(
         db: SQLiteDatabase,
@@ -461,6 +538,39 @@ private fun Cursor.toWalletTransactionRecord(): WalletTransactionRecord =
         updatedAt = long("updated_at"),
         metadataJson = string("metadata_json"),
     )
+
+private fun NewWalletTransactionRecord.toContentValues(
+    transactionId: String,
+    firstSeenAt: Long,
+    updatedAt: Long,
+): ContentValues =
+    ContentValues().apply {
+        put("transaction_id", transactionId)
+        put("wallet_id", walletId)
+        put("asset_id", assetId)
+        put("network_id", networkId)
+        putNullable("transaction_hash", transactionHash)
+        put("direction", direction)
+        put("status", status)
+        put("amount_raw", amountRaw)
+        put("amount_decimal", amountDecimal)
+        putNullable("fee_raw", feeRaw)
+        putNullable("fee_decimal", feeDecimal)
+        putNullable("fee_asset_id", feeAssetId)
+        putNullable("fiat_value", fiatValue)
+        put("local_currency_code", localCurrencyCode)
+        putNullable("from_address", fromAddress)
+        putNullable("to_address", toAddress)
+        putNullable("block_height", blockHeight)
+        putNullable("block_hash", blockHash)
+        put("confirmations", confirmations)
+        putNullable("nonce", nonce)
+        putNullable("memo", memo)
+        put("timestamp", timestamp)
+        put("first_seen_at", firstSeenAt)
+        put("updated_at", updatedAt)
+        put("metadata_json", metadataJson)
+    }
 
 private fun Cursor.string(columnName: String): String =
     getString(getColumnIndexOrThrow(columnName))

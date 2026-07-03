@@ -153,6 +153,79 @@ class SatraWalletDatabaseTest {
     }
 
     @Test
+    fun syncPersistenceUpdatesBalancesMetadataAndUpsertsTransactions() {
+        val walletId = dao.createWallet(
+            NewWalletRecord(
+                walletName = "Watch",
+                walletType = WalletType.WatchOnly.value,
+                walletKeyType = WalletKeyType.Address.value,
+                walletKeyMaterial = "0x1111111111111111111111111111111111111111",
+                isImported = true,
+                isWatchOnly = true,
+            ),
+            nowMillis = TEST_TIME,
+        )
+
+        dao.updateWalletAssetBalance(
+            walletId = walletId,
+            assetId = "ethereum:eth",
+            balanceRaw = "1000000000000000000",
+            balanceDecimal = "1",
+            balanceFiatValue = "0",
+            metadataJson = "{\"syncStatus\":\"complete\",\"syncProvider\":\"PublicNode Ethereum\"}",
+            nowMillis = TEST_TIME + 1,
+        )
+        dao.upsertWalletTransaction(
+            NewWalletTransactionRecord(
+                walletId = walletId,
+                assetId = "ethereum:eth",
+                networkId = "ethereum",
+                transactionHash = "0xsync",
+                direction = WalletTransactionDirection.Incoming.value,
+                status = WalletTransactionStatus.Pending.value,
+                amountRaw = "100",
+                amountDecimal = "0.0000000000000001",
+                timestamp = TEST_TIME,
+                metadataJson = "{\"syncStatus\":\"partial\"}",
+            ),
+            nowMillis = TEST_TIME + 2,
+        )
+        dao.upsertWalletTransaction(
+            NewWalletTransactionRecord(
+                walletId = walletId,
+                assetId = "ethereum:eth",
+                networkId = "ethereum",
+                transactionHash = "0xsync",
+                direction = WalletTransactionDirection.Incoming.value,
+                status = WalletTransactionStatus.Success.value,
+                amountRaw = "100",
+                amountDecimal = "0.0000000000000001",
+                confirmations = 12,
+                timestamp = TEST_TIME,
+                metadataJson = "{\"syncStatus\":\"complete\"}",
+            ),
+            nowMillis = TEST_TIME + 3,
+        )
+        dao.updateWalletSyncMetadata(
+            walletId = walletId,
+            metadataJson = "{\"evmSync\":{\"syncedNetworkCount\":1}}",
+            nowMillis = TEST_TIME + 4,
+        )
+
+        val wallet = checkNotNull(dao.getWallet(walletId))
+        val ethereumAsset = dao.getWalletAssets(walletId).first { it.assetId == "ethereum:eth" }
+        val transactions = dao.getWalletTransactions(walletId)
+
+        assertEquals("1", ethereumAsset.balanceDecimal)
+        assertTrue(ethereumAsset.metadataJson.contains("PublicNode Ethereum"))
+        assertEquals(1, transactions.size)
+        assertEquals(WalletTransactionStatus.Success.value, transactions.single().status)
+        assertEquals(12, transactions.single().confirmations)
+        assertEquals(TEST_TIME + 4, wallet.lastSyncedAt)
+        assertTrue(wallet.metadataJson.contains("evmSync"))
+    }
+
+    @Test
     fun repositoryPersistsCreateImportAndPrivateKeyFlowsForEveryNetwork() {
         val repository = SatraWalletRepository(dao)
         val createdWalletId = repository.createMnemonicWallet(
