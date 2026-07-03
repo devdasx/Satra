@@ -7,6 +7,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -43,6 +45,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
@@ -471,6 +474,47 @@ private fun OnboardingCopy(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
+
+        page.sourcePillLabelRes?.let { labelRes ->
+            Spacer(modifier = Modifier.height(18.dp))
+            SourceCodePill(
+                label = stringResource(labelRes),
+                url = stringResource(R.string.onboarding_open_source_url),
+            )
+        }
+    }
+}
+
+@Composable
+private fun SourceCodePill(
+    label: String,
+    url: String,
+    modifier: Modifier = Modifier,
+) {
+    val uriHandler = LocalUriHandler.current
+
+    Row(
+        modifier = modifier
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.primaryContainer)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
+            .clickable { uriHandler.openUri(url) }
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_brand_scan),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(17.dp),
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.Bold,
+        )
     }
 }
 
@@ -669,6 +713,7 @@ private data class OnboardingPage(
     @StringRes val eyebrowRes: Int,
     @StringRes val titleRes: Int,
     @StringRes val bodyRes: Int,
+    @StringRes val sourcePillLabelRes: Int? = null,
 )
 
 private val onboardingPages = listOf(
@@ -689,6 +734,7 @@ private val onboardingPages = listOf(
         eyebrowRes = R.string.onboarding_page_open_source_eyebrow,
         titleRes = R.string.onboarding_page_open_source_title,
         bodyRes = R.string.onboarding_page_open_source_body,
+        sourcePillLabelRes = R.string.onboarding_source_pill_label,
     ),
 )
 
