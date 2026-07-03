@@ -26,12 +26,19 @@ import dev.satra.wallet.settings.SatraSettings
 import dev.satra.wallet.settings.SatraSettingsDefaults
 import dev.satra.wallet.settings.SatraThemePreference
 import dev.satra.wallet.ui.onboarding.SatraOnboardingScreen
-import dev.satra.wallet.ui.setup.ImportSetupStep
-import dev.satra.wallet.ui.setup.SatraImportWalletSetupScreen
-import dev.satra.wallet.ui.setup.SatraWalletSetupScreen
+import dev.satra.wallet.ui.setup.CreateWalletBackupScreen
+import dev.satra.wallet.ui.setup.CreateWalletIntroScreen
+import dev.satra.wallet.ui.setup.CreateWalletPhraseScreen
+import dev.satra.wallet.ui.setup.CreateWalletSecurityScreen
+import dev.satra.wallet.ui.setup.ImportChainScreen
+import dev.satra.wallet.ui.setup.ImportMethodScreen
+import dev.satra.wallet.ui.setup.ImportPrivateKeyScreen
+import dev.satra.wallet.ui.setup.ImportRecoveryPhraseScreen
+import dev.satra.wallet.ui.setup.ImportReviewScreen
+import dev.satra.wallet.ui.setup.ImportSecurityScreen
+import dev.satra.wallet.ui.setup.ImportWatchOnlyAddressScreen
 import dev.satra.wallet.ui.setup.WalletImportMethod
 import dev.satra.wallet.ui.setup.WalletImportNetwork
-import dev.satra.wallet.ui.setup.WalletSetupMode
 import dev.satra.wallet.ui.theme.SatraTheme
 import java.util.Locale
 
@@ -114,7 +121,7 @@ class MainActivity : ComponentActivity() {
                                 applyAppLocale(tag)
                             },
                             onCreateWallet = {
-                                navController.navigate(SatraRoute.createWalletStep(0)) {
+                                navController.navigate(SatraRoute.CREATE_WALLET_INTRO) {
                                     launchSingleTop = true
                                 }
                             },
@@ -126,36 +133,53 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    composable(
-                        route = SatraRoute.CREATE_WALLET_STEP,
-                        arguments = listOf(
-                            navArgument(SatraRoute.ARG_STEP) {
-                                type = NavType.IntType
-                            },
-                        ),
-                    ) { backStackEntry ->
-                        val stepIndex = backStackEntry.arguments
-                            ?.getInt(SatraRoute.ARG_STEP)
-                            ?: 0
-
-                        SatraWalletSetupScreen(
-                            mode = WalletSetupMode.Create,
-                            stepIndex = stepIndex,
+                    composable(SatraRoute.CREATE_WALLET_INTRO) {
+                        CreateWalletIntroScreen(
                             settings = settings,
                             onBack = {
                                 navController.popBackStack()
                             },
-                            onNextStep = { nextStep ->
-                                navController.navigate(SatraRoute.createWalletStep(nextStep)) {
-                                    launchSingleTop = true
-                                }
+                            onNext = {
+                                navController.navigate(SatraRoute.CREATE_WALLET_PHRASE)
+                            },
+                        )
+                    }
+
+                    composable(SatraRoute.CREATE_WALLET_PHRASE) {
+                        CreateWalletPhraseScreen(
+                            settings = settings,
+                            onBack = {
+                                navController.popBackStack()
+                            },
+                            onNext = {
+                                navController.navigate(SatraRoute.CREATE_WALLET_BACKUP)
+                            },
+                        )
+                    }
+
+                    composable(SatraRoute.CREATE_WALLET_BACKUP) {
+                        CreateWalletBackupScreen(
+                            settings = settings,
+                            onBack = {
+                                navController.popBackStack()
+                            },
+                            onNext = {
+                                navController.navigate(SatraRoute.CREATE_WALLET_SECURITY)
+                            },
+                        )
+                    }
+
+                    composable(SatraRoute.CREATE_WALLET_SECURITY) {
+                        CreateWalletSecurityScreen(
+                            settings = settings,
+                            onBack = {
+                                navController.popBackStack()
                             },
                         )
                     }
 
                     composable(SatraRoute.IMPORT_METHOD) {
-                        SatraImportWalletSetupScreen(
-                            step = ImportSetupStep.Method,
+                        ImportMethodScreen(
                             settings = settings,
                             onBack = {
                                 navController.popBackStack()
@@ -176,9 +200,7 @@ class MainActivity : ComponentActivity() {
                     }
 
                     composable(SatraRoute.IMPORT_RECOVERY_PHRASE) {
-                        SatraImportWalletSetupScreen(
-                            step = ImportSetupStep.RecoveryPhrase,
-                            method = WalletImportMethod.RecoveryPhrase,
+                        ImportRecoveryPhraseScreen(
                             settings = settings,
                             onBack = {
                                 navController.popBackStack()
@@ -206,8 +228,7 @@ class MainActivity : ComponentActivity() {
                             backStackEntry.arguments?.getString(SatraRoute.ARG_METHOD),
                         )
 
-                        SatraImportWalletSetupScreen(
-                            step = ImportSetupStep.Chain,
+                        ImportChainScreen(
                             method = method,
                             settings = settings,
                             onBack = {
@@ -237,22 +258,29 @@ class MainActivity : ComponentActivity() {
                             backStackEntry.arguments?.getString(SatraRoute.ARG_NETWORK),
                         ) ?: WalletImportNetwork.Bitcoin
 
-                        SatraImportWalletSetupScreen(
-                            step = if (method == WalletImportMethod.PrivateKey) {
-                                ImportSetupStep.PrivateKey
-                            } else {
-                                ImportSetupStep.WatchOnlyAddress
-                            },
-                            method = method,
-                            network = network,
-                            settings = settings,
-                            onBack = {
-                                navController.popBackStack()
-                            },
-                            onNext = {
-                                navController.navigate(SatraRoute.importReview(method, network))
-                            },
-                        )
+                        if (method == WalletImportMethod.PrivateKey) {
+                            ImportPrivateKeyScreen(
+                                network = network,
+                                settings = settings,
+                                onBack = {
+                                    navController.popBackStack()
+                                },
+                                onNext = {
+                                    navController.navigate(SatraRoute.importReview(method, network))
+                                },
+                            )
+                        } else {
+                            ImportWatchOnlyAddressScreen(
+                                network = network,
+                                settings = settings,
+                                onBack = {
+                                    navController.popBackStack()
+                                },
+                                onNext = {
+                                    navController.navigate(SatraRoute.importReview(method, network))
+                                },
+                            )
+                        }
                     }
 
                     composable(
@@ -273,8 +301,7 @@ class MainActivity : ComponentActivity() {
                             backStackEntry.arguments?.getString(SatraRoute.ARG_NETWORK),
                         )
 
-                        SatraImportWalletSetupScreen(
-                            step = ImportSetupStep.Review,
+                        ImportReviewScreen(
                             method = method,
                             network = network,
                             settings = settings,
@@ -305,8 +332,7 @@ class MainActivity : ComponentActivity() {
                             backStackEntry.arguments?.getString(SatraRoute.ARG_NETWORK),
                         )
 
-                        SatraImportWalletSetupScreen(
-                            step = ImportSetupStep.Security,
+                        ImportSecurityScreen(
                             method = method,
                             network = network,
                             settings = settings,
@@ -343,20 +369,20 @@ private const val KEY_LANGUAGE_TAG = "language_tag"
 private const val NAV_ANIMATION_MILLIS = 280
 
 private object SatraRoute {
-    const val ARG_STEP = "step"
     const val ARG_METHOD = "method"
     const val ARG_NETWORK = "network"
     private const val NO_NETWORK = "none"
     const val ONBOARDING = "onboarding"
-    const val CREATE_WALLET_STEP = "create-wallet/{$ARG_STEP}"
+    const val CREATE_WALLET_INTRO = "create-wallet/intro"
+    const val CREATE_WALLET_PHRASE = "create-wallet/recovery-phrase"
+    const val CREATE_WALLET_BACKUP = "create-wallet/backup"
+    const val CREATE_WALLET_SECURITY = "create-wallet/security"
     const val IMPORT_METHOD = "import-wallet/method"
     const val IMPORT_RECOVERY_PHRASE = "import-wallet/recovery-phrase"
     const val IMPORT_CHAIN = "import-wallet/{$ARG_METHOD}/chain"
     const val IMPORT_ENTRY = "import-wallet/{$ARG_METHOD}/entry/{$ARG_NETWORK}"
     const val IMPORT_REVIEW = "import-wallet/{$ARG_METHOD}/review/{$ARG_NETWORK}"
     const val IMPORT_SECURITY = "import-wallet/{$ARG_METHOD}/security/{$ARG_NETWORK}"
-
-    fun createWalletStep(step: Int): String = "create-wallet/$step"
 
     fun importChain(method: WalletImportMethod): String =
         "import-wallet/${method.routeSegment}/chain"
