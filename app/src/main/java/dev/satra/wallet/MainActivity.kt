@@ -293,10 +293,12 @@ class MainActivity : ComponentActivity() {
                             screenshotWarningRequests = screenshotWarningRequests,
                             settings = settings,
                             onMnemonicWordCountChange = { wordCount ->
-                                pendingGeneratedMnemonicWordCount = wordCount
-                                pendingGeneratedMnemonic = Bip39MnemonicGenerator.generate(
-                                    wordCount = wordCount,
-                                )
+                                if (pendingGeneratedMnemonicWordCount != wordCount) {
+                                    pendingGeneratedMnemonicWordCount = wordCount
+                                    pendingGeneratedMnemonic = Bip39MnemonicGenerator.generate(
+                                        wordCount = wordCount,
+                                    )
+                                }
                             },
                             onPassphraseChange = { passphrase ->
                                 pendingCreatePassphrase = passphrase
