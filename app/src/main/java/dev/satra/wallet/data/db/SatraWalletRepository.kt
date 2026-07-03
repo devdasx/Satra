@@ -4,12 +4,11 @@ import android.content.Context
 import dev.satra.wallet.data.sync.evm.EvmAssetBalance
 import dev.satra.wallet.data.sync.evm.EvmNetworkSyncResult
 import dev.satra.wallet.data.sync.evm.EvmNormalizedTransaction
-import dev.satra.wallet.data.sync.evm.EvmProviderRegistry
 import dev.satra.wallet.data.sync.evm.EvmWalletSyncResult
 import dev.satra.wallet.data.sync.evm.EvmWalletSyncService
 import dev.satra.wallet.wallet.bip39.Bip39MnemonicValidator
-import dev.satra.wallet.wallet.evm.EvmDerivedAccount
-import dev.satra.wallet.wallet.evm.EvmWalletDerivation
+import dev.satra.wallet.wallet.derivation.DerivedReceiveAccount
+import dev.satra.wallet.wallet.derivation.SatraAddressDerivation
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -31,15 +30,16 @@ class SatraWalletRepository(
             "Invalid BIP39 mnemonic."
         }
         val cleanedPassphrase = passphrase.cleanPassphrase()
-        val evmAccount = EvmWalletDerivation.deriveDefaultAccount(mnemonic, cleanedPassphrase)
+        val receiveAccounts = SatraAddressDerivation.deriveReceiveAccounts(mnemonic, cleanedPassphrase)
+        val primaryAccount = receiveAccounts.first { it.networkId == "ethereum" }
         val walletId = walletDao.createWallet(
             NewWalletRecord(
                 walletName = walletName,
                 walletType = WalletType.Standard.value,
                 walletKeyType = WalletKeyType.Mnemonic.value,
                 walletKeyMaterial = mnemonic,
-                walletKeyFingerprint = evmAccount.keyFingerprint,
-                walletKeyDerivationPath = evmAccount.derivationPath,
+                walletKeyFingerprint = primaryAccount.keyFingerprint,
+                walletKeyDerivationPath = primaryAccount.derivationPath,
                 passphrase = cleanedPassphrase,
                 localCurrencyCode = localCurrencyCode,
                 isBackedUp = isBackedUp,
@@ -48,7 +48,7 @@ class SatraWalletRepository(
                 metadataJson = metadataJson,
             ),
         )
-        walletDao.insertEvmMnemonicAccounts(walletId, evmAccount)
+        walletDao.insertDerivedReceiveAccounts(walletId, receiveAccounts)
         return walletId
     }
 
@@ -63,15 +63,16 @@ class SatraWalletRepository(
             "Invalid BIP39 mnemonic."
         }
         val cleanedPassphrase = passphrase.cleanPassphrase()
-        val evmAccount = EvmWalletDerivation.deriveDefaultAccount(mnemonic, cleanedPassphrase)
+        val receiveAccounts = SatraAddressDerivation.deriveReceiveAccounts(mnemonic, cleanedPassphrase)
+        val primaryAccount = receiveAccounts.first { it.networkId == "ethereum" }
         val walletId = walletDao.createWallet(
             NewWalletRecord(
                 walletName = walletName,
                 walletType = WalletType.Imported.value,
                 walletKeyType = WalletKeyType.Mnemonic.value,
                 walletKeyMaterial = mnemonic,
-                walletKeyFingerprint = evmAccount.keyFingerprint,
-                walletKeyDerivationPath = evmAccount.derivationPath,
+                walletKeyFingerprint = primaryAccount.keyFingerprint,
+                walletKeyDerivationPath = primaryAccount.derivationPath,
                 passphrase = cleanedPassphrase,
                 localCurrencyCode = localCurrencyCode,
                 isImported = true,
@@ -79,7 +80,7 @@ class SatraWalletRepository(
                 metadataJson = metadataJson,
             ),
         )
-        walletDao.insertEvmMnemonicAccounts(walletId, evmAccount)
+        walletDao.insertDerivedReceiveAccounts(walletId, receiveAccounts)
         return walletId
     }
 
@@ -90,30 +91,26 @@ class SatraWalletRepository(
         localCurrencyCode: String = DEFAULT_LOCAL_CURRENCY_CODE,
         metadataJson: String = EMPTY_JSON,
     ): String {
-        val evmAccount = if (networkId in EvmProviderRegistry.supportedNetworkIds) {
-            EvmWalletDerivation.privateKeyToAccount(privateKey)
-        } else {
-            null
-        }
+        val receiveAccount = SatraAddressDerivation.derivePrivateKeyAccount(networkId, privateKey)
         val walletId = walletDao.createWallet(
             NewWalletRecord(
                 walletName = walletName,
                 walletType = WalletType.Imported.value,
                 walletKeyType = WalletKeyType.PrivateKey.value,
-                walletKeyMaterial = evmAccount?.privateKeyHex ?: privateKey,
-                walletKeyFingerprint = evmAccount?.keyFingerprint,
-                walletKeyDerivationPath = evmAccount?.derivationPath,
+                walletKeyMaterial = receiveAccount?.privateKeyHex ?: privateKey,
+                walletKeyFingerprint = receiveAccount?.keyFingerprint,
+                walletKeyDerivationPath = receiveAccount?.derivationPath,
                 localCurrencyCode = localCurrencyCode,
                 isImported = true,
                 isWatchOnly = false,
                 metadataJson = metadataJson,
             ),
         )
-        if (evmAccount != null) {
-            walletDao.insertEvmImportedPrivateKeyAccount(
+        if (receiveAccount != null) {
+            walletDao.insertImportedPrivateKeyReceiveAccount(
                 walletId = walletId,
                 networkId = networkId,
-                evmAccount = evmAccount,
+                account = receiveAccount,
             )
         } else {
             walletDao.insertWalletPrivateKey(
@@ -172,6 +169,32 @@ class SatraWalletRepository(
             walletDao.getWalletAssets(walletId)
         }
 
+    suspend fun getWalletAddresses(walletId: String): List<WalletAddressRecord> =
+        withContext(Dispatchers.IO) {
+            walletDao.getWalletAddresses(walletId)
+        }
+
+    suspend fun ensureMnemonicReceiveAddresses(walletId: String): List<WalletAddressRecord> =
+        withContext(Dispatchers.IO) {
+            val wallet = walletDao.getWallet(walletId) ?: return@withContext emptyList()
+            if (wallet.walletKeyType != WalletKeyType.Mnemonic.value || wallet.walletKeyMaterial.isNullOrBlank()) {
+                return@withContext walletDao.getWalletAddresses(walletId)
+            }
+            val existing = walletDao.getWalletAddresses(walletId)
+            val existingKeys = existing.map { address ->
+                "${address.networkId}:${address.derivationPath}:${address.address}"
+            }.toSet()
+            val missing = SatraAddressDerivation
+                .deriveReceiveAccounts(wallet.walletKeyMaterial, wallet.passphrase)
+                .filterNot { account ->
+                    "${account.networkId}:${account.derivationPath}:${account.address}" in existingKeys
+                }
+            if (missing.isNotEmpty()) {
+                walletDao.insertDerivedReceiveAccounts(walletId, missing)
+            }
+            walletDao.getWalletAddresses(walletId)
+        }
+
     suspend fun syncEvmWallet(walletId: String): EvmWalletSyncResult =
         withContext(Dispatchers.IO) {
             val wallet = walletDao.getWallet(walletId)
@@ -209,58 +232,60 @@ class SatraWalletRepository(
         }
     }
 
-    private fun SatraWalletDao.insertEvmMnemonicAccounts(
+    private fun SatraWalletDao.insertDerivedReceiveAccounts(
         walletId: String,
-        evmAccount: EvmDerivedAccount,
+        accounts: List<DerivedReceiveAccount>,
     ) {
-        EvmProviderRegistry.supportedNetworkIds.sorted().forEach { networkId ->
+        accounts.forEach { account ->
             val addressId = insertWalletAddress(
                 NewWalletAddressRecord(
                     walletId = walletId,
-                    networkId = networkId,
-                    address = evmAccount.address,
+                    networkId = account.networkId,
+                    address = account.address,
                     addressType = WalletAddressType.Receive.value,
-                    derivationPath = evmAccount.derivationPath,
-                    publicKey = evmAccount.publicKeyHex,
-                    isPrimary = true,
-                    addressIndex = 0,
-                    metadataJson = evmAccount.metadataJson("evm_mnemonic_derived"),
+                    derivationPath = account.derivationPath,
+                    publicKey = account.publicKeyHex,
+                    isPrimary = account.isPrimary,
+                    addressIndex = account.addressIndex,
+                    label = account.derivationLabel,
+                    metadataJson = account.metadataJson(),
                 ),
             )
             insertWalletPrivateKey(
                 NewWalletPrivateKeyRecord(
                     walletId = walletId,
-                    networkId = networkId,
+                    networkId = account.networkId,
                     addressId = addressId,
-                    keyMaterial = evmAccount.privateKeyHex,
+                    keyMaterial = account.privateKeyHex,
                     keyFormat = "hex",
-                    derivationPath = evmAccount.derivationPath,
-                    publicKey = evmAccount.publicKeyHex,
+                    derivationPath = account.derivationPath,
+                    publicKey = account.publicKeyHex,
                     keySource = WalletPrivateKeySource.MnemonicDerived.value,
                     isImported = false,
-                    keyFingerprint = evmAccount.keyFingerprint,
-                    metadataJson = evmAccount.metadataJson("evm_mnemonic_derived"),
+                    keyFingerprint = account.keyFingerprint,
+                    metadataJson = account.metadataJson(),
                 ),
             )
         }
     }
 
-    private fun SatraWalletDao.insertEvmImportedPrivateKeyAccount(
+    private fun SatraWalletDao.insertImportedPrivateKeyReceiveAccount(
         walletId: String,
         networkId: String,
-        evmAccount: EvmDerivedAccount,
+        account: DerivedReceiveAccount,
     ) {
         val addressId = insertWalletAddress(
             NewWalletAddressRecord(
                 walletId = walletId,
                 networkId = networkId,
-                address = evmAccount.address,
+                address = account.address,
                 addressType = WalletAddressType.Receive.value,
-                derivationPath = evmAccount.derivationPath,
-                publicKey = evmAccount.publicKeyHex,
+                derivationPath = account.derivationPath,
+                publicKey = account.publicKeyHex,
                 isPrimary = true,
                 addressIndex = 0,
-                metadataJson = evmAccount.metadataJson("evm_private_key_imported"),
+                label = account.derivationLabel,
+                metadataJson = account.metadataJson(),
             ),
         )
         insertWalletPrivateKey(
@@ -268,14 +293,14 @@ class SatraWalletRepository(
                 walletId = walletId,
                 networkId = networkId,
                 addressId = addressId,
-                keyMaterial = evmAccount.privateKeyHex,
+                keyMaterial = account.privateKeyHex,
                 keyFormat = "hex",
-                derivationPath = evmAccount.derivationPath,
-                publicKey = evmAccount.publicKeyHex,
+                derivationPath = account.derivationPath,
+                publicKey = account.publicKeyHex,
                 keySource = WalletPrivateKeySource.Imported.value,
                 isImported = true,
-                keyFingerprint = evmAccount.keyFingerprint,
-                metadataJson = evmAccount.metadataJson("evm_private_key_imported"),
+                keyFingerprint = account.keyFingerprint,
+                metadataJson = account.metadataJson(),
             ),
         )
     }
@@ -319,12 +344,23 @@ private fun Char.isHexDigit(): Boolean =
 private fun String?.cleanPassphrase(): String? =
     this?.takeIf(String::isNotEmpty)
 
-private fun EvmDerivedAccount.metadataJson(source: String): String =
+private val DerivedReceiveAccount.derivationLabel: String
+    get() = when (derivationName) {
+        "phantom" -> "Phantom"
+        "segwit" -> "SegWit"
+        "cashaddr" -> "CashAddr"
+        "legacy" -> "Legacy"
+        else -> "Trust Wallet"
+    }
+
+private fun DerivedReceiveAccount.metadataJson(): String =
     JSONObject()
-        .put("accountFamily", "evm")
+        .put("accountFamily", networkId)
         .put("accountSource", source)
+        .put("derivationName", derivationName)
         .put("derivationPath", derivationPath)
         .put("keyFingerprint", keyFingerprint)
+        .put("source", SatraAddressDerivation.SOURCE)
         .toString()
 
 private fun EvmAssetBalance.toMetadataJson(networkResult: EvmNetworkSyncResult): String =

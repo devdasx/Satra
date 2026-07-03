@@ -105,7 +105,10 @@ fun SatraMainScreen(
                 .padding(paddingValues),
         ) {
             composable(SatraMainTab.Home.route) {
-                SatraHomeDashboard(walletRepository = walletRepository)
+                SatraHomeDashboard(
+                    walletRepository = walletRepository,
+                    onReceiveClick = { tabNavController.navigate(SatraMainRoute.Receive) },
+                )
             }
             composable(SatraMainTab.Activity.route) {
                 SatraMainPlaceholderTab(title = stringResource(R.string.main_nav_activity))
@@ -115,6 +118,12 @@ fun SatraMainScreen(
             }
             composable(SatraMainTab.Settings.route) {
                 SatraMainPlaceholderTab(title = stringResource(R.string.main_nav_settings))
+            }
+            composable(SatraMainRoute.Receive) {
+                SatraReceiveScreen(
+                    walletRepository = walletRepository,
+                    onBack = { tabNavController.popBackStack() },
+                )
             }
         }
     }
@@ -163,6 +172,7 @@ private fun SatraBottomNavigationBar(
 @Composable
 private fun SatraHomeDashboard(
     walletRepository: SatraWalletRepository,
+    onReceiveClick: () -> Unit,
 ) {
     var homeState by remember { mutableStateOf<HomeDashboardState>(HomeDashboardState.Loading) }
 
@@ -228,6 +238,7 @@ private fun SatraHomeDashboard(
                 HomeBalanceCard(
                     totalBalance = content.totalBalance,
                     currencyCode = content.currencyCode,
+                    onReceiveClick = onReceiveClick,
                 )
                 Spacer(modifier = Modifier.height(14.dp))
                 HomeChartCard(totalBalance = content.totalBalance)
@@ -305,6 +316,7 @@ private fun SatraHomeHeader(
 private fun HomeBalanceCard(
     totalBalance: String,
     currencyCode: String,
+    onReceiveClick: () -> Unit,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -363,6 +375,7 @@ private fun HomeBalanceCard(
                 HomeSecondaryActionButton(
                     label = stringResource(R.string.home_action_receive),
                     iconRes = R.drawable.ic_brand_receive,
+                    onClick = onReceiveClick,
                     modifier = Modifier.weight(1f),
                 )
             }
@@ -403,10 +416,11 @@ private fun HomePrimaryActionButton(
 private fun HomeSecondaryActionButton(
     label: String,
     @DrawableRes iconRes: Int,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     OutlinedButton(
-        onClick = {},
+        onClick = onClick,
         modifier = modifier.height(52.dp),
         shape = RoundedCornerShape(100.dp),
         border = BorderStroke(
@@ -748,7 +762,7 @@ private fun String.toBigDecimalOrZero(): BigDecimal =
     runCatching { BigDecimal(this) }.getOrDefault(BigDecimal.ZERO)
 
 @DrawableRes
-private fun networkIconRes(networkId: String): Int =
+internal fun networkIconRes(networkId: String): Int =
     when (networkId) {
         "bitcoin" -> R.drawable.ic_chain_bitcoin
         "bitcoinCash" -> R.drawable.ic_chain_bitcoin_cash
@@ -804,6 +818,10 @@ private enum class SatraMainTab(
         labelRes = R.string.main_nav_settings,
         iconRes = R.drawable.ic_brand_settings,
     ),
+}
+
+private object SatraMainRoute {
+    const val Receive = "main/receive"
 }
 
 private val HomeContentMaxWidth = 720.dp

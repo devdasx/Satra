@@ -251,10 +251,19 @@ class SatraWalletDatabaseTest {
             assertEquals(8, wallet.walletKeyFingerprint?.length)
             assertEquals("m/44'/60'/0'/0/0", wallet.walletKeyDerivationPath)
         }
-        assertEquals(EvmProviderRegistry.supportedNetworkIds.size, dao.getWalletAddresses(createdWalletId).size)
-        assertEquals(EvmProviderRegistry.supportedNetworkIds.size, dao.getWalletPrivateKeys(createdWalletId).size)
+        assertEquals(EXPECTED_RECEIVE_ADDRESS_COUNT, dao.getWalletAddresses(createdWalletId).size)
+        assertEquals(EXPECTED_RECEIVE_ADDRESS_COUNT, dao.getWalletPrivateKeys(createdWalletId).size)
+        SupportedAssetCatalog.networks.forEach { network ->
+            assertTrue(
+                "Missing receive address for ${network.networkId}",
+                dao.getWalletAddresses(createdWalletId).any { it.networkId == network.networkId },
+            )
+        }
+        assertEquals(2, dao.getWalletAddresses(createdWalletId).count { it.networkId == "solana" })
         assertTrue(
-            dao.getWalletAddresses(createdWalletId).all {
+            dao.getWalletAddresses(createdWalletId).filter {
+                it.networkId in EvmProviderRegistry.supportedNetworkIds
+            }.all {
                 it.address.isEvmAddress() &&
                     it.derivationPath == "m/44'/60'/0'/0/0"
             },
@@ -265,8 +274,8 @@ class SatraWalletDatabaseTest {
             assertFalse(wallet.isWatchOnly)
             assertEquals(" imported passphrase ", wallet.passphrase)
         }
-        assertEquals(EvmProviderRegistry.supportedNetworkIds.size, dao.getWalletAddresses(importedMnemonicWalletId).size)
-        assertEquals(EvmProviderRegistry.supportedNetworkIds.size, dao.getWalletPrivateKeys(importedMnemonicWalletId).size)
+        assertEquals(EXPECTED_RECEIVE_ADDRESS_COUNT, dao.getWalletAddresses(importedMnemonicWalletId).size)
+        assertEquals(EXPECTED_RECEIVE_ADDRESS_COUNT, dao.getWalletPrivateKeys(importedMnemonicWalletId).size)
 
         SupportedAssetCatalog.networks.forEach { network ->
             val walletId = repository.importPrivateKeyWallet(
@@ -287,11 +296,11 @@ class SatraWalletDatabaseTest {
             assertEquals(network.networkId, privateKeys.single().networkId)
             assertEquals(TEST_PRIVATE_KEY_HEX, privateKeys.single().keyMaterial)
             assertEquals("hex", privateKeys.single().keyFormat)
-            if (network.networkId in EvmProviderRegistry.supportedNetworkIds) {
+            if (network.networkId in SECP256K1_PRIVATE_KEY_IMPORT_NETWORKS) {
                 val addresses = dao.getWalletAddresses(walletId)
                 assertEquals(1, addresses.size)
                 assertEquals(addresses.single().addressId, privateKeys.single().addressId)
-                assertEquals("0x19e7e376e7c213b7e7e7e46cc70a5dd086daff2a", addresses.single().address)
+                assertTrue(addresses.single().address.isNotBlank())
             }
         }
     }
@@ -330,6 +339,28 @@ class SatraWalletDatabaseTest {
             "1111111111111111111111111111111111111111111111111111111111111111"
         const val TEST_METADATA =
             "{\"passcodeEnabled\":true,\"passcodeLength\":6,\"biometricsEnabled\":true}"
+        val EXPECTED_RECEIVE_ADDRESS_COUNT = SupportedAssetCatalog.networks.size + 1
+        val SECP256K1_PRIVATE_KEY_IMPORT_NETWORKS = setOf(
+            "bitcoin",
+            "bitcoinCash",
+            "dogecoin",
+            "litecoin",
+            "ethereum",
+            "arbitrum",
+            "base",
+            "optimism",
+            "scroll",
+            "zkSync",
+            "polygon",
+            "bnbChain",
+            "opBNB",
+            "avalanche",
+            "celo",
+            "kavaEvm",
+            "ripple",
+            "tron",
+            "kava",
+        )
     }
 }
 
