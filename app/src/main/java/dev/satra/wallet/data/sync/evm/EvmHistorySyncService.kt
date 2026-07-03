@@ -4,6 +4,11 @@ import dev.satra.wallet.data.assets.SupportedAsset
 import dev.satra.wallet.data.db.WalletTransactionDirection
 import dev.satra.wallet.data.db.WalletTransactionStatus
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -62,6 +67,7 @@ class EvmHistorySyncService(
     private val timeoutMillis: Int = 8_000,
     private val maxLogScanBlockRange: Long = 25_000,
     private val maxIndexedPages: Int = 1_000,
+    private val maxParallelLogScans: Int = 6,
 ) {
     suspend fun syncHistory(
         walletId: String,
@@ -183,17 +189,37 @@ class EvmHistorySyncService(
         nativeAsset: SupportedAsset?,
         supportedAssetsByContract: Map<String, SupportedAsset>,
         latestKnownBlock: Long?,
-    ): EvmIndexedHistoryFetch {
-        val nativeTransactions = if (nativeAsset == null) {
-            EvmBlockscoutPageResult(emptyList(), complete = true)
-        } else {
+    ): EvmIndexedHistoryFetch = coroutineScope {
+        val nativeDeferred = async {
+            if (nativeAsset == null) {
+                EvmBlockscoutPageResult(emptyList(), complete = true)
+            } else {
+                fetchBlockscoutPagedItems(
+                    initialUrl = "${api.baseUrl.trimEnd('/')}/api/v2/addresses/${address.urlEncoded()}/transactions",
+                ).mapItems { item ->
+                    item.toBlockscoutNativeTransaction(
+                        walletId = walletId,
+                        networkId = config.networkId,
+                        asset = nativeAsset,
+                        walletAddress = address,
+                        providerName = api.name,
+                        latestKnownBlock = latestKnownBlock,
+                    )
+                }
+            }
+        }
+
+        val tokenDeferred = async {
             fetchBlockscoutPagedItems(
-                initialUrl = "${api.baseUrl.trimEnd('/')}/api/v2/addresses/${address.urlEncoded()}/transactions",
+                initialUrl = "${api.baseUrl.trimEnd('/')}/api/v2/addresses/${address.urlEncoded()}/token-transfers?type=ERC-20",
             ).mapItems { item ->
-                item.toBlockscoutNativeTransaction(
+                val token = item.optJSONObject("token") ?: return@mapItems null
+                val contract = token.optString("address").takeIf(String::isNotBlank) ?: return@mapItems null
+                val asset = supportedAssetsByContract[EvmAbi.normalizeAddress(contract)] ?: return@mapItems null
+                item.toBlockscoutTokenTransfer(
                     walletId = walletId,
                     networkId = config.networkId,
-                    asset = nativeAsset,
+                    asset = asset,
                     walletAddress = address,
                     providerName = api.name,
                     latestKnownBlock = latestKnownBlock,
@@ -201,22 +227,9 @@ class EvmHistorySyncService(
             }
         }
 
-        val tokenTransactions = fetchBlockscoutPagedItems(
-            initialUrl = "${api.baseUrl.trimEnd('/')}/api/v2/addresses/${address.urlEncoded()}/token-transfers?type=ERC-20",
-        ).mapItems { item ->
-            val token = item.optJSONObject("token") ?: return@mapItems null
-            val contract = token.optString("address").takeIf(String::isNotBlank) ?: return@mapItems null
-            val asset = supportedAssetsByContract[EvmAbi.normalizeAddress(contract)] ?: return@mapItems null
-            item.toBlockscoutTokenTransfer(
-                walletId = walletId,
-                networkId = config.networkId,
-                asset = asset,
-                walletAddress = address,
-                providerName = api.name,
-                latestKnownBlock = latestKnownBlock,
-            )
-        }
-        return EvmIndexedHistoryFetch(
+        val nativeTransactions = nativeDeferred.await()
+        val tokenTransactions = tokenDeferred.await()
+        EvmIndexedHistoryFetch(
             transactions = nativeTransactions.transactions + tokenTransactions.transactions,
             completeness = if (nativeTransactions.complete && tokenTransactions.complete) {
                 EvmSyncCompleteness.Complete
@@ -237,38 +250,46 @@ class EvmHistorySyncService(
         nativeAsset: SupportedAsset?,
         supportedAssetsByContract: Map<String, SupportedAsset>,
         latestKnownBlock: Long?,
-    ): EvmIndexedHistoryFetch {
-        val nativeTransactions = if (nativeAsset == null) {
-            EvmBlockscoutPageResult(emptyList(), complete = true)
-        } else {
-            fetchEtherscanCompatiblePagedItems { page ->
-                "${api.baseUrl.trimEnd('/')}/api?module=account&action=txlist&address=${address.urlEncoded()}&sort=asc&page=$page&offset=$ETHERSCAN_COMPATIBLE_PAGE_SIZE"
-            }.mapItems { item ->
-                item.toEtherscanNativeTransaction(
+    ): EvmIndexedHistoryFetch = coroutineScope {
+        val nativeDeferred = async {
+            if (nativeAsset == null) {
+                EvmBlockscoutPageResult(emptyList(), complete = true)
+            } else {
+                fetchEtherscanCompatiblePagedItems { page ->
+                    "${api.baseUrl.trimEnd('/')}/api?module=account&action=txlist&address=${address.urlEncoded()}&sort=asc&page=$page&offset=$ETHERSCAN_COMPATIBLE_PAGE_SIZE"
+                }.mapItems { item ->
+                    item.toEtherscanNativeTransaction(
                         walletId = walletId,
                         networkId = config.networkId,
                         asset = nativeAsset,
                         walletAddress = address,
                         providerName = api.name,
                         latestKnownBlock = latestKnownBlock,
+                    )
+                }
+            }
+        }
+
+        val tokenDeferred = async {
+            fetchEtherscanCompatiblePagedItems { page ->
+                "${api.baseUrl.trimEnd('/')}/api?module=account&action=tokentx&address=${address.urlEncoded()}&sort=asc&page=$page&offset=$ETHERSCAN_COMPATIBLE_PAGE_SIZE"
+            }.mapItems { item ->
+                val contract = item.optString("contractAddress").takeIf(String::isNotBlank) ?: return@mapItems null
+                val asset = supportedAssetsByContract[EvmAbi.normalizeAddress(contract)] ?: return@mapItems null
+                item.toEtherscanTokenTransfer(
+                    walletId = walletId,
+                    networkId = config.networkId,
+                    asset = asset,
+                    walletAddress = address,
+                    providerName = api.name,
+                    latestKnownBlock = latestKnownBlock,
                 )
             }
         }
-        val tokenTransactions = fetchEtherscanCompatiblePagedItems { page ->
-            "${api.baseUrl.trimEnd('/')}/api?module=account&action=tokentx&address=${address.urlEncoded()}&sort=asc&page=$page&offset=$ETHERSCAN_COMPATIBLE_PAGE_SIZE"
-        }.mapItems { item ->
-            val contract = item.optString("contractAddress").takeIf(String::isNotBlank) ?: return@mapItems null
-            val asset = supportedAssetsByContract[EvmAbi.normalizeAddress(contract)] ?: return@mapItems null
-            item.toEtherscanTokenTransfer(
-                walletId = walletId,
-                networkId = config.networkId,
-                asset = asset,
-                walletAddress = address,
-                providerName = api.name,
-                latestKnownBlock = latestKnownBlock,
-            )
-        }
-        return EvmIndexedHistoryFetch(
+
+        val nativeTransactions = nativeDeferred.await()
+        val tokenTransactions = tokenDeferred.await()
+        EvmIndexedHistoryFetch(
             transactions = nativeTransactions.transactions + tokenTransactions.transactions,
             completeness = if (nativeTransactions.complete && tokenTransactions.complete) {
                 EvmSyncCompleteness.Complete
@@ -366,50 +387,55 @@ class EvmHistorySyncService(
             val client = rpcClientFactory(config)
             val latestBlock = latestKnownBlock ?: client.blockNumber().value
             val fromBlock = maxOf(0L, latestBlock - maxLogScanBlockRange + 1L)
-            val transactions = mutableListOf<EvmNormalizedTransaction>()
-            assetsByContract.forEach { (contract, asset) ->
-                val incoming = client.getLogs(
-                    transferFilter(
-                        contract = contract,
-                        indexedAddressTopicPosition = 2,
-                        walletAddress = address,
-                        fromBlock = fromBlock,
-                        toBlock = latestBlock,
-                    ),
-                )
-                val outgoing = client.getLogs(
-                    transferFilter(
-                        contract = contract,
-                        indexedAddressTopicPosition = 1,
-                        walletAddress = address,
-                        fromBlock = fromBlock,
-                        toBlock = latestBlock,
-                    ),
-                )
-                transactions += incoming.value.toTransferTransactions(
-                    walletId = walletId,
-                    networkId = config.networkId,
-                    asset = asset,
-                    walletAddress = address,
-                    direction = WalletTransactionDirection.Incoming,
-                    providerName = incoming.provider.name,
-                    latestKnownBlock = latestBlock,
-                    nowMillis = nowMillis,
-                )
-                transactions += outgoing.value.toTransferTransactions(
-                    walletId = walletId,
-                    networkId = config.networkId,
-                    asset = asset,
-                    walletAddress = address,
-                    direction = WalletTransactionDirection.Outgoing,
-                    providerName = outgoing.provider.name,
-                    latestKnownBlock = latestBlock,
-                    nowMillis = nowMillis,
-                )
+            val scanLimiter = Semaphore(maxParallelLogScans.coerceAtLeast(1))
+            val logResults = coroutineScope {
+                assetsByContract.flatMap { (contract, asset) ->
+                    listOf(
+                        EvmLogScanRequest(
+                            contract = contract,
+                            asset = asset,
+                            direction = WalletTransactionDirection.Incoming,
+                            indexedAddressTopicPosition = 2,
+                        ),
+                        EvmLogScanRequest(
+                            contract = contract,
+                            asset = asset,
+                            direction = WalletTransactionDirection.Outgoing,
+                            indexedAddressTopicPosition = 1,
+                        ),
+                    )
+                }.map { request ->
+                    async {
+                        scanLimiter.withPermit {
+                            val logs = client.getLogs(
+                                transferFilter(
+                                    contract = request.contract,
+                                    indexedAddressTopicPosition = request.indexedAddressTopicPosition,
+                                    walletAddress = address,
+                                    fromBlock = fromBlock,
+                                    toBlock = latestBlock,
+                                ),
+                            )
+                            EvmLogScanResult(
+                                providerName = logs.provider.name,
+                                transactions = logs.value.toTransferTransactions(
+                                    walletId = walletId,
+                                    networkId = config.networkId,
+                                    asset = request.asset,
+                                    walletAddress = address,
+                                    direction = request.direction,
+                                    providerName = logs.provider.name,
+                                    latestKnownBlock = latestBlock,
+                                    nowMillis = nowMillis,
+                                ),
+                            )
+                        }
+                    }
+                }.awaitAll()
             }
             EvmNetworkHistoryResult(
-                transactions = transactions.deduplicate(),
-                providerName = null,
+                transactions = logResults.flatMap { it.transactions }.deduplicate(),
+                providerName = logResults.firstOrNull()?.providerName,
                 latestBlockNumber = latestBlock,
                 completeness = EvmSyncCompleteness.Partial,
                 cursorFromBlock = fromBlock,
@@ -473,6 +499,18 @@ private data class EvmBlockscoutPageResult<T>(
     val transactions: List<T>,
     val complete: Boolean,
     val error: String? = null,
+)
+
+private data class EvmLogScanRequest(
+    val contract: String,
+    val asset: SupportedAsset,
+    val direction: WalletTransactionDirection,
+    val indexedAddressTopicPosition: Int,
+)
+
+private data class EvmLogScanResult(
+    val providerName: String,
+    val transactions: List<EvmNormalizedTransaction>,
 )
 
 private fun <T, R> EvmBlockscoutPageResult<T>.mapItems(

@@ -2,6 +2,8 @@ package dev.satra.wallet.data.sync.evm
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -69,6 +71,8 @@ class EvmJsonRpcClient(
     private val maxAttemptsPerProvider: Int = 2,
 ) {
     private val requestIds = AtomicLong(1)
+    private val providerMutex = Mutex()
+    private var activeProvider: VerifiedEvmProvider? = null
 
     suspend fun chainId(): EvmRpcCallResult<Long> =
         callVerified("eth_chainId", JSONArray()) { result ->
@@ -120,35 +124,70 @@ class EvmJsonRpcClient(
         parser: (Any) -> T,
     ): EvmRpcCallResult<T> {
         val failures = mutableListOf<String>()
+        val verifiedProvider = verifiedProvider(failures)
 
+        try {
+            val value = callProvider(verifiedProvider.provider, method, params)
+            return EvmRpcCallResult(
+                value = parser(value),
+                provider = verifiedProvider.provider,
+                blockNumber = verifiedProvider.blockNumber,
+            )
+        } catch (error: Throwable) {
+            failures += "${verifiedProvider.provider.name} cached call: ${error.message}"
+            clearActiveProviderIfMatches(verifiedProvider.provider)
+        }
+
+        return callVerifiedWithoutCache(
+            method = method,
+            params = params,
+            parser = parser,
+            failures = failures,
+        )
+    }
+
+    private suspend fun verifiedProvider(failures: MutableList<String>): VerifiedEvmProvider =
+        providerMutex.withLock {
+            activeProvider ?: selectVerifiedProvider(failures).also { activeProvider = it }
+        }
+
+    private suspend fun selectVerifiedProvider(
+        failures: MutableList<String>,
+    ): VerifiedEvmProvider {
         config.providers.forEach { provider ->
             repeat(maxAttemptsPerProvider) { attempt ->
                 try {
-                    val chainId = callProvider(
-                        provider = provider,
-                        method = "eth_chainId",
-                        params = JSONArray(),
-                    ) as String
-                    val parsedChainId = EvmAbi.hexToLong(chainId)
-                    if (parsedChainId != config.chainId) {
-                        error("Invalid chain ID $parsedChainId, expected ${config.chainId}")
+                    return provider.verify()
+                } catch (error: Throwable) {
+                    failures += "${provider.name} attempt ${attempt + 1}: ${error.message}"
+                    if (attempt + 1 < maxAttemptsPerProvider) {
+                        delay((attempt + 1) * BACKOFF_STEP_MILLIS)
                     }
+                }
+            }
+        }
 
-                    val latestBlock = callProvider(
-                        provider = provider,
-                        method = "eth_blockNumber",
-                        params = JSONArray(),
-                    ) as String
-                    val parsedBlock = EvmAbi.hexToLong(latestBlock)
-                    if (parsedBlock <= 0L) {
-                        error("Stale or empty block height: $parsedBlock")
-                    }
+        error("All EVM RPC providers failed for ${config.networkId}: ${failures.joinToString(" | ")}")
+    }
 
+    private suspend fun <T> callVerifiedWithoutCache(
+        method: String,
+        params: JSONArray,
+        parser: (Any) -> T,
+        failures: MutableList<String>,
+    ): EvmRpcCallResult<T> {
+        config.providers.forEach { provider ->
+            repeat(maxAttemptsPerProvider) { attempt ->
+                try {
+                    val verifiedProvider = provider.verify()
                     val value = callProvider(provider, method, params)
+                    providerMutex.withLock {
+                        activeProvider = verifiedProvider
+                    }
                     return EvmRpcCallResult(
                         value = parser(value),
                         provider = provider,
-                        blockNumber = parsedBlock,
+                        blockNumber = verifiedProvider.blockNumber,
                     )
                 } catch (error: Throwable) {
                     failures += "${provider.name} attempt ${attempt + 1}: ${error.message}"
@@ -160,6 +199,41 @@ class EvmJsonRpcClient(
         }
 
         error("All EVM RPC providers failed for ${config.networkId}: ${failures.joinToString(" | ")}")
+    }
+
+    private suspend fun EvmProvider.verify(): VerifiedEvmProvider {
+        val chainId = callProvider(
+            provider = this,
+            method = "eth_chainId",
+            params = JSONArray(),
+        ) as String
+        val parsedChainId = EvmAbi.hexToLong(chainId)
+        if (parsedChainId != config.chainId) {
+            error("Invalid chain ID $parsedChainId, expected ${config.chainId}")
+        }
+
+        val latestBlock = callProvider(
+            provider = this,
+            method = "eth_blockNumber",
+            params = JSONArray(),
+        ) as String
+        val parsedBlock = EvmAbi.hexToLong(latestBlock)
+        if (parsedBlock <= 0L) {
+            error("Stale or empty block height: $parsedBlock")
+        }
+
+        return VerifiedEvmProvider(
+            provider = this,
+            blockNumber = parsedBlock,
+        )
+    }
+
+    private suspend fun clearActiveProviderIfMatches(provider: EvmProvider) {
+        providerMutex.withLock {
+            if (activeProvider?.provider == provider) {
+                activeProvider = null
+            }
+        }
     }
 
     private suspend fun callProvider(
@@ -194,3 +268,8 @@ class EvmJsonRpcClient(
         const val BACKOFF_STEP_MILLIS = 250L
     }
 }
+
+private data class VerifiedEvmProvider(
+    val provider: EvmProvider,
+    val blockNumber: Long,
+)

@@ -2,17 +2,23 @@ package dev.satra.wallet.data.sync.evm
 
 import dev.satra.wallet.data.assets.SupportedAssetCatalog
 import dev.satra.wallet.data.db.WalletAddressRecord
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 
 class EvmWalletSyncService(
     private val balanceSyncService: EvmBalanceSyncService = EvmBalanceSyncService(),
     private val historySyncService: EvmHistorySyncService = EvmHistorySyncService(),
+    private val maxParallelNetworkSyncs: Int = 12,
 ) {
     suspend fun syncWallet(
         walletId: String,
         addresses: List<WalletAddressRecord>,
         networkId: String? = null,
         nowMillis: Long = System.currentTimeMillis(),
-    ): EvmWalletSyncResult {
+    ): EvmWalletSyncResult = coroutineScope {
         val requestedNetworks = if (networkId == null) {
             addresses
                 .map { it.networkId }
@@ -22,18 +28,24 @@ class EvmWalletSyncService(
             setOf(networkId).also { EvmProviderRegistry.requireConfig(networkId) }
         }
 
+        val networkLimiter = Semaphore(maxParallelNetworkSyncs.coerceAtLeast(1))
         val results = requestedNetworks
             .sorted()
             .map { evmNetworkId ->
-                syncNetwork(
-                    walletId = walletId,
-                    networkId = evmNetworkId,
-                    address = addresses.primaryAddressFor(evmNetworkId),
-                    nowMillis = nowMillis,
-                )
+                async {
+                    networkLimiter.withPermit {
+                        syncNetwork(
+                            walletId = walletId,
+                            networkId = evmNetworkId,
+                            address = addresses.primaryAddressFor(evmNetworkId),
+                            nowMillis = nowMillis,
+                        )
+                    }
+                }
             }
+            .awaitAll()
 
-        return EvmWalletSyncResult(
+        EvmWalletSyncResult(
             walletId = walletId,
             networkResults = results,
         )
@@ -44,10 +56,10 @@ class EvmWalletSyncService(
         networkId: String,
         address: WalletAddressRecord?,
         nowMillis: Long,
-    ): EvmNetworkSyncResult {
+    ): EvmNetworkSyncResult = coroutineScope {
         val assets = SupportedAssetCatalog.assets.filter { it.networkId == networkId }
         if (address == null) {
-            return EvmNetworkSyncResult(
+            return@coroutineScope EvmNetworkSyncResult(
                 walletId = walletId,
                 networkId = networkId,
                 address = null,
@@ -63,43 +75,50 @@ class EvmWalletSyncService(
             )
         }
 
-        val balanceResult = runCatching {
-            balanceSyncService.syncBalances(
-                address = address.address,
-                assets = assets,
-                nowMillis = nowMillis,
-            )
-        }.getOrElse { error ->
-            EvmNetworkBalanceResult(
-                balances = emptyList(),
-                providerName = null,
-                latestBlockNumber = null,
-                completeness = EvmSyncCompleteness.Failed,
-                error = error.message,
-            )
+        val balanceDeferred = async {
+            runCatching {
+                balanceSyncService.syncBalances(
+                    address = address.address,
+                    assets = assets,
+                    nowMillis = nowMillis,
+                )
+            }.getOrElse { error ->
+                EvmNetworkBalanceResult(
+                    balances = emptyList(),
+                    providerName = null,
+                    latestBlockNumber = null,
+                    completeness = EvmSyncCompleteness.Failed,
+                    error = error.message,
+                )
+            }
         }
 
-        val historyResult = runCatching {
-            historySyncService.syncHistory(
-                walletId = walletId,
-                address = address.address,
-                assets = assets,
-                latestKnownBlock = balanceResult.latestBlockNumber,
-                nowMillis = nowMillis,
-            )
-        }.getOrElse { error ->
-            EvmNetworkHistoryResult(
-                transactions = emptyList(),
-                providerName = null,
-                latestBlockNumber = balanceResult.latestBlockNumber,
-                completeness = EvmSyncCompleteness.Failed,
-                cursorFromBlock = null,
-                cursorToBlock = balanceResult.latestBlockNumber,
-                error = error.message,
-            )
+        val historyDeferred = async {
+            runCatching {
+                historySyncService.syncHistory(
+                    walletId = walletId,
+                    address = address.address,
+                    assets = assets,
+                    latestKnownBlock = null,
+                    nowMillis = nowMillis,
+                )
+            }.getOrElse { error ->
+                EvmNetworkHistoryResult(
+                    transactions = emptyList(),
+                    providerName = null,
+                    latestBlockNumber = null,
+                    completeness = EvmSyncCompleteness.Failed,
+                    cursorFromBlock = null,
+                    cursorToBlock = null,
+                    error = error.message,
+                )
+            }
         }
 
-        return EvmNetworkSyncResult(
+        val balanceResult = balanceDeferred.await()
+        val historyResult = historyDeferred.await()
+
+        EvmNetworkSyncResult(
             walletId = walletId,
             networkId = networkId,
             address = address.address,
@@ -108,7 +127,7 @@ class EvmWalletSyncService(
             balances = balanceResult.balances,
             transactions = historyResult.transactions,
             providerName = balanceResult.providerName ?: historyResult.providerName,
-            latestBlockNumber = balanceResult.latestBlockNumber ?: historyResult.latestBlockNumber,
+            latestBlockNumber = maxOfOrNull(balanceResult.latestBlockNumber, historyResult.latestBlockNumber),
             cursorFromBlock = historyResult.cursorFromBlock,
             cursorToBlock = historyResult.cursorToBlock,
             error = listOfNotNull(balanceResult.error, historyResult.error)
@@ -126,3 +145,9 @@ private fun List<WalletAddressRecord>.primaryAddressFor(networkId: String): Wall
                 .thenBy { it.createdAt },
         )
         .firstOrNull()
+
+private fun maxOfOrNull(
+    first: Long?,
+    second: Long?,
+): Long? =
+    listOfNotNull(first, second).maxOrNull()

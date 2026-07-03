@@ -9,7 +9,9 @@ class EvmWalletSyncServiceTest {
     @Test
     fun walletWideSyncIgnoresStoredNonEvmAddresses() = runBlocking {
         val service = EvmWalletSyncService(
-            balanceSyncService = EvmBalanceSyncService { error("Network should not be called for missing addresses.") },
+            balanceSyncService = EvmBalanceSyncService(
+                clientFactory = { error("Network should not be called for missing addresses.") },
+            ),
             historySyncService = EvmHistorySyncService(
                 rpcClientFactory = { error("Network should not be called for missing addresses.") },
                 httpGetTransport = object : EvmHttpGetTransport {
