@@ -1,6 +1,9 @@
 package dev.satra.wallet.data.db
 
 import android.content.Context
+import dev.satra.wallet.data.pricing.SatraAssetPrice
+import dev.satra.wallet.data.pricing.SatraPriceSyncResult
+import dev.satra.wallet.data.pricing.SatraPriceSyncService
 import dev.satra.wallet.data.sync.evm.EvmAssetBalance
 import dev.satra.wallet.data.sync.evm.EvmNetworkSyncResult
 import dev.satra.wallet.data.sync.evm.EvmNormalizedTransaction
@@ -14,10 +17,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
+import java.math.BigDecimal
 
 class SatraWalletRepository(
     private val walletDao: SatraWalletDao,
     private val evmWalletSyncService: EvmWalletSyncService = EvmWalletSyncService(),
+    private val priceSyncService: SatraPriceSyncService = SatraPriceSyncService(),
 ) {
     fun createMnemonicWallet(
         walletName: String,
@@ -333,6 +338,59 @@ class SatraWalletRepository(
             result.networkResults.single()
         }
 
+    suspend fun syncWalletPrices(walletId: String): SatraPriceSyncResult? =
+        withContext(Dispatchers.IO) {
+            val wallet = walletDao.getWallet(walletId)
+                ?: error("Wallet not found: $walletId")
+            val walletAssets = walletDao.getWalletAssets(walletId)
+            val result = priceSyncService.syncSupportedAssetPricesOrNull(wallet.localCurrencyCode)
+            val pricesByAssetId = result?.prices.orEmpty().associateBy { it.asset.assetId }
+            var totalFiat = BigDecimal.ZERO
+            val nowMillis = result?.updatedAtMillis ?: System.currentTimeMillis()
+
+            walletAssets.forEach { walletAsset ->
+                val price = pricesByAssetId[walletAsset.assetId]
+                val cachedPrice = walletAsset.priceFiatValue.toBigDecimalOrZero()
+                    .takeIf { it > BigDecimal.ZERO && walletAsset.localCurrencyCode == wallet.localCurrencyCode }
+                val localPrice = price?.localPrice ?: cachedPrice
+                if (localPrice != null) {
+                    val balanceFiat = walletAsset.balanceDecimal.toBigDecimalOrZero().multiply(localPrice)
+                    totalFiat += balanceFiat
+                    walletDao.updateWalletAssetPrice(
+                        walletId = walletId,
+                        assetId = walletAsset.assetId,
+                        priceFiatValue = localPrice.toPlainString(),
+                        balanceFiatValue = balanceFiat.toPlainString(),
+                        localCurrencyCode = wallet.localCurrencyCode,
+                        metadataJson = walletAsset.metadataJson.withPriceSync(
+                            price = price,
+                            cached = price == null,
+                            localCurrencyCode = wallet.localCurrencyCode,
+                            failed = result?.failedSymbols.orEmpty().contains(
+                                walletAsset.assetId.substringAfter(':').uppercase(),
+                            ),
+                            nowMillis = nowMillis,
+                        ),
+                        nowMillis = nowMillis,
+                    )
+                }
+            }
+            walletDao.updateWalletFiatBalance(
+                walletId = walletId,
+                balanceFiatValue = totalFiat.toPlainString(),
+                localCurrencyCode = wallet.localCurrencyCode,
+                nowMillis = nowMillis,
+            )
+            result
+        }
+
+    suspend fun syncAllWalletPrices(): List<SatraPriceSyncResult?> =
+        withContext(Dispatchers.IO) {
+            walletDao.getWallets().map { wallet ->
+                syncWalletPrices(wallet.walletId)
+            }
+        }
+
     private fun inferPrivateKeyFormat(privateKey: String): String {
         val normalized = privateKey.removePrefix("0x")
         return when {
@@ -538,6 +596,38 @@ private fun String.withEvmSyncResult(result: EvmWalletSyncResult): String {
     )
     return root.toString()
 }
+
+private fun String.withPriceSync(
+    price: SatraAssetPrice?,
+    cached: Boolean,
+    localCurrencyCode: String,
+    failed: Boolean,
+    nowMillis: Long,
+): String {
+    val root = runCatching { JSONObject(this) }.getOrElse { JSONObject() }
+    root.put(
+        "priceSync",
+        JSONObject()
+            .put(
+                "status",
+                when {
+                    price != null -> "complete"
+                    cached -> "cached"
+                    failed -> "failed"
+                    else -> "unavailable"
+                },
+            )
+            .put("provider", price?.provider ?: "local-database")
+            .put("providerAssetId", price?.providerAssetId)
+            .put("usdPrice", price?.usdPrice?.toPlainString())
+            .put("localCurrencyCode", localCurrencyCode)
+            .put("updatedAt", nowMillis),
+    )
+    return root.toString()
+}
+
+private fun String.toBigDecimalOrZero(): BigDecimal =
+    runCatching { BigDecimal(this) }.getOrDefault(BigDecimal.ZERO)
 
 object SatraDatabaseProvider {
     @Volatile

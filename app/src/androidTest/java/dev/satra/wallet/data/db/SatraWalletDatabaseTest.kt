@@ -5,6 +5,9 @@ import android.database.sqlite.SQLiteDatabase
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import dev.satra.wallet.data.assets.SupportedAssetCatalog
+import dev.satra.wallet.data.pricing.SatraHttpTransport
+import dev.satra.wallet.data.pricing.SatraMarketDataClient
+import dev.satra.wallet.data.pricing.SatraPriceSyncService
 import dev.satra.wallet.data.sync.evm.EvmProviderRegistry
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -129,6 +132,67 @@ class SatraWalletDatabaseTest {
         assertEquals("EUR", checkNotNull(dao.getWallet(walletId)).localCurrencyCode)
         assertTrue(dao.getWalletAssets(walletId).all { it.localCurrencyCode == "EUR" })
         assertTrue(dao.getWalletTransactions(walletId).all { it.localCurrencyCode == "EUR" })
+    }
+
+    @Test
+    fun repositoryPersistsPricesAndFallsBackToCachedDatabasePrices() = runBlocking {
+        val walletId = dao.createWallet(
+            NewWalletRecord(
+                walletName = "Prices",
+                walletType = WalletType.Standard.value,
+                walletKeyType = WalletKeyType.Mnemonic.value,
+                walletKeyMaterial = TEST_MNEMONIC,
+            ),
+            nowMillis = TEST_TIME,
+        )
+        dao.updateWalletAssetBalance(
+            walletId = walletId,
+            assetId = "bitcoin:btc",
+            balanceRaw = "200000000",
+            balanceDecimal = "2",
+            balanceFiatValue = "0",
+            nowMillis = TEST_TIME,
+        )
+        val repository = SatraWalletRepository(
+            walletDao = dao,
+            priceSyncService = SatraPriceSyncService(
+                marketDataClient = SatraMarketDataClient(PriceSyncTestTransport()),
+            ),
+        )
+
+        val result = repository.syncWalletPrices(walletId)
+
+        assertNotNull(result)
+        var wallet = checkNotNull(dao.getWallet(walletId))
+        var btcAsset = dao.getWalletAssets(walletId).first { it.assetId == "bitcoin:btc" }
+        assertEquals("100", btcAsset.priceFiatValue)
+        assertEquals("200", btcAsset.balanceFiatValue)
+        assertTrue(btcAsset.metadataJson.contains("coinbase-exchange-public"))
+        assertEquals("200", wallet.balanceFiatValue)
+
+        dao.updateWalletAssetBalance(
+            walletId = walletId,
+            assetId = "bitcoin:btc",
+            balanceRaw = "300000000",
+            balanceDecimal = "3",
+            balanceFiatValue = "0",
+            nowMillis = TEST_TIME + 1,
+        )
+        val failingRepository = SatraWalletRepository(
+            walletDao = dao,
+            priceSyncService = SatraPriceSyncService(
+                marketDataClient = SatraMarketDataClient(FailingPriceTransport()),
+            ),
+        )
+
+        failingRepository.syncWalletPrices(walletId)
+
+        wallet = checkNotNull(dao.getWallet(walletId))
+        btcAsset = dao.getWalletAssets(walletId).first { it.assetId == "bitcoin:btc" }
+        assertEquals("100", btcAsset.priceFiatValue)
+        assertEquals("300", btcAsset.balanceFiatValue)
+        assertTrue(btcAsset.metadataJson.contains("local-database"))
+        assertEquals("300", wallet.balanceFiatValue)
     }
 
     @Test
@@ -577,4 +641,36 @@ private fun String.isEvmAddress(): Boolean {
         normalized.all { character ->
             character in '0'..'9' || character in 'a'..'f' || character in 'A'..'F'
         }
+}
+
+private class PriceSyncTestTransport : SatraHttpTransport {
+    override fun get(url: String): String =
+        when {
+            url == "https://api.exchange.coinbase.com/products" -> """
+                [
+                    {"base_currency":"BTC","quote_currency":"USD","status":"online","trading_disabled":false}
+                ]
+            """.trimIndent()
+
+            url == "https://api.exchange.coinbase.com/products/BTC-USD/ticker" -> """
+                {"price":"100"}
+            """.trimIndent()
+
+            url.startsWith("https://api.coingecko.com/api/v3/simple/price") -> {
+                val ids = url.substringAfter("ids=").substringBefore("&")
+                    .split(",")
+                    .filter(String::isNotBlank)
+                ids.joinToString(prefix = "{", postfix = "}") { id ->
+                    val price = if (id == "bitcoin") "90" else "1"
+                    "\"$id\":{\"usd\":$price}"
+                }
+            }
+
+            else -> error("Unexpected price sync URL: $url")
+        }
+}
+
+private class FailingPriceTransport : SatraHttpTransport {
+    override fun get(url: String): String =
+        error("API unavailable for $url")
 }

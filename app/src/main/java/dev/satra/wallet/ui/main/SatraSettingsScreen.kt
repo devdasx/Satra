@@ -375,6 +375,7 @@ internal fun SatraCurrencyScreen(
                             walletRepository.updateAppSettings(
                                 AppSettingsUpdate(localCurrencyCode = currency.code),
                             )
+                            walletRepository.syncAllWalletPrices()
                         }
                     },
                 )

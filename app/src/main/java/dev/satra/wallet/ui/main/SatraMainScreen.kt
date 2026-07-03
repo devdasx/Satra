@@ -288,6 +288,7 @@ private fun SatraHomeDashboard(
         loadContent(HomeSyncStatus.Syncing)
         runCatching {
             walletRepository.syncEvmWallet(wallet.walletId)
+            walletRepository.syncWalletPrices(wallet.walletId)
         }
         loadContent(HomeSyncStatus.Ready)
     }

@@ -13,6 +13,7 @@ data class CryptoPriceQuote(
     val quoteCurrency: String,
     val price: BigDecimal,
     val provider: String,
+    val providerAssetId: String? = null,
 )
 
 data class FxRateQuote(
@@ -44,6 +45,23 @@ class UrlConnectionSatraHttpTransport(
 class SatraMarketDataClient(
     private val transport: SatraHttpTransport = UrlConnectionSatraHttpTransport(),
 ) {
+    fun getCoinbaseOnlineUsdSymbols(): Set<String> {
+        val response = transport.get("https://api.exchange.coinbase.com/products")
+        val products = org.json.JSONArray(response)
+        return buildSet {
+            for (index in 0 until products.length()) {
+                val product = products.getJSONObject(index)
+                if (
+                    product.optString("quote_currency") == "USD" &&
+                    product.optString("status") == "online" &&
+                    !product.optBoolean("trading_disabled", false)
+                ) {
+                    add(product.getString("base_currency").normalizedTicker())
+                }
+            }
+        }
+    }
+
     fun getCoinbaseUsdPrice(assetSymbol: String): CryptoPriceQuote {
         val symbol = assetSymbol.normalizedTicker()
         val productId = urlEncode("$symbol-USD")
@@ -54,7 +72,39 @@ class SatraMarketDataClient(
             quoteCurrency = "USD",
             price = price,
             provider = COINBASE_EXCHANGE_PROVIDER,
+            providerAssetId = "$symbol-USD",
         )
+    }
+
+    fun getCoinGeckoUsdPricesById(
+        coinGeckoIdsBySymbol: Map<String, String>,
+    ): Map<String, CryptoPriceQuote> {
+        if (coinGeckoIdsBySymbol.isEmpty()) {
+            return emptyMap()
+        }
+        val ids = coinGeckoIdsBySymbol.values.distinct()
+        val response = transport.get(
+            "https://api.coingecko.com/api/v3/simple/price" +
+                "?ids=${ids.joinToString(",") { urlEncode(it) }}" +
+                "&vs_currencies=usd" +
+                "&precision=full",
+        )
+        val json = JSONObject(response)
+        return coinGeckoIdsBySymbol.mapNotNull { (symbol, coinGeckoId) ->
+            val price = json.optJSONObject(coinGeckoId)
+                ?.opt("usd")
+                ?.toString()
+                ?.takeIf(String::isNotBlank)
+                ?.toBigDecimalOrNull()
+                ?: return@mapNotNull null
+            symbol to CryptoPriceQuote(
+                assetSymbol = symbol,
+                quoteCurrency = "USD",
+                price = price,
+                provider = COINGECKO_PROVIDER,
+                providerAssetId = coinGeckoId,
+            )
+        }.toMap()
     }
 
     fun getUsdFxRate(quoteCurrency: String): FxRateQuote {
@@ -103,6 +153,7 @@ class SatraMarketDataClient(
 
     companion object {
         const val COINBASE_EXCHANGE_PROVIDER = "coinbase-exchange-public"
+        const val COINGECKO_PROVIDER = "coingecko-simple-public"
         const val FRANKFURTER_PROVIDER = "frankfurter-public"
     }
 }

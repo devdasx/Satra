@@ -485,6 +485,49 @@ class SatraWalletDao(
         )
     }
 
+    fun updateWalletAssetPrice(
+        walletId: String,
+        assetId: String,
+        priceFiatValue: String,
+        balanceFiatValue: String,
+        localCurrencyCode: String,
+        metadataJson: String,
+        nowMillis: Long = System.currentTimeMillis(),
+    ) {
+        databaseHelper.writableDatabase.update(
+            SatraDatabaseContract.TABLE_WALLET_ASSETS,
+            ContentValues().apply {
+                put("price_fiat_value", priceFiatValue)
+                put("price_fiat_updated_at", nowMillis)
+                put("balance_fiat_value", balanceFiatValue)
+                put("local_currency_code", localCurrencyCode)
+                put("updated_at", nowMillis)
+                put("metadata_json", metadataJson)
+            },
+            "wallet_id = ? AND asset_id = ?",
+            arrayOf(walletId, assetId),
+        )
+    }
+
+    fun updateWalletFiatBalance(
+        walletId: String,
+        balanceFiatValue: String,
+        localCurrencyCode: String,
+        nowMillis: Long = System.currentTimeMillis(),
+    ) {
+        databaseHelper.writableDatabase.update(
+            SatraDatabaseContract.TABLE_WALLETS,
+            ContentValues().apply {
+                put("balance_fiat_value", balanceFiatValue)
+                put("balance_fiat_updated_at", nowMillis)
+                put("local_currency_code", localCurrencyCode)
+                put("updated_at", nowMillis)
+            },
+            "wallet_id = ?",
+            arrayOf(walletId),
+        )
+    }
+
     fun updateWalletSyncMetadata(
         walletId: String,
         metadataJson: String,
@@ -522,6 +565,9 @@ class SatraWalletDao(
                 SatraDatabaseContract.TABLE_WALLET_ASSETS,
                 ContentValues().apply {
                     put("local_currency_code", localCurrencyCode)
+                    put("balance_fiat_value", "0")
+                    put("price_fiat_value", "0")
+                    putNull("price_fiat_updated_at")
                     put("updated_at", nowMillis)
                 },
                 null,

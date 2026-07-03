@@ -6,6 +6,23 @@ import java.math.BigDecimal
 
 class SatraMarketDataClientTest {
     @Test
+    fun coinbaseUsdSymbolsOnlyIncludesOnlineUsdProducts() {
+        val transport = RecordingTransport(
+            "https://api.exchange.coinbase.com/products" to """
+                [
+                    {"base_currency":"BTC","quote_currency":"USD","status":"online","trading_disabled":false},
+                    {"base_currency":"ETH","quote_currency":"EUR","status":"online","trading_disabled":false},
+                    {"base_currency":"DOGE","quote_currency":"USD","status":"offline","trading_disabled":false},
+                    {"base_currency":"SOL","quote_currency":"USD","status":"online","trading_disabled":true}
+                ]
+            """.trimIndent(),
+        )
+        val client = SatraMarketDataClient(transport)
+
+        assertEquals(setOf("BTC"), client.getCoinbaseOnlineUsdSymbols())
+    }
+
+    @Test
     fun coinbaseUsdPriceParsesPublicTicker() {
         val transport = RecordingTransport(
             "https://api.exchange.coinbase.com/products/BTC-USD/ticker" to """
@@ -20,6 +37,7 @@ class SatraMarketDataClientTest {
         assertEquals("USD", quote.quoteCurrency)
         assertEquals(BigDecimal("61234.56"), quote.price)
         assertEquals(SatraMarketDataClient.COINBASE_EXCHANGE_PROVIDER, quote.provider)
+        assertEquals("BTC-USD", quote.providerAssetId)
         assertEquals(
             listOf("https://api.exchange.coinbase.com/products/BTC-USD/ticker"),
             transport.urls,
@@ -41,6 +59,28 @@ class SatraMarketDataClientTest {
         assertEquals("EUR", quote.quoteCurrency)
         assertEquals(BigDecimal("0.92"), quote.rate)
         assertEquals(SatraMarketDataClient.FRANKFURTER_PROVIDER, quote.provider)
+    }
+
+    @Test
+    fun coinGeckoUsdPriceParsesBatchByExplicitIds() {
+        val transport = RecordingTransport(
+            "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,usd-coin&vs_currencies=usd&precision=full" to """
+                {"bitcoin":{"usd":61234.56},"usd-coin":{"usd":0.9998}}
+            """.trimIndent(),
+        )
+        val client = SatraMarketDataClient(transport)
+
+        val quotes = client.getCoinGeckoUsdPricesById(
+            mapOf(
+                "BTC" to "bitcoin",
+                "USDC" to "usd-coin",
+            ),
+        )
+
+        assertEquals(BigDecimal("61234.56"), quotes.getValue("BTC").price)
+        assertEquals(BigDecimal("0.9998"), quotes.getValue("USDC").price)
+        assertEquals(SatraMarketDataClient.COINGECKO_PROVIDER, quotes.getValue("USDC").provider)
+        assertEquals("usd-coin", quotes.getValue("USDC").providerAssetId)
     }
 
     @Test
