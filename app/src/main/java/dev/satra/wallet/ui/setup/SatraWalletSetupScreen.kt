@@ -5,6 +5,7 @@ import android.content.ClipboardManager
 import android.widget.Toast
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -108,33 +109,34 @@ enum class WalletImportNetwork(
     val networkId: String,
     @StringRes val labelRes: Int,
     @StringRes val familyRes: Int,
+    @DrawableRes val logoRes: Int,
 ) {
-    Bitcoin("bitcoin", "bitcoin", R.string.wallet_setup_network_bitcoin, R.string.wallet_setup_network_family_utxo),
-    BitcoinCash("bitcoin-cash", "bitcoinCash", R.string.wallet_setup_network_bitcoin_cash, R.string.wallet_setup_network_family_utxo),
-    Dogecoin("dogecoin", "dogecoin", R.string.wallet_setup_network_dogecoin, R.string.wallet_setup_network_family_utxo),
-    Litecoin("litecoin", "litecoin", R.string.wallet_setup_network_litecoin, R.string.wallet_setup_network_family_utxo),
-    Ethereum("ethereum", "ethereum", R.string.wallet_setup_network_ethereum, R.string.wallet_setup_network_family_evm),
-    Arbitrum("arbitrum", "arbitrum", R.string.wallet_setup_network_arbitrum, R.string.wallet_setup_network_family_evm),
-    Base("base", "base", R.string.wallet_setup_network_base, R.string.wallet_setup_network_family_evm),
-    Optimism("optimism", "optimism", R.string.wallet_setup_network_optimism, R.string.wallet_setup_network_family_evm),
-    Scroll("scroll", "scroll", R.string.wallet_setup_network_scroll, R.string.wallet_setup_network_family_evm),
-    ZkSync("zksync-era", "zkSync", R.string.wallet_setup_network_zksync, R.string.wallet_setup_network_family_evm),
-    Polygon("polygon", "polygon", R.string.wallet_setup_network_polygon, R.string.wallet_setup_network_family_evm),
-    BnbChain("bnb-chain", "bnbChain", R.string.wallet_setup_network_bnb_chain, R.string.wallet_setup_network_family_evm),
-    OpBnb("opbnb", "opBNB", R.string.wallet_setup_network_opbnb, R.string.wallet_setup_network_family_evm),
-    Avalanche("avalanche", "avalanche", R.string.wallet_setup_network_avalanche, R.string.wallet_setup_network_family_evm),
-    Celo("celo", "celo", R.string.wallet_setup_network_celo, R.string.wallet_setup_network_family_evm),
-    KavaEvm("kava-evm", "kavaEvm", R.string.wallet_setup_network_kava_evm, R.string.wallet_setup_network_family_evm),
-    Aptos("aptos", "aptos", R.string.wallet_setup_network_aptos, R.string.wallet_setup_network_family_non_evm),
-    Near("near", "near", R.string.wallet_setup_network_near, R.string.wallet_setup_network_family_non_evm),
-    Polkadot("polkadot", "polkadot", R.string.wallet_setup_network_polkadot, R.string.wallet_setup_network_family_non_evm),
-    XrpLedger("xrp-ledger", "ripple", R.string.wallet_setup_network_xrp_ledger, R.string.wallet_setup_network_family_non_evm),
-    Solana("solana", "solana", R.string.wallet_setup_network_solana, R.string.wallet_setup_network_family_non_evm),
-    Stellar("stellar", "stellar", R.string.wallet_setup_network_stellar, R.string.wallet_setup_network_family_non_evm),
-    Sui("sui", "sui", R.string.wallet_setup_network_sui, R.string.wallet_setup_network_family_non_evm),
-    Ton("ton", "ton", R.string.wallet_setup_network_ton, R.string.wallet_setup_network_family_non_evm),
-    Tron("tron", "tron", R.string.wallet_setup_network_tron, R.string.wallet_setup_network_family_non_evm),
-    Kava("kava", "kava", R.string.wallet_setup_network_kava, R.string.wallet_setup_network_family_non_evm);
+    Bitcoin("bitcoin", "bitcoin", R.string.wallet_setup_network_bitcoin, R.string.wallet_setup_network_family_utxo, R.drawable.ic_chain_bitcoin),
+    BitcoinCash("bitcoin-cash", "bitcoinCash", R.string.wallet_setup_network_bitcoin_cash, R.string.wallet_setup_network_family_utxo, R.drawable.ic_chain_bitcoin_cash),
+    Dogecoin("dogecoin", "dogecoin", R.string.wallet_setup_network_dogecoin, R.string.wallet_setup_network_family_utxo, R.drawable.ic_chain_dogecoin),
+    Litecoin("litecoin", "litecoin", R.string.wallet_setup_network_litecoin, R.string.wallet_setup_network_family_utxo, R.drawable.ic_chain_litecoin),
+    Ethereum("ethereum", "ethereum", R.string.wallet_setup_network_ethereum, R.string.wallet_setup_network_family_evm, R.drawable.ic_chain_ethereum),
+    Arbitrum("arbitrum", "arbitrum", R.string.wallet_setup_network_arbitrum, R.string.wallet_setup_network_family_evm, R.drawable.ic_chain_arbitrum),
+    Base("base", "base", R.string.wallet_setup_network_base, R.string.wallet_setup_network_family_evm, R.drawable.ic_chain_base),
+    Optimism("optimism", "optimism", R.string.wallet_setup_network_optimism, R.string.wallet_setup_network_family_evm, R.drawable.ic_chain_optimism),
+    Scroll("scroll", "scroll", R.string.wallet_setup_network_scroll, R.string.wallet_setup_network_family_evm, R.drawable.ic_chain_scroll),
+    ZkSync("zksync-era", "zkSync", R.string.wallet_setup_network_zksync, R.string.wallet_setup_network_family_evm, R.drawable.ic_chain_zksync),
+    Polygon("polygon", "polygon", R.string.wallet_setup_network_polygon, R.string.wallet_setup_network_family_evm, R.drawable.ic_chain_polygon),
+    BnbChain("bnb-chain", "bnbChain", R.string.wallet_setup_network_bnb_chain, R.string.wallet_setup_network_family_evm, R.drawable.ic_chain_bnb_chain),
+    OpBnb("opbnb", "opBNB", R.string.wallet_setup_network_opbnb, R.string.wallet_setup_network_family_evm, R.drawable.ic_chain_opbnb),
+    Avalanche("avalanche", "avalanche", R.string.wallet_setup_network_avalanche, R.string.wallet_setup_network_family_evm, R.drawable.ic_chain_avalanche),
+    Celo("celo", "celo", R.string.wallet_setup_network_celo, R.string.wallet_setup_network_family_evm, R.drawable.ic_chain_celo),
+    KavaEvm("kava-evm", "kavaEvm", R.string.wallet_setup_network_kava_evm, R.string.wallet_setup_network_family_evm, R.drawable.ic_chain_kava_evm),
+    Aptos("aptos", "aptos", R.string.wallet_setup_network_aptos, R.string.wallet_setup_network_family_non_evm, R.drawable.ic_chain_aptos),
+    Near("near", "near", R.string.wallet_setup_network_near, R.string.wallet_setup_network_family_non_evm, R.drawable.ic_chain_near),
+    Polkadot("polkadot", "polkadot", R.string.wallet_setup_network_polkadot, R.string.wallet_setup_network_family_non_evm, R.drawable.ic_chain_polkadot),
+    XrpLedger("xrp-ledger", "ripple", R.string.wallet_setup_network_xrp_ledger, R.string.wallet_setup_network_family_non_evm, R.drawable.ic_chain_xrp_ledger),
+    Solana("solana", "solana", R.string.wallet_setup_network_solana, R.string.wallet_setup_network_family_non_evm, R.drawable.ic_chain_solana),
+    Stellar("stellar", "stellar", R.string.wallet_setup_network_stellar, R.string.wallet_setup_network_family_non_evm, R.drawable.ic_chain_stellar),
+    Sui("sui", "sui", R.string.wallet_setup_network_sui, R.string.wallet_setup_network_family_non_evm, R.drawable.ic_chain_sui),
+    Ton("ton", "ton", R.string.wallet_setup_network_ton, R.string.wallet_setup_network_family_non_evm, R.drawable.ic_chain_ton),
+    Tron("tron", "tron", R.string.wallet_setup_network_tron, R.string.wallet_setup_network_family_non_evm, R.drawable.ic_chain_tron),
+    Kava("kava", "kava", R.string.wallet_setup_network_kava, R.string.wallet_setup_network_family_non_evm, R.drawable.ic_chain_kava);
 
     companion object {
         fun fromRoute(routeSegment: String?): WalletImportNetwork? =
@@ -1906,12 +1908,11 @@ private fun NetworkRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Box(
+        Image(
+            painter = painterResource(network.logoRes),
+            contentDescription = null,
             modifier = Modifier
-                .size(18.dp)
-                .clip(CircleShape)
-                .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent),
+                .size(34.dp),
         )
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -1926,6 +1927,13 @@ private fun NetworkRow(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+        Box(
+            modifier = Modifier
+                .size(18.dp)
+                .clip(CircleShape)
+                .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent),
+        )
     }
 }
 
@@ -1939,6 +1947,11 @@ private fun SelectedNetworkPill(selectedNetwork: WalletImportNetwork) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        Image(
+            painter = painterResource(selectedNetwork.logoRes),
+            contentDescription = null,
+            modifier = Modifier.size(20.dp),
+        )
         Text(
             text = stringResource(R.string.wallet_setup_selected_network),
             style = MaterialTheme.typography.labelLarge,
