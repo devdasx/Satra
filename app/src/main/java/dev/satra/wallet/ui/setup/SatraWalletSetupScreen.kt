@@ -30,7 +30,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -41,7 +40,6 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -65,6 +63,8 @@ import dev.satra.wallet.R
 import dev.satra.wallet.settings.SatraSettings
 import dev.satra.wallet.ui.theme.SatraButtonSecondaryBorder
 import dev.satra.wallet.ui.theme.SatraTheme
+import dev.satra.wallet.wallet.bip39.Bip39MnemonicValidation
+import dev.satra.wallet.wallet.bip39.Bip39MnemonicValidator
 
 enum class WalletImportMethod(val routeSegment: String, @StringRes val labelRes: Int) {
     RecoveryPhrase(
@@ -257,6 +257,11 @@ fun ImportRecoveryPhraseScreen(
     onBack: () -> Unit = {},
     onNext: () -> Unit = {},
 ) {
+    var recoveryPhrase by rememberSaveable { mutableStateOf("") }
+    val phraseValidation = remember(recoveryPhrase) {
+        Bip39MnemonicValidator.validate(recoveryPhrase)
+    }
+
     WalletSetupRouteScreen(
         titleRes = R.string.wallet_setup_screen_import_recovery_phrase,
         page = importSetupPage(
@@ -266,11 +271,16 @@ fun ImportRecoveryPhraseScreen(
         settings = settings,
         primaryTextRes = R.string.wallet_setup_action_continue,
         secondaryTextRes = R.string.wallet_setup_action_previous,
+        primaryEnabled = phraseValidation.isValid,
         onBack = onBack,
         onPrimaryClick = onNext,
         onSecondaryClick = onBack,
     ) {
-        RecoveryPhraseEntry()
+        RecoveryPhraseEntry(
+            recoveryPhrase = recoveryPhrase,
+            onRecoveryPhraseChange = { recoveryPhrase = it },
+            validation = phraseValidation,
+        )
     }
 }
 
@@ -414,6 +424,7 @@ private fun WalletSetupRouteScreen(
     settings: SatraSettings,
     @StringRes primaryTextRes: Int,
     @StringRes secondaryTextRes: Int,
+    primaryEnabled: Boolean = true,
     onBack: () -> Unit,
     onPrimaryClick: () -> Unit,
     onSecondaryClick: () -> Unit,
@@ -490,6 +501,7 @@ private fun WalletSetupRouteScreen(
                 SetupActions(
                     primaryTextRes = primaryTextRes,
                     secondaryTextRes = secondaryTextRes,
+                    primaryEnabled = primaryEnabled,
                     onPrimaryClick = {
                         performHaptic()
                         onPrimaryClick()
@@ -803,43 +815,69 @@ private fun ImportMethodPanel(
 }
 
 @Composable
-private fun RecoveryPhraseEntry() {
-    var recoveryPhrase by rememberSaveable { mutableStateOf("") }
-    var phraseLength by rememberSaveable { mutableIntStateOf(12) }
+private fun RecoveryPhraseEntry(
+    recoveryPhrase: String,
+    onRecoveryPhraseChange: (String) -> Unit,
+    validation: Bip39MnemonicValidation,
+) {
+    val showError = recoveryPhrase.isNotBlank() && !validation.isValid
+    val messageColor = when {
+        validation.isValid -> MaterialTheme.colorScheme.primary
+        showError -> MaterialTheme.colorScheme.error
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
 
     FramedTool {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(
-                    selected = phraseLength == 12,
-                    onClick = { phraseLength = 12 },
-                    label = { Text(text = stringResource(R.string.wallet_setup_phrase_length_12)) },
-                )
-                FilterChip(
-                    selected = phraseLength == 24,
-                    onClick = { phraseLength = 24 },
-                    label = { Text(text = stringResource(R.string.wallet_setup_phrase_length_24)) },
-                )
-            }
-
             OutlinedTextField(
                 value = recoveryPhrase,
-                onValueChange = { recoveryPhrase = it },
+                onValueChange = onRecoveryPhraseChange,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(148.dp),
+                    .heightIn(min = 148.dp),
                 textStyle = MaterialTheme.typography.bodyLarge,
+                isError = showError,
                 placeholder = {
                     Text(text = stringResource(R.string.wallet_setup_recovery_phrase_placeholder))
                 },
                 label = {
                     Text(text = stringResource(R.string.wallet_setup_recovery_phrase_label))
                 },
+                supportingText = {
+                    Text(
+                        text = recoveryPhraseValidationMessage(validation),
+                        color = messageColor,
+                    )
+                },
                 minLines = 4,
             )
         }
     }
 }
+
+@Composable
+private fun recoveryPhraseValidationMessage(validation: Bip39MnemonicValidation): String =
+    when (validation) {
+        Bip39MnemonicValidation.Empty -> {
+            stringResource(R.string.wallet_setup_recovery_phrase_help)
+        }
+
+        is Bip39MnemonicValidation.Valid -> {
+            stringResource(R.string.wallet_setup_recovery_phrase_valid, validation.wordCount)
+        }
+
+        is Bip39MnemonicValidation.InvalidWordCount -> {
+            stringResource(R.string.wallet_setup_recovery_phrase_invalid_length)
+        }
+
+        is Bip39MnemonicValidation.UnknownWord -> {
+            stringResource(R.string.wallet_setup_recovery_phrase_unknown_word, validation.word)
+        }
+
+        Bip39MnemonicValidation.InvalidChecksum -> {
+            stringResource(R.string.wallet_setup_recovery_phrase_invalid_checksum)
+        }
+    }
 
 @Composable
 private fun NetworkSelectionPanel(
@@ -1234,6 +1272,7 @@ private fun ReviewTextRow(
 private fun SetupActions(
     @StringRes primaryTextRes: Int,
     @StringRes secondaryTextRes: Int,
+    primaryEnabled: Boolean,
     onPrimaryClick: () -> Unit,
     onSecondaryClick: () -> Unit,
 ) {
@@ -1244,6 +1283,7 @@ private fun SetupActions(
     ) {
         Button(
             onClick = onPrimaryClick,
+            enabled = primaryEnabled,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),

@@ -113,7 +113,7 @@
     <string name="wallet_setup_import_step_method_title">Bring an existing wallet into Satra.</string>
     <string name="wallet_setup_import_step_method_body">Choose the source first so the next screen can ask for only the information that belongs there.</string>
     <string name="wallet_setup_import_method_recovery_phrase">Recovery phrase</string>
-    <string name="wallet_setup_import_method_recovery_phrase_body">Restore a wallet from 12 or 24 words.</string>
+    <string name="wallet_setup_import_method_recovery_phrase_body">Restore from a valid BIP39 recovery phrase.</string>
     <string name="wallet_setup_import_method_private_key">Private key</string>
     <string name="wallet_setup_import_method_private_key_body">Import one chain-specific account for signing.</string>
     <string name="wallet_setup_import_method_watch_only">Watch-only address</string>
@@ -132,10 +132,13 @@
     <string name="wallet_setup_import_step_watch_address_eyebrow">Watch-only</string>
     <string name="wallet_setup_import_step_watch_address_title">Enter the address to watch.</string>
     <string name="wallet_setup_import_step_watch_address_body">Watch-only accounts can view activity on the selected network but cannot sign transactions.</string>
-    <string name="wallet_setup_phrase_length_12">12 words</string>
-    <string name="wallet_setup_phrase_length_24">24 words</string>
     <string name="wallet_setup_recovery_phrase_label">Recovery phrase</string>
     <string name="wallet_setup_recovery_phrase_placeholder">word one word two word three…</string>
+    <string name="wallet_setup_recovery_phrase_help">Satra detects the BIP39 word count and validates the checksum locally.</string>
+    <string name="wallet_setup_recovery_phrase_valid">%1$d-word recovery phrase is valid.</string>
+    <string name="wallet_setup_recovery_phrase_invalid_length">Enter a valid BIP39 recovery phrase with 12, 15, 18, 21, or 24 words.</string>
+    <string name="wallet_setup_recovery_phrase_unknown_word">Word "%1$s" is not in the BIP39 English word list.</string>
+    <string name="wallet_setup_recovery_phrase_invalid_checksum">These words are valid, but the BIP39 checksum does not match.</string>
     <string name="wallet_setup_private_key_label">Private key</string>
     <string name="wallet_setup_private_key_placeholder">Paste the private key for the selected chain…</string>
     <string name="wallet_setup_private_key_note">Keep this private. Satra will validate the key locally before importing.</string>
