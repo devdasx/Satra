@@ -18,6 +18,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.json.JSONObject
 import kotlinx.coroutines.runBlocking
 
 @RunWith(AndroidJUnit4::class)
@@ -311,6 +312,85 @@ class SatraWalletDatabaseTest {
         assertEquals(transactionId, transactions.single().transactionId)
         assertEquals(WalletTransactionStatus.Success.value, transactions.single().status)
         assertEquals("3500.00", transactions.single().fiatValue)
+    }
+
+    @Test
+    fun repositoryPreparesPendingSendTransactionWithLocalWalletData() = runBlocking {
+        val walletId = dao.createWallet(
+            NewWalletRecord(
+                walletName = "Sender",
+                walletType = WalletType.Imported.value,
+                walletKeyType = WalletKeyType.PrivateKey.value,
+                walletKeyMaterial = TEST_PRIVATE_KEY_HEX,
+                isImported = true,
+            ),
+            nowMillis = TEST_TIME,
+        )
+        val addressId = dao.insertWalletAddress(
+            NewWalletAddressRecord(
+                walletId = walletId,
+                networkId = "ethereum",
+                address = "0x1111111111111111111111111111111111111111",
+                isPrimary = true,
+                addressIndex = 0,
+            ),
+            nowMillis = TEST_TIME,
+        )
+        dao.insertWalletPrivateKey(
+            NewWalletPrivateKeyRecord(
+                walletId = walletId,
+                networkId = "ethereum",
+                addressId = addressId,
+                keyMaterial = TEST_PRIVATE_KEY_HEX,
+                keyFormat = "hex",
+                keySource = WalletPrivateKeySource.Imported.value,
+                isImported = true,
+            ),
+            nowMillis = TEST_TIME,
+        )
+        dao.updateWalletAssetPrice(
+            walletId = walletId,
+            assetId = "ethereum:eth",
+            priceFiatValue = "2500",
+            balanceFiatValue = "5000",
+            localCurrencyCode = "USD",
+            metadataJson = TEST_METADATA,
+            nowMillis = TEST_TIME,
+        )
+        dao.updateWalletAssetBalance(
+            walletId = walletId,
+            assetId = "ethereum:eth",
+            balanceRaw = "2000000000000000000",
+            balanceDecimal = "2",
+            balanceFiatValue = "5000",
+            nowMillis = TEST_TIME,
+        )
+        val repository = SatraWalletRepository(dao)
+
+        val transactionId = repository.createPendingSendTransaction(
+            SatraPendingSendRequest(
+                walletId = walletId,
+                assetId = "ethereum:eth",
+                amountDecimal = java.math.BigDecimal("0.25"),
+                toAddress = "0x2222222222222222222222222222222222222222",
+                memo = "Treasury",
+            ),
+        )
+
+        val transaction = dao.getWalletTransactions(walletId).single()
+        assertEquals(transactionId, transaction.transactionId)
+        assertEquals(WalletTransactionDirection.Outgoing.value, transaction.direction)
+        assertEquals(WalletTransactionStatus.Pending.value, transaction.status)
+        assertEquals("250000000000000000", transaction.amountRaw)
+        assertEquals("0.25", transaction.amountDecimal)
+        assertEquals("ethereum:eth", transaction.feeAssetId)
+        assertEquals("625", transaction.fiatValue)
+        assertEquals("0x1111111111111111111111111111111111111111", transaction.fromAddress)
+        assertEquals("0x2222222222222222222222222222222222222222", transaction.toAddress)
+        assertEquals(
+            "trustwallet/wallet-core",
+            JSONObject(transaction.metadataJson).getString("signingProvider"),
+        )
     }
 
     @Test

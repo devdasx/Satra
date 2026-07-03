@@ -1,6 +1,7 @@
 package dev.satra.wallet.ui.main
 
 import android.content.res.Resources
+import android.net.Uri
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
@@ -142,6 +143,7 @@ fun SatraMainScreen(
             composable(SatraMainTab.Home.route) {
                 SatraHomeDashboard(
                     walletRepository = walletRepository,
+                    onSendClick = { tabNavController.navigate(SatraMainRoute.SendAsset) },
                     onReceiveClick = { tabNavController.navigate(SatraMainRoute.Receive) },
                 )
             }
@@ -229,6 +231,43 @@ fun SatraMainScreen(
                     onBack = { tabNavController.popBackStack() },
                 )
             }
+            composable(SatraMainRoute.SendAsset) {
+                SatraSendAssetScreen(
+                    walletRepository = walletRepository,
+                    onBack = { tabNavController.popBackStack() },
+                    onAssetSelected = { assetId ->
+                        tabNavController.navigate(SatraMainRoute.sendComposer(assetId))
+                    },
+                    onNetworkRequired = { symbol ->
+                        tabNavController.navigate(SatraMainRoute.sendNetwork(symbol))
+                    },
+                )
+            }
+            composable(SatraMainRoute.SendNetworkPattern) { entry ->
+                val symbol = entry.arguments?.getString(SatraMainRoute.ArgSymbol).orEmpty()
+                SatraSendNetworkScreen(
+                    walletRepository = walletRepository,
+                    symbol = symbol,
+                    onBack = { tabNavController.popBackStack() },
+                    onNetworkSelected = { assetId ->
+                        tabNavController.navigate(SatraMainRoute.sendComposer(assetId))
+                    },
+                )
+            }
+            composable(SatraMainRoute.SendComposerPattern) { entry ->
+                val assetId = entry.arguments?.getString(SatraMainRoute.ArgAssetId).orEmpty()
+                SatraSendComposerScreen(
+                    walletRepository = walletRepository,
+                    assetId = assetId,
+                    onBack = { tabNavController.popBackStack() },
+                    onDone = {
+                        tabNavController.popBackStack(
+                            route = SatraMainTab.Home.route,
+                            inclusive = false,
+                        )
+                    },
+                )
+            }
         }
     }
 }
@@ -276,6 +315,7 @@ private fun SatraBottomNavigationBar(
 @Composable
 private fun SatraHomeDashboard(
     walletRepository: SatraWalletRepository,
+    onSendClick: () -> Unit,
     onReceiveClick: () -> Unit,
 ) {
     var homeState by remember { mutableStateOf<HomeDashboardState>(HomeDashboardState.Loading) }
@@ -388,6 +428,7 @@ private fun SatraHomeDashboard(
                     currencyCode = content.currencyCode,
                     transactions = content.chartTransactions,
                     initialChartData = content.chartData,
+                    onSendClick = onSendClick,
                     onReceiveClick = onReceiveClick,
                 )
                 Spacer(modifier = Modifier.height(22.dp))
@@ -928,6 +969,7 @@ private fun HomeBalanceCard(
     currencyCode: String,
     transactions: List<WalletTransactionRecord>,
     initialChartData: HomeBalanceChartData,
+    onSendClick: () -> Unit,
     onReceiveClick: () -> Unit,
 ) {
     var selectedRange by remember { mutableStateOf(initialChartData.range) }
@@ -1068,6 +1110,7 @@ private fun HomeBalanceCard(
                 HomePrimaryActionButton(
                     label = stringResource(R.string.home_action_move),
                     iconRes = R.drawable.ic_brand_move,
+                    onClick = onSendClick,
                     modifier = Modifier.weight(1f),
                 )
                 HomeSecondaryActionButton(
@@ -1085,10 +1128,11 @@ private fun HomeBalanceCard(
 private fun HomePrimaryActionButton(
     label: String,
     @DrawableRes iconRes: Int,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Button(
-        onClick = {},
+        onClick = onClick,
         modifier = modifier.height(52.dp),
         shape = RoundedCornerShape(100.dp),
         colors = ButtonDefaults.buttonColors(
@@ -1996,6 +2040,11 @@ private enum class SatraMainTab(
 
 internal object SatraMainRoute {
     const val Receive = "main/receive"
+    const val SendAsset = "main/send"
+    const val ArgSymbol = "symbol"
+    const val ArgAssetId = "assetId"
+    const val SendNetworkPattern = "main/send/network/{$ArgSymbol}"
+    const val SendComposerPattern = "main/send/compose/{$ArgAssetId}"
     const val AddressBook = "main/settings/address-book"
     const val Preferences = "main/settings/preferences"
     const val Currency = "main/settings/preferences/currency"
@@ -2006,6 +2055,12 @@ internal object SatraMainRoute {
     const val About = "main/settings/about"
     const val Legal = "main/settings/legal"
     const val DangerZone = "main/settings/danger-zone"
+
+    fun sendNetwork(symbol: String): String =
+        "main/send/network/${Uri.encode(symbol)}"
+
+    fun sendComposer(assetId: String): String =
+        "main/send/compose/${Uri.encode(assetId)}"
 }
 
 private val HomeContentMaxWidth = 720.dp

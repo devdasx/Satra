@@ -1,6 +1,7 @@
 package dev.satra.wallet.data.db
 
 import android.content.Context
+import dev.satra.wallet.data.assets.SupportedAssetCatalog
 import dev.satra.wallet.data.pricing.SatraAssetPrice
 import dev.satra.wallet.data.pricing.SatraPriceSyncResult
 import dev.satra.wallet.data.pricing.SatraPriceSyncService
@@ -20,6 +21,7 @@ import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 import java.math.BigDecimal
+import java.math.RoundingMode
 
 class SatraWalletRepository(
     private val walletDao: SatraWalletDao,
@@ -289,6 +291,86 @@ class SatraWalletRepository(
     suspend fun getWalletTransactions(walletId: String): List<WalletTransactionRecord> =
         withContext(Dispatchers.IO) {
             walletDao.getWalletTransactions(walletId)
+        }
+
+    suspend fun getWalletPrivateKeys(walletId: String): List<WalletPrivateKeyRecord> =
+        withContext(Dispatchers.IO) {
+            walletDao.getWalletPrivateKeys(walletId)
+        }
+
+    suspend fun createPendingSendTransaction(
+        request: SatraPendingSendRequest,
+    ): String =
+        withContext(Dispatchers.IO) {
+            val wallet = walletDao.getWallet(request.walletId)
+                ?: error("Wallet not found: ${request.walletId}")
+            require(!wallet.isWatchOnly) {
+                "Watch-only wallets cannot send."
+            }
+            val asset = SupportedAssetCatalog.assets.firstOrNull { it.assetId == request.assetId }
+                ?: error("Unsupported asset: ${request.assetId}")
+            val walletAsset = walletDao.getWalletAssets(request.walletId)
+                .firstOrNull { it.assetId == request.assetId && it.networkId == asset.networkId }
+                ?: error("Wallet asset not found: ${request.assetId}")
+            val fromAddress = walletDao.getWalletAddresses(request.walletId)
+                .filter { address ->
+                    address.networkId == asset.networkId &&
+                        (address.addressType == WalletAddressType.Receive.value || address.addressType == WalletAddressType.WatchOnly.value)
+                }
+                .sortedWith(
+                    compareByDescending<WalletAddressRecord> { it.isPrimary }
+                        .thenBy { it.addressIndex ?: Int.MAX_VALUE },
+                )
+                .firstOrNull()
+                ?: error("No source address for ${asset.networkId}.")
+            val hasSigningKey = walletDao.getWalletPrivateKeys(request.walletId)
+                .any { privateKey ->
+                    privateKey.networkId == asset.networkId && !privateKey.isEncrypted
+                }
+            require(hasSigningKey) {
+                "No local signing key for ${asset.networkId}."
+            }
+            val amount = request.amountDecimal.stripTrailingZeros()
+            val balance = walletAsset.balanceDecimal.toBigDecimalOrZero()
+            require(amount > BigDecimal.ZERO) {
+                "Amount must be greater than zero."
+            }
+            require(amount <= balance) {
+                "Insufficient balance."
+            }
+            val amountRaw = amount.toRawAmount(asset.decimals)
+            val fiatValue = walletAsset.priceFiatValue
+                .toBigDecimalOrZero()
+                .takeIf { it > BigDecimal.ZERO }
+                ?.multiply(amount)
+                ?.stripTrailingZeros()
+                ?.toPlainString()
+            val nowMillis = System.currentTimeMillis()
+            walletDao.insertWalletTransaction(
+                NewWalletTransactionRecord(
+                    walletId = request.walletId,
+                    assetId = request.assetId,
+                    networkId = asset.networkId,
+                    transactionHash = null,
+                    direction = WalletTransactionDirection.Outgoing.value,
+                    status = WalletTransactionStatus.Pending.value,
+                    amountRaw = amountRaw,
+                    amountDecimal = amount.toPlainString(),
+                    feeAssetId = SupportedAssetCatalog.assets
+                        .firstOrNull { candidate ->
+                            candidate.networkId == asset.networkId && candidate.assetType == "NATIVE"
+                        }
+                        ?.assetId,
+                    fiatValue = fiatValue,
+                    localCurrencyCode = wallet.localCurrencyCode,
+                    fromAddress = fromAddress.address,
+                    toAddress = request.toAddress.trim(),
+                    memo = request.memo?.trim()?.takeIf(String::isNotEmpty),
+                    timestamp = nowMillis,
+                    metadataJson = request.toMetadataJson(asset.networkId),
+                ),
+                nowMillis = nowMillis,
+            )
         }
 
     suspend fun ensureMnemonicReceiveAddresses(walletId: String): List<WalletAddressRecord> =
@@ -563,11 +645,37 @@ data class SatraWalletDataSyncResult(
     val priceSyncResult: SatraPriceSyncResult?,
 )
 
+data class SatraPendingSendRequest(
+    val walletId: String,
+    val assetId: String,
+    val amountDecimal: BigDecimal,
+    val toAddress: String,
+    val memo: String? = null,
+)
+
 private fun Char.isHexDigit(): Boolean =
     this in '0'..'9' || this in 'a'..'f' || this in 'A'..'F'
 
 private fun String?.cleanPassphrase(): String? =
     this?.takeIf(String::isNotEmpty)
+
+private fun BigDecimal.toRawAmount(decimals: Int): String =
+    movePointRight(decimals)
+        .setScale(0, RoundingMode.DOWN)
+        .toPlainString()
+
+private fun SatraPendingSendRequest.toMetadataJson(networkId: String): String =
+    JSONObject()
+        .put("flow", "send")
+        .put("networkId", networkId)
+        .put("signingProvider", "trustwallet/wallet-core")
+        .put("signingStatus", "not_connected")
+        .put("broadcastStatus", "not_broadcast")
+        .put(
+            "blockingReason",
+            "Wallet Core Android package requires GitHub Packages authentication before native signing can be linked.",
+        )
+        .toString()
 
 private val DerivedReceiveAccount.derivationLabel: String
     get() = when (derivationName) {
