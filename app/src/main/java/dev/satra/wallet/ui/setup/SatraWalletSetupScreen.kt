@@ -245,17 +245,39 @@ fun CreateWalletBackupScreen(
     onBack: () -> Unit = {},
     onNext: () -> Unit = {},
 ) {
+    var privatePlaceChecked by rememberSaveable { mutableStateOf(false) }
+    var noScreenshotChecked by rememberSaveable { mutableStateOf(false) }
+    var restoreChecked by rememberSaveable { mutableStateOf(false) }
+    val backupConfirmed = privatePlaceChecked && noScreenshotChecked && restoreChecked
+
     WalletSetupRouteScreen(
         titleRes = R.string.wallet_setup_screen_create_backup,
         page = createWalletPages[0],
         settings = settings,
         primaryTextRes = R.string.wallet_setup_action_continue,
         secondaryTextRes = R.string.wallet_setup_action_cancel,
+        primaryEnabled = backupConfirmed,
         onBack = onBack,
         onPrimaryClick = onNext,
         onSecondaryClick = onBack,
     ) { performHaptic ->
-        BackupChecklist(performHaptic = performHaptic)
+        BackupChecklist(
+            privatePlaceChecked = privatePlaceChecked,
+            noScreenshotChecked = noScreenshotChecked,
+            restoreChecked = restoreChecked,
+            onPrivatePlaceCheckedChange = { checked ->
+                performHaptic()
+                privatePlaceChecked = checked
+            },
+            onNoScreenshotCheckedChange = { checked ->
+                performHaptic()
+                noScreenshotChecked = checked
+            },
+            onRestoreCheckedChange = { checked ->
+                performHaptic()
+                restoreChecked = checked
+            },
+        )
     }
 }
 
@@ -974,36 +996,30 @@ private fun RecoveryPhraseScreenshotWarningSheet(
 }
 
 @Composable
-private fun BackupChecklist(performHaptic: () -> Unit) {
-    var privatePlaceChecked by rememberSaveable { mutableStateOf(false) }
-    var noScreenshotChecked by rememberSaveable { mutableStateOf(false) }
-    var restoreChecked by rememberSaveable { mutableStateOf(false) }
-
+private fun BackupChecklist(
+    privatePlaceChecked: Boolean,
+    noScreenshotChecked: Boolean,
+    restoreChecked: Boolean,
+    onPrivatePlaceCheckedChange: (Boolean) -> Unit,
+    onNoScreenshotCheckedChange: (Boolean) -> Unit,
+    onRestoreCheckedChange: (Boolean) -> Unit,
+) {
     FramedTool {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             SetupCheckboxRow(
                 labelRes = R.string.wallet_setup_backup_private_place,
                 checked = privatePlaceChecked,
-                onCheckedChange = {
-                    performHaptic()
-                    privatePlaceChecked = it
-                },
+                onCheckedChange = onPrivatePlaceCheckedChange,
             )
             SetupCheckboxRow(
                 labelRes = R.string.wallet_setup_backup_no_screenshots,
                 checked = noScreenshotChecked,
-                onCheckedChange = {
-                    performHaptic()
-                    noScreenshotChecked = it
-                },
+                onCheckedChange = onNoScreenshotCheckedChange,
             )
             SetupCheckboxRow(
                 labelRes = R.string.wallet_setup_backup_restore_check,
                 checked = restoreChecked,
-                onCheckedChange = {
-                    performHaptic()
-                    restoreChecked = it
-                },
+                onCheckedChange = onRestoreCheckedChange,
             )
         }
     }
