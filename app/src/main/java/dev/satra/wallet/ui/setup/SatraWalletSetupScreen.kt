@@ -69,6 +69,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
@@ -84,6 +85,7 @@ import dev.satra.wallet.ui.theme.SatraButtonSecondaryBorder
 import dev.satra.wallet.ui.theme.SatraTheme
 import dev.satra.wallet.wallet.bip39.Bip39MnemonicValidation
 import dev.satra.wallet.wallet.bip39.Bip39MnemonicValidator
+import kotlinx.coroutines.delay
 
 enum class WalletImportMethod(val routeSegment: String, @StringRes val labelRes: Int) {
     RecoveryPhrase(
@@ -168,6 +170,11 @@ private enum class SecuritySetupPage {
     ConfirmPasscode,
     Biometrics,
     Success,
+}
+
+private enum class PasscodeConfirmationResult {
+    Confirmed,
+    Mismatch,
 }
 
 @Composable
@@ -583,6 +590,7 @@ fun SetupPasscodeScreen(
     }
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun SetupConfirmPasscodeScreen(
     flow: WalletSetupFlow,
@@ -593,10 +601,25 @@ fun SetupConfirmPasscodeScreen(
     onMismatch: () -> Unit = {},
 ) {
     var confirmation by rememberSaveable(expectedPasscode) { mutableStateOf("") }
+    var pendingResult by remember { mutableStateOf<PasscodeConfirmationResult?>(null) }
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
     val passcodeLength = expectedPasscode.length.takeIf { it in supportedPasscodeLengths }
         ?: DEFAULT_PASSCODE_LENGTH
     val isComplete = confirmation.length == passcodeLength
     val matches = expectedPasscode.isNotBlank() && confirmation == expectedPasscode
+
+    LaunchedEffect(pendingResult) {
+        val result = pendingResult ?: return@LaunchedEffect
+        focusManager.clearFocus(force = true)
+        keyboardController?.hide()
+        delay(PASSCODE_KEYBOARD_HIDE_DELAY_MILLIS)
+        when (result) {
+            PasscodeConfirmationResult.Confirmed -> onConfirmed()
+            PasscodeConfirmationResult.Mismatch -> onMismatch()
+        }
+        pendingResult = null
+    }
 
     WalletSetupRouteScreen(
         titleRes = R.string.wallet_setup_screen_confirm_passcode,
@@ -612,14 +635,15 @@ fun SetupConfirmPasscodeScreen(
             passcode = confirmation,
             passcodeLength = passcodeLength,
             onPasscodeChange = { value ->
+                if (pendingResult != null) return@PasscodeEntryPanel
                 val nextConfirmation = value.filter(Char::isDigit).take(passcodeLength)
                 confirmation = nextConfirmation
                 if (nextConfirmation.length == passcodeLength) {
                     performHaptic()
-                    if (expectedPasscode.isNotBlank() && nextConfirmation == expectedPasscode) {
-                        onConfirmed()
+                    pendingResult = if (expectedPasscode.isNotBlank() && nextConfirmation == expectedPasscode) {
+                        PasscodeConfirmationResult.Confirmed
                     } else {
-                        onMismatch()
+                        PasscodeConfirmationResult.Mismatch
                     }
                 }
             },
@@ -2338,6 +2362,7 @@ private enum class SetupWindowSize {
 }
 
 private const val DEFAULT_PASSCODE_LENGTH = 6
+private const val PASSCODE_KEYBOARD_HIDE_DELAY_MILLIS = 160L
 private const val SHORT_PASSCODE_LENGTH = 4
 private const val DEFAULT_RECOVERY_PHRASE_WORD_COUNT = 12
 private const val STRONG_RECOVERY_PHRASE_WORD_COUNT = 24
