@@ -157,7 +157,12 @@ fun SatraMainScreen(
                 )
             }
             composable(SatraMainTab.Activity.route) {
-                SatraActivityScreen(walletRepository = walletRepository)
+                SatraActivityScreen(
+                    walletRepository = walletRepository,
+                    onTransactionClick = { transactionId ->
+                        tabNavController.navigate(SatraMainRoute.transactionDetail(transactionId))
+                    },
+                )
             }
             composable(SatraMainTab.Markets.route) {
                 SatraMarketsScreen(walletRepository = walletRepository)
@@ -293,6 +298,17 @@ fun SatraMainScreen(
                     onReceiveNetworkRequired = { assetSymbol ->
                         tabNavController.navigate(SatraMainRoute.receiveNetwork(assetSymbol))
                     },
+                    onTransactionClick = { transactionId ->
+                        tabNavController.navigate(SatraMainRoute.transactionDetail(transactionId))
+                    },
+                )
+            }
+            composable(SatraMainRoute.TransactionDetailPattern) { entry ->
+                val transactionId = entry.arguments?.getString(SatraMainRoute.ArgTransactionId).orEmpty()
+                SatraTransactionDetailScreen(
+                    walletRepository = walletRepository,
+                    transactionId = transactionId,
+                    onBack = { tabNavController.popBackStack() },
                 )
             }
             composable(SatraMainRoute.SendAsset) {
@@ -532,6 +548,7 @@ private fun SatraHomeDashboard(
 @Composable
 private fun SatraActivityScreen(
     walletRepository: SatraWalletRepository,
+    onTransactionClick: (String) -> Unit,
 ) {
     val resources = LocalContext.current.resources
     var activityState by remember {
@@ -654,6 +671,7 @@ private fun SatraActivityScreen(
             ) { transaction ->
                 ActivityTransactionCard(
                     transaction = transaction,
+                    onClick = { onTransactionClick(transaction.transactionId) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .widthIn(max = HomeContentMaxWidth)
@@ -664,6 +682,269 @@ private fun SatraActivityScreen(
         item {
             Spacer(modifier = Modifier.height(20.dp))
         }
+    }
+}
+
+@Composable
+private fun SatraTransactionDetailScreen(
+    walletRepository: SatraWalletRepository,
+    transactionId: String,
+    onBack: () -> Unit,
+) {
+    val resources = LocalContext.current.resources
+    var state by remember(transactionId) {
+        mutableStateOf<TransactionDetailState>(TransactionDetailState.Loading)
+    }
+
+    LaunchedEffect(walletRepository, transactionId) {
+        val wallet = walletRepository.getPrimaryWallet()
+        if (wallet == null || transactionId.isBlank()) {
+            state = TransactionDetailState.NotFound
+            return@LaunchedEffect
+        }
+        val transaction = walletRepository.getWalletTransactions(wallet.walletId)
+            .firstOrNull { record -> record.transactionId == transactionId }
+        state = transaction
+            ?.toTransactionDetailContent(wallet.localCurrencyCode, resources)
+            ?: TransactionDetailState.NotFound
+    }
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        item {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = HomeContentMaxWidth)
+                    .padding(horizontal = 20.dp, vertical = 20.dp),
+            ) {
+                TransactionDetailHeader(onBack = onBack)
+                Spacer(modifier = Modifier.height(22.dp))
+                when (val current = state) {
+                    TransactionDetailState.Loading -> TransactionDetailLoadingCard()
+                    TransactionDetailState.NotFound -> TransactionDetailNotFoundCard()
+                    is TransactionDetailState.Content -> {
+                        TransactionDetailSummaryCard(content = current)
+                        Spacer(modifier = Modifier.height(14.dp))
+                        TransactionDetailRowsCard(rows = current.details)
+                    }
+                }
+            }
+        }
+        item {
+            Spacer(modifier = Modifier.height(20.dp))
+        }
+    }
+}
+
+@Composable
+private fun TransactionDetailHeader(
+    onBack: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(onClick = onBack) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = stringResource(R.string.activity_detail_title),
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun TransactionDetailLoadingCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(18.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(18.dp),
+                strokeWidth = 2.dp,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = stringResource(R.string.activity_detail_loading),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun TransactionDetailNotFoundCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+    ) {
+        Column(
+            modifier = Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.activity_detail_not_found_title),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = stringResource(R.string.activity_detail_not_found_body),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun TransactionDetailSummaryCard(
+    content: TransactionDetailState.Content,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+    ) {
+        Row(
+            modifier = Modifier.padding(18.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Image(
+                painter = painterResource(content.iconRes),
+                contentDescription = null,
+                modifier = Modifier.size(48.dp),
+            )
+            Spacer(modifier = Modifier.width(14.dp))
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Text(
+                    text = content.title,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = content.subtitle,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Text(
+                    text = content.amount,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = when (content.direction) {
+                        WalletTransactionDirection.Incoming.value -> MaterialTheme.colorScheme.tertiary
+                        WalletTransactionDirection.Outgoing.value -> MaterialTheme.colorScheme.onSurface
+                        WalletTransactionDirection.Self.value -> MaterialTheme.colorScheme.primary
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                )
+                Text(
+                    text = content.fiatValue,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TransactionDetailRowsCard(
+    rows: List<TransactionDetailRow>,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+    ) {
+        Column(
+            modifier = Modifier.padding(18.dp),
+        ) {
+            rows.forEachIndexed { index, row ->
+                TransactionDetailRowItem(row = row)
+                if (index != rows.lastIndex) {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 12.dp),
+                        color = MaterialTheme.colorScheme.outline,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TransactionDetailRowItem(
+    row: TransactionDetailRow,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(
+            text = row.label,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.Bold,
+        )
+        Text(
+            text = row.value,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
     }
 }
 
@@ -952,6 +1233,7 @@ private fun SatraTokenDetailScreen(
     onSendNetworkRequired: (String) -> Unit,
     onReceiveAsset: (String) -> Unit,
     onReceiveNetworkRequired: (String) -> Unit,
+    onTransactionClick: (String) -> Unit,
 ) {
     val resources = LocalContext.current.resources
     var state by remember(symbol) {
@@ -1107,6 +1389,7 @@ private fun SatraTokenDetailScreen(
             ) { transaction ->
                 ActivityTransactionCard(
                     transaction = transaction,
+                    onClick = { onTransactionClick(transaction.transactionId) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .widthIn(max = HomeContentMaxWidth)
@@ -1481,10 +1764,11 @@ private fun ActivityEmptyState(
 @Composable
 private fun ActivityTransactionCard(
     transaction: ActivityTransactionRow,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Card(
-        modifier = modifier,
+        modifier = modifier.clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
@@ -1549,37 +1833,6 @@ private fun ActivityTransactionCard(
                         maxLines = 1,
                     )
                 }
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = transaction.counterparty,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = transaction.hash,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                )
-            }
-            if (transaction.fee.isNotBlank()) {
-                Text(
-                    text = transaction.fee,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
             }
         }
     }
@@ -2385,6 +2638,11 @@ private data class ActivityTransactionRow(
     val fee: String,
 )
 
+private data class TransactionDetailRow(
+    val label: String,
+    val value: String,
+)
+
 private data class MarketAssetRow(
     val symbol: String,
     val name: String,
@@ -2461,6 +2719,22 @@ private sealed interface ActivityScreenState {
         val syncedNetworkCount: Int,
         val error: String?,
     ) : ActivityScreenState
+}
+
+private sealed interface TransactionDetailState {
+    data object Loading : TransactionDetailState
+    data object NotFound : TransactionDetailState
+
+    data class Content(
+        val transactionId: String,
+        @DrawableRes val iconRes: Int,
+        val direction: String,
+        val title: String,
+        val subtitle: String,
+        val amount: String,
+        val fiatValue: String,
+        val details: List<TransactionDetailRow>,
+    ) : TransactionDetailState
 }
 
 private sealed interface MarketsScreenState {
@@ -2656,6 +2930,62 @@ private fun List<WalletTransactionRecord>.toActivityRows(
                     .orEmpty(),
             )
         }
+}
+
+private fun WalletTransactionRecord.toTransactionDetailContent(
+    localCurrencyCode: String,
+    resources: Resources,
+): TransactionDetailState.Content? {
+    val catalogAssetsById = SupportedAssetCatalog.assets.associateBy { it.assetId }
+    val networksById = SupportedAssetCatalog.networks.associateBy { it.networkId }
+    val asset = catalogAssetsById[assetId] ?: return null
+    val network = networksById[networkId]
+    val status = status.activityStatusLabel(resources)
+    val directionLabel = direction.activityDirectionLabel(resources)
+    val displayAmount = "${direction.activityAmountPrefix()}${formatCryptoAmount(amountDecimal)} ${asset.symbol}"
+    val displayFiat = fiatValue?.takeIf(String::isNotBlank)?.let {
+        formatFiat(it, localCurrencyCode)
+    } ?: resources.getString(R.string.activity_detail_unavailable)
+    val feeAsset = feeAssetId?.let(catalogAssetsById::get)
+    val displayFee = feeDecimal?.takeIf(String::isNotBlank)?.let { fee ->
+        "${formatCryptoAmount(fee)} ${feeAsset?.symbol ?: asset.symbol}"
+    } ?: resources.getString(R.string.activity_detail_unavailable)
+    val notAvailable = resources.getString(R.string.activity_detail_unavailable)
+    val detailRows = buildList {
+        add(TransactionDetailRow(resources.getString(R.string.activity_detail_transaction_id), transactionId))
+        add(TransactionDetailRow(resources.getString(R.string.activity_detail_asset), "${asset.name} (${asset.symbol})"))
+        add(TransactionDetailRow(resources.getString(R.string.activity_detail_network), network?.displayName ?: networkId))
+        add(TransactionDetailRow(resources.getString(R.string.activity_detail_status), status))
+        add(TransactionDetailRow(resources.getString(R.string.activity_detail_direction), directionLabel))
+        add(TransactionDetailRow(resources.getString(R.string.activity_detail_amount), displayAmount))
+        add(TransactionDetailRow(resources.getString(R.string.activity_detail_value), displayFiat))
+        add(TransactionDetailRow(resources.getString(R.string.activity_detail_fee), displayFee))
+        add(TransactionDetailRow(resources.getString(R.string.activity_detail_from), fromAddress.orEmpty().ifBlank { notAvailable }))
+        add(TransactionDetailRow(resources.getString(R.string.activity_detail_to), toAddress.orEmpty().ifBlank { notAvailable }))
+        add(TransactionDetailRow(resources.getString(R.string.activity_detail_hash), transactionHash.orEmpty().ifBlank { notAvailable }))
+        add(TransactionDetailRow(resources.getString(R.string.activity_detail_block_height), blockHeight?.toString() ?: notAvailable))
+        add(TransactionDetailRow(resources.getString(R.string.activity_detail_block_hash), blockHash.orEmpty().ifBlank { notAvailable }))
+        add(TransactionDetailRow(resources.getString(R.string.activity_detail_confirmations), confirmations.toString()))
+        nonce?.takeIf(String::isNotBlank)?.let { nonceValue ->
+            add(TransactionDetailRow(resources.getString(R.string.activity_detail_nonce), nonceValue))
+        }
+        memo?.takeIf(String::isNotBlank)?.let { memoValue ->
+            add(TransactionDetailRow(resources.getString(R.string.activity_detail_memo), memoValue))
+        }
+        add(TransactionDetailRow(resources.getString(R.string.activity_detail_time), formatActivityTime(timestamp, resources)))
+        add(TransactionDetailRow(resources.getString(R.string.activity_detail_first_seen), formatActivityTime(firstSeenAt, resources)))
+        add(TransactionDetailRow(resources.getString(R.string.activity_detail_updated), formatActivityTime(updatedAt, resources)))
+    }
+    return TransactionDetailState.Content(
+        transactionId = transactionId,
+        iconRes = assetIconRes(asset.symbol, networkId),
+        direction = direction,
+        title = "$directionLabel ${asset.symbol}",
+        subtitle = "${network?.displayName ?: networkId} · $status · ${formatActivityTime(timestamp, resources)}",
+        amount = displayAmount,
+        fiatValue = displayFiat,
+        details = detailRows,
+    )
 }
 
 private fun List<WalletAssetRecord>.toHomeAssetRows(localCurrencyCode: String): List<HomeAssetRow> {
@@ -2939,11 +3269,13 @@ internal object SatraMainRoute {
     const val SendAsset = "main/send"
     const val ArgSymbol = "symbol"
     const val ArgAssetId = "assetId"
+    const val ArgTransactionId = "transactionId"
     const val TokenDetailPattern = "main/token/{$ArgSymbol}"
     const val ReceiveNetworkPattern = "main/receive/network/{$ArgSymbol}"
     const val ReceiveQrPattern = "main/receive/qr/{$ArgAssetId}"
     const val SendNetworkPattern = "main/send/network/{$ArgSymbol}"
     const val SendComposerPattern = "main/send/compose/{$ArgAssetId}"
+    const val TransactionDetailPattern = "main/activity/transaction/{$ArgTransactionId}"
     const val AddressBook = "main/settings/address-book"
     const val Preferences = "main/settings/preferences"
     const val Currency = "main/settings/preferences/currency"
@@ -2970,6 +3302,9 @@ internal object SatraMainRoute {
 
     fun sendComposer(assetId: String): String =
         "main/send/compose/${Uri.encode(assetId)}"
+
+    fun transactionDetail(transactionId: String): String =
+        "main/activity/transaction/${Uri.encode(transactionId)}"
 }
 
 private val HomeContentMaxWidth = 720.dp
