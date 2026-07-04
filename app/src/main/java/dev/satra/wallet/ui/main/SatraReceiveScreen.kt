@@ -882,7 +882,7 @@ private fun ReceiveSnapshot.Content.toReceiveAssetRows(): List<ReceiveAssetRow> 
             balanceFormatted = "${formatReceiveCryptoAmount(walletAsset.balanceDecimal.toBigDecimalOrZero())} ${asset.symbol}",
             fiatFormatted = formatReceiveFiat(walletAsset.balanceFiatValue, localCurrencyCode),
             localCurrencyCode = localCurrencyCode,
-            iconRes = assetIconRes(asset.symbol, walletAsset.networkId),
+            iconRes = assetIconRes(asset.symbol),
         )
     }.sortedWith(
         compareBy<ReceiveAssetRow> { it.asset.name.lowercase(Locale.US) }

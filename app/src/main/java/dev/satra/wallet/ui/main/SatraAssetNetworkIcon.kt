@@ -17,7 +17,7 @@ internal fun SatraAssetNetworkIcon(
     modifier: Modifier = Modifier,
 ) {
     SatraAssetNetworkIcon(
-        assetIconRes = assetIconRes(assetSymbol, networkId),
+        assetIconRes = assetIconRes(assetSymbol),
         networkIconRes = networkIconRes(networkId),
         modifier = modifier,
     )

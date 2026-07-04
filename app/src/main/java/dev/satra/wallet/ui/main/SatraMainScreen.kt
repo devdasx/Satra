@@ -1247,7 +1247,7 @@ private fun SatraTokenDetailScreen(
             state = TokenDetailState.Content(
                 symbol = normalizedSymbol,
                 name = normalizedSymbol,
-                iconRes = assetIconRes(normalizedSymbol, ""),
+                iconRes = assetIconRes(normalizedSymbol),
                 currencyCode = "USD",
                 totalBalance = formatFiat("0", "USD"),
                 networkBalances = emptyList(),
@@ -1282,7 +1282,7 @@ private fun SatraTokenDetailScreen(
         TokenDetailState.Loading -> TokenDetailState.Content(
             symbol = normalizedSymbol,
             name = normalizedSymbol,
-            iconRes = assetIconRes(normalizedSymbol, ""),
+            iconRes = assetIconRes(normalizedSymbol),
             currencyCode = "USD",
             totalBalance = formatFiat("0", "USD"),
             networkBalances = emptyList(),
@@ -2806,7 +2806,7 @@ private fun WalletRecord.toTokenDetailState(
     return TokenDetailState.Content(
         symbol = symbol,
         name = primaryAsset?.name ?: symbol,
-        iconRes = assetIconRes(symbol, matchingAssets.firstOrNull()?.networkId.orEmpty()),
+        iconRes = assetIconRes(symbol),
         currencyCode = localCurrencyCode,
         totalBalance = formatFiat(totalFiat.toPlainString(), localCurrencyCode),
         networkBalances = matchingAssets.toTokenNetworkBalanceRows(localCurrencyCode),
@@ -2854,7 +2854,7 @@ private fun List<SupportedAsset>.toMarketRows(
                 name = primaryAsset.name,
                 networkName = primaryNetwork?.displayName.orEmpty(),
                 networkCount = networkCount,
-                iconRes = assetIconRes(symbol, primaryAsset.networkId),
+                iconRes = assetIconRes(symbol),
                 price = formatFiat(price.toPlainString(), localCurrencyCode),
                 balanceValue = formatFiat(balanceValue.toPlainString(), localCurrencyCode),
                 priceAmount = price,
@@ -2880,7 +2880,7 @@ private fun List<WalletAssetRecord>.toTokenNetworkBalanceRows(localCurrencyCode:
             assetId = walletAsset.assetId,
             networkId = walletAsset.networkId,
             network = network.displayName,
-            iconRes = networkIconRes(walletAsset.networkId),
+            iconRes = assetIconRes(asset.symbol),
             amount = "${formatCryptoAmount(walletAsset.balanceDecimal)} ${asset.symbol}",
             fiatValue = formatFiat(walletAsset.balanceFiatValue, localCurrencyCode),
             fiatValueAmount = fiatValue,
@@ -2908,7 +2908,7 @@ private fun List<WalletTransactionRecord>.toActivityRows(
             val direction = transaction.direction.activityDirectionLabel(resources)
             ActivityTransactionRow(
                 transactionId = transaction.transactionId,
-                iconRes = assetIconRes(asset.symbol, transaction.networkId),
+                iconRes = assetIconRes(asset.symbol),
                 direction = transaction.direction,
                 title = "$direction ${asset.symbol}",
                 subtitle = "${network.displayName} · $status · ${formatActivityTime(transaction.timestamp, resources)}",
@@ -2978,7 +2978,7 @@ private fun WalletTransactionRecord.toTransactionDetailContent(
     }
     return TransactionDetailState.Content(
         transactionId = transactionId,
-        iconRes = assetIconRes(asset.symbol, networkId),
+        iconRes = assetIconRes(asset.symbol),
         direction = direction,
         title = "$directionLabel ${asset.symbol}",
         subtitle = "${network?.displayName ?: networkId} · $status · ${formatActivityTime(timestamp, resources)}",
@@ -3027,7 +3027,7 @@ private fun List<WalletAssetRecord>.toHomeAssetRows(localCurrencyCode: String): 
                 networkIds = networks.map { (networkId, _) -> networkId }.toSet(),
                 networks = networks,
                 networkCount = networks.size,
-                iconRes = assetIconRes(symbol, primary.networkId),
+                iconRes = assetIconRes(symbol),
                 symbol = symbol,
                 name = primary.name,
                 network = primary.networkName,
@@ -3231,10 +3231,53 @@ internal fun networkIconRes(networkId: String): Int =
     }
 
 @DrawableRes
-internal fun assetIconRes(symbol: String, fallbackNetworkId: String): Int =
+internal fun assetIconRes(symbol: String): Int =
     when (symbol.uppercase(Locale.US)) {
+        "APT" -> R.drawable.ic_asset_apt
+        "AUSD" -> R.drawable.ic_asset_ausd
+        "AVAX" -> R.drawable.ic_asset_avax
+        "BCH" -> R.drawable.ic_asset_bch
+        "BNB" -> R.drawable.ic_asset_bnb
+        "BTC" -> R.drawable.ic_asset_btc
+        "CELO" -> R.drawable.ic_asset_celo
+        "DAI" -> R.drawable.ic_asset_dai
+        "DOGE" -> R.drawable.ic_asset_doge
+        "DOT" -> R.drawable.ic_asset_dot
+        "DUSD" -> R.drawable.ic_asset_dusd
+        "ETH" -> R.drawable.ic_asset_eth
+        "EURC" -> R.drawable.ic_asset_eurc
+        "FDUSD" -> R.drawable.ic_asset_fdusd
+        "FRAX" -> R.drawable.ic_asset_frax
+        "GUSD" -> R.drawable.ic_asset_gusd
+        "KAVA" -> R.drawable.ic_asset_kava
+        "LISUSD" -> R.drawable.ic_asset_lisusd
+        "LTC" -> R.drawable.ic_asset_ltc
+        "NEAR" -> R.drawable.ic_asset_near
+        "POL" -> R.drawable.ic_asset_pol
+        "PYUSD" -> R.drawable.ic_asset_pyusd
+        "RLUSD" -> R.drawable.ic_asset_rlusd
+        "SOL" -> R.drawable.ic_asset_sol
+        "STETH" -> R.drawable.ic_asset_steth
+        "SUI" -> R.drawable.ic_asset_sui
+        "TON" -> R.drawable.ic_asset_ton
+        "TRX" -> R.drawable.ic_asset_trx
+        "TUSD" -> R.drawable.ic_asset_tusd
+        "USD0" -> R.drawable.ic_asset_usd0
+        "USD1" -> R.drawable.ic_asset_usd1
+        "USDAI" -> R.drawable.ic_asset_usdai
+        "USDC" -> R.drawable.ic_asset_usdc
+        "USDD" -> R.drawable.ic_asset_usdd
+        "USDE" -> R.drawable.ic_asset_usde
+        "USDF" -> R.drawable.ic_asset_usdf
+        "USDG" -> R.drawable.ic_asset_usdg
+        "USDP" -> R.drawable.ic_asset_usdp
+        "USDS" -> R.drawable.ic_asset_usds
         "USDT" -> R.drawable.ic_asset_usdt
-        else -> networkIconRes(fallbackNetworkId)
+        "WBTC" -> R.drawable.ic_asset_wbtc
+        "WETH" -> R.drawable.ic_asset_weth
+        "XLM" -> R.drawable.ic_asset_xlm
+        "XRP" -> R.drawable.ic_asset_xrp
+        else -> R.drawable.ic_brand_assets
     }
 
 private enum class SatraMainTab(

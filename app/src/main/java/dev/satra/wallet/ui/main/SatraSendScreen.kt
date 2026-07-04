@@ -994,7 +994,7 @@ private fun SendSnapshot.Content.toSendAssetRows(): List<SendAssetRow> {
             balanceFormatted = "${formatCryptoAmount(balance)} ${asset.symbol}",
             fiatAmount = walletAsset.balanceFiatValue.toBigDecimalOrZero(),
             fiatFormatted = formatFiat(walletAsset.balanceFiatValue, wallet.localCurrencyCode),
-            iconRes = assetIconRes(asset.symbol, walletAsset.networkId),
+            iconRes = assetIconRes(asset.symbol),
             hasSigningKey = privateKeys.any { privateKey ->
                 privateKey.networkId == walletAsset.networkId && !privateKey.isEncrypted
             },
