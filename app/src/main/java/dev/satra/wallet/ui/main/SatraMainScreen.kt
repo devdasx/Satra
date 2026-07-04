@@ -232,8 +232,33 @@ fun SatraMainScreen(
                 )
             }
             composable(SatraMainRoute.Receive) {
-                SatraReceiveScreen(
+                SatraReceiveAssetScreen(
                     walletRepository = walletRepository,
+                    onBack = { tabNavController.popBackStack() },
+                    onAssetSelected = { assetId ->
+                        tabNavController.navigate(SatraMainRoute.receiveQr(assetId))
+                    },
+                    onNetworkRequired = { symbol ->
+                        tabNavController.navigate(SatraMainRoute.receiveNetwork(symbol))
+                    },
+                )
+            }
+            composable(SatraMainRoute.ReceiveNetworkPattern) { entry ->
+                val symbol = entry.arguments?.getString(SatraMainRoute.ArgSymbol).orEmpty()
+                SatraReceiveNetworkScreen(
+                    walletRepository = walletRepository,
+                    symbol = symbol,
+                    onBack = { tabNavController.popBackStack() },
+                    onNetworkSelected = { assetId ->
+                        tabNavController.navigate(SatraMainRoute.receiveQr(assetId))
+                    },
+                )
+            }
+            composable(SatraMainRoute.ReceiveQrPattern) { entry ->
+                val assetId = entry.arguments?.getString(SatraMainRoute.ArgAssetId).orEmpty()
+                SatraReceiveQrScreen(
+                    walletRepository = walletRepository,
+                    assetId = assetId,
                     onBack = { tabNavController.popBackStack() },
                 )
             }
@@ -249,7 +274,12 @@ fun SatraMainScreen(
                     onSendNetworkRequired = { assetSymbol ->
                         tabNavController.navigate(SatraMainRoute.sendNetwork(assetSymbol))
                     },
-                    onReceiveClick = { tabNavController.navigate(SatraMainRoute.Receive) },
+                    onReceiveAsset = { assetId ->
+                        tabNavController.navigate(SatraMainRoute.receiveQr(assetId))
+                    },
+                    onReceiveNetworkRequired = { assetSymbol ->
+                        tabNavController.navigate(SatraMainRoute.receiveNetwork(assetSymbol))
+                    },
                 )
             }
             composable(SatraMainRoute.SendAsset) {
@@ -616,7 +646,8 @@ private fun SatraTokenDetailScreen(
     onBack: () -> Unit,
     onSendAsset: (String) -> Unit,
     onSendNetworkRequired: (String) -> Unit,
-    onReceiveClick: () -> Unit,
+    onReceiveAsset: (String) -> Unit,
+    onReceiveNetworkRequired: (String) -> Unit,
 ) {
     val resources = LocalContext.current.resources
     var state by remember(symbol) {
@@ -714,7 +745,14 @@ private fun SatraTokenDetailScreen(
                             content.sendAssetId?.let(onSendAsset)
                         }
                     },
-                    onReceiveClick = onReceiveClick,
+                    onReceiveClick = {
+                        val receiveRows = content.networkBalances
+                        if (receiveRows.size > 1) {
+                            onReceiveNetworkRequired(content.symbol)
+                        } else {
+                            receiveRows.singleOrNull()?.assetId?.let(onReceiveAsset)
+                        }
+                    },
                 )
                 Spacer(modifier = Modifier.height(22.dp))
                 TokenDetailSectionHeader(
@@ -797,19 +835,11 @@ private fun TokenDetailHeader(
             )
         }
         Spacer(modifier = Modifier.width(8.dp))
-        Box(
-            modifier = Modifier
-                .size(46.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceContainer),
-            contentAlignment = Alignment.Center,
-        ) {
-            Image(
-                painter = painterResource(iconRes),
-                contentDescription = null,
-                modifier = Modifier.size(30.dp),
-            )
-        }
+        Image(
+            painter = painterResource(iconRes),
+            contentDescription = null,
+            modifier = Modifier.size(44.dp),
+        )
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -868,19 +898,11 @@ private fun TokenNetworkBalanceListRow(
             .padding(horizontal = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            modifier = Modifier
-                .size(44.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceContainer),
-            contentAlignment = Alignment.Center,
-        ) {
-            Image(
-                painter = painterResource(row.iconRes),
-                contentDescription = null,
-                modifier = Modifier.size(28.dp),
-            )
-        }
+        Image(
+            painter = painterResource(row.iconRes),
+            contentDescription = null,
+            modifier = Modifier.size(40.dp),
+        )
         Spacer(modifier = Modifier.width(12.dp))
         Text(
             text = row.network,
@@ -1172,19 +1194,11 @@ private fun ActivityTransactionCard(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Image(
-                        painter = painterResource(transaction.iconRes),
-                        contentDescription = null,
-                        modifier = Modifier.size(28.dp),
-                    )
-                }
+                Image(
+                    painter = painterResource(transaction.iconRes),
+                    contentDescription = null,
+                    modifier = Modifier.size(40.dp),
+                )
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(
                     modifier = Modifier.weight(1f),
@@ -1959,19 +1973,11 @@ private fun HomeAssetListRow(
             .padding(horizontal = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            modifier = Modifier
-                .size(44.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceContainer),
-            contentAlignment = Alignment.Center,
-        ) {
-            Image(
-                painter = painterResource(asset.iconRes),
-                contentDescription = null,
-                modifier = Modifier.size(28.dp),
-            )
-        }
+        Image(
+            painter = painterResource(asset.iconRes),
+            contentDescription = null,
+            modifier = Modifier.size(40.dp),
+        )
         Spacer(modifier = Modifier.width(12.dp))
         Column(
             modifier = Modifier.weight(1f),
@@ -2554,6 +2560,8 @@ internal object SatraMainRoute {
     const val ArgSymbol = "symbol"
     const val ArgAssetId = "assetId"
     const val TokenDetailPattern = "main/token/{$ArgSymbol}"
+    const val ReceiveNetworkPattern = "main/receive/network/{$ArgSymbol}"
+    const val ReceiveQrPattern = "main/receive/qr/{$ArgAssetId}"
     const val SendNetworkPattern = "main/send/network/{$ArgSymbol}"
     const val SendComposerPattern = "main/send/compose/{$ArgAssetId}"
     const val AddressBook = "main/settings/address-book"
@@ -2569,6 +2577,12 @@ internal object SatraMainRoute {
 
     fun tokenDetail(symbol: String): String =
         "main/token/${Uri.encode(symbol)}"
+
+    fun receiveNetwork(symbol: String): String =
+        "main/receive/network/${Uri.encode(symbol)}"
+
+    fun receiveQr(assetId: String): String =
+        "main/receive/qr/${Uri.encode(assetId)}"
 
     fun sendNetwork(symbol: String): String =
         "main/send/network/${Uri.encode(symbol)}"

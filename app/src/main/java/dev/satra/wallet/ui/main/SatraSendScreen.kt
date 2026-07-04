@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -879,24 +878,11 @@ private fun SendIcon(
     modifier: Modifier = Modifier,
     invertSurface: Boolean = false,
 ) {
-    val backgroundColor = if (invertSurface) {
-        MaterialTheme.colorScheme.inverseOnSurface.copy(alpha = 0.12f)
-    } else {
-        MaterialTheme.colorScheme.surfaceContainer
-    }
-    Box(
-        modifier = modifier
-            .clip(CircleShape)
-            .background(backgroundColor)
-            .padding(8.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Image(
-            painter = painterResource(iconRes),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-        )
-    }
+    Image(
+        painter = painterResource(iconRes),
+        contentDescription = null,
+        modifier = modifier,
+    )
 }
 
 private suspend fun SatraWalletRepository.loadSendSnapshot(): SendSnapshot =
