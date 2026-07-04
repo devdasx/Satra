@@ -484,9 +484,9 @@ private fun ReceiveNetworkRow(
         onClick = onClick,
         modifier = modifier,
         leadingIcon = {
-            SatraAssetNetworkIcon(
-                assetSymbol = row.asset.symbol,
-                networkId = row.network.networkId,
+            SatraBadgedIcon(
+                primaryIconRes = networkIconRes(row.network.networkId),
+                badgeIconRes = row.iconRes,
             )
         },
     )
