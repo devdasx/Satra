@@ -1453,63 +1453,59 @@ private fun MarketDetailNotFoundCard(
 private fun MarketDetailHeroCard(
     content: MarketDetailState.Content,
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.inverseSurface,
-        ),
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
     ) {
-        Column(modifier = Modifier.padding(18.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Image(
-                    painter = painterResource(content.iconRes),
-                    contentDescription = null,
-                    modifier = Modifier.size(54.dp),
-                )
-                Spacer(modifier = Modifier.width(14.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = content.name,
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.inverseOnSurface,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = content.symbol,
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.inverseOnSurface.copy(alpha = 0.72f),
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Image(
+                painter = painterResource(content.iconRes),
+                contentDescription = null,
+                modifier = Modifier.size(58.dp),
+            )
+            Spacer(modifier = Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = content.change24hPercent,
+                    text = content.name,
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = content.symbol,
                     style = MaterialTheme.typography.labelLarge,
-                    color = if (content.change24hAmount.signum() < 0) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.tertiary
-                    },
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Bold,
                 )
             }
-            Spacer(modifier = Modifier.height(18.dp))
             Text(
-                text = stringResource(R.string.market_detail_price_label, content.currencyCode),
+                text = content.change24hPercent,
                 style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.inverseOnSurface.copy(alpha = 0.62f),
+                color = if (content.change24hAmount.signum() < 0) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.tertiary
+                },
                 fontWeight = FontWeight.Bold,
-            )
-            Text(
-                text = content.price,
-                style = MaterialTheme.typography.displaySmall,
-                color = MaterialTheme.colorScheme.inverseOnSurface,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
             )
         }
+        Spacer(modifier = Modifier.height(22.dp))
+        Text(
+            text = stringResource(R.string.market_detail_price_label, content.currencyCode),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.Bold,
+        )
+        Text(
+            text = content.price,
+            style = MaterialTheme.typography.displaySmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+        )
     }
 }
 
