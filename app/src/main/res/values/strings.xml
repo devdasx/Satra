@@ -333,7 +333,8 @@
     <string name="asset_detail_activity_title">Activity</string>
     <string name="asset_detail_activity_empty">No activity for this asset yet.</string>
     <string name="activity_syncing_title">Syncing activity…</string>
-    <string name="activity_syncing_body">Satra is checking supported EVM and Bitcoin-family networks, balances, and history.</string>
+    <string name="activity_syncing_body">Satra is checking supported EVM, Solana, and Bitcoin-family networks, balances, and history.</string>
+    <string name="activity_partial_sync_error">Partial activity sync</string>
     <string name="activity_empty_title">No activity yet.</string>
     <string name="activity_empty_body">When this wallet has supported transactions, they will appear here after sync.</string>
     <string name="activity_direction_received">Received</string>

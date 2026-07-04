@@ -647,8 +647,13 @@ private fun SatraActivityScreen(
                     network.balanceCompleteness != EvmSyncCompleteness.Complete ||
                     network.historyCompleteness != EvmSyncCompleteness.Complete
             }
-            if (evmPartial || utxoPartial) {
-                "Partial activity sync"
+            val solanaPartial = result.solanaSyncResult.networkResults.any { network ->
+                network.error != null ||
+                    network.balanceCompleteness != EvmSyncCompleteness.Complete ||
+                    network.historyCompleteness != EvmSyncCompleteness.Complete
+            }
+            if (evmPartial || utxoPartial || solanaPartial) {
+                resources.getString(R.string.activity_partial_sync_error)
             } else {
                 null
             }
@@ -3856,7 +3861,8 @@ private fun WalletRecord.syncedNetworkCount(): Int =
     runCatching {
         val root = JSONObject(metadataJson)
         (root.optJSONObject("evmSync")?.optInt("syncedNetworkCount") ?: 0) +
-            (root.optJSONObject("utxoSync")?.optInt("syncedNetworkCount") ?: 0)
+            (root.optJSONObject("utxoSync")?.optInt("syncedNetworkCount") ?: 0) +
+            (root.optJSONObject("solanaSync")?.optInt("syncedNetworkCount") ?: 0)
     }.getOrNull() ?: 0
 
 private fun formatActivityTime(
