@@ -997,15 +997,12 @@ private fun SatraMarketsScreen(
     }
 
     LaunchedEffect(walletRepository) {
-        val wallet = walletRepository.getPrimaryWallet()
         val appSettings = walletRepository.getAppSettings()
-        val currencyCode = wallet?.localCurrencyCode ?: appSettings.localCurrencyCode
-        val walletAssets = wallet?.let { walletRepository.getWalletAssets(it.walletId) }.orEmpty()
+        val currencyCode = appSettings.localCurrencyCode
         val cachedMarketData = walletRepository.getAllAssetMarketData()
         state = MarketsScreenState.Content(
             currencyCode = currencyCode,
             rows = SupportedAssetCatalog.assets.toMarketRows(
-                walletAssets = walletAssets,
                 marketData = cachedMarketData,
                 localCurrencyCode = currencyCode,
             ),
@@ -1013,12 +1010,10 @@ private fun SatraMarketsScreen(
 
         walletRepository.syncMarketData(currencyCode)
         val refreshedMarketData = walletRepository.getAllAssetMarketData()
-        val refreshedWalletAssets = wallet?.let { walletRepository.getWalletAssets(it.walletId) }.orEmpty()
-        if (wallet == null && refreshedMarketData.isEmpty()) {
+        if (refreshedMarketData.isEmpty()) {
             state = MarketsScreenState.Content(
                 currencyCode = currencyCode,
                 rows = SupportedAssetCatalog.assets.toMarketRows(
-                    walletAssets = emptyList(),
                     marketData = emptyList(),
                     localCurrencyCode = currencyCode,
                 ),
@@ -1028,7 +1023,6 @@ private fun SatraMarketsScreen(
         state = MarketsScreenState.Content(
             currencyCode = currencyCode,
             rows = SupportedAssetCatalog.assets.toMarketRows(
-                walletAssets = refreshedWalletAssets,
                 marketData = refreshedMarketData,
                 localCurrencyCode = currencyCode,
             ),
@@ -1275,28 +1269,21 @@ private fun MarketsAssetRow(
                 maxLines = 1,
             )
             Text(
-                text = row.balanceValue,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-            )
-            row.change24hPercent?.let { change ->
-                Text(
-                    text = change,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = if (change.startsWith("-")) {
+                text = row.change24hPercent ?: "",
+                style = MaterialTheme.typography.labelMedium,
+                color = row.change24hPercent?.let { change ->
+                    if (change.startsWith("-")) {
                         MaterialTheme.colorScheme.error
                     } else {
                         MaterialTheme.colorScheme.tertiary
-                    },
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                )
-            }
+                    }
+                } ?: Color.Transparent,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+            )
         }
     }
 }
-
 @Composable
 private fun SatraMarketDetailScreen(
     walletRepository: SatraWalletRepository,
@@ -1310,12 +1297,9 @@ private fun SatraMarketDetailScreen(
     val normalizedSymbol = remember(symbol) { Uri.decode(symbol).uppercase(Locale.US) }
 
     LaunchedEffect(walletRepository, normalizedSymbol) {
-        val wallet = walletRepository.getPrimaryWallet()
-        val currencyCode = wallet?.localCurrencyCode ?: walletRepository.getAppSettings().localCurrencyCode
-        val walletAssets = wallet?.let { walletRepository.getWalletAssets(it.walletId) }.orEmpty()
+        val currencyCode = walletRepository.getAppSettings().localCurrencyCode
         walletRepository.getAssetMarketData(normalizedSymbol)?.let { cached ->
             state = cached.toMarketDetailState(
-                walletAssets = walletAssets,
                 localCurrencyCode = currencyCode,
                 resources = resources,
             )
@@ -1326,7 +1310,6 @@ private fun SatraMarketDetailScreen(
         )
         state = (refreshed ?: walletRepository.getAssetMarketData(normalizedSymbol))
             ?.toMarketDetailState(
-                walletAssets = walletAssets,
                 localCurrencyCode = currencyCode,
                 resources = resources,
             )
@@ -1515,12 +1498,6 @@ private fun MarketDetailHeroCard(
                 color = MaterialTheme.colorScheme.inverseOnSurface,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = stringResource(R.string.market_detail_wallet_value, content.walletValue, content.walletAmount),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.inverseOnSurface.copy(alpha = 0.72f),
             )
         }
     }
@@ -3274,10 +3251,8 @@ private data class MarketAssetRow(
     val networkCount: Int,
     @DrawableRes val iconRes: Int,
     val price: String,
-    val balanceValue: String,
     val change24hPercent: String?,
     val priceAmount: BigDecimal,
-    val balanceValueAmount: BigDecimal,
 )
 
 private sealed interface MarketDetailState {
@@ -3293,8 +3268,6 @@ private sealed interface MarketDetailState {
         @DrawableRes val iconRes: Int,
         val currencyCode: String,
         val price: String,
-        val walletValue: String,
-        val walletAmount: String,
         val marketCap: String,
         val volume24h: String,
         val high24h: String,
@@ -3483,37 +3456,20 @@ private fun WalletRecord.toTokenDetailState(
 }
 
 private fun List<SupportedAsset>.toMarketRows(
-    walletAssets: List<WalletAssetRecord>,
     marketData: List<AssetMarketDataRecord>,
     localCurrencyCode: String,
 ): List<MarketAssetRow> {
-    val walletAssetsById = walletAssets.associateBy { asset -> asset.assetId }
     val marketDataBySymbol = marketData.associateBy { record -> record.symbol.uppercase(Locale.US) }
     val networksById = SupportedAssetCatalog.networks.associateBy { network -> network.networkId }
     return groupBy { asset -> asset.symbol.uppercase(Locale.US) }
         .map { (symbol, assets) ->
             val market = marketDataBySymbol[symbol]
-            val walletRows = assets.mapNotNull { asset -> walletAssetsById[asset.assetId] }
-            val primaryAsset = assets.maxWith(
-                compareBy<SupportedAsset> { asset ->
-                    walletAssetsById[asset.assetId]?.balanceFiatValue?.toBigDecimalOrZero()
-                        ?: BigDecimal.ZERO
-                }.thenBy { asset ->
-                    walletAssetsById[asset.assetId]?.priceFiatValue?.toBigDecimalOrZero()
-                        ?: BigDecimal.ZERO
-                },
-            )
+            val primaryAsset = assets.firstOrNull { asset -> asset.assetType == "NATIVE" } ?: assets.first()
             val primaryNetwork = networksById[primaryAsset.networkId]
             val cachedMarketPrice = market?.priceLocal
                 ?.toBigDecimalOrZero()
                 ?.takeIf { price -> price > BigDecimal.ZERO }
-            val price = cachedMarketPrice ?: walletRows
-                .map { row -> row.priceFiatValue.toBigDecimalOrZero() }
-                .filter { price -> price > BigDecimal.ZERO }
-                .maxOrNull() ?: BigDecimal.ZERO
-            val balanceValue = walletRows.fold(BigDecimal.ZERO) { total, row ->
-                total + row.balanceFiatValue.toBigDecimalOrZero()
-            }
+            val price = cachedMarketPrice ?: BigDecimal.ZERO
             val networkCount = assets.map { asset -> asset.networkId }.distinct().size
             MarketAssetRow(
                 symbol = symbol,
@@ -3522,36 +3478,22 @@ private fun List<SupportedAsset>.toMarketRows(
                 networkCount = networkCount,
                 iconRes = assetIconRes(symbol),
                 price = formatFiat(price.toPlainString(), localCurrencyCode),
-                balanceValue = formatFiat(balanceValue.toPlainString(), localCurrencyCode),
                 change24hPercent = market?.priceChange24hPercent
                     ?.toBigDecimalOrZero()
                     ?.let(::formatPercent),
                 priceAmount = price,
-                balanceValueAmount = balanceValue,
             )
         }
         .sortedWith(
-            compareByDescending<MarketAssetRow> { row -> row.balanceValueAmount }
-                .thenByDescending { row -> row.priceAmount }
+            compareByDescending<MarketAssetRow> { row -> row.priceAmount }
                 .thenBy { row -> row.name.lowercase(Locale.US) },
         )
 }
 
 private fun AssetMarketDataRecord.toMarketDetailState(
-    walletAssets: List<WalletAssetRecord>,
     localCurrencyCode: String,
     resources: Resources,
 ): MarketDetailState.Content {
-    val catalogAssetsById = SupportedAssetCatalog.assets.associateBy { asset -> asset.assetId }
-    val matchingWalletAssets = walletAssets.filter { walletAsset ->
-        catalogAssetsById[walletAsset.assetId]?.symbol.equals(symbol, ignoreCase = true)
-    }
-    val totalBalance = matchingWalletAssets.fold(BigDecimal.ZERO) { total, asset ->
-        total + asset.balanceDecimal.toBigDecimalOrZero()
-    }
-    val totalFiat = matchingWalletAssets.fold(BigDecimal.ZERO) { total, asset ->
-        total + asset.balanceFiatValue.toBigDecimalOrZero()
-    }
     val displayCurrency = localCurrencyCode.ifBlank { DEFAULT_LOCAL_CURRENCY_CODE }
     val unavailable = resources.getString(R.string.market_detail_unavailable)
     val change = priceChange24hPercent?.toBigDecimalOrZero() ?: BigDecimal.ZERO
@@ -3561,8 +3503,6 @@ private fun AssetMarketDataRecord.toMarketDetailState(
         iconRes = assetIconRes(symbol),
         currencyCode = displayCurrency,
         price = formatFiat(priceLocal, displayCurrency),
-        walletValue = formatFiat(totalFiat.toPlainString(), displayCurrency),
-        walletAmount = "${formatCryptoAmount(totalBalance.toPlainString())} $symbol",
         marketCap = marketCapLocal?.let { formatFiat(it, displayCurrency) } ?: unavailable,
         volume24h = volume24hLocal?.let { formatFiat(it, displayCurrency) } ?: unavailable,
         high24h = high24hUsd?.let { value ->

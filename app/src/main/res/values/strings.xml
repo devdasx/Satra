@@ -261,7 +261,7 @@
     <string name="markets_title">Markets</string>
     <string name="markets_body">Follow cached prices for every supported coin and token in your selected currency.</string>
     <string name="markets_summary_title">Supported price list</string>
-    <string name="markets_summary_body">Satra stores the latest local prices so portfolio values can fall back to the database.</string>
+    <string name="markets_summary_body">Satra stores the latest local prices so market data can fall back to the database.</string>
     <string name="markets_summary_count">%1$d assets</string>
     <string name="markets_search_placeholder">Search supported assets</string>
     <string name="markets_supported_assets_title">Supported assets</string>
@@ -271,7 +271,6 @@
     <string name="market_detail_not_found_title">%1$s market data is unavailable.</string>
     <string name="market_detail_not_found_body">Satra will keep using cached prices and retry public market providers on the next refresh.</string>
     <string name="market_detail_price_label">Price in %1$s</string>
-    <string name="market_detail_wallet_value">%1$s in this wallet · %2$s</string>
     <string name="market_detail_chart_title">7-day price chart</string>
     <string name="market_detail_market_cap">Market cap</string>
     <string name="market_detail_volume_24h">24h volume</string>
