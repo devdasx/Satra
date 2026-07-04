@@ -307,6 +307,8 @@
     <string name="home_assets_count">%1$d assets</string>
     <string name="home_assets_network_count">%1$d networks</string>
     <string name="home_assets_filtered_count">%1$d of %2$d</string>
+    <string name="home_assets_search_placeholder">Search coins and tokens</string>
+    <string name="home_assets_search_clear">Clear asset search</string>
     <string name="home_assets_filter_action">Filter</string>
     <string name="home_assets_filter_title">Filter assets</string>
     <string name="home_assets_filter_body">Choose chain visibility, balance visibility, and how assets are sorted.</string>

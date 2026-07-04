@@ -7,6 +7,8 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -52,6 +54,8 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -418,6 +422,7 @@ private fun SatraHomeDashboard(
 ) {
     var homeState by remember { mutableStateOf<HomeDashboardState>(HomeDashboardState.Loading) }
     var assetFilterState by remember { mutableStateOf(HomeAssetFilterState()) }
+    var assetSearchQuery by remember { mutableStateOf("") }
     var assetFilterSheetVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(walletRepository) {
@@ -484,8 +489,11 @@ private fun SatraHomeDashboard(
         )
         is HomeDashboardState.Content -> state
     }
-    val visibleAssets = remember(content.assets, assetFilterState) {
-        content.assets.applyHomeAssetFilter(assetFilterState)
+    val searchedAssets = remember(content.assets, assetSearchQuery) {
+        content.assets.applyHomeAssetSearch(assetSearchQuery)
+    }
+    val visibleAssets = remember(searchedAssets, assetFilterState) {
+        searchedAssets.applyHomeAssetFilter(assetFilterState)
     }
     val assetNetworks = remember(content.assets) {
         content.assets
@@ -533,8 +541,13 @@ private fun SatraHomeDashboard(
                 HomeAssetsHeader(
                     assetCount = visibleAssets.size,
                     totalAssetCount = content.assets.size,
-                    isFiltered = assetFilterState.isActive,
+                    isFiltered = assetFilterState.isActive || assetSearchQuery.isNotBlank(),
                     onFilterClick = { assetFilterSheetVisible = true },
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                HomeAssetSearchField(
+                    query = assetSearchQuery,
+                    onQueryChange = { query -> assetSearchQuery = query },
                 )
             }
         }
@@ -2340,7 +2353,6 @@ private fun HomeBalanceCard(
 
     Card(
         modifier = Modifier
-            .widthIn(max = HomeBalanceCardMaxWidth)
             .fillMaxWidth(),
         shape = RoundedCornerShape(26.dp),
         colors = CardDefaults.cardColors(
@@ -2820,6 +2832,70 @@ private fun HomeBalanceEyeIcon(
             )
         }
     }
+}
+
+@Composable
+private fun HomeAssetSearchField(
+    query: String,
+    onQueryChange: (String) -> Unit,
+) {
+    TextField(
+        value = query,
+        onValueChange = onQueryChange,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp),
+        textStyle = MaterialTheme.typography.bodyLarge.copy(
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Medium,
+        ),
+        placeholder = {
+            Text(
+                text = stringResource(R.string.home_assets_search_placeholder),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
+        leadingIcon = {
+            Icon(
+                imageVector = Icons.Filled.Search,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        },
+        trailingIcon = if (query.isNotBlank()) {
+            {
+                IconButton(
+                    onClick = { onQueryChange("") },
+                    modifier = Modifier.size(44.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Close,
+                        contentDescription = stringResource(R.string.home_assets_search_clear),
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        } else {
+            null
+        },
+        singleLine = true,
+        shape = RoundedCornerShape(100.dp),
+        colors = TextFieldDefaults.colors(
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+            disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+            disabledIndicatorColor = Color.Transparent,
+            cursorColor = MaterialTheme.colorScheme.primary,
+        ),
+    )
 }
 
 @Composable
@@ -3698,6 +3774,22 @@ private fun List<WalletAssetRecord>.toHomeAssetRows(localCurrencyCode: String): 
         .applyHomeAssetFilter(HomeAssetFilterState())
 }
 
+private fun List<HomeAssetRow>.applyHomeAssetSearch(query: String): List<HomeAssetRow> {
+    val normalizedQuery = query.trim().lowercase(Locale.US)
+    if (normalizedQuery.isBlank()) return this
+    return filter { row ->
+        row.name.lowercase(Locale.US).contains(normalizedQuery) ||
+            row.symbol.lowercase(Locale.US).contains(normalizedQuery) ||
+            row.network.lowercase(Locale.US).contains(normalizedQuery) ||
+            row.assetId.lowercase(Locale.US).contains(normalizedQuery) ||
+            row.assetIds.any { assetId -> assetId.lowercase(Locale.US).contains(normalizedQuery) } ||
+            row.networkIds.any { networkId -> networkId.lowercase(Locale.US).contains(normalizedQuery) } ||
+            row.networks.any { (_, networkName) ->
+                networkName.lowercase(Locale.US).contains(normalizedQuery)
+            }
+    }
+}
+
 private fun formatCryptoAmount(value: String): String {
     val decimal = value.toBigDecimalOrZero()
         .setScale(CRYPTO_DISPLAY_DECIMALS, RoundingMode.DOWN)
@@ -4084,7 +4176,6 @@ internal object SatraMainRoute {
 }
 
 private val HomeContentMaxWidth = 720.dp
-private val HomeBalanceCardMaxWidth = 340.dp
 private const val BALANCE_CARD_PREFS_NAME = "satra_balance_card"
 private const val BALANCE_CARD_HIDDEN_KEY = "satra.balanceHidden"
 private const val CRYPTO_DISPLAY_DECIMALS = 8
