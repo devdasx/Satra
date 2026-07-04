@@ -92,6 +92,38 @@ class SatraDatabaseOpenHelper(
             migratedVersion = 3
         }
 
+        if (migratedVersion < 4) {
+            db.execSQL(
+                """
+                CREATE TABLE ${SatraDatabaseContract.TABLE_ASSET_MARKET_DATA} (
+                    symbol TEXT NOT NULL PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    coin_gecko_id TEXT,
+                    local_currency_code TEXT NOT NULL DEFAULT '$DEFAULT_LOCAL_CURRENCY_CODE',
+                    price_usd TEXT NOT NULL DEFAULT '0',
+                    price_local TEXT NOT NULL DEFAULT '0',
+                    market_cap_usd TEXT,
+                    market_cap_local TEXT,
+                    volume_24h_usd TEXT,
+                    volume_24h_local TEXT,
+                    high_24h_usd TEXT,
+                    low_24h_usd TEXT,
+                    price_change_24h_percent TEXT,
+                    description TEXT,
+                    homepage_url TEXT,
+                    provider TEXT NOT NULL,
+                    chart_7d_json TEXT NOT NULL DEFAULT '[]',
+                    updated_at INTEGER NOT NULL,
+                    metadata_json TEXT NOT NULL DEFAULT '$EMPTY_JSON'
+                )
+                """.trimIndent(),
+            )
+            db.execSQL(
+                "CREATE INDEX index_asset_market_data_updated_at ON ${SatraDatabaseContract.TABLE_ASSET_MARKET_DATA}(updated_at)",
+            )
+            migratedVersion = 4
+        }
+
         if (migratedVersion != newVersion) {
             error("No migration from $migratedVersion to $newVersion is defined yet.")
         }

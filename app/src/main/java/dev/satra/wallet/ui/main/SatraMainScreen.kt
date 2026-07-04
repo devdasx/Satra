@@ -83,6 +83,8 @@ import androidx.navigation.compose.rememberNavController
 import dev.satra.wallet.data.assets.SupportedAsset
 import dev.satra.wallet.R
 import dev.satra.wallet.data.assets.SupportedAssetCatalog
+import dev.satra.wallet.data.db.AssetMarketDataRecord
+import dev.satra.wallet.data.db.DEFAULT_LOCAL_CURRENCY_CODE
 import dev.satra.wallet.data.db.SatraWalletRepository
 import dev.satra.wallet.data.db.WalletAssetRecord
 import dev.satra.wallet.data.db.WalletRecord
@@ -165,7 +167,12 @@ fun SatraMainScreen(
                 )
             }
             composable(SatraMainTab.Markets.route) {
-                SatraMarketsScreen(walletRepository = walletRepository)
+                SatraMarketsScreen(
+                    walletRepository = walletRepository,
+                    onAssetClick = { symbol ->
+                        tabNavController.navigate(SatraMainRoute.marketDetail(symbol))
+                    },
+                )
             }
             composable(SatraMainTab.Settings.route) {
                 SatraSettingsRootScreen(
@@ -308,6 +315,14 @@ fun SatraMainScreen(
                 SatraTransactionDetailScreen(
                     walletRepository = walletRepository,
                     transactionId = transactionId,
+                    onBack = { tabNavController.popBackStack() },
+                )
+            }
+            composable(SatraMainRoute.MarketDetailPattern) { entry ->
+                val symbol = entry.arguments?.getString(SatraMainRoute.ArgSymbol).orEmpty()
+                SatraMarketDetailScreen(
+                    walletRepository = walletRepository,
+                    symbol = symbol,
                     onBack = { tabNavController.popBackStack() },
                 )
             }
@@ -951,6 +966,7 @@ private fun TransactionDetailRowItem(
 @Composable
 private fun SatraMarketsScreen(
     walletRepository: SatraWalletRepository,
+    onAssetClick: (String) -> Unit,
 ) {
     var state by remember {
         mutableStateOf<MarketsScreenState>(MarketsScreenState.Loading)
@@ -958,22 +974,39 @@ private fun SatraMarketsScreen(
 
     LaunchedEffect(walletRepository) {
         val wallet = walletRepository.getPrimaryWallet()
-        if (wallet == null) {
+        val appSettings = walletRepository.getAppSettings()
+        val currencyCode = wallet?.localCurrencyCode ?: appSettings.localCurrencyCode
+        val walletAssets = wallet?.let { walletRepository.getWalletAssets(it.walletId) }.orEmpty()
+        val cachedMarketData = walletRepository.getAllAssetMarketData()
+        state = MarketsScreenState.Content(
+            currencyCode = currencyCode,
+            rows = SupportedAssetCatalog.assets.toMarketRows(
+                walletAssets = walletAssets,
+                marketData = cachedMarketData,
+                localCurrencyCode = currencyCode,
+            ),
+        )
+
+        walletRepository.syncMarketData(currencyCode)
+        val refreshedMarketData = walletRepository.getAllAssetMarketData()
+        val refreshedWalletAssets = wallet?.let { walletRepository.getWalletAssets(it.walletId) }.orEmpty()
+        if (wallet == null && refreshedMarketData.isEmpty()) {
             state = MarketsScreenState.Content(
-                currencyCode = "USD",
+                currencyCode = currencyCode,
                 rows = SupportedAssetCatalog.assets.toMarketRows(
                     walletAssets = emptyList(),
-                    localCurrencyCode = "USD",
+                    marketData = emptyList(),
+                    localCurrencyCode = currencyCode,
                 ),
             )
             return@LaunchedEffect
         }
-        val walletAssets = walletRepository.getWalletAssets(wallet.walletId)
         state = MarketsScreenState.Content(
-            currencyCode = wallet.localCurrencyCode,
+            currencyCode = currencyCode,
             rows = SupportedAssetCatalog.assets.toMarketRows(
-                walletAssets = walletAssets,
-                localCurrencyCode = wallet.localCurrencyCode,
+                walletAssets = refreshedWalletAssets,
+                marketData = refreshedMarketData,
+                localCurrencyCode = currencyCode,
             ),
         )
     }
@@ -1014,6 +1047,7 @@ private fun SatraMarketsScreen(
         ) { row ->
             MarketsAssetRow(
                 row = row,
+                onClick = { onAssetClick(row.symbol) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .widthIn(max = HomeContentMaxWidth)
@@ -1160,6 +1194,7 @@ private fun MarketsListHeader(
 @Composable
 private fun MarketsAssetRow(
     row: MarketAssetRow,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -1167,6 +1202,7 @@ private fun MarketsAssetRow(
             .height(72.dp)
             .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.surface)
+            .clickable(onClick = onClick)
             .padding(horizontal = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -1220,6 +1256,399 @@ private fun MarketsAssetRow(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
             )
+            row.change24hPercent?.let { change ->
+                Text(
+                    text = change,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (change.startsWith("-")) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.tertiary
+                    },
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SatraMarketDetailScreen(
+    walletRepository: SatraWalletRepository,
+    symbol: String,
+    onBack: () -> Unit,
+) {
+    val resources = LocalContext.current.resources
+    var state by remember(symbol) {
+        mutableStateOf<MarketDetailState>(MarketDetailState.Loading)
+    }
+    val normalizedSymbol = remember(symbol) { Uri.decode(symbol).uppercase(Locale.US) }
+
+    LaunchedEffect(walletRepository, normalizedSymbol) {
+        val wallet = walletRepository.getPrimaryWallet()
+        val currencyCode = wallet?.localCurrencyCode ?: walletRepository.getAppSettings().localCurrencyCode
+        val walletAssets = wallet?.let { walletRepository.getWalletAssets(it.walletId) }.orEmpty()
+        walletRepository.getAssetMarketData(normalizedSymbol)?.let { cached ->
+            state = cached.toMarketDetailState(
+                walletAssets = walletAssets,
+                localCurrencyCode = currencyCode,
+                resources = resources,
+            )
+        }
+        val refreshed = walletRepository.syncAssetMarketDetail(
+            symbol = normalizedSymbol,
+            localCurrencyCode = currencyCode,
+        )
+        state = (refreshed ?: walletRepository.getAssetMarketData(normalizedSymbol))
+            ?.toMarketDetailState(
+                walletAssets = walletAssets,
+                localCurrencyCode = currencyCode,
+                resources = resources,
+            )
+            ?: MarketDetailState.NotFound(normalizedSymbol)
+    }
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        item {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = HomeContentMaxWidth)
+                    .padding(horizontal = 20.dp, vertical = 20.dp),
+            ) {
+                MarketDetailHeader(onBack = onBack)
+                Spacer(modifier = Modifier.height(18.dp))
+                when (val current = state) {
+                    MarketDetailState.Loading -> MarketDetailLoadingCard()
+                    is MarketDetailState.NotFound -> MarketDetailNotFoundCard(symbol = current.symbol)
+                    is MarketDetailState.Content -> {
+                        MarketDetailHeroCard(content = current)
+                        Spacer(modifier = Modifier.height(14.dp))
+                        MarketDetailChartCard(content = current)
+                        Spacer(modifier = Modifier.height(14.dp))
+                        MarketDetailStatsCard(content = current)
+                        Spacer(modifier = Modifier.height(14.dp))
+                        MarketDetailDescriptionCard(content = current)
+                    }
+                }
+            }
+        }
+        item { Spacer(modifier = Modifier.height(20.dp)) }
+    }
+}
+
+@Composable
+private fun MarketDetailHeader(
+    onBack: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(onClick = onBack) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = stringResource(R.string.settings_back_content_description),
+                tint = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = stringResource(R.string.market_detail_title),
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun MarketDetailLoadingCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(18.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(18.dp),
+                strokeWidth = 2.dp,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = stringResource(R.string.market_detail_loading),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun MarketDetailNotFoundCard(
+    symbol: String,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+    ) {
+        Column(
+            modifier = Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.market_detail_not_found_title, symbol),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = stringResource(R.string.market_detail_not_found_body),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun MarketDetailHeroCard(
+    content: MarketDetailState.Content,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.inverseSurface,
+        ),
+    ) {
+        Column(modifier = Modifier.padding(18.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Image(
+                    painter = painterResource(content.iconRes),
+                    contentDescription = null,
+                    modifier = Modifier.size(54.dp),
+                )
+                Spacer(modifier = Modifier.width(14.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = content.name,
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.inverseOnSurface,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = content.symbol,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.inverseOnSurface.copy(alpha = 0.72f),
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+                Text(
+                    text = content.change24hPercent,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = if (content.change24hAmount.signum() < 0) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.tertiary
+                    },
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+            Spacer(modifier = Modifier.height(18.dp))
+            Text(
+                text = stringResource(R.string.market_detail_price_label, content.currencyCode),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.inverseOnSurface.copy(alpha = 0.62f),
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = content.price,
+                style = MaterialTheme.typography.displaySmall,
+                color = MaterialTheme.colorScheme.inverseOnSurface,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(R.string.market_detail_wallet_value, content.walletValue, content.walletAmount),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.inverseOnSurface.copy(alpha = 0.72f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun MarketDetailChartCard(
+    content: MarketDetailState.Content,
+) {
+    var selectedPointIndex by remember(content.chartData.points) {
+        mutableStateOf((content.chartData.points.size - 1).coerceAtLeast(0))
+    }
+    val selectedPoint = content.chartData.points.getOrNull(selectedPointIndex)
+        ?: content.chartData.points.lastOrNull()
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+    ) {
+        Column(modifier = Modifier.padding(18.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top,
+            ) {
+                Column {
+                    Text(
+                        text = stringResource(R.string.market_detail_chart_title),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = selectedPoint?.value?.toPlainString()?.let { formatFiat(it, content.currencyCode) }
+                            ?: content.price,
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+                Text(
+                    text = selectedPoint?.let { formatChartPointTime(it.timestampMillis, HomeChartRange.OneWeek) }
+                        ?: stringResource(R.string.home_chart_range_1w),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            HomeBalanceChart(
+                chartData = content.chartData,
+                selectedPointIndex = selectedPointIndex,
+                onPointSelected = { index -> selectedPointIndex = index },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(2.35f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun MarketDetailStatsCard(
+    content: MarketDetailState.Content,
+) {
+    val rows = listOf(
+        R.string.market_detail_market_cap to content.marketCap,
+        R.string.market_detail_volume_24h to content.volume24h,
+        R.string.market_detail_high_24h to content.high24h,
+        R.string.market_detail_low_24h to content.low24h,
+        R.string.market_detail_provider to content.provider,
+        R.string.market_detail_updated to content.updatedAt,
+    )
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+    ) {
+        Column(modifier = Modifier.padding(18.dp)) {
+            rows.forEachIndexed { index, row ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = stringResource(row.first),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = row.second,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.End,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                if (index != rows.lastIndex) {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 12.dp),
+                        color = MaterialTheme.colorScheme.outline,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MarketDetailDescriptionCard(
+    content: MarketDetailState.Content,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+    ) {
+        Column(
+            modifier = Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.market_detail_about_asset, content.symbol),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = content.description,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            content.homepageUrl?.let { url ->
+                Text(
+                    text = url,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
         }
     }
 }
@@ -2651,9 +3080,39 @@ private data class MarketAssetRow(
     @DrawableRes val iconRes: Int,
     val price: String,
     val balanceValue: String,
+    val change24hPercent: String?,
     val priceAmount: BigDecimal,
     val balanceValueAmount: BigDecimal,
 )
+
+private sealed interface MarketDetailState {
+    data object Loading : MarketDetailState
+
+    data class NotFound(
+        val symbol: String,
+    ) : MarketDetailState
+
+    data class Content(
+        val symbol: String,
+        val name: String,
+        @DrawableRes val iconRes: Int,
+        val currencyCode: String,
+        val price: String,
+        val walletValue: String,
+        val walletAmount: String,
+        val marketCap: String,
+        val volume24h: String,
+        val high24h: String,
+        val low24h: String,
+        val change24hPercent: String,
+        val change24hAmount: BigDecimal,
+        val description: String,
+        val homepageUrl: String?,
+        val provider: String,
+        val updatedAt: String,
+        val chartData: HomeBalanceChartData,
+    ) : MarketDetailState
+}
 
 private data class RawHomeAssetRow(
     val assetId: String,
@@ -2824,12 +3283,15 @@ private fun WalletRecord.toTokenDetailState(
 
 private fun List<SupportedAsset>.toMarketRows(
     walletAssets: List<WalletAssetRecord>,
+    marketData: List<AssetMarketDataRecord>,
     localCurrencyCode: String,
 ): List<MarketAssetRow> {
     val walletAssetsById = walletAssets.associateBy { asset -> asset.assetId }
+    val marketDataBySymbol = marketData.associateBy { record -> record.symbol.uppercase(Locale.US) }
     val networksById = SupportedAssetCatalog.networks.associateBy { network -> network.networkId }
     return groupBy { asset -> asset.symbol.uppercase(Locale.US) }
         .map { (symbol, assets) ->
+            val market = marketDataBySymbol[symbol]
             val walletRows = assets.mapNotNull { asset -> walletAssetsById[asset.assetId] }
             val primaryAsset = assets.maxWith(
                 compareBy<SupportedAsset> { asset ->
@@ -2841,7 +3303,10 @@ private fun List<SupportedAsset>.toMarketRows(
                 },
             )
             val primaryNetwork = networksById[primaryAsset.networkId]
-            val price = walletRows
+            val cachedMarketPrice = market?.priceLocal
+                ?.toBigDecimalOrZero()
+                ?.takeIf { price -> price > BigDecimal.ZERO }
+            val price = cachedMarketPrice ?: walletRows
                 .map { row -> row.priceFiatValue.toBigDecimalOrZero() }
                 .filter { price -> price > BigDecimal.ZERO }
                 .maxOrNull() ?: BigDecimal.ZERO
@@ -2857,6 +3322,9 @@ private fun List<SupportedAsset>.toMarketRows(
                 iconRes = assetIconRes(symbol),
                 price = formatFiat(price.toPlainString(), localCurrencyCode),
                 balanceValue = formatFiat(balanceValue.toPlainString(), localCurrencyCode),
+                change24hPercent = market?.priceChange24hPercent
+                    ?.toBigDecimalOrZero()
+                    ?.let(::formatPercent),
                 priceAmount = price,
                 balanceValueAmount = balanceValue,
             )
@@ -2866,6 +3334,62 @@ private fun List<SupportedAsset>.toMarketRows(
                 .thenByDescending { row -> row.priceAmount }
                 .thenBy { row -> row.name.lowercase(Locale.US) },
         )
+}
+
+private fun AssetMarketDataRecord.toMarketDetailState(
+    walletAssets: List<WalletAssetRecord>,
+    localCurrencyCode: String,
+    resources: Resources,
+): MarketDetailState.Content {
+    val catalogAssetsById = SupportedAssetCatalog.assets.associateBy { asset -> asset.assetId }
+    val matchingWalletAssets = walletAssets.filter { walletAsset ->
+        catalogAssetsById[walletAsset.assetId]?.symbol.equals(symbol, ignoreCase = true)
+    }
+    val totalBalance = matchingWalletAssets.fold(BigDecimal.ZERO) { total, asset ->
+        total + asset.balanceDecimal.toBigDecimalOrZero()
+    }
+    val totalFiat = matchingWalletAssets.fold(BigDecimal.ZERO) { total, asset ->
+        total + asset.balanceFiatValue.toBigDecimalOrZero()
+    }
+    val displayCurrency = localCurrencyCode.ifBlank { DEFAULT_LOCAL_CURRENCY_CODE }
+    val unavailable = "—"
+    val change = priceChange24hPercent?.toBigDecimalOrZero() ?: BigDecimal.ZERO
+    return MarketDetailState.Content(
+        symbol = symbol,
+        name = name,
+        iconRes = assetIconRes(symbol),
+        currencyCode = displayCurrency,
+        price = formatFiat(priceLocal, displayCurrency),
+        walletValue = formatFiat(totalFiat.toPlainString(), displayCurrency),
+        walletAmount = "${formatCryptoAmount(totalBalance.toPlainString())} $symbol",
+        marketCap = marketCapLocal?.let { formatFiat(it, displayCurrency) } ?: unavailable,
+        volume24h = volume24hLocal?.let { formatFiat(it, displayCurrency) } ?: unavailable,
+        high24h = high24hUsd?.let { value ->
+            val local = value.toBigDecimalOrZero()
+                .multiply(priceLocal.toBigDecimalOrZero())
+                .divide(priceUsd.toBigDecimalOrZero().takeIf { it > BigDecimal.ZERO } ?: BigDecimal.ONE, 12, RoundingMode.HALF_UP)
+            formatFiat(local.toPlainString(), displayCurrency)
+        } ?: unavailable,
+        low24h = low24hUsd?.let { value ->
+            val local = value.toBigDecimalOrZero()
+                .multiply(priceLocal.toBigDecimalOrZero())
+                .divide(priceUsd.toBigDecimalOrZero().takeIf { it > BigDecimal.ZERO } ?: BigDecimal.ONE, 12, RoundingMode.HALF_UP)
+            formatFiat(local.toPlainString(), displayCurrency)
+        } ?: unavailable,
+        change24hPercent = formatPercent(change),
+        change24hAmount = change,
+        description = description
+            ?.takeIf(String::isNotBlank)
+            ?: resources.getString(R.string.market_detail_description_unavailable),
+        homepageUrl = homepageUrl,
+        provider = provider,
+        updatedAt = formatActivityTime(updatedAt, resources),
+        chartData = buildMarketPriceChartData(
+            chart7dJson = chart7dJson,
+            fallbackPrice = priceLocal.toBigDecimalOrZero(),
+            nowMillis = System.currentTimeMillis(),
+        ),
+    )
 }
 
 private fun List<WalletAssetRecord>.toTokenNetworkBalanceRows(localCurrencyCode: String): List<TokenNetworkBalanceRow> {
@@ -3075,6 +3599,58 @@ private fun formatSignedFiat(
         value.signum() < 0 -> "-${formatFiat(value.abs().toPlainString(), currencyCode)}"
         else -> formatFiat("0", currencyCode)
     }
+
+private fun buildMarketPriceChartData(
+    chart7dJson: String,
+    fallbackPrice: BigDecimal,
+    nowMillis: Long,
+): HomeBalanceChartData {
+    val prices = runCatching {
+        val json = org.json.JSONArray(chart7dJson)
+        buildList {
+            for (index in 0 until json.length()) {
+                json.opt(index)
+                    ?.takeUnless { it == JSONObject.NULL }
+                    ?.toString()
+                    ?.toBigDecimalOrNull()
+                    ?.let(::add)
+            }
+        }
+    }.getOrDefault(emptyList())
+        .ifEmpty { listOf(fallbackPrice) }
+    val rangeStart = nowMillis - (HomeChartRange.OneWeek.durationMillis ?: 0L)
+    val stepMillis = if (prices.size <= 1) {
+        0L
+    } else {
+        (nowMillis - rangeStart) / (prices.size - 1)
+    }
+    val points = prices.mapIndexed { index, price ->
+        HomeBalanceChartPoint(
+            timestampMillis = if (prices.size <= 1) nowMillis else rangeStart + stepMillis * index,
+            value = price,
+        )
+    }
+    val startValue = points.firstOrNull()?.value ?: fallbackPrice
+    val currentValue = points.lastOrNull()?.value ?: fallbackPrice
+    val changeValue = currentValue - startValue
+    val percent = if (startValue.compareTo(BigDecimal.ZERO) == 0) {
+        BigDecimal.ZERO
+    } else {
+        changeValue
+            .divide(startValue.abs(), 6, RoundingMode.HALF_UP)
+            .multiply(BigDecimal("100"))
+            .stripTrailingZeros()
+    }
+    return HomeBalanceChartData(
+        range = HomeChartRange.OneWeek,
+        points = points,
+        startValue = startValue,
+        currentValue = currentValue,
+        changeValue = changeValue,
+        percentChange = percent,
+        transactionCount = points.size,
+    )
+}
 
 private fun formatPercent(value: BigDecimal): String {
     val normalized = value.setScale(2, java.math.RoundingMode.HALF_UP).stripTrailingZeros()
@@ -3319,6 +3895,7 @@ internal object SatraMainRoute {
     const val SendNetworkPattern = "main/send/network/{$ArgSymbol}"
     const val SendComposerPattern = "main/send/compose/{$ArgAssetId}"
     const val TransactionDetailPattern = "main/activity/transaction/{$ArgTransactionId}"
+    const val MarketDetailPattern = "main/markets/asset/{$ArgSymbol}"
     const val AddressBook = "main/settings/address-book"
     const val Preferences = "main/settings/preferences"
     const val Currency = "main/settings/preferences/currency"
@@ -3348,6 +3925,9 @@ internal object SatraMainRoute {
 
     fun transactionDetail(transactionId: String): String =
         "main/activity/transaction/${Uri.encode(transactionId)}"
+
+    fun marketDetail(symbol: String): String =
+        "main/markets/asset/${Uri.encode(symbol)}"
 }
 
 private val HomeContentMaxWidth = 720.dp

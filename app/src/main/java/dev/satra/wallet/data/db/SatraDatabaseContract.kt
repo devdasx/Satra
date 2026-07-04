@@ -2,7 +2,7 @@ package dev.satra.wallet.data.db
 
 object SatraDatabaseContract {
     const val DATABASE_NAME = "satra_wallet.db"
-    const val DATABASE_VERSION = 3
+    const val DATABASE_VERSION = 4
 
     const val TABLE_SUPPORTED_NETWORKS = "supported_networks"
     const val TABLE_SUPPORTED_ASSETS = "supported_assets"
@@ -13,6 +13,7 @@ object SatraDatabaseContract {
     const val TABLE_WALLET_ADDRESSES = "wallet_addresses"
     const val TABLE_WALLET_PRIVATE_KEYS = "wallet_private_keys"
     const val TABLE_WALLET_TRANSACTIONS = "wallet_transactions"
+    const val TABLE_ASSET_MARKET_DATA = "asset_market_data"
 
     val createStatements = listOf(
         """
@@ -215,6 +216,29 @@ object SatraDatabaseContract {
             FOREIGN KEY(fee_asset_id) REFERENCES $TABLE_SUPPORTED_ASSETS(asset_id) ON DELETE RESTRICT
         )
         """,
+        """
+        CREATE TABLE $TABLE_ASSET_MARKET_DATA (
+            symbol TEXT NOT NULL PRIMARY KEY,
+            name TEXT NOT NULL,
+            coin_gecko_id TEXT,
+            local_currency_code TEXT NOT NULL DEFAULT '$DEFAULT_LOCAL_CURRENCY_CODE',
+            price_usd TEXT NOT NULL DEFAULT '0',
+            price_local TEXT NOT NULL DEFAULT '0',
+            market_cap_usd TEXT,
+            market_cap_local TEXT,
+            volume_24h_usd TEXT,
+            volume_24h_local TEXT,
+            high_24h_usd TEXT,
+            low_24h_usd TEXT,
+            price_change_24h_percent TEXT,
+            description TEXT,
+            homepage_url TEXT,
+            provider TEXT NOT NULL,
+            chart_7d_json TEXT NOT NULL DEFAULT '[]',
+            updated_at INTEGER NOT NULL,
+            metadata_json TEXT NOT NULL DEFAULT '$EMPTY_JSON'
+        )
+        """,
     ).map { it.trimIndent() }
 
     val indexStatements = listOf(
@@ -228,5 +252,6 @@ object SatraDatabaseContract {
         "CREATE INDEX index_wallet_transactions_wallet_time ON $TABLE_WALLET_TRANSACTIONS(wallet_id, timestamp)",
         "CREATE INDEX index_wallet_transactions_hash ON $TABLE_WALLET_TRANSACTIONS(transaction_hash)",
         "CREATE INDEX index_wallet_transactions_status ON $TABLE_WALLET_TRANSACTIONS(status)",
+        "CREATE INDEX index_asset_market_data_updated_at ON $TABLE_ASSET_MARKET_DATA(updated_at)",
     )
 }

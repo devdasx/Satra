@@ -220,6 +220,50 @@ data class WalletTransactionRecord(
     val metadataJson: String,
 )
 
+data class AssetMarketDataRecord(
+    val symbol: String,
+    val name: String,
+    val coinGeckoId: String?,
+    val localCurrencyCode: String,
+    val priceUsd: String,
+    val priceLocal: String,
+    val marketCapUsd: String?,
+    val marketCapLocal: String?,
+    val volume24hUsd: String?,
+    val volume24hLocal: String?,
+    val high24hUsd: String?,
+    val low24hUsd: String?,
+    val priceChange24hPercent: String?,
+    val description: String?,
+    val homepageUrl: String?,
+    val provider: String,
+    val chart7dJson: String,
+    val updatedAt: Long,
+    val metadataJson: String,
+)
+
+data class NewAssetMarketDataRecord(
+    val symbol: String,
+    val name: String,
+    val coinGeckoId: String? = null,
+    val localCurrencyCode: String = DEFAULT_LOCAL_CURRENCY_CODE,
+    val priceUsd: String,
+    val priceLocal: String,
+    val marketCapUsd: String? = null,
+    val marketCapLocal: String? = null,
+    val volume24hUsd: String? = null,
+    val volume24hLocal: String? = null,
+    val high24hUsd: String? = null,
+    val low24hUsd: String? = null,
+    val priceChange24hPercent: String? = null,
+    val description: String? = null,
+    val homepageUrl: String? = null,
+    val provider: String,
+    val chart7dJson: String = "[]",
+    val updatedAt: Long,
+    val metadataJson: String = EMPTY_JSON,
+)
+
 data class NewWalletTransactionRecord(
     val walletId: String,
     val assetId: String,

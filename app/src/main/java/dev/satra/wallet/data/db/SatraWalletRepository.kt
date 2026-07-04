@@ -3,6 +3,7 @@ package dev.satra.wallet.data.db
 import android.content.Context
 import dev.satra.wallet.data.assets.SupportedAssetCatalog
 import dev.satra.wallet.data.pricing.SatraAssetPrice
+import dev.satra.wallet.data.pricing.SatraAssetMarketData
 import dev.satra.wallet.data.pricing.SatraPriceSyncResult
 import dev.satra.wallet.data.pricing.SatraPriceSyncService
 import dev.satra.wallet.data.sync.evm.EvmAssetBalance
@@ -299,6 +300,16 @@ class SatraWalletRepository(
             walletDao.getWalletTransactions(walletId)
         }
 
+    suspend fun getAssetMarketData(symbol: String): AssetMarketDataRecord? =
+        withContext(Dispatchers.IO) {
+            walletDao.getAssetMarketData(symbol)
+        }
+
+    suspend fun getAllAssetMarketData(): List<AssetMarketDataRecord> =
+        withContext(Dispatchers.IO) {
+            walletDao.getAllAssetMarketData()
+        }
+
     suspend fun getWalletPrivateKeys(walletId: String): List<WalletPrivateKeyRecord> =
         withContext(Dispatchers.IO) {
             walletDao.getWalletPrivateKeys(walletId)
@@ -504,6 +515,40 @@ class SatraWalletRepository(
             result
         }
 
+    suspend fun syncMarketData(localCurrencyCode: String? = null): SatraPriceSyncResult? =
+        withContext(Dispatchers.IO) {
+            val wallet = walletDao.getWallets().firstOrNull { it.isActive }
+                ?: walletDao.getWallets().firstOrNull()
+            val currencyCode = localCurrencyCode
+                ?: wallet?.localCurrencyCode
+                ?: walletDao.getAppSettings().localCurrencyCode
+            val result = priceSyncService.syncSupportedAssetPricesOrNull(currencyCode)
+            if (wallet != null) {
+                persistWalletPrices(wallet, result)
+            } else {
+                persistMarketData(result?.marketData.orEmpty())
+            }
+            result
+        }
+
+    suspend fun syncAssetMarketDetail(
+        symbol: String,
+        localCurrencyCode: String? = null,
+    ): AssetMarketDataRecord? =
+        withContext(Dispatchers.IO) {
+            val currencyCode = localCurrencyCode
+                ?: walletDao.getWallets().firstOrNull { it.isActive }?.localCurrencyCode
+                ?: walletDao.getAppSettings().localCurrencyCode
+            val detail = priceSyncService.syncAssetMarketDetailOrNull(
+                symbol = symbol,
+                localCurrencyCode = currencyCode,
+            )
+            detail?.let { marketData ->
+                walletDao.upsertAssetMarketData(marketData.toNewAssetMarketDataRecord())
+            }
+            walletDao.getAssetMarketData(symbol)
+        }
+
     suspend fun syncAllWalletPrices(): List<SatraPriceSyncResult?> =
         withContext(Dispatchers.IO) {
             val wallets = walletDao.getWallets()
@@ -698,6 +743,7 @@ class SatraWalletRepository(
         wallet: WalletRecord,
         result: SatraPriceSyncResult?,
     ) {
+        persistMarketData(result?.marketData.orEmpty())
         val walletAssets = walletDao.getWalletAssets(wallet.walletId)
         val pricesByAssetId = result?.prices.orEmpty().associateBy { it.asset.assetId }
         var totalFiat = BigDecimal.ZERO
@@ -737,6 +783,12 @@ class SatraWalletRepository(
             nowMillis = nowMillis,
         )
     }
+
+    private fun persistMarketData(marketData: List<SatraAssetMarketData>) {
+        marketData.forEach { item ->
+            walletDao.upsertAssetMarketData(item.toNewAssetMarketDataRecord())
+        }
+    }
 }
 
 data class SatraWalletDataSyncResult(
@@ -763,6 +815,33 @@ private fun BigDecimal.toRawAmount(decimals: Int): String =
     movePointRight(decimals)
         .setScale(0, RoundingMode.DOWN)
         .toPlainString()
+
+private fun SatraAssetMarketData.toNewAssetMarketDataRecord(): NewAssetMarketDataRecord =
+    NewAssetMarketDataRecord(
+        symbol = symbol,
+        name = name,
+        coinGeckoId = coinGeckoId,
+        localCurrencyCode = localCurrencyCode,
+        priceUsd = usdPrice.toPlainString(),
+        priceLocal = localPrice.toPlainString(),
+        marketCapUsd = marketCapUsd?.toPlainString(),
+        marketCapLocal = marketCapLocal?.toPlainString(),
+        volume24hUsd = volume24hUsd?.toPlainString(),
+        volume24hLocal = volume24hLocal?.toPlainString(),
+        high24hUsd = high24hUsd?.toPlainString(),
+        low24hUsd = low24hUsd?.toPlainString(),
+        priceChange24hPercent = priceChange24hPercent?.toPlainString(),
+        description = description,
+        homepageUrl = homepageUrl,
+        provider = provider,
+        chart7dJson = chart7dJson,
+        updatedAt = syncedAtMillis,
+        metadataJson = JSONObject()
+            .put("source", "market-data-sync")
+            .put("provider", provider)
+            .put("providerAssetId", coinGeckoId)
+            .toString(),
+    )
 
 private fun SatraPendingSendRequest.toMetadataJson(networkId: String): String =
     JSONObject()

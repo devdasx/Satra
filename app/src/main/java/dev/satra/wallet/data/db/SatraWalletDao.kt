@@ -371,6 +371,48 @@ class SatraWalletDao(
             }
         }
 
+    fun upsertAssetMarketData(
+        marketData: NewAssetMarketDataRecord,
+    ) {
+        databaseHelper.writableDatabase.insertWithOnConflict(
+            SatraDatabaseContract.TABLE_ASSET_MARKET_DATA,
+            null,
+            marketData.toContentValues(),
+            SQLiteDatabase.CONFLICT_REPLACE,
+        )
+    }
+
+    fun getAssetMarketData(symbol: String): AssetMarketDataRecord? =
+        databaseHelper.readableDatabase.query(
+            SatraDatabaseContract.TABLE_ASSET_MARKET_DATA,
+            null,
+            "symbol = ?",
+            arrayOf(symbol.uppercase()),
+            null,
+            null,
+            null,
+            "1",
+        ).use { cursor ->
+            if (cursor.moveToFirst()) cursor.toAssetMarketDataRecord() else null
+        }
+
+    fun getAllAssetMarketData(): List<AssetMarketDataRecord> =
+        databaseHelper.readableDatabase.query(
+            SatraDatabaseContract.TABLE_ASSET_MARKET_DATA,
+            null,
+            null,
+            null,
+            null,
+            null,
+            "symbol COLLATE NOCASE ASC",
+        ).use { cursor ->
+            buildList {
+                while (cursor.moveToNext()) {
+                    add(cursor.toAssetMarketDataRecord())
+                }
+            }
+        }
+
     fun getAddressBookEntries(): List<AddressBookEntryRecord> =
         databaseHelper.readableDatabase.query(
             SatraDatabaseContract.TABLE_ADDRESS_BOOK,
@@ -432,6 +474,7 @@ class SatraWalletDao(
         try {
             db.delete(SatraDatabaseContract.TABLE_WALLETS, null, null)
             db.delete(SatraDatabaseContract.TABLE_ADDRESS_BOOK, null, null)
+            db.delete(SatraDatabaseContract.TABLE_ASSET_MARKET_DATA, null, null)
             db.delete(SatraDatabaseContract.TABLE_APP_SETTINGS, null, null)
             insertDefaultAppSettings(db, nowMillis)
             db.setTransactionSuccessful()
@@ -872,6 +915,52 @@ private fun Cursor.toWalletTransactionRecord(): WalletTransactionRecord =
         updatedAt = long("updated_at"),
         metadataJson = string("metadata_json"),
     )
+
+private fun Cursor.toAssetMarketDataRecord(): AssetMarketDataRecord =
+    AssetMarketDataRecord(
+        symbol = string("symbol"),
+        name = string("name"),
+        coinGeckoId = nullableString("coin_gecko_id"),
+        localCurrencyCode = string("local_currency_code"),
+        priceUsd = string("price_usd"),
+        priceLocal = string("price_local"),
+        marketCapUsd = nullableString("market_cap_usd"),
+        marketCapLocal = nullableString("market_cap_local"),
+        volume24hUsd = nullableString("volume_24h_usd"),
+        volume24hLocal = nullableString("volume_24h_local"),
+        high24hUsd = nullableString("high_24h_usd"),
+        low24hUsd = nullableString("low_24h_usd"),
+        priceChange24hPercent = nullableString("price_change_24h_percent"),
+        description = nullableString("description"),
+        homepageUrl = nullableString("homepage_url"),
+        provider = string("provider"),
+        chart7dJson = string("chart_7d_json"),
+        updatedAt = long("updated_at"),
+        metadataJson = string("metadata_json"),
+    )
+
+private fun NewAssetMarketDataRecord.toContentValues(): ContentValues =
+    ContentValues().apply {
+        put("symbol", symbol.uppercase())
+        put("name", name)
+        putNullable("coin_gecko_id", coinGeckoId)
+        put("local_currency_code", localCurrencyCode)
+        put("price_usd", priceUsd)
+        put("price_local", priceLocal)
+        putNullable("market_cap_usd", marketCapUsd)
+        putNullable("market_cap_local", marketCapLocal)
+        putNullable("volume_24h_usd", volume24hUsd)
+        putNullable("volume_24h_local", volume24hLocal)
+        putNullable("high_24h_usd", high24hUsd)
+        putNullable("low_24h_usd", low24hUsd)
+        putNullable("price_change_24h_percent", priceChange24hPercent)
+        putNullable("description", description)
+        putNullable("homepage_url", homepageUrl)
+        put("provider", provider)
+        put("chart_7d_json", chart7dJson)
+        put("updated_at", updatedAt)
+        put("metadata_json", metadataJson)
+    }
 
 private fun NewWalletTransactionRecord.toContentValues(
     transactionId: String,
