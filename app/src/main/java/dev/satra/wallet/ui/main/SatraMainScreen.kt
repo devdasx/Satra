@@ -126,6 +126,9 @@ fun SatraMainScreen(
     settings: SatraSettings,
     appVersion: String,
     setupCompletionFlow: WalletSetupFlow? = null,
+    scannedAddress: String = "",
+    onScanAddressClick: () -> Unit = {},
+    onScannedAddressConsumed: () -> Unit = {},
     onThemePreferenceChange: (SatraThemePreference) -> Unit,
     onHapticsEnabledChange: (Boolean) -> Unit,
     onLanguageTagChange: (String) -> Unit,
@@ -367,7 +370,7 @@ fun SatraMainScreen(
                     walletRepository = walletRepository,
                     onBack = { tabNavController.popBackStack() },
                     onAssetSelected = { assetId ->
-                        tabNavController.navigate(SatraMainRoute.sendComposer(assetId))
+                        tabNavController.navigate(SatraMainRoute.sendRecipient(assetId))
                     },
                     onNetworkRequired = { symbol ->
                         tabNavController.navigate(SatraMainRoute.sendNetwork(symbol))
@@ -381,20 +384,111 @@ fun SatraMainScreen(
                     symbol = symbol,
                     onBack = { tabNavController.popBackStack() },
                     onNetworkSelected = { assetId ->
-                        tabNavController.navigate(SatraMainRoute.sendComposer(assetId))
+                        tabNavController.navigate(SatraMainRoute.sendRecipient(assetId))
+                    },
+                )
+            }
+            composable(SatraMainRoute.SendRecipientPattern) { entry ->
+                val assetId = entry.arguments?.getString(SatraMainRoute.ArgAssetId).orEmpty()
+                SatraSendRecipientScreen(
+                    walletRepository = walletRepository,
+                    assetId = assetId,
+                    scannedAddress = scannedAddress,
+                    onBack = { tabNavController.popBackStack() },
+                    onScanClick = onScanAddressClick,
+                    onScannedAddressConsumed = onScannedAddressConsumed,
+                    onContinue = { selectedAssetId, recipient, warnPoison ->
+                        tabNavController.navigate(
+                            SatraMainRoute.sendAmount(
+                                assetId = selectedAssetId,
+                                recipient = recipient,
+                                warnPoison = warnPoison,
+                            ),
+                        )
+                    },
+                )
+            }
+            composable(SatraMainRoute.SendAmountPattern) { entry ->
+                val assetId = entry.arguments?.getString(SatraMainRoute.ArgAssetId).orEmpty()
+                val recipient = entry.arguments?.getString(SatraMainRoute.ArgRecipient).orEmpty()
+                val warnPoison = entry.arguments?.getString(SatraMainRoute.ArgWarnPoison).toBoolean()
+                SatraSendAmountScreen(
+                    walletRepository = walletRepository,
+                    assetId = assetId,
+                    recipient = recipient,
+                    warnPoison = warnPoison,
+                    onBack = { tabNavController.popBackStack() },
+                    onReview = { selectedAssetId, selectedRecipient, amount, selectedWarnPoison ->
+                        tabNavController.navigate(
+                            SatraMainRoute.sendReview(
+                                assetId = selectedAssetId,
+                                recipient = selectedRecipient,
+                                amount = amount,
+                                warnPoison = selectedWarnPoison,
+                            ),
+                        )
+                    },
+                )
+            }
+            composable(SatraMainRoute.SendReviewPattern) { entry ->
+                val assetId = entry.arguments?.getString(SatraMainRoute.ArgAssetId).orEmpty()
+                val recipient = entry.arguments?.getString(SatraMainRoute.ArgRecipient).orEmpty()
+                val amount = entry.arguments?.getString(SatraMainRoute.ArgAmount).orEmpty()
+                val warnPoison = entry.arguments?.getString(SatraMainRoute.ArgWarnPoison).toBoolean()
+                SatraSendReviewScreen(
+                    walletRepository = walletRepository,
+                    assetId = assetId,
+                    recipient = recipient,
+                    amount = amount,
+                    warnPoison = warnPoison,
+                    onBack = { tabNavController.popBackStack() },
+                    onSent = { transactionId ->
+                        tabNavController.navigate(SatraMainRoute.sendSent(transactionId)) {
+                            popUpTo(SatraMainRoute.SendAsset) {
+                                inclusive = false
+                            }
+                        }
+                    },
+                )
+            }
+            composable(SatraMainRoute.SendSentPattern) { entry ->
+                val transactionId = entry.arguments?.getString(SatraMainRoute.ArgTransactionId).orEmpty()
+                SatraSendSentScreen(
+                    walletRepository = walletRepository,
+                    transactionId = transactionId,
+                    onDone = {
+                        tabNavController.navigate(SatraMainTab.Home.route) {
+                            popUpTo(SatraMainTab.Home.route) {
+                                inclusive = false
+                            }
+                            launchSingleTop = true
+                        }
+                    },
+                    onSendAnother = {
+                        tabNavController.navigate(SatraMainRoute.SendAsset) {
+                            popUpTo(SatraMainRoute.SendAsset) {
+                                inclusive = true
+                            }
+                        }
                     },
                 )
             }
             composable(SatraMainRoute.SendComposerPattern) { entry ->
                 val assetId = entry.arguments?.getString(SatraMainRoute.ArgAssetId).orEmpty()
-                SatraSendComposerScreen(
+                SatraSendRecipientScreen(
                     walletRepository = walletRepository,
                     assetId = assetId,
+                    scannedAddress = scannedAddress,
                     onBack = { tabNavController.popBackStack() },
-                    onDone = {
-                        tabNavController.popBackStack(
-                            route = SatraMainTab.Home.route,
-                            inclusive = false,
+                    onScanClick = onScanAddressClick,
+                    onScannedAddressConsumed = onScannedAddressConsumed,
+                    onContinue = { selectedAssetId, recipient, warnPoison ->
+                        tabNavController.navigate(
+                            SatraMainRoute.sendAmount(
+                                assetId = selectedAssetId,
+                                recipient = recipient,
+                                warnPoison = warnPoison,
+                            ),
                         )
                     },
                 )
@@ -4335,11 +4429,18 @@ internal object SatraMainRoute {
     const val ArgSymbol = "symbol"
     const val ArgAssetId = "assetId"
     const val ArgTransactionId = "transactionId"
+    const val ArgRecipient = "recipient"
+    const val ArgAmount = "amount"
+    const val ArgWarnPoison = "warnPoison"
     const val TokenDetailPattern = "main/token/{$ArgSymbol}"
     const val ReceiveNetworkPattern = "main/receive/network/{$ArgSymbol}"
     const val ReceiveQrPattern = "main/receive/qr/{$ArgAssetId}"
     const val SendNetworkPattern = "main/send/network/{$ArgSymbol}"
     const val SendComposerPattern = "main/send/compose/{$ArgAssetId}"
+    const val SendRecipientPattern = "main/send/recipient/{$ArgAssetId}"
+    const val SendAmountPattern = "main/send/amount/{$ArgAssetId}/{$ArgRecipient}/{$ArgWarnPoison}"
+    const val SendReviewPattern = "main/send/review/{$ArgAssetId}/{$ArgRecipient}/{$ArgAmount}/{$ArgWarnPoison}"
+    const val SendSentPattern = "main/send/sent/{$ArgTransactionId}"
     const val TransactionDetailPattern = "main/activity/transaction/{$ArgTransactionId}"
     const val MarketDetailPattern = "main/markets/asset/{$ArgSymbol}"
     const val AddressBook = "main/settings/address-book"
@@ -4367,7 +4468,28 @@ internal object SatraMainRoute {
         "main/send/network/${Uri.encode(symbol)}"
 
     fun sendComposer(assetId: String): String =
-        "main/send/compose/${Uri.encode(assetId)}"
+        sendRecipient(assetId)
+
+    fun sendRecipient(assetId: String): String =
+        "main/send/recipient/${Uri.encode(assetId)}"
+
+    fun sendAmount(
+        assetId: String,
+        recipient: String,
+        warnPoison: Boolean,
+    ): String =
+        "main/send/amount/${Uri.encode(assetId)}/${Uri.encode(recipient)}/$warnPoison"
+
+    fun sendReview(
+        assetId: String,
+        recipient: String,
+        amount: String,
+        warnPoison: Boolean,
+    ): String =
+        "main/send/review/${Uri.encode(assetId)}/${Uri.encode(recipient)}/${Uri.encode(amount)}/$warnPoison"
+
+    fun sendSent(transactionId: String): String =
+        "main/send/sent/${Uri.encode(transactionId)}"
 
     fun transactionDetail(transactionId: String): String =
         "main/activity/transaction/${Uri.encode(transactionId)}"

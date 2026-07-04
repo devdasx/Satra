@@ -786,11 +786,24 @@ class MainActivity : FragmentActivity() {
                         val setupCompletionFlow = setupResultSegment
                             ?.takeIf(String::isNotBlank)
                             ?.let(WalletSetupFlow::fromRoute)
+                        val scannedAddress by backStackEntry.savedStateHandle
+                            .getStateFlow(SatraRoute.SCAN_RESULT_VALUE, "")
+                            .collectAsState()
                         SatraMainScreen(
                             walletRepository = walletRepository,
                             settings = settings,
                             appVersion = BuildConfig.VERSION_NAME,
                             setupCompletionFlow = setupCompletionFlow,
+                            scannedAddress = scannedAddress,
+                            onScanAddressClick = {
+                                navController.navigate(SatraRoute.scanner(SatraScanPurpose.Address))
+                            },
+                            onScannedAddressConsumed = {
+                                backStackEntry.savedStateHandle.set(SatraRoute.SCAN_RESULT_VALUE, "")
+                                backStackEntry.savedStateHandle.set(SatraRoute.SCAN_RESULT_KIND, "")
+                                backStackEntry.savedStateHandle.set(SatraRoute.SCAN_RESULT_AMOUNT, "")
+                                backStackEntry.savedStateHandle.set(SatraRoute.SCAN_RESULT_SCHEME, "")
+                            },
                             onThemePreferenceChange = { preference ->
                                 themePreference = preference
                                 settingsStore.edit()
