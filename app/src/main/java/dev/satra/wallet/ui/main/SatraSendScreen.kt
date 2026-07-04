@@ -68,6 +68,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
+import java.math.RoundingMode
 import java.text.NumberFormat
 import java.util.Currency
 import java.util.Locale
@@ -785,7 +786,7 @@ private fun SendReviewCard(
         )
         SendReviewLine(
             label = stringResource(R.string.send_review_amount),
-            value = amount?.let { "${it.stripTrailingZeros().toPlainString()} ${row.asset.symbol}" }
+            value = amount?.let { "${formatCryptoAmount(it)} ${row.asset.symbol}" }
                 ?: stringResource(R.string.send_review_pending),
         )
         SendReviewLine(
@@ -1067,7 +1068,9 @@ private fun String.toBigDecimalOrZero(): BigDecimal =
     runCatching { BigDecimal(this) }.getOrDefault(BigDecimal.ZERO)
 
 private fun formatCryptoAmount(value: BigDecimal): String {
-    val decimal = value.stripTrailingZeros()
+    val decimal = value
+        .setScale(CRYPTO_DISPLAY_DECIMALS, RoundingMode.DOWN)
+        .stripTrailingZeros()
     return if (decimal.compareTo(BigDecimal.ZERO) == 0) "0" else decimal.toPlainString()
 }
 
@@ -1153,3 +1156,4 @@ private data class SendAssetRow(
 )
 
 private val SendContentMaxWidth = 720.dp
+private const val CRYPTO_DISPLAY_DECIMALS = 8

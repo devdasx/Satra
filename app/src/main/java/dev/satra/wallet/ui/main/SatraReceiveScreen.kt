@@ -73,6 +73,7 @@ import dev.satra.wallet.data.db.WalletAssetRecord
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import java.math.BigDecimal
+import java.math.RoundingMode
 import java.text.NumberFormat
 import java.util.Currency
 import java.util.Locale
@@ -911,7 +912,9 @@ private fun String.toBigDecimalOrZero(): BigDecimal =
     runCatching { BigDecimal(this) }.getOrDefault(BigDecimal.ZERO)
 
 private fun formatReceiveCryptoAmount(value: BigDecimal): String {
-    val decimal = value.stripTrailingZeros()
+    val decimal = value
+        .setScale(CRYPTO_DISPLAY_DECIMALS, RoundingMode.DOWN)
+        .stripTrailingZeros()
     return if (decimal.compareTo(BigDecimal.ZERO) == 0) "0" else decimal.toPlainString()
 }
 
@@ -996,4 +999,5 @@ private data class ReceiveAssetRow(
 
 private val ReceiveContentMaxWidth = 720.dp
 private const val DEFAULT_RECEIVE_CURRENCY = "USD"
+private const val CRYPTO_DISPLAY_DECIMALS = 8
 private const val QR_SIZE = 512

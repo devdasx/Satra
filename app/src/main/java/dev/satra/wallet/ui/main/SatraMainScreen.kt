@@ -97,6 +97,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import org.json.JSONObject
 import java.math.BigDecimal
+import java.math.RoundingMode
 import java.text.NumberFormat
 import java.time.Instant
 import java.time.ZoneId
@@ -2712,7 +2713,9 @@ private fun List<WalletAssetRecord>.toHomeAssetRows(localCurrencyCode: String): 
 }
 
 private fun formatCryptoAmount(value: String): String {
-    val decimal = value.toBigDecimalOrZero().stripTrailingZeros()
+    val decimal = value.toBigDecimalOrZero()
+        .setScale(CRYPTO_DISPLAY_DECIMALS, RoundingMode.DOWN)
+        .stripTrailingZeros()
     return if (decimal.compareTo(BigDecimal.ZERO) == 0) {
         "0"
     } else {
@@ -2970,6 +2973,7 @@ internal object SatraMainRoute {
 }
 
 private val HomeContentMaxWidth = 720.dp
+private const val CRYPTO_DISPLAY_DECIMALS = 8
 private val ActivityDateFormatter: DateTimeFormatter =
     DateTimeFormatter.ofPattern("MMM d, HH:mm", Locale.US)
         .withZone(ZoneId.systemDefault())
