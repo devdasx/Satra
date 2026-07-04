@@ -18,6 +18,7 @@ class EvmWalletSyncService(
         addresses: List<WalletAddressRecord>,
         networkId: String? = null,
         nowMillis: Long = System.currentTimeMillis(),
+        onNetworkResult: suspend (EvmNetworkSyncResult) -> Unit = {},
     ): EvmWalletSyncResult = coroutineScope {
         val requestedNetworks = if (networkId == null) {
             addresses
@@ -34,12 +35,15 @@ class EvmWalletSyncService(
             .map { evmNetworkId ->
                 async {
                     networkLimiter.withPermit {
-                        syncNetwork(
+                        val result = syncNetwork(
                             walletId = walletId,
                             networkId = evmNetworkId,
                             address = addresses.primaryAddressFor(evmNetworkId),
                             nowMillis = nowMillis,
+                            onNetworkResult = onNetworkResult,
                         )
+                        runCatching { onNetworkResult(result) }
+                        result
                     }
                 }
             }
@@ -56,6 +60,7 @@ class EvmWalletSyncService(
         networkId: String,
         address: WalletAddressRecord?,
         nowMillis: Long,
+        onNetworkResult: suspend (EvmNetworkSyncResult) -> Unit,
     ): EvmNetworkSyncResult = coroutineScope {
         val assets = SupportedAssetCatalog.assets.filter { it.networkId == networkId }
         if (address == null) {
@@ -116,6 +121,24 @@ class EvmWalletSyncService(
         }
 
         val balanceResult = balanceDeferred.await()
+        runCatching {
+            onNetworkResult(
+                EvmNetworkSyncResult(
+                    walletId = walletId,
+                    networkId = networkId,
+                    address = address.address,
+                    balanceCompleteness = balanceResult.completeness,
+                    historyCompleteness = EvmSyncCompleteness.Partial,
+                    balances = balanceResult.balances,
+                    transactions = emptyList(),
+                    providerName = balanceResult.providerName,
+                    latestBlockNumber = balanceResult.latestBlockNumber,
+                    cursorFromBlock = null,
+                    cursorToBlock = null,
+                    error = balanceResult.error,
+                ),
+            )
+        }
         val historyResult = historyDeferred.await()
 
         EvmNetworkSyncResult(

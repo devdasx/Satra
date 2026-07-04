@@ -60,6 +60,46 @@ class SatraPriceSyncServiceTest {
         assertEquals(setOf("USDC"), result.fallbackSymbols)
         assertTrue(result.failedSymbols.isEmpty())
     }
+
+    @Test
+    fun syncEmitsPartialPriceResultsBeforeFinalResult() = runBlocking {
+        val transport = RecordingPriceTransport(
+            "https://api.exchange.coinbase.com/products" to """
+                [
+                    {"base_currency":"BTC","quote_currency":"USD","status":"online","trading_disabled":false}
+                ]
+            """.trimIndent(),
+            "https://api.exchange.coinbase.com/products/BTC-USD/ticker" to """
+                {"price":"50000"}
+            """.trimIndent(),
+            "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,usd-coin&vs_currencies=usd&precision=full" to """
+                {"bitcoin":{"usd":49000},"usd-coin":{"usd":0.99}}
+            """.trimIndent(),
+            "https://api.frankfurter.dev/v1/latest?base=USD&symbols=EUR" to """
+                {"base":"USD","rates":{"EUR":"0.9"}}
+            """.trimIndent(),
+        )
+        val service = SatraPriceSyncService(
+            marketDataClient = SatraMarketDataClient(transport),
+        )
+        val assets = listOf(
+            SupportedAssetCatalog.assets.first { it.assetId == "bitcoin:btc" },
+            SupportedAssetCatalog.assets.first { it.assetId == "ethereum:usdc" },
+        )
+        val partials = mutableListOf<SatraPriceSyncResult>()
+
+        val result = service.syncSupportedAssetPrices(
+            localCurrencyCode = "EUR",
+            nowMillis = 1234L,
+            assets = assets,
+            onPartialResult = { partial -> partials += partial },
+        )
+
+        assertTrue(partials.size >= 2)
+        assertEquals(BigDecimal("49000"), partials.first().prices.first { it.asset.assetId == "bitcoin:btc" }.usdPrice)
+        assertEquals(BigDecimal("50000"), partials.last().prices.first { it.asset.assetId == "bitcoin:btc" }.usdPrice)
+        assertEquals(result, partials.last())
+    }
 }
 
 private class RecordingPriceTransport(

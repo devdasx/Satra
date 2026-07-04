@@ -101,8 +101,10 @@ import dev.satra.wallet.data.sync.evm.EvmSyncCompleteness
 import dev.satra.wallet.data.sync.utxo.UtxoElectrumProviderRegistry
 import dev.satra.wallet.settings.SatraSettings
 import dev.satra.wallet.settings.SatraThemePreference
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -467,7 +469,14 @@ private fun SatraHomeDashboard(
 
         loadContent(HomeSyncStatus.Syncing)
         runCatching {
-            walletRepository.syncWalletData(wallet.walletId)
+            walletRepository.syncWalletData(
+                walletId = wallet.walletId,
+                onProgress = {
+                    withContext(Dispatchers.Main) {
+                        loadContent(HomeSyncStatus.Syncing)
+                    }
+                },
+            )
         }
         loadContent(HomeSyncStatus.Ready)
     }
@@ -620,7 +629,14 @@ private fun SatraActivityScreen(
 
         loadContent(HomeSyncStatus.Syncing)
         val syncError = runCatching {
-            val result = walletRepository.syncWalletData(wallet.walletId)
+            val result = walletRepository.syncWalletData(
+                walletId = wallet.walletId,
+                onProgress = {
+                    withContext(Dispatchers.Main) {
+                        loadContent(HomeSyncStatus.Syncing)
+                    }
+                },
+            )
             val evmPartial = result.evmSyncResult.networkResults.any { network ->
                     network.error != null ||
                         network.balanceCompleteness != EvmSyncCompleteness.Complete ||
@@ -999,34 +1015,28 @@ private fun SatraMarketsScreen(
     LaunchedEffect(walletRepository) {
         val appSettings = walletRepository.getAppSettings()
         val currencyCode = appSettings.localCurrencyCode
-        val cachedMarketData = walletRepository.getAllAssetMarketData()
-        state = MarketsScreenState.Content(
-            currencyCode = currencyCode,
-            rows = SupportedAssetCatalog.assets.toMarketRows(
-                marketData = cachedMarketData,
-                localCurrencyCode = currencyCode,
-            ),
-        )
 
-        walletRepository.syncMarketData(currencyCode)
-        val refreshedMarketData = walletRepository.getAllAssetMarketData()
-        if (refreshedMarketData.isEmpty()) {
+        suspend fun loadMarketData() {
+            val marketData = walletRepository.getAllAssetMarketData()
             state = MarketsScreenState.Content(
                 currencyCode = currencyCode,
                 rows = SupportedAssetCatalog.assets.toMarketRows(
-                    marketData = emptyList(),
+                    marketData = marketData,
                     localCurrencyCode = currencyCode,
                 ),
             )
-            return@LaunchedEffect
         }
-        state = MarketsScreenState.Content(
-            currencyCode = currencyCode,
-            rows = SupportedAssetCatalog.assets.toMarketRows(
-                marketData = refreshedMarketData,
-                localCurrencyCode = currencyCode,
-            ),
+
+        loadMarketData()
+        walletRepository.syncMarketData(
+            localCurrencyCode = currencyCode,
+            onProgress = {
+                withContext(Dispatchers.Main) {
+                    loadMarketData()
+                }
+            },
         )
+        loadMarketData()
     }
 
     val content = when (val current = state) {

@@ -60,6 +60,7 @@ class SatraPriceSyncService(
         localCurrencyCode: String,
         nowMillis: Long = System.currentTimeMillis(),
         assets: List<SupportedAsset> = SupportedAssetCatalog.assets,
+        onPartialResult: suspend (SatraPriceSyncResult) -> Unit = {},
     ): SatraPriceSyncResult = coroutineScope {
         val normalizedCurrency = localCurrencyCode.uppercase()
         val supportedSymbols = assets.map { it.priceSymbol }.toSet()
@@ -86,89 +87,111 @@ class SatraPriceSyncService(
             }.getOrDefault(emptyMap())
         }
 
+        val fxQuote = fxDeferred.await()
+        val coinGeckoQuotes = coinGeckoDeferred.await()
+        val coinGeckoMarketQuotes = coinGeckoMarketsDeferred.await()
+        buildPriceSyncResult(
+            normalizedCurrency = normalizedCurrency,
+            assets = assets,
+            supportedSymbols = supportedSymbols,
+            fxQuote = fxQuote,
+            coinbaseQuotes = emptyMap(),
+            coinGeckoQuotes = coinGeckoQuotes,
+            exchangeFallbackQuotes = emptyMap(),
+            marketQuotesBySymbol = coinGeckoMarketQuotes,
+            nowMillis = nowMillis,
+        ).takeIf { it.prices.isNotEmpty() || it.marketData.isNotEmpty() }
+            ?.let { onPartialResult(it) }
+
         val coinbaseSymbols = coinbaseSymbolsDeferred.await()
         val coinbaseQuotes = coinbaseSymbols
             .map { symbol ->
                 async(dispatcher) {
-                    symbol to runCatching { marketDataClient.getCoinbaseUsdPrice(symbol) }.getOrNull()
+                    val quote = runCatching { marketDataClient.getCoinbaseUsdPrice(symbol) }.getOrNull()
+                    if (quote != null) {
+                        buildPriceSyncResult(
+                            normalizedCurrency = normalizedCurrency,
+                            assets = assets,
+                            supportedSymbols = supportedSymbols,
+                            fxQuote = fxQuote,
+                            coinbaseQuotes = mapOf(symbol to quote),
+                            coinGeckoQuotes = emptyMap(),
+                            exchangeFallbackQuotes = emptyMap(),
+                            marketQuotesBySymbol = emptyMap(),
+                            nowMillis = nowMillis,
+                        ).takeIf { it.prices.isNotEmpty() }
+                            ?.let { onPartialResult(it) }
+                    }
+                    symbol to quote
                 }
             }
             .awaitAll()
             .mapNotNull { (symbol, quote) -> quote?.let { symbol to it } }
             .toMap()
-        val coinGeckoQuotes = coinGeckoDeferred.await()
-        val coinGeckoMarketQuotes = coinGeckoMarketsDeferred.await()
+        buildPriceSyncResult(
+            normalizedCurrency = normalizedCurrency,
+            assets = assets,
+            supportedSymbols = supportedSymbols,
+            fxQuote = fxQuote,
+            coinbaseQuotes = coinbaseQuotes,
+            coinGeckoQuotes = coinGeckoQuotes,
+            exchangeFallbackQuotes = emptyMap(),
+            marketQuotesBySymbol = coinGeckoMarketQuotes,
+            nowMillis = nowMillis,
+        ).takeIf { it.prices.isNotEmpty() || it.marketData.isNotEmpty() }
+            ?.let { onPartialResult(it) }
+
         val exchangeFallbackQuotes = (supportedSymbols - coinGeckoMarketQuotes.keys)
             .map { symbol ->
                 async(dispatcher) {
-                    symbol to listOf(
+                    val quote = listOf(
                         { marketDataClient.getBinanceUsdtPrice(symbol) },
                         { marketDataClient.getOkxUsdtPrice(symbol) },
                         { marketDataClient.getKuCoinUsdtPrice(symbol) },
                     ).firstNotNullOfOrNull { provider ->
                         runCatching { provider() }.getOrNull()
                     }
+                    if (quote != null) {
+                        buildPriceSyncResult(
+                            normalizedCurrency = normalizedCurrency,
+                            assets = assets,
+                            supportedSymbols = supportedSymbols,
+                            fxQuote = fxQuote,
+                            coinbaseQuotes = emptyMap(),
+                            coinGeckoQuotes = emptyMap(),
+                            exchangeFallbackQuotes = mapOf(symbol to quote),
+                            marketQuotesBySymbol = mapOf(symbol to quote.toMarketQuote(symbol, assets)),
+                            nowMillis = nowMillis,
+                        ).takeIf { it.prices.isNotEmpty() || it.marketData.isNotEmpty() }
+                            ?.let { onPartialResult(it) }
+                    }
+                    symbol to quote
                 }
             }
             .awaitAll()
             .mapNotNull { (symbol, quote) -> quote?.let { symbol to it } }
             .toMap()
-        val fxQuote = fxDeferred.await()
 
-        val quotesBySymbol = supportedSymbols.associateWith { symbol ->
-            coinbaseQuotes[symbol] ?: coinGeckoQuotes[symbol] ?: exchangeFallbackQuotes[symbol]
-        }
-        val marketQuotesBySymbol = supportedSymbols.associateWith { symbol ->
-            coinGeckoMarketQuotes[symbol] ?: exchangeFallbackQuotes[symbol]?.toMarketQuote(symbol, assets)
-        }
-        val prices = assets.mapNotNull { asset ->
-            val symbol = asset.priceSymbol
-            val quote = quotesBySymbol[symbol] ?: return@mapNotNull null
-            SatraAssetPrice(
-                asset = asset,
-                localCurrencyCode = normalizedCurrency,
-                usdPrice = quote.price,
-                localPrice = quote.price.multiply(fxQuote.rate),
-                provider = if (quote.provider == SatraMarketDataClient.COINBASE_EXCHANGE_PROVIDER) {
-                    if (normalizedCurrency == "USD") quote.provider else "${quote.provider}+${fxQuote.provider}"
-                } else {
-                    if (normalizedCurrency == "USD") quote.provider else "${quote.provider}+${fxQuote.provider}"
-                },
-                providerAssetId = quote.providerAssetId,
-                syncedAtMillis = nowMillis,
-            )
-        }
-        val marketData = marketQuotesBySymbol
-            .mapNotNull { (symbol, quote) ->
-                quote?.toSatraAssetMarketData(
-                    symbol = symbol,
-                    localCurrencyCode = normalizedCurrency,
-                    fxRate = fxQuote.rate,
-                    syncedAtMillis = nowMillis,
-                )
-            }
-            .distinctBy { market -> market.symbol }
-        val pricedSymbols = prices.map { it.asset.priceSymbol }.toSet()
-
-        SatraPriceSyncResult(
-            localCurrencyCode = normalizedCurrency,
-            prices = prices,
-            marketData = marketData,
-            coinbaseSymbols = coinbaseQuotes.keys,
-            fallbackSymbols = (prices
-                .filter { it.asset.priceSymbol !in coinbaseQuotes.keys }
-                .map { it.asset.priceSymbol } + exchangeFallbackQuotes.keys)
-                .toSet(),
-            failedSymbols = supportedSymbols - pricedSymbols,
-            fxProvider = fxQuote.provider,
-            updatedAtMillis = nowMillis,
-        )
+        buildPriceSyncResult(
+            normalizedCurrency = normalizedCurrency,
+            assets = assets,
+            supportedSymbols = supportedSymbols,
+            fxQuote = fxQuote,
+            coinbaseQuotes = coinbaseQuotes,
+            coinGeckoQuotes = coinGeckoQuotes,
+            exchangeFallbackQuotes = exchangeFallbackQuotes,
+            marketQuotesBySymbol = supportedSymbols.associateWith { symbol ->
+                coinGeckoMarketQuotes[symbol] ?: exchangeFallbackQuotes[symbol]?.toMarketQuote(symbol, assets)
+            },
+            nowMillis = nowMillis,
+        ).also { onPartialResult(it) }
     }
 
     suspend fun syncSupportedAssetPricesOrNull(
         localCurrencyCode: String,
         nowMillis: Long = System.currentTimeMillis(),
         assets: List<SupportedAsset> = SupportedAssetCatalog.assets,
+        onPartialResult: suspend (SatraPriceSyncResult) -> Unit = {},
     ): SatraPriceSyncResult? =
         withContext(dispatcher) {
             runCatching {
@@ -176,6 +199,7 @@ class SatraPriceSyncService(
                     localCurrencyCode = localCurrencyCode,
                     nowMillis = nowMillis,
                     assets = assets,
+                    onPartialResult = onPartialResult,
                 )
             }.getOrNull()
         }
@@ -223,6 +247,64 @@ class SatraPriceSyncService(
                 syncedAtMillis = nowMillis,
             )
         }
+}
+
+private fun buildPriceSyncResult(
+    normalizedCurrency: String,
+    assets: List<SupportedAsset>,
+    supportedSymbols: Set<String>,
+    fxQuote: FxRateQuote,
+    coinbaseQuotes: Map<String, CryptoPriceQuote>,
+    coinGeckoQuotes: Map<String, CryptoPriceQuote>,
+    exchangeFallbackQuotes: Map<String, CryptoPriceQuote>,
+    marketQuotesBySymbol: Map<String, AssetMarketQuote?>,
+    nowMillis: Long,
+): SatraPriceSyncResult {
+    val quotesBySymbol = supportedSymbols.associateWith { symbol ->
+        coinbaseQuotes[symbol] ?: coinGeckoQuotes[symbol] ?: exchangeFallbackQuotes[symbol]
+    }
+    val prices = assets.mapNotNull { asset ->
+        val symbol = asset.priceSymbol
+        val quote = quotesBySymbol[symbol] ?: return@mapNotNull null
+        SatraAssetPrice(
+            asset = asset,
+            localCurrencyCode = normalizedCurrency,
+            usdPrice = quote.price,
+            localPrice = quote.price.multiply(fxQuote.rate),
+            provider = if (normalizedCurrency == "USD") {
+                quote.provider
+            } else {
+                "${quote.provider}+${fxQuote.provider}"
+            },
+            providerAssetId = quote.providerAssetId,
+            syncedAtMillis = nowMillis,
+        )
+    }
+    val marketData = marketQuotesBySymbol
+        .mapNotNull { (symbol, quote) ->
+            quote?.toSatraAssetMarketData(
+                symbol = symbol,
+                localCurrencyCode = normalizedCurrency,
+                fxRate = fxQuote.rate,
+                syncedAtMillis = nowMillis,
+            )
+        }
+        .distinctBy { market -> market.symbol }
+    val pricedSymbols = prices.map { it.asset.priceSymbol }.toSet()
+
+    return SatraPriceSyncResult(
+        localCurrencyCode = normalizedCurrency,
+        prices = prices,
+        marketData = marketData,
+        coinbaseSymbols = coinbaseQuotes.keys,
+        fallbackSymbols = (prices
+            .filter { it.asset.priceSymbol !in coinbaseQuotes.keys }
+            .map { it.asset.priceSymbol } + exchangeFallbackQuotes.keys)
+            .toSet(),
+        failedSymbols = supportedSymbols - pricedSymbols,
+        fxProvider = fxQuote.provider,
+        updatedAtMillis = nowMillis,
+    )
 }
 
 private fun CryptoPriceQuote.toMarketQuote(

@@ -30,6 +30,7 @@ class UtxoWalletSyncService(
         addresses: List<WalletAddressRecord>,
         networkId: String? = null,
         nowMillis: Long = System.currentTimeMillis(),
+        onNetworkResult: suspend (UtxoNetworkSyncResult) -> Unit = {},
     ): UtxoWalletSyncResult = coroutineScope {
         val requestedNetworks = if (networkId == null) {
             if (wallet.walletKeyType == WalletKeyType.Mnemonic.value && !wallet.walletKeyMaterial.isNullOrBlank()) {
@@ -50,12 +51,14 @@ class UtxoWalletSyncService(
             .map { utxoNetworkId ->
                 async {
                     networkLimiter.withPermit {
-                        syncNetwork(
+                        val result = syncNetwork(
                             wallet = wallet,
                             networkId = utxoNetworkId,
                             addresses = addresses.filter { it.networkId == utxoNetworkId },
                             nowMillis = nowMillis,
                         )
+                        runCatching { onNetworkResult(result) }
+                        result
                     }
                 }
             }

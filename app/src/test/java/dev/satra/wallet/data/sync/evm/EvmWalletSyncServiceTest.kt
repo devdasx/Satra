@@ -3,6 +3,7 @@ package dev.satra.wallet.data.sync.evm
 import dev.satra.wallet.data.db.WalletAddressRecord
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class EvmWalletSyncServiceTest {
@@ -29,6 +30,36 @@ class EvmWalletSyncServiceTest {
         )
 
         assertEquals(emptyList<String>(), result.networkResults.map { it.networkId })
+    }
+
+    @Test
+    fun emitsNetworkResultAsSoonAsNetworkCompletes() = runBlocking {
+        val service = EvmWalletSyncService(
+            balanceSyncService = EvmBalanceSyncService(
+                clientFactory = { error("Network should not be called for missing addresses.") },
+            ),
+            historySyncService = EvmHistorySyncService(
+                rpcClientFactory = { error("Network should not be called for missing addresses.") },
+                httpGetTransport = object : EvmHttpGetTransport {
+                    override suspend fun get(url: String, timeoutMillis: Int): String =
+                        error("Network should not be called for missing addresses.")
+                },
+            ),
+        )
+        val emitted = mutableListOf<EvmNetworkSyncResult>()
+
+        val result = service.syncWallet(
+            walletId = "wallet",
+            addresses = emptyList(),
+            networkId = "ethereum",
+            onNetworkResult = { networkResult ->
+                emitted += networkResult
+            },
+        )
+
+        assertEquals(result.networkResults, emitted)
+        assertEquals("ethereum", emitted.single().networkId)
+        assertTrue(emitted.single().error.orEmpty().contains("No wallet address"))
     }
 
     private fun address(networkId: String): WalletAddressRecord =
