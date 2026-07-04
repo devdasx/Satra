@@ -4366,7 +4366,6 @@ internal fun assetIconRes(symbol: String): Int =
         "FRAX" -> R.drawable.ic_asset_frax
         "GUSD" -> R.drawable.ic_asset_gusd
         "KAVA" -> R.drawable.ic_asset_kava
-        "LISUSD" -> R.drawable.ic_asset_lisusd
         "LTC" -> R.drawable.ic_asset_ltc
         "NEAR" -> R.drawable.ic_asset_near
         "POL" -> R.drawable.ic_asset_pol

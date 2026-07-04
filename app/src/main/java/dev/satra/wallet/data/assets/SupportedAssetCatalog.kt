@@ -1262,17 +1262,6 @@ object SupportedAssetCatalog {
             isStablecoin = true,
         ),
         SupportedAsset(
-            assetId = "bnbChain:lisusd",
-            symbol = "lisUSD",
-            name = "Lista USD",
-            networkId = "bnbChain",
-            assetType = "TOKEN",
-            decimals = 18,
-            tokenStandard = "ERC-20",
-            contractAddress = "0x0782b6d8c4551B9760e74c0545a9bCD90bdc41E5",
-            isStablecoin = true,
-        ),
-        SupportedAsset(
             assetId = "bnbChain:weth",
             symbol = "WETH",
             name = "Wrapped Ether",

@@ -14,7 +14,7 @@ class EvmProviderRegistryTest {
         }
 
         assertEquals(12, evmNetworks.size)
-        assertEquals(91, evmAssets.size)
+        assertEquals(90, evmAssets.size)
         assertEquals(
             evmNetworks.map { it.networkId }.toSet(),
             EvmProviderRegistry.supportedNetworkIds,

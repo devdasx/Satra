@@ -179,7 +179,6 @@ Contract addresses are authoritative. Always use the exact address from the CSV 
 | FDUSD  | First Digital USD             | 18       | 0xc5f0f7b66764F6ec8C8Dff7BA683102295E16409 |
 | FRAX   | Legacy Frax Dollar            | 18       | 0x90C97F71E18723b0cf0dfa30ee176Ab653E89F40 |
 | TUSD   | TrueUSD                       | 18       | 0x40af3827F39D0EAcBF4A168f8D4ee67c121D11c9 |
-| lisUSD | Lista USD                     | 18       | 0x0782b6d8c4551B9760e74c0545a9bCD90bdc41E5 |
 | WETH   | Wrapped Ether                 | 18       | 0x2170Ed0880ac9A755fd29B2688956BD959F933F8 |
 
 ### 3.9 opBNB (chain 204, L2)

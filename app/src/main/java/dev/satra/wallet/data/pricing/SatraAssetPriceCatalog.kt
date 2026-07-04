@@ -26,7 +26,6 @@ object SatraAssetPriceCatalog {
         "FRAX" to "frax",
         "GUSD" to "gemini-dollar",
         "KAVA" to "kava",
-        "LISUSD" to "helio-protocol-hay",
         "LTC" to "litecoin",
         "NEAR" to "near",
         "POL" to "polygon-ecosystem-token",
