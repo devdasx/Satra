@@ -103,6 +103,7 @@ import org.json.JSONObject
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.text.NumberFormat
+import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -580,12 +581,21 @@ private fun SatraActivityScreen(
         }
 
         suspend fun loadContent(status: HomeSyncStatus, error: String? = null) {
-            val (latestWallet, walletTransactions) = coroutineScope {
+            val (latestWallet, walletAssets, walletTransactions) = coroutineScope {
                 val walletDeferred = async { walletRepository.getPrimaryWallet() }
+                val assetsDeferred = async { walletRepository.getWalletAssets(wallet.walletId) }
                 val transactionsDeferred = async { walletRepository.getWalletTransactions(wallet.walletId) }
-                (walletDeferred.await() ?: wallet) to transactionsDeferred.await()
+                Triple(
+                    walletDeferred.await() ?: wallet,
+                    assetsDeferred.await(),
+                    transactionsDeferred.await(),
+                )
             }
-            val transactions = walletTransactions.toActivityRows(latestWallet.localCurrencyCode, resources)
+            val transactions = walletTransactions.toActivityRows(
+                localCurrencyCode = latestWallet.localCurrencyCode,
+                walletAssets = walletAssets,
+                resources = resources,
+            )
             activityState = ActivityScreenState.Content(
                 walletName = latestWallet.walletName,
                 status = status,
@@ -708,10 +718,20 @@ private fun SatraTransactionDetailScreen(
             state = TransactionDetailState.NotFound
             return@LaunchedEffect
         }
-        val transaction = walletRepository.getWalletTransactions(wallet.walletId)
-            .firstOrNull { record -> record.transactionId == transactionId }
+        val (walletAssets, transaction) = coroutineScope {
+            val assetsDeferred = async { walletRepository.getWalletAssets(wallet.walletId) }
+            val transactionDeferred = async {
+                walletRepository.getWalletTransactions(wallet.walletId)
+                    .firstOrNull { record -> record.transactionId == transactionId }
+            }
+            assetsDeferred.await() to transactionDeferred.await()
+        }
         state = transaction
-            ?.toTransactionDetailContent(wallet.localCurrencyCode, resources)
+            ?.toTransactionDetailContent(
+                localCurrencyCode = wallet.localCurrencyCode,
+                walletAssets = walletAssets,
+                resources = resources,
+            )
             ?: TransactionDetailState.NotFound
     }
 
@@ -3370,7 +3390,11 @@ private fun WalletRecord.toTokenDetailState(
         currencyCode = localCurrencyCode,
         totalBalance = formatFiat(totalFiat.toPlainString(), localCurrencyCode),
         networkBalances = matchingAssets.toTokenNetworkBalanceRows(localCurrencyCode),
-        transactions = matchingTransactions.toActivityRows(localCurrencyCode, resources),
+        transactions = matchingTransactions.toActivityRows(
+            localCurrencyCode = localCurrencyCode,
+            walletAssets = walletAssets,
+            resources = resources,
+        ),
         chartTransactions = matchingTransactions,
         chartData = buildHomeBalanceChartData(
             transactions = matchingTransactions,
@@ -3520,27 +3544,29 @@ private fun List<WalletAssetRecord>.toTokenNetworkBalanceRows(localCurrencyCode:
 
 private fun List<WalletTransactionRecord>.toActivityRows(
     localCurrencyCode: String,
+    walletAssets: List<WalletAssetRecord>,
     resources: Resources,
 ): List<ActivityTransactionRow> {
     val catalogAssetsById = SupportedAssetCatalog.assets.associateBy { it.assetId }
-    val networksById = SupportedAssetCatalog.networks.associateBy { it.networkId }
     val supportedNetworkIds = SupportedAssetCatalog.networks.map { it.networkId }.toSet()
+    val localPricesByAssetId = walletAssets.associate { asset ->
+        asset.assetId to asset.priceFiatValue.toBigDecimalOrZero()
+    }
     return filter { transaction -> transaction.networkId in supportedNetworkIds }
         .mapNotNull { transaction ->
             val asset = catalogAssetsById[transaction.assetId] ?: return@mapNotNull null
-            val network = networksById[transaction.networkId] ?: return@mapNotNull null
-            val status = transaction.status.activityStatusLabel(resources)
             val direction = transaction.direction.activityDirectionLabel(resources)
             ActivityTransactionRow(
                 transactionId = transaction.transactionId,
                 iconRes = assetIconRes(asset.symbol),
                 direction = transaction.direction,
                 title = "$direction ${asset.symbol}",
-                subtitle = "${network.displayName} · $status · ${formatActivityTime(transaction.timestamp, resources)}",
+                subtitle = formatActivityTime(transaction.timestamp, resources),
                 amount = "${transaction.direction.activityAmountPrefix()}${formatCryptoAmount(transaction.amountDecimal)} ${asset.symbol}",
-                fiatValue = transaction.fiatValue?.takeIf(String::isNotBlank)?.let {
-                    formatFiat(it, localCurrencyCode)
-                } ?: formatFiat("0", localCurrencyCode),
+                fiatValue = transaction.displayFiatValue(
+                    localCurrencyCode = localCurrencyCode,
+                    localPrice = localPricesByAssetId[transaction.assetId],
+                ),
                 counterparty = transaction.activityCounterparty(resources),
                 hash = transaction.transactionHash?.shortHash().orEmpty(),
                 fee = transaction.feeDecimal?.takeIf { it.toBigDecimalOrZero() > BigDecimal.ZERO }
@@ -3559,6 +3585,7 @@ private fun List<WalletTransactionRecord>.toActivityRows(
 
 private fun WalletTransactionRecord.toTransactionDetailContent(
     localCurrencyCode: String,
+    walletAssets: List<WalletAssetRecord>,
     resources: Resources,
 ): TransactionDetailState.Content? {
     val catalogAssetsById = SupportedAssetCatalog.assets.associateBy { it.assetId }
@@ -3568,9 +3595,13 @@ private fun WalletTransactionRecord.toTransactionDetailContent(
     val status = status.activityStatusLabel(resources)
     val directionLabel = direction.activityDirectionLabel(resources)
     val displayAmount = "${direction.activityAmountPrefix()}${formatCryptoAmount(amountDecimal)} ${asset.symbol}"
-    val displayFiat = fiatValue?.takeIf(String::isNotBlank)?.let {
-        formatFiat(it, localCurrencyCode)
-    } ?: resources.getString(R.string.activity_detail_unavailable)
+    val displayFiat = displayFiatValue(
+        localCurrencyCode = localCurrencyCode,
+        localPrice = walletAssets
+            .firstOrNull { walletAsset -> walletAsset.assetId == assetId }
+            ?.priceFiatValue
+            ?.toBigDecimalOrZero(),
+    )
     val feeAsset = feeAssetId?.let(catalogAssetsById::get)
     val displayFee = feeDecimal?.takeIf(String::isNotBlank)?.let { fee ->
         "${formatCryptoAmount(fee)} ${feeAsset?.symbol ?: asset.symbol}"
@@ -3836,12 +3867,48 @@ private fun WalletRecord.syncedNetworkCount(): Int =
 private fun formatActivityTime(
     timestampMillis: Long,
     resources: Resources,
-): String =
-    if (timestampMillis <= 0L) {
-        resources.getString(R.string.activity_status_pending)
-    } else {
-        ActivityDateFormatter.format(Instant.ofEpochMilli(timestampMillis))
+): String {
+    if (timestampMillis <= 0L) return resources.getString(R.string.activity_status_pending)
+
+    val timestamp = Instant.ofEpochMilli(timestampMillis)
+    val now = Instant.now()
+    val elapsed = Duration.between(timestamp, now)
+    if (!elapsed.isNegative) {
+        if (elapsed.toMinutes() < 1) {
+            return resources.getString(R.string.activity_time_moment_ago)
+        }
+        if (elapsed.toHours() < 1) {
+            return resources.getString(R.string.activity_time_minutes_ago, elapsed.toMinutes())
+        }
+        if (elapsed.toHours() < 6) {
+            return resources.getString(R.string.activity_time_hours_ago, elapsed.toHours())
+        }
     }
+
+    val zone = ZoneId.systemDefault()
+    val date = timestamp.atZone(zone).toLocalDate()
+    val today = now.atZone(zone).toLocalDate()
+    val time = ActivityTimeFormatter.format(timestamp)
+    return when (date) {
+        today -> resources.getString(R.string.activity_time_today, time)
+        today.minusDays(1) -> resources.getString(R.string.activity_time_yesterday, time)
+        else -> ActivityDateFormatter.format(timestamp)
+    }
+}
+
+private fun WalletTransactionRecord.displayFiatValue(
+    localCurrencyCode: String,
+    localPrice: BigDecimal?,
+): String {
+    val transactionFiat = fiatValue
+        ?.takeIf(String::isNotBlank)
+        ?.toBigDecimalOrZero()
+        ?.takeIf { it > BigDecimal.ZERO }
+        ?: localPrice
+            ?.takeIf { it > BigDecimal.ZERO }
+            ?.multiply(amountDecimal.toBigDecimalOrZero().abs())
+    return formatFiat(transactionFiat?.toPlainString() ?: "0", localCurrencyCode)
+}
 
 private fun String.shortHash(): String =
     if (length <= 14) {
@@ -4023,4 +4090,7 @@ private const val BALANCE_CARD_HIDDEN_KEY = "satra.balanceHidden"
 private const val CRYPTO_DISPLAY_DECIMALS = 8
 private val ActivityDateFormatter: DateTimeFormatter =
     DateTimeFormatter.ofPattern("MMM d, HH:mm", Locale.US)
+        .withZone(ZoneId.systemDefault())
+private val ActivityTimeFormatter: DateTimeFormatter =
+    DateTimeFormatter.ofPattern("HH:mm", Locale.US)
         .withZone(ZoneId.systemDefault())

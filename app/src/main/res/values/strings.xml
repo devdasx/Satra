@@ -346,6 +346,11 @@
     <string name="activity_status_pending">Pending</string>
     <string name="activity_status_canceled">Canceled</string>
     <string name="activity_status_failed">Failed</string>
+    <string name="activity_time_moment_ago">A moment ago</string>
+    <string name="activity_time_minutes_ago">%1$d min ago</string>
+    <string name="activity_time_hours_ago">%1$d hr ago</string>
+    <string name="activity_time_today">Today, %1$s</string>
+    <string name="activity_time_yesterday">Yesterday, %1$s</string>
     <string name="activity_counterparty_to">To %1$s</string>
     <string name="activity_counterparty_route">%1$s to %2$s</string>
     <string name="activity_counterparty_unavailable">Address unavailable</string>
