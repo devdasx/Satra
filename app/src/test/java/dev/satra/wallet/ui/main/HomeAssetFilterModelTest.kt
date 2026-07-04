@@ -37,6 +37,24 @@ class HomeAssetFilterModelTest {
     }
 
     @Test
+    fun networkFilterMatchesAnyGroupedNetwork() {
+        val result = listOf(
+            asset(
+                assetId = "usdt",
+                networkId = "ethereum",
+                networkIds = setOf("ethereum", "base", "polygon"),
+                value = "25",
+                amount = "25",
+            ),
+            asset(assetId = "bnb", networkId = "bnbChain", value = "10", amount = "1"),
+        ).applyHomeAssetFilter(
+            HomeAssetFilterState(networkId = "base"),
+        )
+
+        assertEquals(listOf("usdt"), result.map { it.assetId })
+    }
+
+    @Test
     fun amountSortUsesTokenAmountBeforeValue() {
         val result = listOf(
             asset(assetId = "high-value", value = "500", amount = "1"),
@@ -63,6 +81,7 @@ class HomeAssetFilterModelTest {
     private fun asset(
         assetId: String,
         networkId: String = "ethereum",
+        networkIds: Set<String> = setOf(networkId),
         value: String,
         amount: String,
         name: String = assetId,
@@ -72,6 +91,10 @@ class HomeAssetFilterModelTest {
         return HomeAssetRow(
             assetId = assetId,
             networkId = networkId,
+            assetIds = listOf(assetId),
+            networkIds = networkIds,
+            networks = networkIds.map { id -> id to id },
+            networkCount = networkIds.size,
             iconRes = 0,
             symbol = assetId.uppercase(),
             name = name,

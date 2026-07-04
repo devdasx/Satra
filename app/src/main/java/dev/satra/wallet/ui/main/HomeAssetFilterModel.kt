@@ -20,7 +20,7 @@ internal fun List<HomeAssetRow>.applyHomeAssetFilter(
 ): List<HomeAssetRow> =
     asSequence()
         .filter { asset ->
-            filterState.networkId == null || asset.networkId == filterState.networkId
+            filterState.networkId == null || filterState.networkId in asset.networkIds
         }
         .filter { asset ->
             !filterState.onlyWithBalance || asset.hasBalance

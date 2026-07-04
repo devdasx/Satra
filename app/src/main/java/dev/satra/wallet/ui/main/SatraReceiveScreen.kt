@@ -560,7 +560,7 @@ private fun List<WalletAssetRecord>.toReceiveAssetRows(
             asset = asset,
             network = network,
             addresses = networkAddresses,
-            iconRes = networkIconRes(walletAsset.networkId),
+            iconRes = assetIconRes(asset.symbol, walletAsset.networkId),
         )
     }.sortedWith(
         compareBy<ReceiveAssetRow> { it.network.displayName }

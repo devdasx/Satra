@@ -4,6 +4,8 @@ import android.content.res.Resources
 import android.net.Uri
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -38,6 +40,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.NavigationBar
@@ -145,6 +148,9 @@ fun SatraMainScreen(
                     walletRepository = walletRepository,
                     onSendClick = { tabNavController.navigate(SatraMainRoute.SendAsset) },
                     onReceiveClick = { tabNavController.navigate(SatraMainRoute.Receive) },
+                    onAssetClick = { symbol ->
+                        tabNavController.navigate(SatraMainRoute.tokenDetail(symbol))
+                    },
                 )
             }
             composable(SatraMainTab.Activity.route) {
@@ -229,6 +235,21 @@ fun SatraMainScreen(
                 SatraReceiveScreen(
                     walletRepository = walletRepository,
                     onBack = { tabNavController.popBackStack() },
+                )
+            }
+            composable(SatraMainRoute.TokenDetailPattern) { entry ->
+                val symbol = entry.arguments?.getString(SatraMainRoute.ArgSymbol).orEmpty()
+                SatraTokenDetailScreen(
+                    walletRepository = walletRepository,
+                    symbol = symbol,
+                    onBack = { tabNavController.popBackStack() },
+                    onSendAsset = { assetId ->
+                        tabNavController.navigate(SatraMainRoute.sendComposer(assetId))
+                    },
+                    onSendNetworkRequired = { assetSymbol ->
+                        tabNavController.navigate(SatraMainRoute.sendNetwork(assetSymbol))
+                    },
+                    onReceiveClick = { tabNavController.navigate(SatraMainRoute.Receive) },
                 )
             }
             composable(SatraMainRoute.SendAsset) {
@@ -317,6 +338,7 @@ private fun SatraHomeDashboard(
     walletRepository: SatraWalletRepository,
     onSendClick: () -> Unit,
     onReceiveClick: () -> Unit,
+    onAssetClick: (String) -> Unit,
 ) {
     var homeState by remember { mutableStateOf<HomeDashboardState>(HomeDashboardState.Loading) }
     var assetFilterState by remember { mutableStateOf(HomeAssetFilterState()) }
@@ -389,9 +411,9 @@ private fun SatraHomeDashboard(
     }
     val assetNetworks = remember(content.assets) {
         content.assets
-            .distinctBy { asset -> asset.networkId }
-            .sortedBy { asset -> asset.network.lowercase() }
-            .map { asset -> asset.networkId to asset.network }
+            .flatMap { asset -> asset.networks }
+            .distinctBy { (networkId, _) -> networkId }
+            .sortedBy { (_, networkName) -> networkName.lowercase() }
     }
 
     if (assetFilterSheetVisible) {
@@ -446,6 +468,7 @@ private fun SatraHomeDashboard(
         ) { asset ->
             HomeAssetListRow(
                 asset = asset,
+                onClick = { onAssetClick(asset.symbol) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .widthIn(max = HomeContentMaxWidth)
@@ -583,6 +606,334 @@ private fun SatraActivityScreen(
         item {
             Spacer(modifier = Modifier.height(20.dp))
         }
+    }
+}
+
+@Composable
+private fun SatraTokenDetailScreen(
+    walletRepository: SatraWalletRepository,
+    symbol: String,
+    onBack: () -> Unit,
+    onSendAsset: (String) -> Unit,
+    onSendNetworkRequired: (String) -> Unit,
+    onReceiveClick: () -> Unit,
+) {
+    val resources = LocalContext.current.resources
+    var state by remember(symbol) {
+        mutableStateOf<TokenDetailState>(TokenDetailState.Loading)
+    }
+    val normalizedSymbol = remember(symbol) { Uri.decode(symbol).uppercase(Locale.US) }
+
+    LaunchedEffect(walletRepository, normalizedSymbol) {
+        val wallet = walletRepository.getPrimaryWallet()
+        if (wallet == null) {
+            state = TokenDetailState.Content(
+                symbol = normalizedSymbol,
+                name = normalizedSymbol,
+                iconRes = assetIconRes(normalizedSymbol, ""),
+                currencyCode = "USD",
+                totalBalance = formatFiat("0", "USD"),
+                networkBalances = emptyList(),
+                transactions = emptyList(),
+                chartTransactions = emptyList(),
+                chartData = buildHomeBalanceChartData(
+                    transactions = emptyList(),
+                    range = HomeChartRange.OneWeek,
+                    nowMillis = System.currentTimeMillis(),
+                ),
+                sendAssetId = null,
+                sendRequiresNetwork = false,
+            )
+            return@LaunchedEffect
+        }
+
+        val (walletAssets, walletTransactions) = coroutineScope {
+            val assetsDeferred = async { walletRepository.getWalletAssets(wallet.walletId) }
+            val transactionsDeferred = async { walletRepository.getWalletTransactions(wallet.walletId) }
+            assetsDeferred.await() to transactionsDeferred.await()
+        }
+        state = wallet.toTokenDetailState(
+            symbol = normalizedSymbol,
+            walletAssets = walletAssets,
+            walletTransactions = walletTransactions,
+            resources = resources,
+            nowMillis = System.currentTimeMillis(),
+        )
+    }
+
+    val content = when (val current = state) {
+        TokenDetailState.Loading -> TokenDetailState.Content(
+            symbol = normalizedSymbol,
+            name = normalizedSymbol,
+            iconRes = assetIconRes(normalizedSymbol, ""),
+            currencyCode = "USD",
+            totalBalance = formatFiat("0", "USD"),
+            networkBalances = emptyList(),
+            transactions = emptyList(),
+            chartTransactions = emptyList(),
+            chartData = buildHomeBalanceChartData(
+                transactions = emptyList(),
+                range = HomeChartRange.OneWeek,
+                nowMillis = System.currentTimeMillis(),
+            ),
+            sendAssetId = null,
+            sendRequiresNetwork = false,
+        )
+        is TokenDetailState.Content -> current
+    }
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        item {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = HomeContentMaxWidth)
+                    .padding(horizontal = 20.dp, vertical = 20.dp),
+            ) {
+                TokenDetailHeader(
+                    title = content.name,
+                    symbol = content.symbol,
+                    iconRes = content.iconRes,
+                    onBack = onBack,
+                )
+                Spacer(modifier = Modifier.height(20.dp))
+                HomeBalanceCard(
+                    totalBalance = content.totalBalance,
+                    currencyCode = content.currencyCode,
+                    transactions = content.chartTransactions,
+                    initialChartData = content.chartData,
+                    onSendClick = {
+                        if (content.sendRequiresNetwork) {
+                            onSendNetworkRequired(content.symbol)
+                        } else {
+                            content.sendAssetId?.let(onSendAsset)
+                        }
+                    },
+                    onReceiveClick = onReceiveClick,
+                )
+                Spacer(modifier = Modifier.height(22.dp))
+                TokenDetailSectionHeader(
+                    title = stringResource(R.string.asset_detail_balances_title),
+                    value = stringResource(R.string.home_assets_network_count, content.networkBalances.size),
+                )
+            }
+        }
+        items(
+            items = content.networkBalances,
+            key = { row -> row.assetId },
+        ) { row ->
+            TokenNetworkBalanceListRow(
+                row = row,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = HomeContentMaxWidth)
+                    .padding(horizontal = 20.dp),
+            )
+        }
+        item {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = HomeContentMaxWidth)
+                    .padding(horizontal = 20.dp),
+            ) {
+                Spacer(modifier = Modifier.height(22.dp))
+                TokenDetailSectionHeader(
+                    title = stringResource(R.string.asset_detail_activity_title),
+                    value = stringResource(R.string.activity_transactions_count, content.transactions.size),
+                )
+            }
+        }
+        if (content.transactions.isEmpty()) {
+            item {
+                TokenDetailEmptyActivity(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .widthIn(max = HomeContentMaxWidth)
+                        .padding(horizontal = 20.dp, vertical = 8.dp),
+                )
+            }
+        } else {
+            items(
+                items = content.transactions,
+                key = { transaction -> transaction.transactionId },
+            ) { transaction ->
+                ActivityTransactionCard(
+                    transaction = transaction,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .widthIn(max = HomeContentMaxWidth)
+                        .padding(horizontal = 20.dp, vertical = 6.dp),
+                )
+            }
+        }
+        item {
+            Spacer(modifier = Modifier.height(20.dp))
+        }
+    }
+}
+
+@Composable
+private fun TokenDetailHeader(
+    title: String,
+    symbol: String,
+    @DrawableRes iconRes: Int,
+    onBack: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(onClick = onBack) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+        Spacer(modifier = Modifier.width(8.dp))
+        Box(
+            modifier = Modifier
+                .size(46.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceContainer),
+            contentAlignment = Alignment.Center,
+        ) {
+            Image(
+                painter = painterResource(iconRes),
+                contentDescription = null,
+                modifier = Modifier.size(30.dp),
+            )
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = symbol,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+    }
+}
+
+@Composable
+private fun TokenDetailSectionHeader(
+    title: String,
+    value: String,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Bold,
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.Bold,
+        )
+    }
+}
+
+@Composable
+private fun TokenNetworkBalanceListRow(
+    row: TokenNetworkBalanceRow,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .height(72.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(horizontal = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceContainer),
+            contentAlignment = Alignment.Center,
+        ) {
+            Image(
+                painter = painterResource(row.iconRes),
+                contentDescription = null,
+                modifier = Modifier.size(28.dp),
+            )
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            text = row.network,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(
+            horizontalAlignment = Alignment.End,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Text(
+                text = row.fiatValue,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+            )
+            Text(
+                text = row.amount,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+            )
+        }
+    }
+}
+
+@Composable
+private fun TokenDetailEmptyActivity(
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+    ) {
+        Text(
+            text = stringResource(R.string.asset_detail_activity_empty),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(18.dp),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
     }
 }
 
@@ -1596,6 +1947,7 @@ private fun HomeAssetSelectableFilterRow(
 @Composable
 private fun HomeAssetListRow(
     asset: HomeAssetRow,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -1603,6 +1955,7 @@ private fun HomeAssetListRow(
             .height(72.dp)
             .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.surface)
+            .clickable(onClick = onClick)
             .padding(horizontal = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -1633,7 +1986,13 @@ private fun HomeAssetListRow(
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = "${asset.symbol} · ${asset.network}",
+                text = "${asset.symbol} · ${
+                    if (asset.networkCount > 1) {
+                        stringResource(R.string.home_assets_network_count, asset.networkCount)
+                    } else {
+                        asset.network
+                    }
+                }",
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -1686,6 +2045,10 @@ private fun SatraMainPlaceholderTab(
 internal data class HomeAssetRow(
     val assetId: String,
     val networkId: String,
+    val assetIds: List<String>,
+    val networkIds: Set<String>,
+    val networks: List<Pair<String, String>>,
+    val networkCount: Int,
     @DrawableRes val iconRes: Int,
     val symbol: String,
     val name: String,
@@ -1711,6 +2074,28 @@ private data class ActivityTransactionRow(
     val fee: String,
 )
 
+private data class RawHomeAssetRow(
+    val assetId: String,
+    val networkId: String,
+    val networkName: String,
+    val symbol: String,
+    val name: String,
+    val balance: BigDecimal,
+    val fiatValue: BigDecimal,
+    val isNative: Boolean,
+)
+
+private data class TokenNetworkBalanceRow(
+    val assetId: String,
+    val networkId: String,
+    val network: String,
+    @DrawableRes val iconRes: Int,
+    val amount: String,
+    val fiatValue: String,
+    val fiatValueAmount: BigDecimal,
+    val hasBalance: Boolean,
+)
+
 private sealed interface HomeDashboardState {
     data object Loading : HomeDashboardState
 
@@ -1723,6 +2108,24 @@ private sealed interface HomeDashboardState {
         val chartTransactions: List<WalletTransactionRecord>,
         val chartData: HomeBalanceChartData,
     ) : HomeDashboardState
+}
+
+private sealed interface TokenDetailState {
+    data object Loading : TokenDetailState
+
+    data class Content(
+        val symbol: String,
+        val name: String,
+        @DrawableRes val iconRes: Int,
+        val currencyCode: String,
+        val totalBalance: String,
+        val networkBalances: List<TokenNetworkBalanceRow>,
+        val transactions: List<ActivityTransactionRow>,
+        val chartTransactions: List<WalletTransactionRecord>,
+        val chartData: HomeBalanceChartData,
+        val sendAssetId: String?,
+        val sendRequiresNetwork: Boolean,
+    ) : TokenDetailState
 }
 
 private sealed interface ActivityScreenState {
@@ -1767,6 +2170,77 @@ private fun WalletRecord.toHomeDashboardState(
     )
 }
 
+private fun WalletRecord.toTokenDetailState(
+    symbol: String,
+    walletAssets: List<WalletAssetRecord>,
+    walletTransactions: List<WalletTransactionRecord>,
+    resources: Resources,
+    nowMillis: Long,
+): TokenDetailState.Content {
+    val catalogAssetsById = SupportedAssetCatalog.assets.associateBy { it.assetId }
+    val matchingAssets = walletAssets.filter { walletAsset ->
+        catalogAssetsById[walletAsset.assetId]?.symbol.equals(symbol, ignoreCase = true)
+    }
+    val matchingAssetIds = matchingAssets.map { asset -> asset.assetId }.toSet()
+    val matchingTransactions = walletTransactions.filter { transaction ->
+        transaction.assetId in matchingAssetIds
+    }
+    val totalFiat = matchingAssets.fold(BigDecimal.ZERO) { total, asset ->
+        total + asset.balanceFiatValue.toBigDecimalOrZero()
+    }
+    val primaryAsset = matchingAssets
+        .maxByOrNull { asset -> asset.balanceFiatValue.toBigDecimalOrZero() }
+        ?.let { asset -> catalogAssetsById[asset.assetId] }
+        ?: SupportedAssetCatalog.assets.firstOrNull { asset -> asset.symbol.equals(symbol, ignoreCase = true) }
+    val sendCandidates = matchingAssets
+        .filter { asset -> asset.balanceDecimal.toBigDecimalOrZero() > BigDecimal.ZERO }
+        .ifEmpty { matchingAssets }
+    val sendRequiresNetwork = sendCandidates.size > 1
+    val sendAssetId = sendCandidates.singleOrNull()?.assetId
+    return TokenDetailState.Content(
+        symbol = symbol,
+        name = primaryAsset?.name ?: symbol,
+        iconRes = assetIconRes(symbol, matchingAssets.firstOrNull()?.networkId.orEmpty()),
+        currencyCode = localCurrencyCode,
+        totalBalance = formatFiat(totalFiat.toPlainString(), localCurrencyCode),
+        networkBalances = matchingAssets.toTokenNetworkBalanceRows(localCurrencyCode),
+        transactions = matchingTransactions.toActivityRows(localCurrencyCode, resources),
+        chartTransactions = matchingTransactions,
+        chartData = buildHomeBalanceChartData(
+            transactions = matchingTransactions,
+            range = HomeChartRange.OneWeek,
+            nowMillis = nowMillis,
+        ),
+        sendAssetId = sendAssetId,
+        sendRequiresNetwork = sendRequiresNetwork,
+    )
+}
+
+private fun List<WalletAssetRecord>.toTokenNetworkBalanceRows(localCurrencyCode: String): List<TokenNetworkBalanceRow> {
+    val catalogAssetsById = SupportedAssetCatalog.assets.associateBy { it.assetId }
+    val networksById = SupportedAssetCatalog.networks.associateBy { it.networkId }
+    return mapNotNull { walletAsset ->
+        val asset = catalogAssetsById[walletAsset.assetId] ?: return@mapNotNull null
+        val network = networksById[walletAsset.networkId] ?: return@mapNotNull null
+        val balance = walletAsset.balanceDecimal.toBigDecimalOrZero()
+        val fiatValue = walletAsset.balanceFiatValue.toBigDecimalOrZero()
+        TokenNetworkBalanceRow(
+            assetId = walletAsset.assetId,
+            networkId = walletAsset.networkId,
+            network = network.displayName,
+            iconRes = networkIconRes(walletAsset.networkId),
+            amount = "${formatCryptoAmount(walletAsset.balanceDecimal)} ${asset.symbol}",
+            fiatValue = formatFiat(walletAsset.balanceFiatValue, localCurrencyCode),
+            fiatValueAmount = fiatValue,
+            hasBalance = balance > BigDecimal.ZERO,
+        )
+    }.sortedWith(
+        compareByDescending<TokenNetworkBalanceRow> { row -> row.fiatValueAmount }
+            .thenByDescending { row -> row.hasBalance }
+            .thenBy { row -> row.network.lowercase(Locale.US) },
+    )
+}
+
 private fun List<WalletTransactionRecord>.toActivityRows(
     localCurrencyCode: String,
     resources: Resources,
@@ -1781,7 +2255,7 @@ private fun List<WalletTransactionRecord>.toActivityRows(
             val direction = transaction.direction.activityDirectionLabel(resources)
             ActivityTransactionRow(
                 transactionId = transaction.transactionId,
-                iconRes = networkIconRes(transaction.networkId),
+                iconRes = assetIconRes(asset.symbol, transaction.networkId),
                 direction = transaction.direction,
                 title = "$direction ${asset.symbol}",
                 subtitle = "${network.displayName} · $status · ${formatActivityTime(transaction.timestamp, resources)}",
@@ -1808,26 +2282,55 @@ private fun List<WalletTransactionRecord>.toActivityRows(
 private fun List<WalletAssetRecord>.toHomeAssetRows(localCurrencyCode: String): List<HomeAssetRow> {
     val catalogAssetsById = SupportedAssetCatalog.assets.associateBy { it.assetId }
     val networksById = SupportedAssetCatalog.networks.associateBy { it.networkId }
-    return mapNotNull { walletAsset ->
+    val rawRows = mapNotNull { walletAsset ->
         val asset = catalogAssetsById[walletAsset.assetId] ?: return@mapNotNull null
         val network = networksById[walletAsset.networkId] ?: return@mapNotNull null
         val balance = walletAsset.balanceDecimal.toBigDecimalOrZero()
         val fiatValue = walletAsset.balanceFiatValue.toBigDecimalOrZero()
-        HomeAssetRow(
-            assetId = walletAsset.assetId,
+        RawHomeAssetRow(
+            assetId = asset.assetId,
             networkId = walletAsset.networkId,
-            iconRes = networkIconRes(walletAsset.networkId),
-            symbol = asset.symbol,
+            networkName = network.displayName,
+            symbol = asset.symbol.uppercase(Locale.US),
             name = asset.name,
-            network = network.displayName,
-            amount = "${formatCryptoAmount(walletAsset.balanceDecimal)} ${asset.symbol}",
-            amountValue = balance,
-            fiatValue = formatFiat(walletAsset.balanceFiatValue, localCurrencyCode),
-            fiatValueAmount = fiatValue,
-            hasBalance = balance > BigDecimal.ZERO,
+            balance = balance,
+            fiatValue = fiatValue,
             isNative = asset.assetType == "NATIVE",
         )
-    }.applyHomeAssetFilter(HomeAssetFilterState())
+    }
+    return rawRows
+        .groupBy { row -> row.symbol }
+        .map { (symbol, rows) ->
+            val primary = rows.maxWith(
+                compareBy<RawHomeAssetRow> { row -> row.fiatValue }
+                    .thenBy { row -> row.balance },
+            )
+            val totalBalance = rows.fold(BigDecimal.ZERO) { total, row -> total + row.balance }
+            val totalFiat = rows.fold(BigDecimal.ZERO) { total, row -> total + row.fiatValue }
+            val networks = rows
+                .map { row -> row.networkId to row.networkName }
+                .distinctBy { (networkId, _) -> networkId }
+                .sortedBy { (_, networkName) -> networkName.lowercase(Locale.US) }
+            HomeAssetRow(
+                assetId = symbol,
+                networkId = primary.networkId,
+                assetIds = rows.map { row -> row.assetId }.distinct(),
+                networkIds = networks.map { (networkId, _) -> networkId }.toSet(),
+                networks = networks,
+                networkCount = networks.size,
+                iconRes = assetIconRes(symbol, primary.networkId),
+                symbol = symbol,
+                name = primary.name,
+                network = primary.networkName,
+                amount = "${formatCryptoAmount(totalBalance.toPlainString())} $symbol",
+                amountValue = totalBalance,
+                fiatValue = formatFiat(totalFiat.toPlainString(), localCurrencyCode),
+                fiatValueAmount = totalFiat,
+                hasBalance = totalBalance > BigDecimal.ZERO,
+                isNative = rows.all { row -> row.isNative },
+            )
+        }
+        .applyHomeAssetFilter(HomeAssetFilterState())
 }
 
 private fun formatCryptoAmount(value: String): String {
@@ -2011,6 +2514,13 @@ internal fun networkIconRes(networkId: String): Int =
         else -> R.drawable.ic_brand_assets
     }
 
+@DrawableRes
+internal fun assetIconRes(symbol: String, fallbackNetworkId: String): Int =
+    when (symbol.uppercase(Locale.US)) {
+        "USDT" -> R.drawable.ic_asset_usdt
+        else -> networkIconRes(fallbackNetworkId)
+    }
+
 private enum class SatraMainTab(
     val route: String,
     @StringRes val labelRes: Int,
@@ -2043,6 +2553,7 @@ internal object SatraMainRoute {
     const val SendAsset = "main/send"
     const val ArgSymbol = "symbol"
     const val ArgAssetId = "assetId"
+    const val TokenDetailPattern = "main/token/{$ArgSymbol}"
     const val SendNetworkPattern = "main/send/network/{$ArgSymbol}"
     const val SendComposerPattern = "main/send/compose/{$ArgAssetId}"
     const val AddressBook = "main/settings/address-book"
@@ -2055,6 +2566,9 @@ internal object SatraMainRoute {
     const val About = "main/settings/about"
     const val Legal = "main/settings/legal"
     const val DangerZone = "main/settings/danger-zone"
+
+    fun tokenDetail(symbol: String): String =
+        "main/token/${Uri.encode(symbol)}"
 
     fun sendNetwork(symbol: String): String =
         "main/send/network/${Uri.encode(symbol)}"

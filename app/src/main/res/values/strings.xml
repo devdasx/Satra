@@ -255,6 +255,7 @@
     <string name="home_chart_value_placeholder">No activity yet</string>
     <string name="home_assets_title">Coins &amp; tokens</string>
     <string name="home_assets_count">%1$d assets</string>
+    <string name="home_assets_network_count">%1$d networks</string>
     <string name="home_assets_filtered_count">%1$d of %2$d</string>
     <string name="home_assets_filter_action">Filter</string>
     <string name="home_assets_filter_title">Filter assets</string>
@@ -280,6 +281,9 @@
     <string name="activity_summary_partial">Some public providers returned partial history. Satra keeps the sync state visible and will retry on the next refresh.</string>
     <string name="activity_transactions_title">Transactions</string>
     <string name="activity_transactions_count">%1$d shown</string>
+    <string name="asset_detail_balances_title">Balances by network</string>
+    <string name="asset_detail_activity_title">Activity</string>
+    <string name="asset_detail_activity_empty">No activity for this asset yet.</string>
     <string name="activity_syncing_title">Syncing EVM activity…</string>
     <string name="activity_syncing_body">Satra is checking supported EVM networks, token balances, and indexed history.</string>
     <string name="activity_empty_title">No EVM activity yet.</string>
