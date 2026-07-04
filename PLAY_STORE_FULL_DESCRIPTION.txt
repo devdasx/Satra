@@ -1,0 +1,26 @@
+Satra is an open-source, non-custodial crypto wallet built for people who want clear control of their assets, keys, and activity across supported networks.
+
+Create a new wallet or import an existing one with a recovery phrase, private key, or watch-only address. Satra is designed around self-custody: your wallet data is stored locally on your device, and you remain responsible for your recovery phrase, passphrase, private keys, and backups.
+
+Track balances in your local currency, review token and coin activity, receive assets with clear network selection, and manage multiple wallets from one native Android app. Satra supports Bitcoin-family networks, EVM networks, and the supported assets listed by the project, with sync status shown honestly when a public provider is partial or unavailable.
+
+Key features:
+
+- Open-source code you can inspect and verify
+- Non-custodial wallet design
+- Multi-wallet support
+- Recovery phrase, private key, and watch-only import flows
+- Bitcoin-family balance, UTXO, and history sync through public Electrum servers
+- EVM balance and activity sync through public RPC and indexed API fallbacks
+- Token and coin portfolio view with local currency values
+- Receive flow with asset and network selection
+- Activity view for supported transactions
+- Address book, preferences, security settings, and reset controls
+- Light, dark, and system appearance modes
+- Native Android UI built with Material design principles
+
+Satra does not hold your funds, manage custodial accounts, or recover your wallet for you. Always write down your recovery phrase, keep backups private, and verify addresses before sending assets.
+
+Public RPC, API, and Electrum providers may be rate-limited, delayed, or temporarily unavailable. Satra uses fallbacks and local persistence where possible, while showing sync state instead of pretending incomplete data is complete.
+
+Satra is built to be transparent, local-first, and professional: a crypto wallet where the source code, supported assets, wallet flows, and network behavior can be reviewed as the app grows.
