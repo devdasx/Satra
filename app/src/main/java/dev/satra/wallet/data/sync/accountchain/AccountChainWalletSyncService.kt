@@ -986,32 +986,203 @@ private suspend fun syncPolkadotBalances(
     address: String,
     assets: List<SupportedAsset>,
     nowMillis: Long,
-): AccountChainBalanceResult {
-    val dotProvider = config.providers.first { it.name.contains("sidecar") && !it.name.contains("asset-hub") }
-    val dotResult = runCatching {
-        JSONObject(httpClient.get(dotProvider, "/accounts/$address/balance-info"))
+): AccountChainBalanceResult = coroutineScope {
+    val accountId = runCatching { PolkadotStorage.decodeSs58AccountId(address) }
+        .getOrElse { error ->
+            return@coroutineScope AccountChainBalanceResult(
+                balances = emptyList(),
+                providerName = null,
+                latestLedger = null,
+                completeness = EvmSyncCompleteness.Failed,
+                error = "Invalid Polkadot address: ${error.message}",
+            )
+        }
+
+    val relayProviders = config.providers.filter { it.name.startsWith("polkadot-") && !it.name.contains("asset-hub") }
+    val assetHubProviders = config.providers.filter { it.name.contains("asset-hub") }
+    val relayDeferred = async {
+        firstPolkadotRelayBalance(httpClient, relayProviders, accountId)
     }
-    val nativeAmount = dotResult.getOrNull()
-        ?.optJSONObject("data")
-        ?.optBigIntegerString("free")
-        ?: dotResult.getOrNull()?.optBigIntegerString("free")
-        ?: "0"
-    val balances = dotResult.getOrNull()?.let {
-        listOf(accountBalance(assets.nativeAsset(), nativeAmount, dotProvider.name, null, nowMillis))
-    }.orEmpty()
-    val errors = buildList {
-        dotResult.exceptionOrNull()?.message?.let { add("DOT balance: $it") }
-        if (assets.tokenAssets().isNotEmpty()) {
-            add("Asset Hub token balance requires a healthy public Asset Hub indexer; public Sidecar is currently unavailable.")
+    val assetHubDeferred = async {
+        firstPolkadotAssetHubBalances(httpClient, assetHubProviders, accountId, assets.tokenAssets())
+    }
+
+    val relayResult = relayDeferred.await()
+    val assetHubResult = assetHubDeferred.await()
+    val relayBalance = relayResult.getOrNull()
+    val assetHubBalances = assetHubResult.getOrNull()
+    val nativeAmount = listOfNotNull(relayBalance?.nativeRaw, assetHubBalances?.nativeRaw)
+        .fold(BigInteger.ZERO, BigInteger::add)
+    val providerName = listOfNotNull(relayBalance?.providerName, assetHubBalances?.providerName)
+        .joinToString("+")
+        .ifBlank { null }
+    val latestLedger = maxOfOrNull(relayBalance?.latestLedger, assetHubBalances?.latestLedger)
+    val balances = buildList {
+        if (providerName != null) {
+            add(accountBalance(assets.nativeAsset(), nativeAmount.toString(), providerName, latestLedger, nowMillis))
+        }
+        assetHubBalances?.let { assetHub ->
+            assetHub.tokenRawByAssetId.forEach { (assetId, rawBalance) ->
+                add(accountBalance(assetId, rawBalance.toString(), assetHub.providerName, assetHub.latestLedger, nowMillis))
+            }
         }
     }
-    return AccountChainBalanceResult(
+    val errors = buildList {
+        relayResult.exceptionOrNull()?.message?.let { add("Polkadot relay DOT balance: $it") }
+        assetHubResult.exceptionOrNull()?.message?.let { add("Polkadot Asset Hub balances: $it") }
+    }
+    AccountChainBalanceResult(
         balances = balances,
-        providerName = dotProvider.name,
-        latestLedger = null,
-        completeness = if (errors.isEmpty()) EvmSyncCompleteness.Complete else EvmSyncCompleteness.Partial,
+        providerName = providerName,
+        latestLedger = latestLedger,
+        completeness = when {
+            balances.isEmpty() -> EvmSyncCompleteness.Failed
+            errors.isEmpty() -> EvmSyncCompleteness.Complete
+            else -> EvmSyncCompleteness.Partial
+        },
         error = errors.joinToString(" | ").ifBlank { null },
     )
+}
+
+private data class PolkadotRelayBalance(
+    val nativeRaw: BigInteger,
+    val providerName: String,
+    val latestLedger: Long?,
+)
+
+private data class PolkadotAssetHubBalances(
+    val nativeRaw: BigInteger,
+    val tokenRawByAssetId: Map<SupportedAsset, BigInteger>,
+    val providerName: String,
+    val latestLedger: Long?,
+)
+
+private suspend fun firstPolkadotRelayBalance(
+    httpClient: AccountChainHttpClient,
+    providers: List<AccountChainProvider>,
+    accountId: ByteArray,
+): Result<PolkadotRelayBalance> =
+    firstSuccessfulPolkadotProvider(providers, "relay DOT balance") { provider ->
+        val storage = substrateRpcString(
+            httpClient = httpClient,
+            provider = provider,
+            method = "state_getStorage",
+            params = JSONArray().put(PolkadotStorage.systemAccountKey(accountId)),
+        )
+        val header = substrateRpcObject(
+            httpClient = httpClient,
+            provider = provider,
+            method = "chain_getHeader",
+        )
+        PolkadotRelayBalance(
+            nativeRaw = PolkadotStorage.parseSystemAccountFree(storage) ?: BigInteger.ZERO,
+            providerName = provider.name,
+            latestLedger = PolkadotStorage.parseHeaderNumber(header),
+        )
+    }
+
+private suspend fun firstPolkadotAssetHubBalances(
+    httpClient: AccountChainHttpClient,
+    providers: List<AccountChainProvider>,
+    accountId: ByteArray,
+    tokenAssets: List<SupportedAsset>,
+): Result<PolkadotAssetHubBalances> =
+    firstSuccessfulPolkadotProvider(providers, "Asset Hub balances") { provider ->
+        val systemStorage = substrateRpcString(
+            httpClient = httpClient,
+            provider = provider,
+            method = "state_getStorage",
+            params = JSONArray().put(PolkadotStorage.systemAccountKey(accountId)),
+        )
+        val tokenBalances = coroutineScope {
+            tokenAssets.map { asset ->
+                async {
+                    val assetId = asset.contractAddress?.toLongOrNull()
+                        ?: error("${asset.symbol} has an invalid Asset Hub asset id: ${asset.contractAddress}")
+                    val tokenStorage = substrateRpcString(
+                        httpClient = httpClient,
+                        provider = provider,
+                        method = "state_getStorage",
+                        params = JSONArray().put(PolkadotStorage.assetAccountKey(assetId, accountId)),
+                    )
+                    asset to (PolkadotStorage.parseAssetAccountBalance(tokenStorage) ?: BigInteger.ZERO)
+                }
+            }.awaitAll().toMap()
+        }
+        val header = substrateRpcObject(
+            httpClient = httpClient,
+            provider = provider,
+            method = "chain_getHeader",
+        )
+        PolkadotAssetHubBalances(
+            nativeRaw = PolkadotStorage.parseSystemAccountFree(systemStorage) ?: BigInteger.ZERO,
+            tokenRawByAssetId = tokenBalances,
+            providerName = provider.name,
+            latestLedger = PolkadotStorage.parseHeaderNumber(header),
+        )
+    }
+
+private suspend fun <T> firstSuccessfulPolkadotProvider(
+    providers: List<AccountChainProvider>,
+    label: String,
+    block: suspend (AccountChainProvider) -> T,
+): Result<T> {
+    val failures = mutableListOf<String>()
+    providers.forEach { provider ->
+        runCatching { block(provider) }
+            .onSuccess { return Result.success(it) }
+            .onFailure { failures += "${provider.name}: ${it.message}" }
+    }
+    return Result.failure(
+        IllegalStateException(
+            if (providers.isEmpty()) {
+                "No Polkadot providers configured for $label."
+            } else {
+                failures.joinToString(" | ").ifBlank { "No provider returned $label." }
+            },
+        ),
+    )
+}
+
+private suspend fun substrateRpcString(
+    httpClient: AccountChainHttpClient,
+    provider: AccountChainProvider,
+    method: String,
+    params: JSONArray = JSONArray(),
+): String? =
+    substrateRpcResult(httpClient, provider, method, params)
+        ?.takeUnless { it == JSONObject.NULL }
+        ?.toString()
+
+private suspend fun substrateRpcObject(
+    httpClient: AccountChainHttpClient,
+    provider: AccountChainProvider,
+    method: String,
+    params: JSONArray = JSONArray(),
+): JSONObject? =
+    substrateRpcResult(httpClient, provider, method, params) as? JSONObject
+
+private suspend fun substrateRpcResult(
+    httpClient: AccountChainHttpClient,
+    provider: AccountChainProvider,
+    method: String,
+    params: JSONArray,
+): Any? {
+    val response = JSONObject(
+        httpClient.post(
+            provider = provider,
+            path = "",
+            body = JSONObject()
+                .put("jsonrpc", "2.0")
+                .put("id", 1)
+                .put("method", method)
+                .put("params", params),
+        ),
+    )
+    response.optJSONObject("error")?.let { rpcError ->
+        error(rpcError.optString("message", rpcError.toString()))
+    }
+    return if (response.has("result")) response.opt("result") else null
 }
 
 private fun syncPolkadotHistory(

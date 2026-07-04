@@ -36,8 +36,10 @@ object AccountChainProviderRegistry {
             nativeAssetId = "polkadot:dot",
             nativeDecimals = 10,
             providers = listOf(
-                AccountChainProvider("polkadot-sidecar-public", "https://polkadot-public-sidecar.parity-chains.parity.io"),
-                AccountChainProvider("polkadot-asset-hub-sidecar-public", "https://polkadot-asset-hub-public-sidecar.parity-chains.parity.io"),
+                AccountChainProvider("polkadot-rpc-public", "https://rpc.polkadot.io"),
+                AccountChainProvider("polkadot-onfinality-public", "https://polkadot.api.onfinality.io/public"),
+                AccountChainProvider("polkadot-asset-hub-rpc-public", "https://polkadot-asset-hub-rpc.polkadot.io"),
+                AccountChainProvider("polkadot-asset-hub-onfinality-public", "https://statemint.api.onfinality.io/public"),
             ),
         ),
         AccountChainNetworkConfig(
@@ -115,4 +117,3 @@ object AccountChainProviderRegistry {
         "cosmos",
     )
 }
-
