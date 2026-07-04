@@ -296,6 +296,14 @@
     <string name="home_wallet_status_ready">Ready</string>
     <string name="home_wallet_status_syncing">Syncing</string>
     <string name="home_wallet_label">Main wallet</string>
+    <string name="home_wallet_menu_content_description">Open wallet switcher</string>
+    <string name="home_wallet_switcher_title">Wallets</string>
+    <string name="home_wallet_switcher_body">Choose the wallet Satra shows on this device.</string>
+    <string name="home_wallet_switcher_active">Active</string>
+    <string name="home_wallet_switcher_create">Create wallet</string>
+    <string name="home_wallet_switcher_import">Import wallet</string>
+    <string name="home_wallet_switcher_empty_title">No wallets yet</string>
+    <string name="home_wallet_switcher_empty_body">Create or import a wallet to start using Satra.</string>
     <string name="home_balance_title">Total balance</string>
     <string name="home_balance_hidden_value">••••••</string>
     <string name="home_balance_hidden_delta">••</string>

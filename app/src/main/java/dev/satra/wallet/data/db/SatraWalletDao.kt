@@ -92,6 +92,15 @@ class SatraWalletDao(
 
         db.beginTransaction()
         try {
+            db.update(
+                SatraDatabaseContract.TABLE_WALLETS,
+                ContentValues().apply {
+                    put("is_active", 0)
+                    put("updated_at", nowMillis)
+                },
+                null,
+                null,
+            )
             db.insertOrThrow(
                 SatraDatabaseContract.TABLE_WALLETS,
                 null,
@@ -167,6 +176,41 @@ class SatraWalletDao(
                 }
             }
         }
+
+    fun setActiveWallet(
+        walletId: String,
+        nowMillis: Long = System.currentTimeMillis(),
+    ): WalletRecord? {
+        if (getWallet(walletId) == null) return null
+
+        val db = databaseHelper.writableDatabase
+        db.beginTransaction()
+        try {
+            db.update(
+                SatraDatabaseContract.TABLE_WALLETS,
+                ContentValues().apply {
+                    put("is_active", 0)
+                    put("updated_at", nowMillis)
+                },
+                null,
+                null,
+            )
+            db.update(
+                SatraDatabaseContract.TABLE_WALLETS,
+                ContentValues().apply {
+                    put("is_active", 1)
+                    put("updated_at", nowMillis)
+                },
+                "wallet_id = ?",
+                arrayOf(walletId),
+            )
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+
+        return getWallet(walletId)
+    }
 
     fun getWalletAssets(walletId: String): List<WalletAssetRecord> =
         databaseHelper.readableDatabase.query(

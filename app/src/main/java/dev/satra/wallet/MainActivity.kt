@@ -804,6 +804,22 @@ class MainActivity : FragmentActivity() {
                                 backStackEntry.savedStateHandle.set(SatraRoute.SCAN_RESULT_AMOUNT, "")
                                 backStackEntry.savedStateHandle.set(SatraRoute.SCAN_RESULT_SCHEME, "")
                             },
+                            onCreateWallet = {
+                                resetPendingWalletSetup()
+                                pendingGeneratedMnemonicWordCount = DEFAULT_MNEMONIC_WORD_COUNT
+                                pendingGeneratedMnemonic = Bip39MnemonicGenerator.generate(
+                                    wordCount = pendingGeneratedMnemonicWordCount,
+                                )
+                                navController.navigate(SatraRoute.CREATE_WALLET_BACKUP) {
+                                    launchSingleTop = true
+                                }
+                            },
+                            onImportWallet = {
+                                resetPendingWalletSetup()
+                                navController.navigate(SatraRoute.IMPORT_METHOD) {
+                                    launchSingleTop = true
+                                }
+                            },
                             onThemePreferenceChange = { preference ->
                                 themePreference = preference
                                 settingsStore.edit()

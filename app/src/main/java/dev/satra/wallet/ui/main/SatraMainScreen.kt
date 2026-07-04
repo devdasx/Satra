@@ -7,7 +7,9 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
@@ -33,6 +35,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -59,11 +62,14 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -78,7 +84,9 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -108,6 +116,7 @@ import dev.satra.wallet.ui.setup.WalletSetupFlow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.math.BigDecimal
@@ -129,6 +138,8 @@ fun SatraMainScreen(
     scannedAddress: String = "",
     onScanAddressClick: () -> Unit = {},
     onScannedAddressConsumed: () -> Unit = {},
+    onCreateWallet: () -> Unit = {},
+    onImportWallet: () -> Unit = {},
     onThemePreferenceChange: (SatraThemePreference) -> Unit,
     onHapticsEnabledChange: (Boolean) -> Unit,
     onLanguageTagChange: (String) -> Unit,
@@ -186,9 +197,12 @@ fun SatraMainScreen(
                 SatraHomeDashboard(
                     walletRepository = walletRepository,
                     balancesHidden = balancesHidden,
+                    hapticsEnabled = settings.hapticsEnabled,
                     onBalancesHiddenChange = onBalancesHiddenChange,
                     onSendClick = { tabNavController.navigate(SatraMainRoute.SendAsset) },
                     onReceiveClick = { tabNavController.navigate(SatraMainRoute.Receive) },
+                    onCreateWallet = onCreateWallet,
+                    onImportWallet = onImportWallet,
                     onAssetClick = { symbol ->
                         tabNavController.navigate(SatraMainRoute.tokenDetail(symbol))
                     },
@@ -597,76 +611,98 @@ private fun SetupCompletionBottomSheet(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SatraHomeDashboard(
     walletRepository: SatraWalletRepository,
     balancesHidden: Boolean,
+    hapticsEnabled: Boolean,
     onBalancesHiddenChange: (Boolean) -> Unit,
     onSendClick: () -> Unit,
     onReceiveClick: () -> Unit,
+    onCreateWallet: () -> Unit,
+    onImportWallet: () -> Unit,
     onAssetClick: (String) -> Unit,
 ) {
     var homeState by remember { mutableStateOf<HomeDashboardState>(HomeDashboardState.Loading) }
     var assetFilterState by remember { mutableStateOf(HomeAssetFilterState()) }
     var assetSearchQuery by remember { mutableStateOf("") }
     var assetFilterSheetVisible by remember { mutableStateOf(false) }
-
-    LaunchedEffect(walletRepository) {
-        val wallet = walletRepository.getPrimaryWallet()
-        if (wallet == null) {
-            homeState = HomeDashboardState.Content(
-                walletName = "",
-                status = HomeSyncStatus.Ready,
-                totalBalance = formatFiat("0", DEFAULT_LOCAL_CURRENCY_CODE),
-                totalBalanceAmount = BigDecimal.ZERO,
-                currencyCode = DEFAULT_LOCAL_CURRENCY_CODE,
-                assets = emptyList(),
-                chartTransactions = emptyList(),
-                chartData = buildHomeBalanceChartData(
-                    transactions = emptyList(),
-                    range = HomeChartRange.OneWeek,
-                    nowMillis = System.currentTimeMillis(),
-                ),
-            )
-            return@LaunchedEffect
+    var walletSwitcherSheetVisible by remember { mutableStateOf(false) }
+    var walletSwitcherRows by remember { mutableStateOf<List<WalletSwitcherRow>>(emptyList()) }
+    var refreshRequest by remember { mutableStateOf(0) }
+    var isRefreshing by remember { mutableStateOf(false) }
+    val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+    val hapticFeedback = LocalHapticFeedback.current
+    val showScrolledWalletBar by remember {
+        derivedStateOf {
+            listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 220
         }
+    }
 
-        suspend fun loadContent(status: HomeSyncStatus) {
-            val (latestWallet, walletAssets, walletTransactions) = coroutineScope {
-                val walletDeferred = async { walletRepository.getPrimaryWallet() }
-                val assetsDeferred = async { walletRepository.getWalletAssets(wallet.walletId) }
-                val transactionsDeferred = async { walletRepository.getWalletTransactions(wallet.walletId) }
-                Triple(
-                    walletDeferred.await() ?: wallet,
-                    assetsDeferred.await(),
-                    transactionsDeferred.await(),
+    LaunchedEffect(walletRepository, refreshRequest) {
+        try {
+            val wallet = walletRepository.getPrimaryWallet()
+            if (wallet == null) {
+                homeState = HomeDashboardState.Content(
+                    walletId = "",
+                    walletName = "",
+                    status = HomeSyncStatus.Ready,
+                    totalBalance = formatFiat("0", DEFAULT_LOCAL_CURRENCY_CODE),
+                    totalBalanceAmount = BigDecimal.ZERO,
+                    currencyCode = DEFAULT_LOCAL_CURRENCY_CODE,
+                    assets = emptyList(),
+                    chartTransactions = emptyList(),
+                    chartData = buildHomeBalanceChartData(
+                        transactions = emptyList(),
+                        range = HomeChartRange.OneWeek,
+                        nowMillis = System.currentTimeMillis(),
+                    ),
+                )
+                return@LaunchedEffect
+            }
+
+            suspend fun loadContent(status: HomeSyncStatus) {
+                val (latestWallet, walletAssets, walletTransactions) = coroutineScope {
+                    val walletDeferred = async { walletRepository.getPrimaryWallet() }
+                    val assetsDeferred = async { walletRepository.getWalletAssets(wallet.walletId) }
+                    val transactionsDeferred = async { walletRepository.getWalletTransactions(wallet.walletId) }
+                    Triple(
+                        walletDeferred.await() ?: wallet,
+                        assetsDeferred.await(),
+                        transactionsDeferred.await(),
+                    )
+                }
+                homeState = latestWallet.toHomeDashboardState(
+                    walletAssets = walletAssets,
+                    walletTransactions = walletTransactions,
+                    status = status,
+                    chartRange = HomeChartRange.OneWeek,
+                    nowMillis = System.currentTimeMillis(),
                 )
             }
-            homeState = latestWallet.toHomeDashboardState(
-                walletAssets = walletAssets,
-                walletTransactions = walletTransactions,
-                status = status,
-                chartRange = HomeChartRange.OneWeek,
-                nowMillis = System.currentTimeMillis(),
-            )
-        }
 
-        loadContent(HomeSyncStatus.Syncing)
-        runCatching {
-            walletRepository.syncWalletData(
-                walletId = wallet.walletId,
-                onProgress = {
-                    withContext(Dispatchers.Main) {
-                        loadContent(HomeSyncStatus.Syncing)
-                    }
-                },
-            )
+            loadContent(HomeSyncStatus.Syncing)
+            runCatching {
+                walletRepository.syncWalletData(
+                    walletId = wallet.walletId,
+                    onProgress = {
+                        withContext(Dispatchers.Main) {
+                            loadContent(HomeSyncStatus.Syncing)
+                        }
+                    },
+                )
+            }
+            loadContent(HomeSyncStatus.Ready)
+        } finally {
+            isRefreshing = false
         }
-        loadContent(HomeSyncStatus.Ready)
     }
 
     val content = when (val state = homeState) {
         HomeDashboardState.Loading -> HomeDashboardState.Content(
+            walletId = "",
             walletName = "",
             status = HomeSyncStatus.Syncing,
             totalBalance = formatFiat("0", DEFAULT_LOCAL_CURRENCY_CODE),
@@ -695,6 +731,12 @@ private fun SatraHomeDashboard(
             .sortedBy { (_, networkName) -> networkName.lowercase() }
     }
 
+    LaunchedEffect(walletSwitcherSheetVisible, content.walletId, refreshRequest) {
+        if (walletSwitcherSheetVisible) {
+            walletSwitcherRows = walletRepository.loadWalletSwitcherRows()
+        }
+    }
+
     if (assetFilterSheetVisible) {
         HomeAssetFilterSheet(
             networks = assetNetworks,
@@ -704,69 +746,129 @@ private fun SatraHomeDashboard(
         )
     }
 
-    LazyColumn(
+    if (walletSwitcherSheetVisible) {
+        WalletSwitcherSheet(
+            wallets = walletSwitcherRows,
+            activeWalletId = content.walletId,
+            balancesHidden = balancesHidden,
+            onDismiss = { walletSwitcherSheetVisible = false },
+            onWalletSelected = { walletId ->
+                if (walletId == content.walletId) {
+                    walletSwitcherSheetVisible = false
+                } else {
+                    if (hapticsEnabled) {
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                    }
+                    coroutineScope.launch {
+                        walletRepository.setActiveWallet(walletId)
+                        walletSwitcherSheetVisible = false
+                        homeState = HomeDashboardState.Loading
+                        refreshRequest += 1
+                    }
+                }
+            },
+            onCreateWallet = {
+                walletSwitcherSheetVisible = false
+                onCreateWallet()
+            },
+            onImportWallet = {
+                walletSwitcherSheetVisible = false
+                onImportWallet()
+            },
+        )
+    }
+
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = {
+            if (!isRefreshing) {
+                isRefreshing = true
+                refreshRequest += 1
+            }
+        },
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface),
-        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        item {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .widthIn(max = HomeContentMaxWidth)
-                    .padding(horizontal = 20.dp, vertical = 20.dp),
+        Box(modifier = Modifier.fillMaxSize()) {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                HomeBalanceCard(
+                item {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .widthIn(max = HomeContentMaxWidth)
+                            .padding(horizontal = 20.dp, vertical = 20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        HomeBalanceCard(
+                            walletName = content.walletName.ifBlank {
+                                stringResource(R.string.home_wallet_label)
+                            },
+                            status = content.status,
+                            totalBalance = content.totalBalance,
+                            currencyCode = content.currencyCode,
+                            transactions = content.chartTransactions,
+                            initialChartData = content.chartData,
+                            isEmpty = content.totalBalanceAmount <= BigDecimal.ZERO,
+                            balancesHidden = balancesHidden,
+                            onWalletClick = { walletSwitcherSheetVisible = true },
+                            onBalancesHiddenChange = onBalancesHiddenChange,
+                            onSendClick = onSendClick,
+                            onReceiveClick = onReceiveClick,
+                        )
+                        Spacer(modifier = Modifier.height(22.dp))
+                        HomeAssetsHeader(
+                            assetCount = visibleAssets.size,
+                            totalAssetCount = content.assets.size,
+                            isFiltered = assetFilterState.isActive || assetSearchQuery.isNotBlank(),
+                            onFilterClick = { assetFilterSheetVisible = true },
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        HomeAssetSearchField(
+                            query = assetSearchQuery,
+                            onQueryChange = { query -> assetSearchQuery = query },
+                        )
+                    }
+                }
+                items(
+                    items = visibleAssets,
+                    key = { asset -> asset.assetId },
+                ) { asset ->
+                    HomeAssetListRow(
+                        asset = asset,
+                        balancesHidden = balancesHidden,
+                        onClick = { onAssetClick(asset.symbol) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .widthIn(max = HomeContentMaxWidth)
+                            .padding(horizontal = 20.dp),
+                    )
+                }
+                item {
+                    Spacer(modifier = Modifier.height(20.dp))
+                }
+            }
+
+            if (showScrolledWalletBar && content.walletId.isNotBlank()) {
+                HomeScrolledWalletBar(
                     walletName = content.walletName.ifBlank {
                         stringResource(R.string.home_wallet_label)
                     },
-                    status = content.status,
                     totalBalance = content.totalBalance,
-                    currencyCode = content.currencyCode,
-                    transactions = content.chartTransactions,
-                    initialChartData = content.chartData,
-                    isEmpty = content.totalBalanceAmount <= BigDecimal.ZERO,
                     balancesHidden = balancesHidden,
-                    onBalancesHiddenChange = onBalancesHiddenChange,
-                    onSendClick = onSendClick,
-                    onReceiveClick = onReceiveClick,
-                )
-                Spacer(modifier = Modifier.height(22.dp))
-                HomeAssetsHeader(
-                    assetCount = visibleAssets.size,
-                    totalAssetCount = content.assets.size,
-                    isFiltered = assetFilterState.isActive || assetSearchQuery.isNotBlank(),
-                    onFilterClick = { assetFilterSheetVisible = true },
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                HomeAssetSearchField(
-                    query = assetSearchQuery,
-                    onQueryChange = { query -> assetSearchQuery = query },
+                    onWalletClick = { walletSwitcherSheetVisible = true },
+                    modifier = Modifier.align(Alignment.TopCenter),
                 )
             }
-        }
-        items(
-            items = visibleAssets,
-            key = { asset -> asset.assetId },
-        ) { asset ->
-            HomeAssetListRow(
-                asset = asset,
-                balancesHidden = balancesHidden,
-                onClick = { onAssetClick(asset.symbol) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .widthIn(max = HomeContentMaxWidth)
-                    .padding(horizontal = 20.dp),
-            )
-        }
-        item {
-            Spacer(modifier = Modifier.height(20.dp))
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SatraActivityScreen(
     walletRepository: SatraWalletRepository,
@@ -777,84 +879,90 @@ private fun SatraActivityScreen(
     var activityState by remember {
         mutableStateOf<ActivityScreenState>(ActivityScreenState.Loading)
     }
+    var refreshRequest by remember { mutableStateOf(0) }
+    var isRefreshing by remember { mutableStateOf(false) }
 
-    LaunchedEffect(walletRepository) {
-        val wallet = walletRepository.getPrimaryWallet()
-        if (wallet == null) {
-            activityState = ActivityScreenState.Content(
-                walletName = "",
-                status = HomeSyncStatus.Ready,
-                transactions = emptyList(),
-                syncedNetworkCount = 0,
-                error = null,
-            )
-            return@LaunchedEffect
-        }
+    LaunchedEffect(walletRepository, refreshRequest) {
+        try {
+            val wallet = walletRepository.getPrimaryWallet()
+            if (wallet == null) {
+                activityState = ActivityScreenState.Content(
+                    walletName = "",
+                    status = HomeSyncStatus.Ready,
+                    transactions = emptyList(),
+                    syncedNetworkCount = 0,
+                    error = null,
+                )
+                return@LaunchedEffect
+            }
 
-        suspend fun loadContent(status: HomeSyncStatus, error: String? = null) {
-            val (latestWallet, walletAssets, walletTransactions) = coroutineScope {
-                val walletDeferred = async { walletRepository.getPrimaryWallet() }
-                val assetsDeferred = async { walletRepository.getWalletAssets(wallet.walletId) }
-                val transactionsDeferred = async { walletRepository.getWalletTransactions(wallet.walletId) }
-                Triple(
-                    walletDeferred.await() ?: wallet,
-                    assetsDeferred.await(),
-                    transactionsDeferred.await(),
+            suspend fun loadContent(status: HomeSyncStatus, error: String? = null) {
+                val (latestWallet, walletAssets, walletTransactions) = coroutineScope {
+                    val walletDeferred = async { walletRepository.getPrimaryWallet() }
+                    val assetsDeferred = async { walletRepository.getWalletAssets(wallet.walletId) }
+                    val transactionsDeferred = async { walletRepository.getWalletTransactions(wallet.walletId) }
+                    Triple(
+                        walletDeferred.await() ?: wallet,
+                        assetsDeferred.await(),
+                        transactionsDeferred.await(),
+                    )
+                }
+                val transactions = walletTransactions.toActivityRows(
+                    localCurrencyCode = latestWallet.localCurrencyCode,
+                    walletAssets = walletAssets,
+                    resources = resources,
+                )
+                activityState = ActivityScreenState.Content(
+                    walletName = latestWallet.walletName,
+                    status = status,
+                    transactions = transactions,
+                    syncedNetworkCount = latestWallet.syncedNetworkCount(),
+                    error = error,
                 )
             }
-            val transactions = walletTransactions.toActivityRows(
-                localCurrencyCode = latestWallet.localCurrencyCode,
-                walletAssets = walletAssets,
-                resources = resources,
-            )
-            activityState = ActivityScreenState.Content(
-                walletName = latestWallet.walletName,
-                status = status,
-                transactions = transactions,
-                syncedNetworkCount = latestWallet.syncedNetworkCount(),
-                error = error,
-            )
-        }
 
-        loadContent(HomeSyncStatus.Syncing)
-        val syncError = runCatching {
-            val result = walletRepository.syncWalletData(
-                walletId = wallet.walletId,
-                onProgress = {
-                    withContext(Dispatchers.Main) {
-                        loadContent(HomeSyncStatus.Syncing)
-                    }
-                },
-            )
-            val evmPartial = result.evmSyncResult.networkResults.any { network ->
+            loadContent(HomeSyncStatus.Syncing)
+            val syncError = runCatching {
+                val result = walletRepository.syncWalletHistoryData(
+                    walletId = wallet.walletId,
+                    onProgress = {
+                        withContext(Dispatchers.Main) {
+                            loadContent(HomeSyncStatus.Syncing)
+                        }
+                    },
+                )
+                val evmPartial = result.evmSyncResult.networkResults.any { network ->
                     network.error != null ||
                         network.balanceCompleteness != EvmSyncCompleteness.Complete ||
                         network.historyCompleteness != EvmSyncCompleteness.Complete
                 }
-            val utxoPartial = result.utxoSyncResult.networkResults.any { network ->
-                network.error != null ||
-                    network.balanceCompleteness != EvmSyncCompleteness.Complete ||
-                    network.historyCompleteness != EvmSyncCompleteness.Complete
+                val utxoPartial = result.utxoSyncResult.networkResults.any { network ->
+                    network.error != null ||
+                        network.balanceCompleteness != EvmSyncCompleteness.Complete ||
+                        network.historyCompleteness != EvmSyncCompleteness.Complete
+                }
+                val solanaPartial = result.solanaSyncResult.networkResults.any { network ->
+                    network.error != null ||
+                        network.balanceCompleteness != EvmSyncCompleteness.Complete ||
+                        network.historyCompleteness != EvmSyncCompleteness.Complete
+                }
+                val accountChainPartial = result.accountChainSyncResult.networkResults.any { network ->
+                    network.error != null ||
+                        network.balanceCompleteness != EvmSyncCompleteness.Complete ||
+                        network.historyCompleteness != EvmSyncCompleteness.Complete
+                }
+                if (evmPartial || utxoPartial || solanaPartial || accountChainPartial) {
+                    resources.getString(R.string.activity_partial_sync_error)
+                } else {
+                    null
+                }
+            }.getOrElse { error ->
+                error.message
             }
-            val solanaPartial = result.solanaSyncResult.networkResults.any { network ->
-                network.error != null ||
-                    network.balanceCompleteness != EvmSyncCompleteness.Complete ||
-                    network.historyCompleteness != EvmSyncCompleteness.Complete
-            }
-            val accountChainPartial = result.accountChainSyncResult.networkResults.any { network ->
-                network.error != null ||
-                    network.balanceCompleteness != EvmSyncCompleteness.Complete ||
-                    network.historyCompleteness != EvmSyncCompleteness.Complete
-            }
-            if (evmPartial || utxoPartial || solanaPartial || accountChainPartial) {
-                resources.getString(R.string.activity_partial_sync_error)
-            } else {
-                null
-            }
-        }.getOrElse { error ->
-            error.message
+            loadContent(HomeSyncStatus.Ready, syncError)
+        } finally {
+            isRefreshing = false
         }
-        loadContent(HomeSyncStatus.Ready, syncError)
     }
 
     val content = when (val state = activityState) {
@@ -869,63 +977,77 @@ private fun SatraActivityScreen(
         is ActivityScreenState.Content -> state
     }
 
-    LazyColumn(
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = {
+            if (!isRefreshing) {
+                isRefreshing = true
+                refreshRequest += 1
+            }
+        },
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface),
-        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        item {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .widthIn(max = HomeContentMaxWidth)
-                    .padding(horizontal = 20.dp, vertical = 20.dp),
-            ) {
-                SatraActivityHeader(
-                    walletName = content.walletName.ifBlank {
-                        stringResource(R.string.home_wallet_label)
-                    },
-                    status = content.status,
-                )
-                Spacer(modifier = Modifier.height(18.dp))
-                ActivitySummaryCard(
-                    transactionCount = content.transactions.size,
-                    syncedNetworkCount = content.syncedNetworkCount,
-                    error = content.error,
-                )
-                Spacer(modifier = Modifier.height(22.dp))
-                ActivityTransactionsHeader(transactionCount = content.transactions.size)
-            }
-        }
-        if (content.transactions.isEmpty()) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
             item {
-                ActivityEmptyState(
-                    isSyncing = content.status == HomeSyncStatus.Syncing,
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .widthIn(max = HomeContentMaxWidth)
-                        .padding(horizontal = 20.dp),
-                )
+                        .padding(horizontal = 20.dp, vertical = 20.dp),
+                ) {
+                    SatraActivityHeader(
+                        walletName = content.walletName.ifBlank {
+                            stringResource(R.string.home_wallet_label)
+                        },
+                        status = content.status,
+                    )
+                    Spacer(modifier = Modifier.height(18.dp))
+                    ActivitySummaryCard(
+                        transactionCount = content.transactions.size,
+                        syncedNetworkCount = content.syncedNetworkCount,
+                        error = content.error,
+                    )
+                    Spacer(modifier = Modifier.height(22.dp))
+                    ActivityTransactionsHeader(transactionCount = content.transactions.size)
+                }
             }
-        } else {
-            items(
-                items = content.transactions,
-                key = { transaction -> transaction.transactionId },
-            ) { transaction ->
-                ActivityTransactionCard(
-                    transaction = transaction,
-                    balancesHidden = balancesHidden,
-                    onClick = { onTransactionClick(transaction.transactionId) },
+            if (content.transactions.isEmpty()) {
+                item {
+                    ActivityEmptyState(
+                        isSyncing = content.status == HomeSyncStatus.Syncing,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .widthIn(max = HomeContentMaxWidth)
+                            .padding(horizontal = 20.dp),
+                    )
+                }
+            } else {
+                items(
+                    items = content.transactions,
+                    key = { transaction -> transaction.transactionId },
+                ) { transaction ->
+                    ActivityTransactionCard(
+                        transaction = transaction,
+                        balancesHidden = balancesHidden,
+                        onClick = { onTransactionClick(transaction.transactionId) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .widthIn(max = HomeContentMaxWidth)
+                            .padding(horizontal = 20.dp, vertical = 6.dp),
+                    )
+                }
+            }
+            item {
+                Spacer(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .widthIn(max = HomeContentMaxWidth)
-                        .padding(horizontal = 20.dp, vertical = 6.dp),
+                        .height(20.dp),
                 )
             }
-        }
-        item {
-            Spacer(modifier = Modifier.height(20.dp))
         }
     }
 }
@@ -1222,6 +1344,7 @@ private fun TransactionDetailRowItem(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SatraMarketsScreen(
     walletRepository: SatraWalletRepository,
@@ -1231,32 +1354,38 @@ private fun SatraMarketsScreen(
         mutableStateOf<MarketsScreenState>(MarketsScreenState.Loading)
     }
     var marketSearchQuery by remember { mutableStateOf("") }
+    var refreshRequest by remember { mutableStateOf(0) }
+    var isRefreshing by remember { mutableStateOf(false) }
 
-    LaunchedEffect(walletRepository) {
-        val appSettings = walletRepository.getAppSettings()
-        val currencyCode = appSettings.localCurrencyCode
+    LaunchedEffect(walletRepository, refreshRequest) {
+        try {
+            val appSettings = walletRepository.getAppSettings()
+            val currencyCode = appSettings.localCurrencyCode
 
-        suspend fun loadMarketData() {
-            val marketData = walletRepository.getAllAssetMarketData()
-            state = MarketsScreenState.Content(
-                currencyCode = currencyCode,
-                rows = SupportedAssetCatalog.assets.toMarketRows(
-                    marketData = marketData,
-                    localCurrencyCode = currencyCode,
-                ),
+            suspend fun loadMarketData() {
+                val marketData = walletRepository.getAllAssetMarketData()
+                state = MarketsScreenState.Content(
+                    currencyCode = currencyCode,
+                    rows = SupportedAssetCatalog.assets.toMarketRows(
+                        marketData = marketData,
+                        localCurrencyCode = currencyCode,
+                    ),
+                )
+            }
+
+            loadMarketData()
+            walletRepository.syncMarketData(
+                localCurrencyCode = currencyCode,
+                onProgress = {
+                    withContext(Dispatchers.Main) {
+                        loadMarketData()
+                    }
+                },
             )
+            loadMarketData()
+        } finally {
+            isRefreshing = false
         }
-
-        loadMarketData()
-        walletRepository.syncMarketData(
-            localCurrencyCode = currencyCode,
-            onProgress = {
-                withContext(Dispatchers.Main) {
-                    loadMarketData()
-                }
-            },
-        )
-        loadMarketData()
     }
 
     val content = when (val current = state) {
@@ -1270,43 +1399,56 @@ private fun SatraMarketsScreen(
         content.rows.applyMarketSearch(marketSearchQuery)
     }
 
-    LazyColumn(
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = {
+            if (!isRefreshing) {
+                isRefreshing = true
+                refreshRequest += 1
+            }
+        },
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface),
-        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        item {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .widthIn(max = HomeContentMaxWidth)
-                    .padding(horizontal = 20.dp, vertical = 20.dp),
-            ) {
-                MarketsHeader(currencyCode = content.currencyCode)
-                Spacer(modifier = Modifier.height(18.dp))
-                MarketsSearchField(
-                    query = marketSearchQuery,
-                    onQueryChange = { query -> marketSearchQuery = query },
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .widthIn(max = HomeContentMaxWidth)
+                        .padding(horizontal = 20.dp, vertical = 20.dp),
+                ) {
+                    MarketsHeader(currencyCode = content.currencyCode)
+                    Spacer(modifier = Modifier.height(18.dp))
+                    MarketsSearchField(
+                        query = marketSearchQuery,
+                        onQueryChange = { query -> marketSearchQuery = query },
+                    )
+                    Spacer(modifier = Modifier.height(22.dp))
+                    MarketsListHeader(assetCount = visibleRows.size)
+                }
+            }
+            items(
+                items = visibleRows,
+                key = { row -> row.symbol },
+            ) { row ->
+                MarketsAssetRow(
+                    row = row,
+                    onClick = { onAssetClick(row.symbol) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .widthIn(max = HomeContentMaxWidth)
+                        .padding(horizontal = 20.dp),
                 )
-                Spacer(modifier = Modifier.height(22.dp))
-                MarketsListHeader(assetCount = visibleRows.size)
+            }
+            item {
+                Spacer(modifier = Modifier.height(20.dp))
             }
         }
-        items(
-            items = visibleRows,
-            key = { row -> row.symbol },
-        ) { row ->
-            MarketsAssetRow(
-                row = row,
-                onClick = { onAssetClick(row.symbol) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .widthIn(max = HomeContentMaxWidth)
-                    .padding(horizontal = 20.dp),
-            )
-        }
-        item { Spacer(modifier = Modifier.height(20.dp)) }
     }
 }
 
@@ -1514,6 +1656,7 @@ private fun MarketsAssetRow(
         }
     }
 }
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SatraMarketDetailScreen(
     walletRepository: SatraWalletRepository,
@@ -1525,58 +1668,77 @@ private fun SatraMarketDetailScreen(
         mutableStateOf<MarketDetailState>(MarketDetailState.Loading)
     }
     val normalizedSymbol = remember(symbol) { Uri.decode(symbol).uppercase(Locale.US) }
+    var refreshRequest by remember { mutableStateOf(0) }
+    var isRefreshing by remember { mutableStateOf(false) }
 
-    LaunchedEffect(walletRepository, normalizedSymbol) {
-        val currencyCode = walletRepository.getAppSettings().localCurrencyCode
-        walletRepository.getAssetMarketData(normalizedSymbol)?.let { cached ->
-            state = cached.toMarketDetailState(
+    LaunchedEffect(walletRepository, normalizedSymbol, refreshRequest) {
+        try {
+            val currencyCode = walletRepository.getAppSettings().localCurrencyCode
+            walletRepository.getAssetMarketData(normalizedSymbol)?.let { cached ->
+                state = cached.toMarketDetailState(
+                    localCurrencyCode = currencyCode,
+                    resources = resources,
+                )
+            }
+            val refreshed = walletRepository.syncAssetMarketDetail(
+                symbol = normalizedSymbol,
                 localCurrencyCode = currencyCode,
-                resources = resources,
             )
+            state = (refreshed ?: walletRepository.getAssetMarketData(normalizedSymbol))
+                ?.toMarketDetailState(
+                    localCurrencyCode = currencyCode,
+                    resources = resources,
+                )
+                ?: MarketDetailState.NotFound(normalizedSymbol)
+        } finally {
+            isRefreshing = false
         }
-        val refreshed = walletRepository.syncAssetMarketDetail(
-            symbol = normalizedSymbol,
-            localCurrencyCode = currencyCode,
-        )
-        state = (refreshed ?: walletRepository.getAssetMarketData(normalizedSymbol))
-            ?.toMarketDetailState(
-                localCurrencyCode = currencyCode,
-                resources = resources,
-            )
-            ?: MarketDetailState.NotFound(normalizedSymbol)
     }
 
-    LazyColumn(
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = {
+            if (!isRefreshing) {
+                isRefreshing = true
+                refreshRequest += 1
+            }
+        },
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface),
-        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        item {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .widthIn(max = HomeContentMaxWidth)
-                    .padding(horizontal = 20.dp, vertical = 20.dp),
-            ) {
-                MarketDetailHeader(onBack = onBack)
-                Spacer(modifier = Modifier.height(18.dp))
-                when (val current = state) {
-                    MarketDetailState.Loading -> MarketDetailLoadingCard()
-                    is MarketDetailState.NotFound -> MarketDetailNotFoundCard(symbol = current.symbol)
-                    is MarketDetailState.Content -> {
-                        MarketDetailHeroCard(content = current)
-                        Spacer(modifier = Modifier.height(14.dp))
-                        MarketDetailChartCard(content = current)
-                        Spacer(modifier = Modifier.height(14.dp))
-                        MarketDetailStatsCard(content = current)
-                        Spacer(modifier = Modifier.height(14.dp))
-                        MarketDetailDescriptionCard(content = current)
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .widthIn(max = HomeContentMaxWidth)
+                        .padding(horizontal = 20.dp, vertical = 20.dp),
+                ) {
+                    MarketDetailHeader(onBack = onBack)
+                    Spacer(modifier = Modifier.height(18.dp))
+                    when (val current = state) {
+                        MarketDetailState.Loading -> MarketDetailLoadingCard()
+                        is MarketDetailState.NotFound -> MarketDetailNotFoundCard(symbol = current.symbol)
+                        is MarketDetailState.Content -> {
+                            MarketDetailHeroCard(content = current)
+                            Spacer(modifier = Modifier.height(14.dp))
+                            MarketDetailChartCard(content = current)
+                            Spacer(modifier = Modifier.height(14.dp))
+                            MarketDetailStatsCard(content = current)
+                            Spacer(modifier = Modifier.height(14.dp))
+                            MarketDetailDescriptionCard(content = current)
+                        }
                     }
                 }
             }
+            item {
+                Spacer(modifier = Modifier.height(20.dp))
+            }
         }
-        item { Spacer(modifier = Modifier.height(20.dp)) }
     }
 }
 
@@ -1885,6 +2047,7 @@ private fun MarketDetailDescriptionCard(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SatraTokenDetailScreen(
     walletRepository: SatraWalletRepository,
@@ -1903,42 +2066,66 @@ private fun SatraTokenDetailScreen(
         mutableStateOf<TokenDetailState>(TokenDetailState.Loading)
     }
     val normalizedSymbol = remember(symbol) { Uri.decode(symbol).uppercase(Locale.US) }
+    var refreshRequest by remember { mutableStateOf(0) }
+    var isRefreshing by remember { mutableStateOf(false) }
 
-    LaunchedEffect(walletRepository, normalizedSymbol) {
-        val wallet = walletRepository.getPrimaryWallet()
-        if (wallet == null) {
-            state = TokenDetailState.Content(
-                symbol = normalizedSymbol,
-                name = normalizedSymbol,
-                iconRes = assetIconRes(normalizedSymbol),
-                currencyCode = DEFAULT_LOCAL_CURRENCY_CODE,
-                totalBalance = formatFiat("0", DEFAULT_LOCAL_CURRENCY_CODE),
-                networkBalances = emptyList(),
-                transactions = emptyList(),
-                chartTransactions = emptyList(),
-                chartData = buildHomeBalanceChartData(
+    LaunchedEffect(walletRepository, normalizedSymbol, refreshRequest) {
+        try {
+            val wallet = walletRepository.getPrimaryWallet()
+            if (wallet == null) {
+                state = TokenDetailState.Content(
+                    symbol = normalizedSymbol,
+                    name = normalizedSymbol,
+                    iconRes = assetIconRes(normalizedSymbol),
+                    currencyCode = DEFAULT_LOCAL_CURRENCY_CODE,
+                    totalBalance = formatFiat("0", DEFAULT_LOCAL_CURRENCY_CODE),
+                    networkBalances = emptyList(),
                     transactions = emptyList(),
-                    range = HomeChartRange.OneWeek,
-                    nowMillis = System.currentTimeMillis(),
-                ),
-                sendAssetId = null,
-                sendRequiresNetwork = false,
-            )
-            return@LaunchedEffect
-        }
+                    chartTransactions = emptyList(),
+                    chartData = buildHomeBalanceChartData(
+                        transactions = emptyList(),
+                        range = HomeChartRange.OneWeek,
+                        nowMillis = System.currentTimeMillis(),
+                    ),
+                    sendAssetId = null,
+                    sendRequiresNetwork = false,
+                )
+                return@LaunchedEffect
+            }
 
-        val (walletAssets, walletTransactions) = coroutineScope {
-            val assetsDeferred = async { walletRepository.getWalletAssets(wallet.walletId) }
-            val transactionsDeferred = async { walletRepository.getWalletTransactions(wallet.walletId) }
-            assetsDeferred.await() to transactionsDeferred.await()
+            suspend fun loadContent() {
+                val (walletAssets, walletTransactions) = coroutineScope {
+                    val assetsDeferred = async { walletRepository.getWalletAssets(wallet.walletId) }
+                    val transactionsDeferred = async { walletRepository.getWalletTransactions(wallet.walletId) }
+                    assetsDeferred.await() to transactionsDeferred.await()
+                }
+                state = wallet.toTokenDetailState(
+                    symbol = normalizedSymbol,
+                    walletAssets = walletAssets,
+                    walletTransactions = walletTransactions,
+                    resources = resources,
+                    nowMillis = System.currentTimeMillis(),
+                )
+            }
+
+            loadContent()
+            if (refreshRequest > 0) {
+                runCatching {
+                    walletRepository.syncAssetNetworks(
+                        walletId = wallet.walletId,
+                        symbol = normalizedSymbol,
+                        onProgress = {
+                            withContext(Dispatchers.Main) {
+                                loadContent()
+                            }
+                        },
+                    )
+                }
+                loadContent()
+            }
+        } finally {
+            isRefreshing = false
         }
-        state = wallet.toTokenDetailState(
-            symbol = normalizedSymbol,
-            walletAssets = walletAssets,
-            walletTransactions = walletTransactions,
-            resources = resources,
-            nowMillis = System.currentTimeMillis(),
-        )
     }
 
     val content = when (val current = state) {
@@ -1962,111 +2149,122 @@ private fun SatraTokenDetailScreen(
         is TokenDetailState.Content -> current
     }
 
-    LazyColumn(
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = {
+            if (!isRefreshing) {
+                isRefreshing = true
+                refreshRequest += 1
+            }
+        },
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface),
-        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        item {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .widthIn(max = HomeContentMaxWidth)
-                    .padding(horizontal = 20.dp, vertical = 20.dp),
-            ) {
-                TokenDetailHeader(
-                    title = content.name,
-                    symbol = content.symbol,
-                    iconRes = content.iconRes,
-                    onBack = onBack,
-                )
-                Spacer(modifier = Modifier.height(20.dp))
-                HomeBalanceCard(
-                    totalBalance = content.totalBalance,
-                    currencyCode = content.currencyCode,
-                    transactions = content.chartTransactions,
-                    initialChartData = content.chartData,
-                    isEmpty = content.networkBalances.none { row -> row.hasBalance },
-                    balancesHidden = balancesHidden,
-                    onBalancesHiddenChange = onBalancesHiddenChange,
-                    onSendClick = {
-                        if (content.sendRequiresNetwork) {
-                            onSendNetworkRequired(content.symbol)
-                        } else {
-                            content.sendAssetId?.let(onSendAsset)
-                        }
-                    },
-                    onReceiveClick = {
-                        val receiveRows = content.networkBalances
-                        if (receiveRows.size > 1) {
-                            onReceiveNetworkRequired(content.symbol)
-                        } else {
-                            receiveRows.singleOrNull()?.assetId?.let(onReceiveAsset)
-                        }
-                    },
-                )
-                Spacer(modifier = Modifier.height(22.dp))
-                TokenDetailSectionHeader(
-                    title = stringResource(R.string.asset_detail_balances_title),
-                    value = stringResource(R.string.home_assets_network_count, content.networkBalances.size),
-                )
-            }
-        }
-        items(
-            items = content.networkBalances,
-            key = { row -> row.assetId },
-        ) { row ->
-            TokenNetworkBalanceListRow(
-                row = row,
-                balancesHidden = balancesHidden,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .widthIn(max = HomeContentMaxWidth)
-                    .padding(horizontal = 20.dp),
-            )
-        }
-        item {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .widthIn(max = HomeContentMaxWidth)
-                    .padding(horizontal = 20.dp),
-            ) {
-                Spacer(modifier = Modifier.height(22.dp))
-                TokenDetailSectionHeader(
-                    title = stringResource(R.string.asset_detail_activity_title),
-                    value = stringResource(R.string.activity_transactions_count, content.transactions.size),
-                )
-            }
-        }
-        if (content.transactions.isEmpty()) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
             item {
-                TokenDetailEmptyActivity(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .widthIn(max = HomeContentMaxWidth)
-                        .padding(horizontal = 20.dp, vertical = 8.dp),
-                )
+                        .padding(horizontal = 20.dp, vertical = 20.dp),
+                ) {
+                    TokenDetailHeader(
+                        title = content.name,
+                        symbol = content.symbol,
+                        iconRes = content.iconRes,
+                        onBack = onBack,
+                    )
+                    Spacer(modifier = Modifier.height(20.dp))
+                    HomeBalanceCard(
+                        totalBalance = content.totalBalance,
+                        currencyCode = content.currencyCode,
+                        transactions = content.chartTransactions,
+                        initialChartData = content.chartData,
+                        isEmpty = content.networkBalances.none { row -> row.hasBalance },
+                        balancesHidden = balancesHidden,
+                        onBalancesHiddenChange = onBalancesHiddenChange,
+                        onSendClick = {
+                            if (content.sendRequiresNetwork) {
+                                onSendNetworkRequired(content.symbol)
+                            } else {
+                                content.sendAssetId?.let(onSendAsset)
+                            }
+                        },
+                        onReceiveClick = {
+                            val receiveRows = content.networkBalances
+                            if (receiveRows.size > 1) {
+                                onReceiveNetworkRequired(content.symbol)
+                            } else {
+                                receiveRows.singleOrNull()?.assetId?.let(onReceiveAsset)
+                            }
+                        },
+                    )
+                    Spacer(modifier = Modifier.height(22.dp))
+                    TokenDetailSectionHeader(
+                        title = stringResource(R.string.asset_detail_balances_title),
+                        value = stringResource(R.string.home_assets_network_count, content.networkBalances.size),
+                    )
+                }
             }
-        } else {
             items(
-                items = content.transactions,
-                key = { transaction -> transaction.transactionId },
-            ) { transaction ->
-                ActivityTransactionCard(
-                    transaction = transaction,
+                items = content.networkBalances,
+                key = { row -> row.assetId },
+            ) { row ->
+                TokenNetworkBalanceListRow(
+                    row = row,
                     balancesHidden = balancesHidden,
-                    onClick = { onTransactionClick(transaction.transactionId) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .widthIn(max = HomeContentMaxWidth)
-                        .padding(horizontal = 20.dp, vertical = 6.dp),
+                        .padding(horizontal = 20.dp),
                 )
             }
-        }
-        item {
-            Spacer(modifier = Modifier.height(20.dp))
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .widthIn(max = HomeContentMaxWidth)
+                        .padding(horizontal = 20.dp),
+                ) {
+                    Spacer(modifier = Modifier.height(22.dp))
+                    TokenDetailSectionHeader(
+                        title = stringResource(R.string.asset_detail_activity_title),
+                        value = stringResource(R.string.activity_transactions_count, content.transactions.size),
+                    )
+                }
+            }
+            if (content.transactions.isEmpty()) {
+                item {
+                    TokenDetailEmptyActivity(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .widthIn(max = HomeContentMaxWidth)
+                            .padding(horizontal = 20.dp, vertical = 8.dp),
+                    )
+                }
+            } else {
+                items(
+                    items = content.transactions,
+                    key = { transaction -> transaction.transactionId },
+                ) { transaction ->
+                    ActivityTransactionCard(
+                        transaction = transaction,
+                        balancesHidden = balancesHidden,
+                        onClick = { onTransactionClick(transaction.transactionId) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .widthIn(max = HomeContentMaxWidth)
+                            .padding(horizontal = 20.dp, vertical = 6.dp),
+                    )
+                }
+            }
+            item {
+                Spacer(modifier = Modifier.height(20.dp))
+            }
         }
     }
 }
@@ -2523,6 +2721,7 @@ private fun HomeBalanceCard(
     initialChartData: HomeBalanceChartData,
     isEmpty: Boolean,
     balancesHidden: Boolean,
+    onWalletClick: () -> Unit = {},
     onBalancesHiddenChange: (Boolean) -> Unit,
     onSendClick: () -> Unit,
     onReceiveClick: () -> Unit,
@@ -2588,14 +2787,12 @@ private fun HomeBalanceCard(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(
-                        text = walletName.orEmpty(),
+                    HomeWalletPill(
+                        walletName = walletName.orEmpty(),
+                        onClick = onWalletClick,
                         modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = contentColor,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+                        contentColor = contentColor,
+                        containerColor = contentColor.copy(alpha = 0.1f),
                     )
                     status?.let { syncStatus ->
                         HomeBalanceStatusPill(
@@ -2710,6 +2907,252 @@ private fun HomeBalanceCard(
                     modifier = Modifier.weight(1f),
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun HomeWalletPill(
+    walletName: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    contentColor: Color = MaterialTheme.colorScheme.onSurface,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceVariant,
+) {
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(100.dp))
+            .background(containerColor)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 7.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = walletName,
+            modifier = Modifier.weight(1f, fill = false),
+            style = MaterialTheme.typography.titleMedium,
+            color = contentColor,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Icon(
+            imageVector = Icons.Filled.KeyboardArrowDown,
+            contentDescription = stringResource(R.string.home_wallet_menu_content_description),
+            tint = contentColor,
+            modifier = Modifier.size(18.dp),
+        )
+    }
+}
+
+@Composable
+private fun HomeScrolledWalletBar(
+    walletName: String,
+    totalBalance: String,
+    balancesHidden: Boolean,
+    onWalletClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val surfaceColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.97f)
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(surfaceColor),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .widthIn(max = HomeContentMaxWidth)
+                .padding(horizontal = 20.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            HomeWalletPill(
+                walletName = walletName,
+                onClick = onWalletClick,
+                modifier = Modifier.weight(1f, fill = false),
+                contentColor = MaterialTheme.colorScheme.onSurface,
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = if (balancesHidden) {
+                    stringResource(R.string.home_balance_hidden_value)
+                } else {
+                    totalBalance
+                },
+                style = MaterialTheme.typography.titleMedium.copy(fontFeatureSettings = "tnum"),
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun WalletSwitcherSheet(
+    wallets: List<WalletSwitcherRow>,
+    activeWalletId: String,
+    balancesHidden: Boolean,
+    onDismiss: () -> Unit,
+    onWalletSelected: (String) -> Unit,
+    onCreateWallet: () -> Unit,
+    onImportWallet: () -> Unit,
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.home_wallet_switcher_title),
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = stringResource(R.string.home_wallet_switcher_body),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(18.dp))
+            if (wallets.isEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                        .padding(18.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        text = stringResource(R.string.home_wallet_switcher_empty_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = stringResource(R.string.home_wallet_switcher_empty_body),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    wallets.forEach { wallet ->
+                        WalletSwitcherRowItem(
+                            wallet = wallet,
+                            isActive = wallet.walletId == activeWalletId,
+                            balancesHidden = balancesHidden,
+                            onClick = { onWalletSelected(wallet.walletId) },
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(18.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                OutlinedButton(
+                    onClick = onImportWallet,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(text = stringResource(R.string.home_wallet_switcher_import))
+                }
+                Button(
+                    onClick = onCreateWallet,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(text = stringResource(R.string.home_wallet_switcher_create))
+                }
+            }
+            Spacer(modifier = Modifier.height(28.dp))
+        }
+    }
+}
+
+@Composable
+private fun WalletSwitcherRowItem(
+    wallet: WalletSwitcherRow,
+    isActive: Boolean,
+    balancesHidden: Boolean,
+    onClick: () -> Unit,
+) {
+    val displayWalletName = wallet.walletName.ifBlank {
+        stringResource(R.string.home_wallet_label)
+    }
+    val backgroundColor = if (isActive) {
+        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
+    } else {
+        Color.Transparent
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(backgroundColor)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 13.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = displayWalletName,
+                    modifier = Modifier.weight(1f, fill = false),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (isActive) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.home_wallet_switcher_active),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(100.dp))
+                            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
+                            .padding(horizontal = 8.dp, vertical = 3.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = if (balancesHidden) {
+                    stringResource(R.string.home_balance_hidden_value)
+                } else {
+                    wallet.totalBalance
+                },
+                style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        if (isActive) {
+            Icon(
+                imageVector = Icons.Filled.Check,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.size(22.dp),
+            )
         }
     }
 }
@@ -3603,10 +4046,20 @@ private data class TokenNetworkBalanceRow(
     val hasBalance: Boolean,
 )
 
+private data class WalletSwitcherRow(
+    val walletId: String,
+    val walletName: String,
+    val totalBalance: String,
+    val totalBalanceAmount: BigDecimal,
+    val isActive: Boolean,
+    val createdAt: Long,
+)
+
 private sealed interface HomeDashboardState {
     data object Loading : HomeDashboardState
 
     data class Content(
+        val walletId: String,
         val walletName: String,
         val status: HomeSyncStatus,
         val totalBalance: String,
@@ -3690,6 +4143,7 @@ private fun WalletRecord.toHomeDashboardState(
         total + asset.balanceFiatValue.toBigDecimalOrZero()
     }
     return HomeDashboardState.Content(
+        walletId = walletId,
         walletName = walletName,
         status = status,
         totalBalance = formatFiat(totalFiat.toPlainString(), localCurrencyCode),
@@ -3704,6 +4158,31 @@ private fun WalletRecord.toHomeDashboardState(
         ),
     )
 }
+
+private suspend fun SatraWalletRepository.loadWalletSwitcherRows(): List<WalletSwitcherRow> =
+    coroutineScope {
+        getWallets()
+            .map { wallet ->
+                async {
+                    val totalFiat = getWalletAssets(wallet.walletId).fold(BigDecimal.ZERO) { total, asset ->
+                        total + asset.balanceFiatValue.toBigDecimalOrZero()
+                    }
+                    WalletSwitcherRow(
+                        walletId = wallet.walletId,
+                        walletName = wallet.walletName,
+                        totalBalance = formatFiat(totalFiat.toPlainString(), wallet.localCurrencyCode),
+                        totalBalanceAmount = totalFiat,
+                        isActive = wallet.isActive,
+                        createdAt = wallet.createdAt,
+                    )
+                }
+            }
+            .map { deferred -> deferred.await() }
+            .sortedWith(
+                compareByDescending<WalletSwitcherRow> { it.isActive }
+                    .thenByDescending { it.createdAt },
+            )
+    }
 
 private fun WalletRecord.toTokenDetailState(
     symbol: String,
