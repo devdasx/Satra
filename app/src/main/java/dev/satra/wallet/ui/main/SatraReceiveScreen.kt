@@ -72,6 +72,9 @@ import dev.satra.wallet.data.db.WalletAddressRecord
 import dev.satra.wallet.data.db.WalletAssetRecord
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import java.math.BigDecimal
+import java.text.NumberFormat
+import java.util.Currency
 import java.util.Locale
 
 @Composable
@@ -451,13 +454,14 @@ private fun ReceiveAssetGroupRow(
 ) {
     ReceiveSelectableRow(
         iconRes = group.iconRes,
-        title = group.name,
+        title = "${group.name} - ${group.symbol}",
         subtitle = if (group.rows.size > 1) {
             stringResource(R.string.receive_asset_network_count, group.rows.size)
         } else {
             group.rows.first().network.displayName
         },
-        trailing = group.symbol,
+        trailingPrimary = group.totalFiatFormatted,
+        trailingSecondary = group.totalBalanceFormatted,
         onClick = onClick,
         modifier = modifier,
     )
@@ -471,9 +475,10 @@ private fun ReceiveNetworkRow(
 ) {
     ReceiveSelectableRow(
         iconRes = row.iconRes,
-        title = row.network.displayName,
+        title = "${row.network.displayName} - ${row.asset.symbol}",
         subtitle = row.network.family.uppercase(Locale.US),
-        trailing = row.asset.symbol,
+        trailingPrimary = row.fiatFormatted,
+        trailingSecondary = row.balanceFormatted,
         onClick = onClick,
         modifier = modifier,
         leadingIcon = {
@@ -490,7 +495,8 @@ private fun ReceiveSelectableRow(
     @DrawableRes iconRes: Int,
     title: String,
     subtitle: String,
-    trailing: String,
+    trailingPrimary: String,
+    trailingSecondary: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     leadingIcon: (@Composable () -> Unit)? = null,
@@ -532,13 +538,22 @@ private fun ReceiveSelectableRow(
             )
         }
         Spacer(modifier = Modifier.width(12.dp))
-        Text(
-            text = trailing,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.Bold,
-            maxLines = 1,
-        )
+        Column(horizontalAlignment = Alignment.End) {
+            Text(
+                text = trailingPrimary,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+            )
+            Text(
+                text = trailingSecondary,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 
@@ -791,6 +806,7 @@ private suspend fun SatraWalletRepository.loadReceiveSnapshot(): ReceiveSnapshot
             ReceiveSnapshot.Content(
                 assets = assetsDeferred.await(),
                 addresses = addressesDeferred.await(),
+                localCurrencyCode = wallet.localCurrencyCode,
             )
         }
     }
@@ -860,6 +876,11 @@ private fun ReceiveSnapshot.Content.toReceiveAssetRows(): List<ReceiveAssetRow> 
             asset = asset,
             network = network,
             addresses = networkAddresses,
+            balanceAmount = walletAsset.balanceDecimal.toBigDecimalOrZero(),
+            fiatAmount = walletAsset.balanceFiatValue.toBigDecimalOrZero(),
+            balanceFormatted = "${formatReceiveCryptoAmount(walletAsset.balanceDecimal.toBigDecimalOrZero())} ${asset.symbol}",
+            fiatFormatted = formatReceiveFiat(walletAsset.balanceFiatValue, localCurrencyCode),
+            localCurrencyCode = localCurrencyCode,
             iconRes = assetIconRes(asset.symbol, walletAsset.networkId),
         )
     }.sortedWith(
@@ -872,14 +893,40 @@ private fun List<ReceiveAssetRow>.groupForAssetSelection(): List<ReceiveAssetGro
     groupBy { row -> row.asset.symbol.uppercase(Locale.US) }
         .map { (symbol, rows) ->
             val primary = rows.first()
+            val totalFiat = rows.fold(BigDecimal.ZERO) { total, row -> total + row.fiatAmount }
+            val totalBalance = rows.fold(BigDecimal.ZERO) { total, row -> total + row.balanceAmount }
+            val localCurrencyCode = rows.firstOrNull()?.localCurrencyCode ?: DEFAULT_RECEIVE_CURRENCY
             ReceiveAssetGroup(
                 symbol = symbol,
                 name = primary.asset.name,
                 rows = rows,
+                totalFiatFormatted = formatReceiveFiat(totalFiat.toPlainString(), localCurrencyCode),
+                totalBalanceFormatted = "${formatReceiveCryptoAmount(totalBalance)} $symbol",
                 iconRes = primary.iconRes,
             )
         }
         .sortedBy { group -> group.name.lowercase(Locale.US) }
+
+private fun String.toBigDecimalOrZero(): BigDecimal =
+    runCatching { BigDecimal(this) }.getOrDefault(BigDecimal.ZERO)
+
+private fun formatReceiveCryptoAmount(value: BigDecimal): String {
+    val decimal = value.stripTrailingZeros()
+    return if (decimal.compareTo(BigDecimal.ZERO) == 0) "0" else decimal.toPlainString()
+}
+
+private fun formatReceiveFiat(
+    value: String,
+    currencyCode: String,
+): String {
+    val amount = value.toBigDecimalOrZero()
+    val formatter = NumberFormat.getCurrencyInstance(Locale.US).apply {
+        runCatching {
+            currency = Currency.getInstance(currencyCode)
+        }
+    }
+    return formatter.format(amount)
+}
 
 private fun createQrBitmap(value: String): Bitmap {
     val hints = mapOf(
@@ -901,6 +948,7 @@ private sealed interface ReceiveSnapshot {
     data class Content(
         val assets: List<WalletAssetRecord>,
         val addresses: List<WalletAddressRecord>,
+        val localCurrencyCode: String,
     ) : ReceiveSnapshot
 }
 
@@ -929,6 +977,8 @@ private data class ReceiveAssetGroup(
     val symbol: String,
     val name: String,
     val rows: List<ReceiveAssetRow>,
+    val totalFiatFormatted: String,
+    val totalBalanceFormatted: String,
     @DrawableRes val iconRes: Int,
 )
 
@@ -936,8 +986,14 @@ private data class ReceiveAssetRow(
     val asset: SupportedAsset,
     val network: SupportedNetwork,
     val addresses: List<WalletAddressRecord>,
+    val balanceAmount: BigDecimal,
+    val fiatAmount: BigDecimal,
+    val balanceFormatted: String,
+    val fiatFormatted: String,
+    val localCurrencyCode: String,
     @DrawableRes val iconRes: Int,
 )
 
 private val ReceiveContentMaxWidth = 720.dp
+private const val DEFAULT_RECEIVE_CURRENCY = "USD"
 private const val QR_SIZE = 512
