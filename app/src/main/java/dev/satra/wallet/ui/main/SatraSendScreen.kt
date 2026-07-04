@@ -628,6 +628,12 @@ private fun SendNetworkRow(
         enabled = true,
         onClick = onClick,
         modifier = modifier,
+        leadingIcon = {
+            SatraAssetNetworkIcon(
+                assetSymbol = row.asset.symbol,
+                networkId = row.network.networkId,
+            )
+        },
     )
 }
 
@@ -641,6 +647,7 @@ private fun SendSelectableRow(
     enabled: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    leadingIcon: (@Composable () -> Unit)? = null,
 ) {
     Row(
         modifier = modifier
@@ -651,7 +658,11 @@ private fun SendSelectableRow(
             .padding(horizontal = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        SendIcon(iconRes = iconRes, modifier = Modifier.size(44.dp))
+        if (leadingIcon != null) {
+            leadingIcon()
+        } else {
+            SendIcon(iconRes = iconRes, modifier = Modifier.size(44.dp))
+        }
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(

@@ -30,6 +30,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import dev.satra.wallet.data.demo.SatraPlayStoreDemoSeeder
 import dev.satra.wallet.data.db.SatraDatabaseProvider
 import dev.satra.wallet.scanner.SatraScanPurpose
 import dev.satra.wallet.settings.SatraSettings
@@ -78,9 +79,17 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         val settingsStore = getSharedPreferences(SETTINGS_PREFS_NAME, MODE_PRIVATE)
+        val usePlayStoreDemo = BuildConfig.DEBUG &&
+            intent.getBooleanExtra(EXTRA_PLAY_STORE_DEMO, false)
+        if (usePlayStoreDemo) {
+            settingsStore.edit().clear().apply()
+        }
         applyAppLocale(readLanguageTag(settingsStore))
 
         super.onCreate(savedInstanceState)
+        if (usePlayStoreDemo) {
+            SatraPlayStoreDemoSeeder.seed(this)
+        }
         applyOrientationPolicy()
         enableEdgeToEdge()
 
@@ -731,6 +740,7 @@ private const val DEFAULT_CREATED_WALLET_NAME = "Satra Wallet"
 private const val DEFAULT_IMPORTED_WALLET_NAME = "Imported Wallet"
 private const val DEFAULT_WATCH_ONLY_WALLET_NAME = "Watch-only Wallet"
 private const val DEFAULT_MNEMONIC_WORD_COUNT = 12
+private const val EXTRA_PLAY_STORE_DEMO = "dev.satra.wallet.extra.PLAY_STORE_DEMO"
 
 private fun setupMetadataJson(
     passcodeEnabled: Boolean,

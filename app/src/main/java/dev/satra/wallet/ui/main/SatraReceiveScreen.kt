@@ -475,6 +475,12 @@ private fun ReceiveNetworkRow(
         trailing = row.asset.symbol,
         onClick = onClick,
         modifier = modifier,
+        leadingIcon = {
+            SatraAssetNetworkIcon(
+                assetSymbol = row.asset.symbol,
+                networkId = row.network.networkId,
+            )
+        },
     )
 }
 
@@ -486,6 +492,7 @@ private fun ReceiveSelectableRow(
     trailing: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    leadingIcon: (@Composable () -> Unit)? = null,
 ) {
     Row(
         modifier = modifier
@@ -496,11 +503,15 @@ private fun ReceiveSelectableRow(
             .padding(horizontal = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Image(
-            painter = painterResource(iconRes),
-            contentDescription = null,
-            modifier = Modifier.size(42.dp),
-        )
+        if (leadingIcon != null) {
+            leadingIcon()
+        } else {
+            Image(
+                painter = painterResource(iconRes),
+                contentDescription = null,
+                modifier = Modifier.size(42.dp),
+            )
+        }
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
