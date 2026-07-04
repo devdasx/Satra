@@ -1066,6 +1066,7 @@ private fun SatraMarketsScreen(
     var state by remember {
         mutableStateOf<MarketsScreenState>(MarketsScreenState.Loading)
     }
+    var marketSearchQuery by remember { mutableStateOf("") }
 
     LaunchedEffect(walletRepository) {
         val appSettings = walletRepository.getAppSettings()
@@ -1101,6 +1102,9 @@ private fun SatraMarketsScreen(
         )
         is MarketsScreenState.Content -> current
     }
+    val visibleRows = remember(content.rows, marketSearchQuery) {
+        content.rows.applyMarketSearch(marketSearchQuery)
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -1117,13 +1121,16 @@ private fun SatraMarketsScreen(
             ) {
                 MarketsHeader(currencyCode = content.currencyCode)
                 Spacer(modifier = Modifier.height(18.dp))
-                MarketsSearchPill()
+                MarketsSearchField(
+                    query = marketSearchQuery,
+                    onQueryChange = { query -> marketSearchQuery = query },
+                )
                 Spacer(modifier = Modifier.height(22.dp))
-                MarketsListHeader(assetCount = content.rows.size)
+                MarketsListHeader(assetCount = visibleRows.size)
             }
         }
         items(
-            items = content.rows,
+            items = visibleRows,
             key = { row -> row.symbol },
         ) { row ->
             MarketsAssetRow(
@@ -1181,30 +1188,67 @@ private fun MarketsHeader(
 }
 
 @Composable
-private fun MarketsSearchPill() {
-    Row(
+private fun MarketsSearchField(
+    query: String,
+    onQueryChange: (String) -> Unit,
+) {
+    TextField(
+        value = query,
+        onValueChange = onQueryChange,
         modifier = Modifier
             .fillMaxWidth()
-            .height(52.dp)
-            .clip(RoundedCornerShape(100.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainer)
-            .padding(horizontal = 18.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(
-            painter = painterResource(R.drawable.ic_brand_scan),
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(18.dp),
-        )
-        Spacer(modifier = Modifier.width(10.dp))
-        Text(
-            text = stringResource(R.string.markets_search_placeholder),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontWeight = FontWeight.Bold,
-        )
-    }
+            .height(56.dp),
+        textStyle = MaterialTheme.typography.bodyLarge.copy(
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Medium,
+        ),
+        placeholder = {
+            Text(
+                text = stringResource(R.string.markets_search_placeholder),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
+        leadingIcon = {
+            Icon(
+                imageVector = Icons.Filled.Search,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        },
+        trailingIcon = if (query.isNotBlank()) {
+            {
+                IconButton(
+                    onClick = { onQueryChange("") },
+                    modifier = Modifier.size(44.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Close,
+                        contentDescription = stringResource(R.string.markets_search_clear),
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        } else {
+            null
+        },
+        singleLine = true,
+        shape = RoundedCornerShape(100.dp),
+        colors = TextFieldDefaults.colors(
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+            disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+            disabledIndicatorColor = Color.Transparent,
+            cursorColor = MaterialTheme.colorScheme.primary,
+        ),
+    )
 }
 
 @Composable
@@ -3513,6 +3557,17 @@ private fun List<SupportedAsset>.toMarketRows(
             compareByDescending<MarketAssetRow> { row -> row.priceAmount }
                 .thenBy { row -> row.name.lowercase(Locale.US) },
         )
+}
+
+private fun List<MarketAssetRow>.applyMarketSearch(query: String): List<MarketAssetRow> {
+    val normalizedQuery = query.trim().lowercase(Locale.US)
+    if (normalizedQuery.isBlank()) return this
+
+    return filter { row ->
+        row.name.lowercase(Locale.US).contains(normalizedQuery) ||
+            row.symbol.lowercase(Locale.US).contains(normalizedQuery) ||
+            row.networkName.lowercase(Locale.US).contains(normalizedQuery)
+    }
 }
 
 private fun AssetMarketDataRecord.toMarketDetailState(
