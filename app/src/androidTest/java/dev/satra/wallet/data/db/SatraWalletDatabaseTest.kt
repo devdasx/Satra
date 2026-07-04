@@ -102,7 +102,6 @@ class SatraWalletDatabaseTest {
 
     @Test
     fun repositoryUpdatesCurrencyAcrossWalletData() = runBlocking {
-        val repository = SatraWalletRepository(dao)
         val walletId = dao.createWallet(
             NewWalletRecord(
                 walletName = "Currency",
@@ -112,27 +111,46 @@ class SatraWalletDatabaseTest {
             ),
             nowMillis = TEST_TIME,
         )
+        dao.updateWalletAssetBalance(
+            walletId = walletId,
+            assetId = "bitcoin:btc",
+            balanceRaw = "200000000",
+            balanceDecimal = "2",
+            balanceFiatValue = "0",
+            nowMillis = TEST_TIME,
+        )
         dao.insertWalletTransaction(
             NewWalletTransactionRecord(
                 walletId = walletId,
-                assetId = "ethereum:eth",
-                networkId = "ethereum",
+                assetId = "bitcoin:btc",
+                networkId = "bitcoin",
                 transactionHash = "0xlocalcurrency",
                 direction = WalletTransactionDirection.Incoming.value,
                 status = WalletTransactionStatus.Success.value,
-                amountRaw = "1",
-                amountDecimal = "0.000000000000000001",
+                amountRaw = "50000000",
+                amountDecimal = "0.5",
                 timestamp = TEST_TIME,
             ),
             nowMillis = TEST_TIME,
         )
+        val repository = SatraWalletRepository(
+            walletDao = dao,
+            priceSyncService = SatraPriceSyncService(
+                marketDataClient = SatraMarketDataClient(PriceSyncTestTransport()),
+            ),
+        )
 
-        val updated = repository.updateAppSettings(AppSettingsUpdate(localCurrencyCode = "EUR"))
+        val updated = repository.changeLocalCurrency("EUR")
 
         assertEquals("EUR", updated.localCurrencyCode)
         assertEquals("EUR", checkNotNull(dao.getWallet(walletId)).localCurrencyCode)
+        val btcAsset = dao.getWalletAssets(walletId).first { it.assetId == "bitcoin:btc" }
+        val transaction = dao.getWalletTransactions(walletId).single()
         assertTrue(dao.getWalletAssets(walletId).all { it.localCurrencyCode == "EUR" })
-        assertTrue(dao.getWalletTransactions(walletId).all { it.localCurrencyCode == "EUR" })
+        assertEquals("90.0", btcAsset.priceFiatValue)
+        assertEquals("180.0", btcAsset.balanceFiatValue)
+        assertEquals("EUR", transaction.localCurrencyCode)
+        assertEquals("45", transaction.fiatValue)
     }
 
     @Test
@@ -734,6 +752,10 @@ private class PriceSyncTestTransport : SatraHttpTransport {
 
             url == "https://api.exchange.coinbase.com/products/BTC-USD/ticker" -> """
                 {"price":"100"}
+            """.trimIndent()
+
+            url == "https://api.frankfurter.dev/v1/latest?base=USD&symbols=EUR" -> """
+                {"base":"USD","rates":{"EUR":"0.9"}}
             """.trimIndent()
 
             url.startsWith("https://api.coingecko.com/api/v3/simple/price") -> {

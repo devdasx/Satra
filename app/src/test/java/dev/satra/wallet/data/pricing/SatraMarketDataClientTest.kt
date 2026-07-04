@@ -62,6 +62,30 @@ class SatraMarketDataClientTest {
     }
 
     @Test
+    fun fxRateFallsBackToOpenExchangeRateApi() {
+        val transport = RecordingTransport(
+            "https://open.er-api.com/v6/latest/USD" to """
+                {"result":"success","base_code":"USD","rates":{"VND":"25000"}}
+            """.trimIndent(),
+        )
+        val client = SatraMarketDataClient(transport)
+
+        val quote = client.getUsdFxRate("vnd")
+
+        assertEquals("USD", quote.baseCurrency)
+        assertEquals("VND", quote.quoteCurrency)
+        assertEquals(BigDecimal("25000"), quote.rate)
+        assertEquals(SatraMarketDataClient.EXCHANGE_RATE_API_OPEN_PROVIDER, quote.provider)
+        assertEquals(
+            listOf(
+                "https://api.frankfurter.dev/v1/latest?base=USD&symbols=VND",
+                "https://open.er-api.com/v6/latest/USD",
+            ),
+            transport.urls,
+        )
+    }
+
+    @Test
     fun coinGeckoUsdPriceParsesBatchByExplicitIds() {
         val transport = RecordingTransport(
             "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,usd-coin&vs_currencies=usd&precision=full" to """

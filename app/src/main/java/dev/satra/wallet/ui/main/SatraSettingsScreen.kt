@@ -367,10 +367,7 @@ internal fun SatraCurrencyScreen(
                         onClick = {
                             selectedCode = currency.code
                             scope.launch {
-                                walletRepository.updateAppSettings(
-                                    AppSettingsUpdate(localCurrencyCode = currency.code),
-                                )
-                                walletRepository.syncAllWalletPrices()
+                                walletRepository.changeLocalCurrency(currency.code)
                             }
                         },
                     )

@@ -182,9 +182,43 @@ class SatraWalletRepository(
 
     suspend fun updateAppSettings(update: AppSettingsUpdate): AppSettingsRecord =
         withContext(Dispatchers.IO) {
-            val updated = walletDao.updateAppSettings(update)
-            update.localCurrencyCode?.let(walletDao::updateLocalCurrencyForWalletData)
-            updated
+            if (update.localCurrencyCode != null) {
+                val settingsWithoutCurrency = update.copy(localCurrencyCode = null)
+                if (settingsWithoutCurrency != AppSettingsUpdate()) {
+                    walletDao.updateAppSettings(settingsWithoutCurrency)
+                }
+                return@withContext changeLocalCurrency(update.localCurrencyCode)
+            }
+            walletDao.updateAppSettings(update)
+        }
+
+    suspend fun changeLocalCurrency(localCurrencyCode: String): AppSettingsRecord =
+        withContext(Dispatchers.IO) {
+            val normalizedCurrency = localCurrencyCode.uppercase()
+            coroutineScope {
+                val priceResultDeferred = async {
+                    priceSyncService.syncSupportedAssetPricesOrNull(normalizedCurrency)
+                }
+                val settingsDeferred = async {
+                    walletDao.updateAppSettings(AppSettingsUpdate(localCurrencyCode = normalizedCurrency))
+                }
+
+                val wallets = walletDao.getWallets()
+                val priceResult = priceResultDeferred.await()
+                val settings = settingsDeferred.await()
+
+                if (wallets.isEmpty()) {
+                    persistMarketData(priceResult?.marketData.orEmpty())
+                } else {
+                    wallets.forEach { wallet ->
+                        persistWalletPrices(
+                            wallet = wallet.copy(localCurrencyCode = normalizedCurrency),
+                            result = priceResult,
+                        )
+                    }
+                }
+                settings
+            }
         }
 
     suspend fun setAppPasscode(passcode: String): AppSettingsRecord =
@@ -748,6 +782,7 @@ class SatraWalletRepository(
         val pricesByAssetId = result?.prices.orEmpty().associateBy { it.asset.assetId }
         var totalFiat = BigDecimal.ZERO
         val nowMillis = result?.updatedAtMillis ?: System.currentTimeMillis()
+        val localPricesByAssetId = mutableMapOf<String, BigDecimal>()
 
         walletAssets.forEach { walletAsset ->
             val price = pricesByAssetId[walletAsset.assetId]
@@ -755,6 +790,7 @@ class SatraWalletRepository(
                 .takeIf { it > BigDecimal.ZERO && walletAsset.localCurrencyCode == wallet.localCurrencyCode }
             val localPrice = price?.localPrice ?: cachedPrice
             if (localPrice != null) {
+                localPricesByAssetId[walletAsset.assetId] = localPrice
                 val balanceFiat = walletAsset.balanceDecimal.toBigDecimalOrZero().multiply(localPrice)
                 totalFiat += balanceFiat
                 walletDao.updateWalletAssetPrice(
@@ -774,8 +810,46 @@ class SatraWalletRepository(
                     ),
                     nowMillis = nowMillis,
                 )
+            } else {
+                walletDao.updateWalletAssetPrice(
+                    walletId = wallet.walletId,
+                    assetId = walletAsset.assetId,
+                    priceFiatValue = "0",
+                    balanceFiatValue = "0",
+                    localCurrencyCode = wallet.localCurrencyCode,
+                    metadataJson = walletAsset.metadataJson.withPriceSync(
+                        price = null,
+                        cached = false,
+                        localCurrencyCode = wallet.localCurrencyCode,
+                        failed = result?.failedSymbols.orEmpty().contains(
+                            walletAsset.assetId.substringAfter(':').uppercase(),
+                        ),
+                        nowMillis = nowMillis,
+                    ),
+                    nowMillis = nowMillis,
+                )
             }
         }
+        val fiatValuesByTransactionId: Map<String, String?> = walletDao
+            .getWalletTransactions(wallet.walletId)
+            .associate { transaction ->
+                val fiatValue = localPricesByAssetId[transaction.assetId]
+                    ?.let { localPrice ->
+                        transaction.amountDecimal
+                            .toBigDecimalOrZero()
+                            .abs()
+                            .multiply(localPrice)
+                            .stripTrailingZeros()
+                            .toPlainString()
+                    }
+                transaction.transactionId to fiatValue
+            }
+        walletDao.updateWalletTransactionFiatValues(
+            walletId = wallet.walletId,
+            localCurrencyCode = wallet.localCurrencyCode,
+            fiatValuesByTransactionId = fiatValuesByTransactionId,
+            nowMillis = nowMillis,
+        )
         walletDao.updateWalletFiatBalance(
             walletId = wallet.walletId,
             balanceFiatValue = totalFiat.toPlainString(),

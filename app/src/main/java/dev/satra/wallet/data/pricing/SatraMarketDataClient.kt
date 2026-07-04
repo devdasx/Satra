@@ -266,9 +266,26 @@ class SatraMarketDataClient(
                 provider = FRANKFURTER_PROVIDER,
             )
         }
-        val response = transport.get(
-            "https://api.frankfurter.dev/v1/latest?base=USD&symbols=${urlEncode(target)}",
-        )
+        val frankfurterQuote = runCatching {
+            val response = transport.get(
+                "https://api.frankfurter.dev/v1/latest?base=USD&symbols=${urlEncode(target)}",
+            )
+            val rate = JSONObject(response)
+                .getJSONObject("rates")
+                .getString(target)
+                .toBigDecimal()
+            FxRateQuote(
+                baseCurrency = "USD",
+                quoteCurrency = target,
+                rate = rate,
+                provider = FRANKFURTER_PROVIDER,
+            )
+        }.getOrNull()
+        if (frankfurterQuote != null) {
+            return frankfurterQuote
+        }
+
+        val response = transport.get("https://open.er-api.com/v6/latest/USD")
         val rate = JSONObject(response)
             .getJSONObject("rates")
             .getString(target)
@@ -277,7 +294,7 @@ class SatraMarketDataClient(
             baseCurrency = "USD",
             quoteCurrency = target,
             rate = rate,
-            provider = FRANKFURTER_PROVIDER,
+            provider = EXCHANGE_RATE_API_OPEN_PROVIDER,
         )
     }
 
@@ -350,5 +367,6 @@ class SatraMarketDataClient(
         const val OKX_PROVIDER = "okx-spot-public"
         const val KUCOIN_PROVIDER = "kucoin-spot-public"
         const val FRANKFURTER_PROVIDER = "frankfurter-public"
+        const val EXCHANGE_RATE_API_OPEN_PROVIDER = "exchangerate-api-open-public"
     }
 }

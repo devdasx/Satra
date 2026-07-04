@@ -571,6 +571,38 @@ class SatraWalletDao(
         )
     }
 
+    fun updateWalletTransactionFiatValues(
+        walletId: String,
+        localCurrencyCode: String,
+        fiatValuesByTransactionId: Map<String, String?>,
+        nowMillis: Long = System.currentTimeMillis(),
+    ) {
+        val db = databaseHelper.writableDatabase
+        db.beginTransaction()
+        try {
+            val walletTransactionIds = if (fiatValuesByTransactionId.isEmpty()) {
+                getWalletTransactions(walletId).map { it.transactionId }
+            } else {
+                fiatValuesByTransactionId.keys
+            }
+            walletTransactionIds.forEach { transactionId ->
+                db.update(
+                    SatraDatabaseContract.TABLE_WALLET_TRANSACTIONS,
+                    ContentValues().apply {
+                        putNullable("fiat_value", fiatValuesByTransactionId[transactionId])
+                        put("local_currency_code", localCurrencyCode)
+                        put("updated_at", nowMillis)
+                    },
+                    "wallet_id = ? AND transaction_id = ?",
+                    arrayOf(walletId, transactionId),
+                )
+            }
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+    }
+
     fun updateWalletSyncMetadata(
         walletId: String,
         metadataJson: String,
@@ -608,9 +640,6 @@ class SatraWalletDao(
                 SatraDatabaseContract.TABLE_WALLET_ASSETS,
                 ContentValues().apply {
                     put("local_currency_code", localCurrencyCode)
-                    put("balance_fiat_value", "0")
-                    put("price_fiat_value", "0")
-                    putNull("price_fiat_updated_at")
                     put("updated_at", nowMillis)
                 },
                 null,
