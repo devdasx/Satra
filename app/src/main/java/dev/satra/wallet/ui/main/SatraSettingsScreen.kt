@@ -7,6 +7,7 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,6 +30,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -466,18 +469,56 @@ internal fun SatraAppearanceScreen(
 internal fun SatraSecurityScreen(
     walletRepository: SatraWalletRepository,
     onBack: () -> Unit,
+    onTurnOffPasscode: () -> Unit,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var appSettings by remember { mutableStateOf<AppSettingsRecord?>(null) }
     var newPasscode by remember { mutableStateOf("") }
-    var verifyPasscode by remember { mutableStateOf("") }
+    var showAutoLockSheet by remember { mutableStateOf(false) }
+    var showEraseWalletSheet by remember { mutableStateOf(false) }
     LaunchedEffect(walletRepository) {
         appSettings = walletRepository.getAppSettings()
     }
 
-    fun reload() {
-        scope.launch { appSettings = walletRepository.getAppSettings() }
+    if (showAutoLockSheet) {
+        appSettings?.let { settings ->
+            AutoLockOptionsSheet(
+                currentTimeoutMillis = settings.autoLockTimeoutMillis,
+                onSelect = { timeoutMillis ->
+                    scope.launch {
+                        appSettings = walletRepository.updateAppSettings(
+                            AppSettingsUpdate(autoLockTimeoutMillis = timeoutMillis),
+                        )
+                    }
+                    showAutoLockSheet = false
+                },
+                onDismiss = { showAutoLockSheet = false },
+            )
+        }
+    }
+
+    if (showEraseWalletSheet) {
+        appSettings?.let { settings ->
+            EraseWalletProtectionSheet(
+                settings = settings,
+                onEnabledChange = { enabled ->
+                    scope.launch {
+                        appSettings = walletRepository.updateAppSettings(
+                            AppSettingsUpdate(eraseWalletEnabled = enabled),
+                        )
+                    }
+                },
+                onLimitSelected = { limit ->
+                    scope.launch {
+                        appSettings = walletRepository.updateAppSettings(
+                            AppSettingsUpdate(eraseWalletEnabled = true, eraseWalletAttemptLimit = limit),
+                        )
+                    }
+                },
+                onDismiss = { showEraseWalletSheet = false },
+            )
+        }
     }
 
     SettingsScaffold(
@@ -495,31 +536,17 @@ internal fun SatraSecurityScreen(
             SettingsCard {
                 val settings = appSettings
                 if (settings?.passcodeEnabled == true) {
-                    OutlinedTextField(
-                        value = verifyPasscode,
-                        onValueChange = { verifyPasscode = it.filter(Char::isDigit).take(settings.passcodeLength ?: 6) },
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text(stringResource(R.string.settings_security_current_passcode)) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-                        singleLine = true,
+                    StaticSettingsRow(
+                        title = stringResource(R.string.settings_security_current_passcode),
+                        body = stringResource(R.string.settings_security_body_enabled),
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    OutlinedButton(
-                        onClick = {
-                            scope.launch {
-                                if (walletRepository.verifyAppPasscode(verifyPasscode)) {
-                                    appSettings = walletRepository.clearAppPasscode()
-                                    verifyPasscode = ""
-                                } else {
-                                    Toast.makeText(context, R.string.settings_security_wrong_passcode, Toast.LENGTH_SHORT).show()
-                                }
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(100.dp),
-                    ) {
-                        Text(stringResource(R.string.settings_security_turn_off_passcode), fontWeight = FontWeight.Bold)
-                    }
+                    SettingsDivider()
+                    SettingsRow(
+                        iconRes = R.drawable.ic_brand_security,
+                        title = stringResource(R.string.settings_security_turn_off_passcode),
+                        body = stringResource(R.string.settings_security_turn_off_passcode_body),
+                        onClick = onTurnOffPasscode,
+                    )
                 } else {
                     OutlinedTextField(
                         value = newPasscode,
@@ -564,68 +591,98 @@ internal fun SatraSecurityScreen(
                     },
                 )
                 SettingsDivider()
-                Text(
-                    text = stringResource(R.string.settings_security_auto_lock_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Bold,
-                )
-                autoLockOptions.forEach { option ->
-                    SelectableSettingsRow(
-                        title = stringResource(option.titleRes),
-                        body = stringResource(option.bodyRes),
-                        selected = appSettings?.autoLockTimeoutMillis == option.timeoutMillis,
-                        onClick = {
-                            scope.launch {
-                                appSettings = walletRepository.updateAppSettings(
-                                    AppSettingsUpdate(autoLockTimeoutMillis = option.timeoutMillis),
-                                )
-                            }
-                        },
-                    )
-                }
-            }
-        }
-        item { SettingsSectionTitle(R.string.settings_security_erase_title) }
-        item {
-            SettingsCard {
-                SettingsSwitchRow(
-                    iconRes = R.drawable.ic_brand_empty,
-                    title = stringResource(R.string.settings_security_erase_wallet_title),
-                    body = stringResource(R.string.settings_security_erase_wallet_body),
-                    checked = appSettings?.eraseWalletEnabled == true,
-                    onCheckedChange = { enabled ->
-                        scope.launch {
-                            appSettings = walletRepository.updateAppSettings(
-                                AppSettingsUpdate(eraseWalletEnabled = enabled),
-                            )
-                        }
-                    },
+                val currentAutoLock = autoLockOptions.firstOrNull {
+                    it.timeoutMillis == appSettings?.autoLockTimeoutMillis
+                } ?: autoLockOptions.first()
+                SettingsRow(
+                    iconRes = R.drawable.ic_brand_history,
+                    title = stringResource(R.string.settings_security_auto_lock_title),
+                    body = stringResource(currentAutoLock.titleRes),
+                    onClick = { showAutoLockSheet = true },
                 )
                 SettingsDivider()
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf(5, 10, 15, 20).forEach { limit ->
-                        OutlinedButton(
-                            onClick = {
-                                scope.launch {
-                                    appSettings = walletRepository.updateAppSettings(
-                                        AppSettingsUpdate(eraseWalletAttemptLimit = limit),
-                                    )
-                                }
-                            },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(100.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                containerColor = if (appSettings?.eraseWalletAttemptLimit == limit) {
-                                    MaterialTheme.colorScheme.surfaceContainerHigh
-                                } else {
-                                    MaterialTheme.colorScheme.surface
-                                },
-                            ),
-                        ) {
-                            Text(limit.toString(), fontWeight = FontWeight.Bold)
+                val eraseBody = if (appSettings?.eraseWalletEnabled == true) {
+                    stringResource(
+                        R.string.settings_security_erase_wallet_enabled_value,
+                        appSettings?.eraseWalletAttemptLimit ?: 10,
+                    )
+                } else {
+                    stringResource(R.string.settings_security_erase_wallet_disabled_value)
+                }
+                SettingsRow(
+                    iconRes = R.drawable.ic_brand_empty,
+                    title = stringResource(R.string.settings_security_erase_wallet_title),
+                    body = eraseBody,
+                    onClick = { showEraseWalletSheet = true },
+                    isDanger = appSettings?.eraseWalletEnabled == true,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+internal fun SatraSecurityTurnOffPasscodeScreen(
+    walletRepository: SatraWalletRepository,
+    onBack: () -> Unit,
+    onPasscodeDisabled: () -> Unit,
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var appSettings by remember { mutableStateOf<AppSettingsRecord?>(null) }
+    var passcode by remember { mutableStateOf("") }
+
+    LaunchedEffect(walletRepository) {
+        appSettings = walletRepository.getAppSettings()
+    }
+
+    SettingsScaffold(
+        titleRes = R.string.settings_security_turn_off_passcode,
+        onBack = onBack,
+    ) {
+        item {
+            SettingsHeroCard(
+                titleRes = R.string.settings_security_turn_off_passcode,
+                bodyRes = R.string.settings_security_turn_off_passcode_screen_body,
+                iconRes = R.drawable.ic_brand_security,
+            )
+        }
+        item {
+            SettingsCard {
+                OutlinedTextField(
+                    value = passcode,
+                    onValueChange = { passcode = it.filter(Char::isDigit).take(appSettings?.passcodeLength ?: 6) },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text(stringResource(R.string.settings_security_current_passcode)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                    singleLine = true,
+                )
+                Button(
+                    onClick = {
+                        scope.launch {
+                            if (walletRepository.verifyAppPasscode(passcode)) {
+                                walletRepository.clearAppPasscode()
+                                passcode = ""
+                                onPasscodeDisabled()
+                            } else {
+                                Toast.makeText(context, R.string.settings_security_wrong_passcode, Toast.LENGTH_SHORT).show()
+                            }
                         }
-                    }
+                    },
+                    enabled = passcode.isNotBlank(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(54.dp),
+                    shape = RoundedCornerShape(100.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.onSurface,
+                        contentColor = MaterialTheme.colorScheme.surface,
+                    ),
+                ) {
+                    Text(
+                        text = stringResource(R.string.settings_security_turn_off_passcode),
+                        fontWeight = FontWeight.Bold,
+                    )
                 }
             }
         }
@@ -869,6 +926,7 @@ private fun SettingsScaffold(
             .fillMaxSize()
             .padding(horizontal = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         item {
             Row(
@@ -881,9 +939,10 @@ private fun SettingsScaffold(
                 if (onBack != null) {
                     IconButton(onClick = onBack) {
                         Icon(
-                            painter = painterResource(R.drawable.ic_brand_move),
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.wallet_setup_back_content_description),
                             modifier = Modifier.size(22.dp),
+                            tint = MaterialTheme.colorScheme.onSurface,
                         )
                     }
                     Spacer(modifier = Modifier.width(8.dp))
@@ -897,14 +956,6 @@ private fun SettingsScaffold(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-        }
-        item {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .widthIn(max = SettingsContentMaxWidth),
-                verticalArrangement = Arrangement.spacedBy(14.dp),
-            ) {}
         }
         content()
         item { Spacer(modifier = Modifier.height(18.dp)) }
@@ -1053,6 +1104,145 @@ private fun SelectableSettingsRow(
             )
         }
         RadioButton(selected = selected, onClick = onClick)
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AutoLockOptionsSheet(
+    currentTimeoutMillis: Long,
+    onSelect: (Long) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.settings_security_auto_lock_sheet_title),
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = stringResource(R.string.settings_security_auto_lock_sheet_body),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            autoLockOptions.forEach { option ->
+                SettingsSheetChoice(
+                    title = stringResource(option.titleRes),
+                    body = stringResource(option.bodyRes),
+                    selected = option.timeoutMillis == currentTimeoutMillis,
+                    onClick = { onSelect(option.timeoutMillis) },
+                )
+            }
+            Spacer(modifier = Modifier.height(18.dp))
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EraseWalletProtectionSheet(
+    settings: AppSettingsRecord,
+    onEnabledChange: (Boolean) -> Unit,
+    onLimitSelected: (Int) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.settings_security_erase_wallet_sheet_title),
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = stringResource(R.string.settings_security_erase_wallet_sheet_body),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            SettingsCard {
+                SettingsSwitchRow(
+                    iconRes = R.drawable.ic_brand_empty,
+                    title = stringResource(R.string.settings_security_erase_wallet_title),
+                    body = stringResource(R.string.settings_security_erase_wallet_body),
+                    checked = settings.eraseWalletEnabled,
+                    onCheckedChange = onEnabledChange,
+                )
+            }
+            if (settings.eraseWalletEnabled) {
+                Text(
+                    text = stringResource(R.string.settings_security_erase_attempts_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+                listOf(5, 10, 15, 20).forEach { limit ->
+                    SettingsSheetChoice(
+                        title = stringResource(R.string.settings_security_erase_attempt_limit, limit),
+                        body = stringResource(R.string.settings_security_erase_attempt_limit_body),
+                        selected = settings.eraseWalletAttemptLimit == limit,
+                        onClick = { onLimitSelected(limit) },
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(18.dp))
+        }
+    }
+}
+
+@Composable
+private fun SettingsSheetChoice(
+    title: String,
+    body: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val containerColor = if (selected) {
+        MaterialTheme.colorScheme.onSurface
+    } else {
+        MaterialTheme.colorScheme.surfaceContainer
+    }
+    val contentColor = if (selected) {
+        MaterialTheme.colorScheme.surface
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(containerColor)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                color = contentColor,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = body,
+                style = MaterialTheme.typography.bodyMedium,
+                color = contentColor.copy(alpha = 0.72f),
+            )
+        }
     }
 }
 

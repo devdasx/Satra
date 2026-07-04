@@ -2,6 +2,7 @@ package dev.satra.wallet.ui.main
 
 import android.content.ClipData
 import android.content.ClipboardManager
+import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import android.widget.Toast
@@ -553,6 +554,8 @@ private fun ReceiveAddressCard(
         context.getSystemService(ClipboardManager::class.java)
     }
     val haptic = LocalHapticFeedback.current
+    val shareSubject = stringResource(R.string.receive_share_subject, row.asset.symbol)
+    val shareChooserTitle = stringResource(R.string.receive_share_address_title)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -579,12 +582,8 @@ private fun ReceiveAddressCard(
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    Text(
-                        text = row.network.displayName,
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = FontWeight.Bold,
-                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    ReceiveNetworkPill(network = row.network)
                 }
             }
             Spacer(modifier = Modifier.height(14.dp))
@@ -656,29 +655,87 @@ private fun ReceiveAddressCard(
                 )
                 Spacer(modifier = Modifier.height(14.dp))
             }
-            Button(
-                onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    clipboardManager.setPrimaryClip(
-                        ClipData.newPlainText(row.asset.symbol, address.address),
-                    )
-                    Toast.makeText(context, R.string.receive_copied, Toast.LENGTH_SHORT).show()
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                shape = RoundedCornerShape(100.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.onSurface,
-                    contentColor = MaterialTheme.colorScheme.surface,
-                ),
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Text(
-                    text = stringResource(R.string.receive_copy_address),
-                    fontWeight = FontWeight.Bold,
-                )
+                Button(
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        clipboardManager.setPrimaryClip(
+                            ClipData.newPlainText(row.asset.symbol, address.address),
+                        )
+                        Toast.makeText(context, R.string.receive_copied, Toast.LENGTH_SHORT).show()
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(52.dp),
+                    shape = RoundedCornerShape(100.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.onSurface,
+                        contentColor = MaterialTheme.colorScheme.surface,
+                    ),
+                ) {
+                    Text(
+                        text = stringResource(R.string.receive_copy_address),
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                    )
+                }
+                OutlinedButton(
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_SUBJECT, shareSubject)
+                            putExtra(Intent.EXTRA_TEXT, address.address)
+                        }
+                        context.startActivity(
+                            Intent.createChooser(
+                                sendIntent,
+                                shareChooserTitle,
+                            ),
+                        )
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(52.dp),
+                    shape = RoundedCornerShape(100.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.receive_share_address),
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                    )
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun ReceiveNetworkPill(network: SupportedNetwork) {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(100.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Image(
+            painter = painterResource(networkIconRes(network.networkId)),
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(
+            text = network.displayName,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 

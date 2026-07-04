@@ -209,6 +209,16 @@ fun SatraMainScreen(
                 SatraSecurityScreen(
                     walletRepository = walletRepository,
                     onBack = { tabNavController.popBackStack() },
+                    onTurnOffPasscode = { tabNavController.navigate(SatraMainRoute.SecurityTurnOffPasscode) },
+                )
+            }
+            composable(SatraMainRoute.SecurityTurnOffPasscode) {
+                SatraSecurityTurnOffPasscodeScreen(
+                    walletRepository = walletRepository,
+                    onBack = { tabNavController.popBackStack() },
+                    onPasscodeDisabled = {
+                        tabNavController.popBackStack(SatraMainRoute.Security, inclusive = false)
+                    },
                 )
             }
             composable(SatraMainRoute.Notifications) {
@@ -2937,6 +2947,7 @@ internal object SatraMainRoute {
     const val Language = "main/settings/preferences/language"
     const val Appearance = "main/settings/preferences/appearance"
     const val Security = "main/settings/security"
+    const val SecurityTurnOffPasscode = "main/settings/security/turn-off-passcode"
     const val Notifications = "main/settings/notifications"
     const val About = "main/settings/about"
     const val Legal = "main/settings/legal"
