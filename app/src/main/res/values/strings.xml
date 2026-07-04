@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Satra</string>
+    <string name="wallet_default_created_name">Satra Wallet</string>
+    <string name="wallet_default_imported_name">Imported Wallet</string>
+    <string name="wallet_default_watch_only_name">Watch-only Wallet</string>
     <string name="wallet_symbol">◎</string>
     <string name="onboarding_action_create_wallet">Create wallet</string>
     <string name="onboarding_action_restore_wallet">Import wallet</string>
@@ -67,6 +70,27 @@
     <string name="settings_language_thai">Thai</string>
     <string name="settings_language_gujarati">Gujarati</string>
     <string name="settings_language_polish">Polish</string>
+    <string name="settings_country_united_states">United States</string>
+    <string name="settings_country_china">China</string>
+    <string name="settings_country_india">India</string>
+    <string name="settings_country_spain">Spain</string>
+    <string name="settings_country_france">France</string>
+    <string name="settings_country_saudi_arabia">Saudi Arabia</string>
+    <string name="settings_country_bangladesh">Bangladesh</string>
+    <string name="settings_country_brazil">Brazil</string>
+    <string name="settings_country_russia">Russia</string>
+    <string name="settings_country_pakistan">Pakistan</string>
+    <string name="settings_country_indonesia">Indonesia</string>
+    <string name="settings_country_germany">Germany</string>
+    <string name="settings_country_japan">Japan</string>
+    <string name="settings_country_tanzania">Tanzania</string>
+    <string name="settings_country_turkey">Turkey</string>
+    <string name="settings_country_vietnam">Vietnam</string>
+    <string name="settings_country_south_korea">South Korea</string>
+    <string name="settings_country_italy">Italy</string>
+    <string name="settings_country_thailand">Thailand</string>
+    <string name="settings_country_iran">Iran</string>
+    <string name="settings_country_poland">Poland</string>
     <string name="wallet_setup_back_content_description">Go back</string>
     <string name="wallet_setup_screen_create_phrase">Recovery phrase</string>
     <string name="wallet_setup_screen_create_backup">Backup check</string>
@@ -255,6 +279,7 @@
     <string name="market_detail_low_24h">24h low</string>
     <string name="market_detail_provider">Provider</string>
     <string name="market_detail_updated">Updated</string>
+    <string name="market_detail_unavailable">Not available</string>
     <string name="market_detail_about_asset">About %1$s</string>
     <string name="market_detail_description_unavailable">Market description is not available from the current public provider cache.</string>
     <string name="home_wallet_status_ready">Ready</string>
@@ -455,7 +480,6 @@
     <string name="settings_section_app">App</string>
     <string name="settings_section_info">Info</string>
     <string name="settings_section_danger">Danger zone</string>
-    <string name="settings_root_status">Theme %1$s · Language %2$s</string>
     <string name="settings_address_book_title">Address book</string>
     <string name="settings_address_book_body">Save trusted recipients locally for supported networks.</string>
     <string name="settings_address_book_add">Add address</string>
@@ -475,6 +499,7 @@
     <string name="settings_preferences_body">Currency, language, appearance, and haptics.</string>
     <string name="settings_currency_title">Currency</string>
     <string name="settings_currency_body">Choose the local currency used for balances. Satra prices assets in USD first, then converts through free FX rates.</string>
+    <string name="settings_currency_option_title">%1$s · %2$s</string>
     <string name="settings_language_body">Choose the app language. English keys are in place and full translations will be added screen by screen.</string>
     <string name="settings_appearance_title">Appearance</string>
     <string name="settings_appearance_body">Use system theme by default, or force light or dark mode.</string>

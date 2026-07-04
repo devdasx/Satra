@@ -67,6 +67,7 @@ import dev.satra.wallet.R
 import dev.satra.wallet.data.assets.SupportedAsset
 import dev.satra.wallet.data.assets.SupportedAssetCatalog
 import dev.satra.wallet.data.assets.SupportedNetwork
+import dev.satra.wallet.data.db.DEFAULT_LOCAL_CURRENCY_CODE
 import dev.satra.wallet.data.db.SatraWalletRepository
 import dev.satra.wallet.data.db.WalletAddressRecord
 import dev.satra.wallet.data.db.WalletAssetRecord
@@ -896,7 +897,7 @@ private fun List<ReceiveAssetRow>.groupForAssetSelection(): List<ReceiveAssetGro
             val primary = rows.first()
             val totalFiat = rows.fold(BigDecimal.ZERO) { total, row -> total + row.fiatAmount }
             val totalBalance = rows.fold(BigDecimal.ZERO) { total, row -> total + row.balanceAmount }
-            val localCurrencyCode = rows.firstOrNull()?.localCurrencyCode ?: DEFAULT_RECEIVE_CURRENCY
+            val localCurrencyCode = rows.firstOrNull()?.localCurrencyCode ?: DEFAULT_LOCAL_CURRENCY_CODE
             ReceiveAssetGroup(
                 symbol = symbol,
                 name = primary.asset.name,
@@ -998,6 +999,5 @@ private data class ReceiveAssetRow(
 )
 
 private val ReceiveContentMaxWidth = 720.dp
-private const val DEFAULT_RECEIVE_CURRENCY = "USD"
 private const val CRYPTO_DISPLAY_DECIMALS = 8
 private const val QR_SIZE = 512

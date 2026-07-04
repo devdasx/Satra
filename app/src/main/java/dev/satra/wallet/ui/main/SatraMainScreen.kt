@@ -177,7 +177,6 @@ fun SatraMainScreen(
             composable(SatraMainTab.Settings.route) {
                 SatraSettingsRootScreen(
                     walletRepository = walletRepository,
-                    settings = settings,
                     onNavigate = tabNavController::navigate,
                 )
             }
@@ -424,8 +423,8 @@ private fun SatraHomeDashboard(
             homeState = HomeDashboardState.Content(
                 walletName = "",
                 status = HomeSyncStatus.Ready,
-                totalBalance = formatFiat("0", "USD"),
-                currencyCode = "USD",
+                totalBalance = formatFiat("0", DEFAULT_LOCAL_CURRENCY_CODE),
+                currencyCode = DEFAULT_LOCAL_CURRENCY_CODE,
                 assets = emptyList(),
                 chartTransactions = emptyList(),
                 chartData = buildHomeBalanceChartData(
@@ -457,11 +456,6 @@ private fun SatraHomeDashboard(
             )
         }
 
-        if (wallet.isPlayStoreDemoWallet()) {
-            loadContent(HomeSyncStatus.Ready)
-            return@LaunchedEffect
-        }
-
         loadContent(HomeSyncStatus.Syncing)
         runCatching {
             walletRepository.syncWalletData(wallet.walletId)
@@ -473,8 +467,8 @@ private fun SatraHomeDashboard(
         HomeDashboardState.Loading -> HomeDashboardState.Content(
             walletName = "",
             status = HomeSyncStatus.Syncing,
-            totalBalance = formatFiat("0", "USD"),
-            currencyCode = "USD",
+            totalBalance = formatFiat("0", DEFAULT_LOCAL_CURRENCY_CODE),
+            currencyCode = DEFAULT_LOCAL_CURRENCY_CODE,
             assets = emptyList(),
             chartTransactions = emptyList(),
             chartData = buildHomeBalanceChartData(
@@ -597,11 +591,6 @@ private fun SatraActivityScreen(
                 syncedNetworkCount = latestWallet.syncedNetworkCount(),
                 error = error,
             )
-        }
-
-        if (wallet.isPlayStoreDemoWallet()) {
-            loadContent(HomeSyncStatus.Ready)
-            return@LaunchedEffect
         }
 
         loadContent(HomeSyncStatus.Syncing)
@@ -1013,7 +1002,7 @@ private fun SatraMarketsScreen(
 
     val content = when (val current = state) {
         MarketsScreenState.Loading -> MarketsScreenState.Content(
-            currencyCode = "USD",
+            currencyCode = DEFAULT_LOCAL_CURRENCY_CODE,
             rows = emptyList(),
         )
         is MarketsScreenState.Content -> current
@@ -1677,8 +1666,8 @@ private fun SatraTokenDetailScreen(
                 symbol = normalizedSymbol,
                 name = normalizedSymbol,
                 iconRes = assetIconRes(normalizedSymbol),
-                currencyCode = "USD",
-                totalBalance = formatFiat("0", "USD"),
+                currencyCode = DEFAULT_LOCAL_CURRENCY_CODE,
+                totalBalance = formatFiat("0", DEFAULT_LOCAL_CURRENCY_CODE),
                 networkBalances = emptyList(),
                 transactions = emptyList(),
                 chartTransactions = emptyList(),
@@ -1712,8 +1701,8 @@ private fun SatraTokenDetailScreen(
             symbol = normalizedSymbol,
             name = normalizedSymbol,
             iconRes = assetIconRes(normalizedSymbol),
-            currencyCode = "USD",
-            totalBalance = formatFiat("0", "USD"),
+            currencyCode = DEFAULT_LOCAL_CURRENCY_CODE,
+            totalBalance = formatFiat("0", DEFAULT_LOCAL_CURRENCY_CODE),
             networkBalances = emptyList(),
             transactions = emptyList(),
             chartTransactions = emptyList(),
@@ -3352,7 +3341,7 @@ private fun AssetMarketDataRecord.toMarketDetailState(
         total + asset.balanceFiatValue.toBigDecimalOrZero()
     }
     val displayCurrency = localCurrencyCode.ifBlank { DEFAULT_LOCAL_CURRENCY_CODE }
-    val unavailable = "—"
+    val unavailable = resources.getString(R.string.market_detail_unavailable)
     val change = priceChange24hPercent?.toBigDecimalOrZero() ?: BigDecimal.ZERO
     return MarketDetailState.Content(
         symbol = symbol,
@@ -3741,11 +3730,6 @@ private fun WalletRecord.syncedNetworkCount(): Int =
         (root.optJSONObject("evmSync")?.optInt("syncedNetworkCount") ?: 0) +
             (root.optJSONObject("utxoSync")?.optInt("syncedNetworkCount") ?: 0)
     }.getOrNull() ?: 0
-
-private fun WalletRecord.isPlayStoreDemoWallet(): Boolean =
-    runCatching {
-        JSONObject(metadataJson).optBoolean("playStoreDemo", false)
-    }.getOrDefault(false)
 
 private fun formatActivityTime(
     timestampMillis: Long,

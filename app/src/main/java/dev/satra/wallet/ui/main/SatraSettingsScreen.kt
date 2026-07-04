@@ -71,6 +71,7 @@ import dev.satra.wallet.data.assets.SupportedAssetCatalog
 import dev.satra.wallet.data.db.AddressBookEntryRecord
 import dev.satra.wallet.data.db.AppSettingsRecord
 import dev.satra.wallet.data.db.AppSettingsUpdate
+import dev.satra.wallet.data.db.DEFAULT_LOCAL_CURRENCY_CODE
 import dev.satra.wallet.data.db.NewAddressBookEntryRecord
 import dev.satra.wallet.data.db.SatraWalletRepository
 import dev.satra.wallet.settings.SatraSettings
@@ -83,7 +84,6 @@ import java.util.Locale
 @Composable
 internal fun SatraSettingsRootScreen(
     walletRepository: SatraWalletRepository,
-    settings: SatraSettings,
     onNavigate: (String) -> Unit,
 ) {
     var appSettings by remember { mutableStateOf<AppSettingsRecord?>(null) }
@@ -168,21 +168,6 @@ internal fun SatraSettingsRootScreen(
                     isDanger = true,
                 )
             }
-        }
-        item {
-            Text(
-                text = stringResource(
-                    R.string.settings_root_status,
-                    settings.themePreference.name,
-                    settings.languageTag,
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-            )
         }
     }
 }
@@ -306,22 +291,24 @@ internal fun SatraPreferencesScreen(
                 SettingsRow(
                     iconRes = R.drawable.ic_brand_assets,
                     title = stringResource(R.string.settings_currency_title),
-                    body = appSettings?.localCurrencyCode ?: "USD",
+                    body = appSettings?.localCurrencyCode ?: DEFAULT_LOCAL_CURRENCY_CODE,
                     onClick = { onNavigate(SatraMainRoute.Currency) },
                 )
                 SettingsDivider()
                 SettingsRow(
                     iconRes = R.drawable.ic_brand_list,
                     title = stringResource(R.string.settings_language_title),
-                    body = supportedSettingLanguages.firstOrNull { it.tag == settings.languageTag }?.label
-                        ?: settings.languageTag,
+                    body = supportedSettingLanguages
+                        .firstOrNull { it.tag == settings.languageTag }
+                        ?.let { language -> stringResource(language.labelRes) }
+                        ?: stringResource(R.string.settings_language_english),
                     onClick = { onNavigate(SatraMainRoute.Language) },
                 )
                 SettingsDivider()
                 SettingsRow(
                     iconRes = R.drawable.ic_brand_settings,
                     title = stringResource(R.string.settings_appearance_title),
-                    body = settings.themePreference.name,
+                    body = stringResource(settings.themePreference.titleRes),
                     onClick = { onNavigate(SatraMainRoute.Appearance) },
                 )
                 SettingsDivider()
@@ -350,7 +337,7 @@ internal fun SatraCurrencyScreen(
     onBack: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
-    var selectedCode by remember { mutableStateOf("USD") }
+    var selectedCode by remember { mutableStateOf(DEFAULT_LOCAL_CURRENCY_CODE) }
     LaunchedEffect(walletRepository) {
         selectedCode = walletRepository.getAppSettings().localCurrencyCode
     }
@@ -366,22 +353,32 @@ internal fun SatraCurrencyScreen(
                 iconRes = R.drawable.ic_brand_assets,
             )
         }
-        items(allCurrencyOptions, key = { it.code }) { currency ->
-            SettingsCard {
-                SelectableSettingsRow(
-                    title = "${currency.code} · ${currency.name}",
-                    body = currency.symbol,
-                    selected = selectedCode == currency.code,
-                    onClick = {
-                        selectedCode = currency.code
-                        scope.launch {
-                            walletRepository.updateAppSettings(
-                                AppSettingsUpdate(localCurrencyCode = currency.code),
-                            )
-                            walletRepository.syncAllWalletPrices()
-                        }
-                    },
-                )
+        item {
+            SettingsListCard {
+                allCurrencyOptions.forEachIndexed { index, currency ->
+                    SelectableSettingsRow(
+                        title = stringResource(
+                            R.string.settings_currency_option_title,
+                            currency.code,
+                            currency.name,
+                        ),
+                        body = currency.symbol,
+                        selected = selectedCode == currency.code,
+                        leading = { SettingsFlagGlyph(currency.flag) },
+                        onClick = {
+                            selectedCode = currency.code
+                            scope.launch {
+                                walletRepository.updateAppSettings(
+                                    AppSettingsUpdate(localCurrencyCode = currency.code),
+                                )
+                                walletRepository.syncAllWalletPrices()
+                            }
+                        },
+                    )
+                    if (index != allCurrencyOptions.lastIndex) {
+                        SettingsDivider()
+                    }
+                }
             }
         }
     }
@@ -406,21 +403,27 @@ internal fun SatraLanguageScreen(
                 iconRes = R.drawable.ic_brand_list,
             )
         }
-        items(supportedSettingLanguages, key = { it.tag }) { language ->
-            SettingsCard {
-                SelectableSettingsRow(
-                    title = "${language.flag} ${language.label}",
-                    body = language.tag,
-                    selected = settings.languageTag == language.tag,
-                    onClick = {
-                        onLanguageTagChange(language.tag)
-                        scope.launch {
-                            walletRepository.updateAppSettings(
-                                AppSettingsUpdate(languageTag = language.tag),
-                            )
-                        }
-                    },
-                )
+        item {
+            SettingsListCard {
+                supportedSettingLanguages.forEachIndexed { index, language ->
+                    SelectableSettingsRow(
+                        title = stringResource(language.labelRes),
+                        body = stringResource(language.countryRes),
+                        selected = settings.languageTag == language.tag,
+                        leading = { SettingsFlagGlyph(language.flag) },
+                        onClick = {
+                            onLanguageTagChange(language.tag)
+                            scope.launch {
+                                walletRepository.updateAppSettings(
+                                    AppSettingsUpdate(languageTag = language.tag),
+                                )
+                            }
+                        },
+                    )
+                    if (index != supportedSettingLanguages.lastIndex) {
+                        SettingsDivider()
+                    }
+                }
             }
         }
     }
@@ -445,21 +448,26 @@ internal fun SatraAppearanceScreen(
                 iconRes = R.drawable.ic_brand_settings,
             )
         }
-        items(SatraThemePreference.entries, key = { it.name }) { preference ->
-            SettingsCard {
-                SelectableSettingsRow(
-                    title = stringResource(preference.titleRes),
-                    body = stringResource(preference.bodyRes),
-                    selected = settings.themePreference == preference,
-                    onClick = {
-                        onThemePreferenceChange(preference)
-                        scope.launch {
-                            walletRepository.updateAppSettings(
-                                AppSettingsUpdate(themePreference = preference.name),
-                            )
-                        }
-                    },
-                )
+        item {
+            SettingsListCard {
+                SatraThemePreference.entries.forEachIndexed { index, preference ->
+                    SelectableSettingsRow(
+                        title = stringResource(preference.titleRes),
+                        body = stringResource(preference.bodyRes),
+                        selected = settings.themePreference == preference,
+                        onClick = {
+                            onThemePreferenceChange(preference)
+                            scope.launch {
+                                walletRepository.updateAppSettings(
+                                    AppSettingsUpdate(themePreference = preference.name),
+                                )
+                            }
+                        },
+                    )
+                    if (index != SatraThemePreference.entries.lastIndex) {
+                        SettingsDivider()
+                    }
+                }
             }
         }
     }
@@ -1009,6 +1017,23 @@ private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
 }
 
 @Composable
+private fun SettingsListCard(content: @Composable ColumnScope.() -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .widthIn(max = SettingsContentMaxWidth),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            content = content,
+        )
+    }
+}
+
+@Composable
 private fun SettingsRow(
     @DrawableRes iconRes: Int,
     title: String,
@@ -1081,6 +1106,7 @@ private fun SelectableSettingsRow(
     body: String,
     selected: Boolean,
     onClick: () -> Unit,
+    leading: (@Composable () -> Unit)? = null,
 ) {
     Row(
         modifier = Modifier
@@ -1090,6 +1116,15 @@ private fun SelectableSettingsRow(
             .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        if (leading != null) {
+            Box(
+                modifier = Modifier.size(34.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                leading()
+            }
+            Spacer(modifier = Modifier.width(14.dp))
+        }
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
@@ -1105,6 +1140,14 @@ private fun SelectableSettingsRow(
         }
         RadioButton(selected = selected, onClick = onClick)
     }
+}
+
+@Composable
+private fun SettingsFlagGlyph(flag: String) {
+    Text(
+        text = flag,
+        style = MaterialTheme.typography.titleLarge,
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -1523,7 +1566,8 @@ private val SatraThemePreference.bodyRes: Int
 
 private data class SettingsLanguage(
     val tag: String,
-    val label: String,
+    @StringRes val labelRes: Int,
+    @StringRes val countryRes: Int,
     val flag: String,
 )
 
@@ -1531,6 +1575,7 @@ private data class CurrencyOption(
     val code: String,
     val name: String,
     val symbol: String,
+    val flag: String,
 )
 
 private data class AutoLockOption(
@@ -1544,39 +1589,92 @@ private val allCurrencyOptions: List<CurrencyOption> =
         .map { currency ->
             CurrencyOption(
                 code = currency.currencyCode,
-                name = currency.displayName,
-                symbol = runCatching { currency.getSymbol(Locale.getDefault()) }.getOrDefault(currency.currencyCode),
+                name = currency.getDisplayName(Locale.US),
+                symbol = runCatching { currency.getSymbol(Locale.US) }.getOrDefault(currency.currencyCode),
+                flag = currencyFlagEmoji(currency.currencyCode),
             )
         }
-        .sortedWith(compareBy<CurrencyOption> { it.code != "USD" }.thenBy { it.code })
+        .sortedWith(compareBy<CurrencyOption> { it.code != DEFAULT_LOCAL_CURRENCY_CODE }.thenBy { it.code })
 
 private val supportedSettingLanguages = listOf(
-    SettingsLanguage("en", "English", "🇺🇸"),
-    SettingsLanguage("zh", "Chinese", "🇨🇳"),
-    SettingsLanguage("hi", "Hindi", "🇮🇳"),
-    SettingsLanguage("es", "Spanish", "🇪🇸"),
-    SettingsLanguage("fr", "French", "🇫🇷"),
-    SettingsLanguage("ar", "Arabic", "🇸🇦"),
-    SettingsLanguage("bn", "Bengali", "🇧🇩"),
-    SettingsLanguage("pt", "Portuguese", "🇧🇷"),
-    SettingsLanguage("ru", "Russian", "🇷🇺"),
-    SettingsLanguage("ur", "Urdu", "🇵🇰"),
-    SettingsLanguage("id", "Indonesian", "🇮🇩"),
-    SettingsLanguage("de", "German", "🇩🇪"),
-    SettingsLanguage("ja", "Japanese", "🇯🇵"),
-    SettingsLanguage("sw", "Swahili", "🇹🇿"),
-    SettingsLanguage("mr", "Marathi", "🇮🇳"),
-    SettingsLanguage("te", "Telugu", "🇮🇳"),
-    SettingsLanguage("tr", "Turkish", "🇹🇷"),
-    SettingsLanguage("ta", "Tamil", "🇮🇳"),
-    SettingsLanguage("vi", "Vietnamese", "🇻🇳"),
-    SettingsLanguage("ko", "Korean", "🇰🇷"),
-    SettingsLanguage("it", "Italian", "🇮🇹"),
-    SettingsLanguage("th", "Thai", "🇹🇭"),
-    SettingsLanguage("gu", "Gujarati", "🇮🇳"),
-    SettingsLanguage("fa", "Persian", "🇮🇷"),
-    SettingsLanguage("pl", "Polish", "🇵🇱"),
+    SettingsLanguage("en", R.string.settings_language_english, R.string.settings_country_united_states, "🇺🇸"),
+    SettingsLanguage("zh", R.string.settings_language_chinese_simplified, R.string.settings_country_china, "🇨🇳"),
+    SettingsLanguage("hi", R.string.settings_language_hindi, R.string.settings_country_india, "🇮🇳"),
+    SettingsLanguage("es", R.string.settings_language_spanish, R.string.settings_country_spain, "🇪🇸"),
+    SettingsLanguage("fr", R.string.settings_language_french, R.string.settings_country_france, "🇫🇷"),
+    SettingsLanguage("ar", R.string.settings_language_arabic, R.string.settings_country_saudi_arabia, "🇸🇦"),
+    SettingsLanguage("bn", R.string.settings_language_bengali, R.string.settings_country_bangladesh, "🇧🇩"),
+    SettingsLanguage("pt", R.string.settings_language_portuguese, R.string.settings_country_brazil, "🇧🇷"),
+    SettingsLanguage("ru", R.string.settings_language_russian, R.string.settings_country_russia, "🇷🇺"),
+    SettingsLanguage("ur", R.string.settings_language_urdu, R.string.settings_country_pakistan, "🇵🇰"),
+    SettingsLanguage("id", R.string.settings_language_indonesian, R.string.settings_country_indonesia, "🇮🇩"),
+    SettingsLanguage("de", R.string.settings_language_german, R.string.settings_country_germany, "🇩🇪"),
+    SettingsLanguage("ja", R.string.settings_language_japanese, R.string.settings_country_japan, "🇯🇵"),
+    SettingsLanguage("sw", R.string.settings_language_swahili, R.string.settings_country_tanzania, "🇹🇿"),
+    SettingsLanguage("mr", R.string.settings_language_marathi, R.string.settings_country_india, "🇮🇳"),
+    SettingsLanguage("te", R.string.settings_language_telugu, R.string.settings_country_india, "🇮🇳"),
+    SettingsLanguage("tr", R.string.settings_language_turkish, R.string.settings_country_turkey, "🇹🇷"),
+    SettingsLanguage("ta", R.string.settings_language_tamil, R.string.settings_country_india, "🇮🇳"),
+    SettingsLanguage("vi", R.string.settings_language_vietnamese, R.string.settings_country_vietnam, "🇻🇳"),
+    SettingsLanguage("ko", R.string.settings_language_korean, R.string.settings_country_south_korea, "🇰🇷"),
+    SettingsLanguage("it", R.string.settings_language_italian, R.string.settings_country_italy, "🇮🇹"),
+    SettingsLanguage("th", R.string.settings_language_thai, R.string.settings_country_thailand, "🇹🇭"),
+    SettingsLanguage("gu", R.string.settings_language_gujarati, R.string.settings_country_india, "🇮🇳"),
+    SettingsLanguage("fa", R.string.settings_language_persian, R.string.settings_country_iran, "🇮🇷"),
+    SettingsLanguage("pl", R.string.settings_language_polish, R.string.settings_country_poland, "🇵🇱"),
 )
+
+private val currencyCountryCodeByCurrencyCode: Map<String, String> by lazy {
+    val generated = Locale.getISOCountries()
+        .mapNotNull { countryCode ->
+            runCatching {
+                Currency.getInstance(Locale.Builder().setRegion(countryCode).build()).currencyCode to countryCode
+            }.getOrNull()
+        }
+        .groupBy(keySelector = { it.first }, valueTransform = { it.second })
+        .mapValues { (_, countries) -> countries.sorted().first() }
+
+    generated + mapOf(
+        "ADP" to "AD",
+        "AFA" to "AF",
+        "ALK" to "AL",
+        "BYB" to "BY",
+        "CSD" to "RS",
+        "EEK" to "EE",
+        "EUR" to "EU",
+        "GHC" to "GH",
+        "IEP" to "IE",
+        "LTL" to "LT",
+        "LVL" to "LV",
+        "MTL" to "MT",
+        "ROL" to "RO",
+        "SIT" to "SI",
+        "SKK" to "SK",
+        "TRL" to "TR",
+        "XAF" to "CM",
+        "XCD" to "AG",
+        "XOF" to "SN",
+        "XPF" to "PF",
+        "ZWD" to "ZW",
+    )
+}
+
+private fun currencyFlagEmoji(currencyCode: String): String =
+    currencyCountryCodeByCurrencyCode[currencyCode]
+        ?.let(::countryCodeToFlagEmoji)
+        ?: countryCodeToFlagEmoji(currencyCode.take(2))
+
+private fun countryCodeToFlagEmoji(countryCode: String): String {
+    val normalized = countryCode.uppercase(Locale.US)
+    if (normalized.length != 2 || normalized.any { it !in 'A'..'Z' }) {
+        return "¤"
+    }
+    return normalized
+        .map { char -> String(Character.toChars(REGIONAL_INDICATOR_SYMBOL_LETTER_A + (char.code - 'A'.code))) }
+        .joinToString(separator = "")
+}
+
+private const val REGIONAL_INDICATOR_SYMBOL_LETTER_A = 0x1F1E6
 
 private val autoLockOptions = listOf(
     AutoLockOption(0L, R.string.settings_auto_lock_immediate, R.string.settings_auto_lock_immediate_body),
