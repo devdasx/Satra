@@ -125,10 +125,24 @@ fun SatraMainScreen(
     onLanguageTagChange: (String) -> Unit,
     onResetComplete: () -> Unit,
 ) {
+    val context = LocalContext.current
     val tabNavController = rememberNavController()
     val tabs = remember { SatraMainTab.entries }
     val backStackEntry by tabNavController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route ?: SatraMainTab.Home.route
+    var balancesHidden by remember {
+        mutableStateOf(
+            context.getSharedPreferences(BALANCE_CARD_PREFS_NAME, Context.MODE_PRIVATE)
+                .getBoolean(BALANCE_CARD_HIDDEN_KEY, false),
+        )
+    }
+    val onBalancesHiddenChange: (Boolean) -> Unit = { hidden ->
+        balancesHidden = hidden
+        context.getSharedPreferences(BALANCE_CARD_PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(BALANCE_CARD_HIDDEN_KEY, hidden)
+            .apply()
+    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -159,6 +173,8 @@ fun SatraMainScreen(
             composable(SatraMainTab.Home.route) {
                 SatraHomeDashboard(
                     walletRepository = walletRepository,
+                    balancesHidden = balancesHidden,
+                    onBalancesHiddenChange = onBalancesHiddenChange,
                     onSendClick = { tabNavController.navigate(SatraMainRoute.SendAsset) },
                     onReceiveClick = { tabNavController.navigate(SatraMainRoute.Receive) },
                     onAssetClick = { symbol ->
@@ -169,6 +185,7 @@ fun SatraMainScreen(
             composable(SatraMainTab.Activity.route) {
                 SatraActivityScreen(
                     walletRepository = walletRepository,
+                    balancesHidden = balancesHidden,
                     onTransactionClick = { transactionId ->
                         tabNavController.navigate(SatraMainRoute.transactionDetail(transactionId))
                     },
@@ -299,6 +316,8 @@ fun SatraMainScreen(
                 SatraTokenDetailScreen(
                     walletRepository = walletRepository,
                     symbol = symbol,
+                    balancesHidden = balancesHidden,
+                    onBalancesHiddenChange = onBalancesHiddenChange,
                     onBack = { tabNavController.popBackStack() },
                     onSendAsset = { assetId ->
                         tabNavController.navigate(SatraMainRoute.sendComposer(assetId))
@@ -322,6 +341,7 @@ fun SatraMainScreen(
                 SatraTransactionDetailScreen(
                     walletRepository = walletRepository,
                     transactionId = transactionId,
+                    balancesHidden = balancesHidden,
                     onBack = { tabNavController.popBackStack() },
                 )
             }
@@ -417,6 +437,8 @@ private fun SatraBottomNavigationBar(
 @Composable
 private fun SatraHomeDashboard(
     walletRepository: SatraWalletRepository,
+    balancesHidden: Boolean,
+    onBalancesHiddenChange: (Boolean) -> Unit,
     onSendClick: () -> Unit,
     onReceiveClick: () -> Unit,
     onAssetClick: (String) -> Unit,
@@ -542,6 +564,8 @@ private fun SatraHomeDashboard(
                     transactions = content.chartTransactions,
                     initialChartData = content.chartData,
                     isEmpty = content.totalBalanceAmount <= BigDecimal.ZERO,
+                    balancesHidden = balancesHidden,
+                    onBalancesHiddenChange = onBalancesHiddenChange,
                     onSendClick = onSendClick,
                     onReceiveClick = onReceiveClick,
                 )
@@ -565,6 +589,7 @@ private fun SatraHomeDashboard(
         ) { asset ->
             HomeAssetListRow(
                 asset = asset,
+                balancesHidden = balancesHidden,
                 onClick = { onAssetClick(asset.symbol) },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -581,6 +606,7 @@ private fun SatraHomeDashboard(
 @Composable
 private fun SatraActivityScreen(
     walletRepository: SatraWalletRepository,
+    balancesHidden: Boolean,
     onTransactionClick: (String) -> Unit,
 ) {
     val resources = LocalContext.current.resources
@@ -725,6 +751,7 @@ private fun SatraActivityScreen(
             ) { transaction ->
                 ActivityTransactionCard(
                     transaction = transaction,
+                    balancesHidden = balancesHidden,
                     onClick = { onTransactionClick(transaction.transactionId) },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -743,6 +770,7 @@ private fun SatraActivityScreen(
 private fun SatraTransactionDetailScreen(
     walletRepository: SatraWalletRepository,
     transactionId: String,
+    balancesHidden: Boolean,
     onBack: () -> Unit,
 ) {
     val resources = LocalContext.current.resources
@@ -792,9 +820,15 @@ private fun SatraTransactionDetailScreen(
                     TransactionDetailState.Loading -> TransactionDetailLoadingCard()
                     TransactionDetailState.NotFound -> TransactionDetailNotFoundCard()
                     is TransactionDetailState.Content -> {
-                        TransactionDetailSummaryCard(content = current)
+                        TransactionDetailSummaryCard(
+                            content = current,
+                            balancesHidden = balancesHidden,
+                        )
                         Spacer(modifier = Modifier.height(14.dp))
-                        TransactionDetailRowsCard(rows = current.details)
+                        TransactionDetailRowsCard(
+                            rows = current.details,
+                            balancesHidden = balancesHidden,
+                        )
                     }
                 }
             }
@@ -895,7 +929,9 @@ private fun TransactionDetailNotFoundCard() {
 @Composable
 private fun TransactionDetailSummaryCard(
     content: TransactionDetailState.Content,
+    balancesHidden: Boolean,
 ) {
+    val hiddenValue = stringResource(R.string.home_balance_hidden_value)
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -940,19 +976,23 @@ private fun TransactionDetailSummaryCard(
                 verticalArrangement = Arrangement.Center,
             ) {
                 Text(
-                    text = content.amount,
+                    text = if (balancesHidden) hiddenValue else content.amount,
                     style = MaterialTheme.typography.titleMedium,
-                    color = when (content.direction) {
-                        WalletTransactionDirection.Incoming.value -> MaterialTheme.colorScheme.tertiary
-                        WalletTransactionDirection.Outgoing.value -> MaterialTheme.colorScheme.onSurface
-                        WalletTransactionDirection.Self.value -> MaterialTheme.colorScheme.primary
-                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                    color = if (balancesHidden) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        when (content.direction) {
+                            WalletTransactionDirection.Incoming.value -> MaterialTheme.colorScheme.tertiary
+                            WalletTransactionDirection.Outgoing.value -> MaterialTheme.colorScheme.onSurface
+                            WalletTransactionDirection.Self.value -> MaterialTheme.colorScheme.primary
+                            else -> MaterialTheme.colorScheme.onSurfaceVariant
+                        }
                     },
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                 )
                 Text(
-                    text = content.fiatValue,
+                    text = if (balancesHidden) hiddenValue else content.fiatValue,
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -965,6 +1005,7 @@ private fun TransactionDetailSummaryCard(
 @Composable
 private fun TransactionDetailRowsCard(
     rows: List<TransactionDetailRow>,
+    balancesHidden: Boolean,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -978,7 +1019,10 @@ private fun TransactionDetailRowsCard(
             modifier = Modifier.padding(18.dp),
         ) {
             rows.forEachIndexed { index, row ->
-                TransactionDetailRowItem(row = row)
+                TransactionDetailRowItem(
+                    row = row,
+                    balancesHidden = balancesHidden,
+                )
                 if (index != rows.lastIndex) {
                     HorizontalDivider(
                         modifier = Modifier.padding(vertical = 12.dp),
@@ -993,7 +1037,9 @@ private fun TransactionDetailRowsCard(
 @Composable
 private fun TransactionDetailRowItem(
     row: TransactionDetailRow,
+    balancesHidden: Boolean,
 ) {
+    val hiddenValue = stringResource(R.string.home_balance_hidden_value)
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -1005,7 +1051,7 @@ private fun TransactionDetailRowItem(
             fontWeight = FontWeight.Bold,
         )
         Text(
-            text = row.value,
+            text = if (balancesHidden && row.sensitive) hiddenValue else row.value,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface,
         )
@@ -1633,6 +1679,8 @@ private fun MarketDetailDescriptionCard(
 private fun SatraTokenDetailScreen(
     walletRepository: SatraWalletRepository,
     symbol: String,
+    balancesHidden: Boolean,
+    onBalancesHiddenChange: (Boolean) -> Unit,
     onBack: () -> Unit,
     onSendAsset: (String) -> Unit,
     onSendNetworkRequired: (String) -> Unit,
@@ -1729,6 +1777,8 @@ private fun SatraTokenDetailScreen(
                     transactions = content.chartTransactions,
                     initialChartData = content.chartData,
                     isEmpty = content.networkBalances.none { row -> row.hasBalance },
+                    balancesHidden = balancesHidden,
+                    onBalancesHiddenChange = onBalancesHiddenChange,
                     onSendClick = {
                         if (content.sendRequiresNetwork) {
                             onSendNetworkRequired(content.symbol)
@@ -1758,6 +1808,7 @@ private fun SatraTokenDetailScreen(
         ) { row ->
             TokenNetworkBalanceListRow(
                 row = row,
+                balancesHidden = balancesHidden,
                 modifier = Modifier
                     .fillMaxWidth()
                     .widthIn(max = HomeContentMaxWidth)
@@ -1794,6 +1845,7 @@ private fun SatraTokenDetailScreen(
             ) { transaction ->
                 ActivityTransactionCard(
                     transaction = transaction,
+                    balancesHidden = balancesHidden,
                     onClick = { onTransactionClick(transaction.transactionId) },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1880,8 +1932,10 @@ private fun TokenDetailSectionHeader(
 @Composable
 private fun TokenNetworkBalanceListRow(
     row: TokenNetworkBalanceRow,
+    balancesHidden: Boolean,
     modifier: Modifier = Modifier,
 ) {
+    val hiddenValue = stringResource(R.string.home_balance_hidden_value)
     Row(
         modifier = modifier
             .height(72.dp)
@@ -1911,14 +1965,14 @@ private fun TokenNetworkBalanceListRow(
             verticalArrangement = Arrangement.Center,
         ) {
             Text(
-                text = row.fiatValue,
+                text = if (balancesHidden) hiddenValue else row.fiatValue,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
             )
             Text(
-                text = row.amount,
+                text = if (balancesHidden) hiddenValue else row.amount,
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -2168,9 +2222,11 @@ private fun ActivityEmptyState(
 @Composable
 private fun ActivityTransactionCard(
     transaction: ActivityTransactionRow,
+    balancesHidden: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val hiddenValue = stringResource(R.string.home_balance_hidden_value)
     Card(
         modifier = modifier.clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
@@ -2219,19 +2275,23 @@ private fun ActivityTransactionCard(
                     verticalArrangement = Arrangement.Center,
                 ) {
                     Text(
-                        text = transaction.amount,
+                        text = if (balancesHidden) hiddenValue else transaction.amount,
                         style = MaterialTheme.typography.titleMedium,
-                        color = when (transaction.direction) {
-                            WalletTransactionDirection.Incoming.value -> MaterialTheme.colorScheme.tertiary
-                            WalletTransactionDirection.Outgoing.value -> MaterialTheme.colorScheme.onSurface
-                            WalletTransactionDirection.Self.value -> MaterialTheme.colorScheme.primary
-                            else -> MaterialTheme.colorScheme.onSurfaceVariant
+                        color = if (balancesHidden) {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        } else {
+                            when (transaction.direction) {
+                                WalletTransactionDirection.Incoming.value -> MaterialTheme.colorScheme.tertiary
+                                WalletTransactionDirection.Outgoing.value -> MaterialTheme.colorScheme.onSurface
+                                WalletTransactionDirection.Self.value -> MaterialTheme.colorScheme.primary
+                                else -> MaterialTheme.colorScheme.onSurfaceVariant
+                            }
                         },
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                     )
                     Text(
-                        text = transaction.fiatValue,
+                        text = if (balancesHidden) hiddenValue else transaction.fiatValue,
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
@@ -2250,22 +2310,17 @@ private fun HomeBalanceCard(
     transactions: List<WalletTransactionRecord>,
     initialChartData: HomeBalanceChartData,
     isEmpty: Boolean,
+    balancesHidden: Boolean,
+    onBalancesHiddenChange: (Boolean) -> Unit,
     onSendClick: () -> Unit,
     onReceiveClick: () -> Unit,
 ) {
-    val context = LocalContext.current
     var selectedRange by remember { mutableStateOf(initialChartData.range) }
     val chartData = remember(transactions, selectedRange) {
         buildHomeBalanceChartData(
             transactions = transactions,
             range = selectedRange,
             nowMillis = System.currentTimeMillis(),
-        )
-    }
-    var balancesHidden by remember {
-        mutableStateOf(
-            context.getSharedPreferences(BALANCE_CARD_PREFS_NAME, Context.MODE_PRIVATE)
-                .getBoolean(BALANCE_CARD_HIDDEN_KEY, false),
         )
     }
     val cardColor = MaterialTheme.colorScheme.inverseSurface
@@ -2349,11 +2404,7 @@ private fun HomeBalanceCard(
                 )
                 IconButton(
                     onClick = {
-                        balancesHidden = !balancesHidden
-                        context.getSharedPreferences(BALANCE_CARD_PREFS_NAME, Context.MODE_PRIVATE)
-                            .edit()
-                            .putBoolean(BALANCE_CARD_HIDDEN_KEY, balancesHidden)
-                            .apply()
+                        onBalancesHiddenChange(!balancesHidden)
                     },
                     modifier = Modifier.size(44.dp),
                 ) {
@@ -3091,9 +3142,11 @@ private fun HomeAssetSelectableFilterRow(
 @Composable
 private fun HomeAssetListRow(
     asset: HomeAssetRow,
+    balancesHidden: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val hiddenValue = stringResource(R.string.home_balance_hidden_value)
     Row(
         modifier = modifier
             .height(72.dp)
@@ -3141,14 +3194,14 @@ private fun HomeAssetListRow(
             verticalArrangement = Arrangement.Center,
         ) {
             Text(
-                text = asset.fiatValue,
+                text = if (balancesHidden) hiddenValue else asset.fiatValue,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
             )
             Text(
-                text = asset.amount,
+                text = if (balancesHidden) hiddenValue else asset.amount,
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -3213,6 +3266,7 @@ private data class ActivityTransactionRow(
 private data class TransactionDetailRow(
     val label: String,
     val value: String,
+    val sensitive: Boolean = false,
 )
 
 private data class MarketAssetRow(
@@ -3600,9 +3654,9 @@ private fun WalletTransactionRecord.toTransactionDetailContent(
         add(TransactionDetailRow(resources.getString(R.string.activity_detail_network), network?.displayName ?: networkId))
         add(TransactionDetailRow(resources.getString(R.string.activity_detail_status), status))
         add(TransactionDetailRow(resources.getString(R.string.activity_detail_direction), directionLabel))
-        add(TransactionDetailRow(resources.getString(R.string.activity_detail_amount), displayAmount))
-        add(TransactionDetailRow(resources.getString(R.string.activity_detail_value), displayFiat))
-        add(TransactionDetailRow(resources.getString(R.string.activity_detail_fee), displayFee))
+        add(TransactionDetailRow(resources.getString(R.string.activity_detail_amount), displayAmount, sensitive = true))
+        add(TransactionDetailRow(resources.getString(R.string.activity_detail_value), displayFiat, sensitive = true))
+        add(TransactionDetailRow(resources.getString(R.string.activity_detail_fee), displayFee, sensitive = true))
         add(TransactionDetailRow(resources.getString(R.string.activity_detail_from), fromAddress.orEmpty().ifBlank { notAvailable }))
         add(TransactionDetailRow(resources.getString(R.string.activity_detail_to), toAddress.orEmpty().ifBlank { notAvailable }))
         add(TransactionDetailRow(resources.getString(R.string.activity_detail_hash), transactionHash.orEmpty().ifBlank { notAvailable }))
