@@ -1584,7 +1584,7 @@ private data class AutoLockOption(
     @StringRes val bodyRes: Int,
 )
 
-private val allCurrencyOptions: List<CurrencyOption> =
+private val allCurrencyOptions: List<CurrencyOption> by lazy {
     Currency.getAvailableCurrencies()
         .map { currency ->
             CurrencyOption(
@@ -1595,6 +1595,7 @@ private val allCurrencyOptions: List<CurrencyOption> =
             )
         }
         .sortedWith(compareBy<CurrencyOption> { it.code != DEFAULT_LOCAL_CURRENCY_CODE }.thenBy { it.code })
+}
 
 private val supportedSettingLanguages = listOf(
     SettingsLanguage("en", R.string.settings_language_english, R.string.settings_country_united_states, "🇺🇸"),
