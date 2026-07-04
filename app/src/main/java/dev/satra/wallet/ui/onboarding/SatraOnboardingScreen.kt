@@ -1387,41 +1387,49 @@ private enum class OnboardingArtwork(
     val useBrandMark: Boolean = false,
 ) {
     SelfCustody(
-        primaryIconRes = R.drawable.ic_brand_security,
+        primaryIconRes = R.drawable.onboarding_slider_01_self_custody,
         contentDescriptionRes = R.string.onboarding_visual_self_custody_description,
+        useBrandMark = true,
     ),
     Import(
-        primaryIconRes = R.drawable.ic_brand_wallet,
+        primaryIconRes = R.drawable.onboarding_slider_03_create_import,
         contentDescriptionRes = R.string.onboarding_visual_import_description,
+        useBrandMark = true,
     ),
     Assets(
-        primaryIconRes = R.drawable.satra_mark,
+        primaryIconRes = R.drawable.onboarding_slider_04_supported_assets,
         contentDescriptionRes = R.string.onboarding_visual_assets_description,
         useBrandMark = true,
     ),
     Receive(
-        primaryIconRes = R.drawable.ic_brand_receive,
+        primaryIconRes = R.drawable.onboarding_slider_05_receive_safely,
         contentDescriptionRes = R.string.onboarding_visual_receive_description,
+        useBrandMark = true,
     ),
     Clarity(
-        primaryIconRes = R.drawable.ic_brand_list,
+        primaryIconRes = R.drawable.onboarding_slider_09_clarity_first,
         contentDescriptionRes = R.string.onboarding_visual_clarity_description,
+        useBrandMark = true,
     ),
     Scan(
-        primaryIconRes = R.drawable.ic_brand_scan,
+        primaryIconRes = R.drawable.onboarding_slider_06_scan_with_care,
         contentDescriptionRes = R.string.onboarding_visual_scan_description,
+        useBrandMark = true,
     ),
     History(
-        primaryIconRes = R.drawable.ic_brand_history,
+        primaryIconRes = R.drawable.onboarding_slider_07_activity,
         contentDescriptionRes = R.string.onboarding_visual_history_description,
+        useBrandMark = true,
     ),
     Move(
-        primaryIconRes = R.drawable.ic_brand_move,
+        primaryIconRes = R.drawable.onboarding_slider_08_transfers,
         contentDescriptionRes = R.string.onboarding_visual_move_description,
+        useBrandMark = true,
     ),
     OpenSource(
-        primaryIconRes = R.drawable.ic_brand_settings,
+        primaryIconRes = R.drawable.onboarding_slider_02_open_source,
         contentDescriptionRes = R.string.onboarding_visual_open_source_description,
+        useBrandMark = true,
     ),
 }
 
