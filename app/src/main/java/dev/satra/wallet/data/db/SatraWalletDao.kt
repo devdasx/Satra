@@ -415,6 +415,17 @@ class SatraWalletDao(
             }
         }
 
+    fun deleteUnbroadcastSendDraftTransactions(walletId: String): Int =
+        databaseHelper.writableDatabase.delete(
+            SatraDatabaseContract.TABLE_WALLET_TRANSACTIONS,
+            "wallet_id = ? AND transaction_hash IS NULL AND status = ? AND metadata_json LIKE ?",
+            arrayOf(
+                walletId,
+                WalletTransactionStatus.Pending.value,
+                "%\"flow\":\"send\"%",
+            ),
+        )
+
     fun upsertAssetMarketData(
         marketData: NewAssetMarketDataRecord,
     ) {

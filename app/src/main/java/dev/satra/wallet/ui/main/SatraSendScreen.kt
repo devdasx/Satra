@@ -51,7 +51,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -72,7 +71,6 @@ import dev.satra.wallet.data.assets.SupportedAsset
 import dev.satra.wallet.data.assets.SupportedAssetCatalog
 import dev.satra.wallet.data.assets.SupportedNetwork
 import dev.satra.wallet.data.db.AddressBookEntryRecord
-import dev.satra.wallet.data.db.SatraPendingSendRequest
 import dev.satra.wallet.data.db.SatraWalletRepository
 import dev.satra.wallet.data.db.WalletAddressRecord
 import dev.satra.wallet.data.db.WalletAssetRecord
@@ -83,7 +81,6 @@ import dev.satra.wallet.data.db.WalletTransactionRecord
 import dev.satra.wallet.data.db.WalletTransactionStatus
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.text.NumberFormat
@@ -269,9 +266,7 @@ fun SatraSendReviewScreen(
             recipient = Uri.decode(recipient),
             amountText = Uri.decode(amount),
             warnPoison = warnPoison,
-            walletRepository = walletRepository,
             onBack = onBack,
-            onSent = onSent,
         )
     }
 }
@@ -743,42 +738,19 @@ private fun SendReviewContent(
     recipient: String,
     amountText: String,
     warnPoison: Boolean,
-    walletRepository: SatraWalletRepository,
     onBack: () -> Unit,
-    onSent: (String) -> Unit,
 ) {
-    val scope = rememberCoroutineScope()
     val haptic = LocalHapticFeedback.current
-    var submitting by remember { mutableStateOf(false) }
     var submitError by remember { mutableStateOf<String?>(null) }
     var showPoisonSheet by remember(warnPoison) { mutableStateOf(false) }
     val amount = amountText.toBigDecimalOrNullSafe() ?: BigDecimal.ZERO
     val feeQuote = estimatedFeeFor(state.row, SendFeeSpeed.Normal)
-    val prepareFailedFallback = stringResource(R.string.send_prepare_failed_body)
-    val canSubmit = !submitting && state.canSign && amount > BigDecimal.ZERO && amount <= state.row.balanceDecimal
+    val broadcastUnavailableBody = stringResource(R.string.send_broadcast_unavailable_body)
+    val canSubmit = state.canSign && amount > BigDecimal.ZERO && amount <= state.row.balanceDecimal
 
     fun submit() {
-        submitting = true
-        submitError = null
         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-        scope.launchCatching(
-            onError = { throwable ->
-                submitting = false
-                submitError = throwable.message ?: prepareFailedFallback
-            },
-            block = {
-                val transactionId = walletRepository.createPendingSendTransaction(
-                    SatraPendingSendRequest(
-                        walletId = state.wallet.walletId,
-                        assetId = state.row.asset.assetId,
-                        amountDecimal = amount,
-                        toAddress = recipient,
-                    ),
-                )
-                submitting = false
-                onSent(transactionId)
-            },
-        )
+        submitError = broadcastUnavailableBody
     }
 
     if (showPoisonSheet) {
@@ -879,7 +851,7 @@ private fun SendReviewContent(
                 SendPrimaryButton(
                     text = stringResource(R.string.send_now_action),
                     enabled = canSubmit,
-                    loading = submitting,
+                    loading = false,
                     onClick = {
                         if (warnPoison) {
                             showPoisonSheet = true
@@ -2148,15 +2120,6 @@ private fun shareReceipt(
             context.getString(R.string.send_share_chooser_title),
         ),
     )
-}
-
-private fun kotlinx.coroutines.CoroutineScope.launchCatching(
-    onError: (Throwable) -> Unit,
-    block: suspend () -> Unit,
-) {
-    launch {
-        runCatching { block() }.onFailure(onError)
-    }
 }
 
 private sealed interface SendSnapshot {

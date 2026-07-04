@@ -461,11 +461,12 @@
     <string name="send_prepare_action">Prepare transaction</string>
     <string name="send_done_action">Prepared</string>
     <string name="send_return_home_action">Return home</string>
-    <string name="send_prepared_title">Transaction prepared</string>
-    <string name="send_prepared_body">Draft %1$s is saved as pending. Native signing and broadcast will connect through Trust Wallet Core.</string>
-    <string name="send_prepared_toast">Pending send saved</string>
+    <string name="send_prepared_title">Send not broadcast</string>
+    <string name="send_prepared_body">This transfer was not signed or broadcast, so Satra did not save it to Activity.</string>
+    <string name="send_prepared_toast">Send not broadcast</string>
     <string name="send_prepare_failed_title">Could not prepare send</string>
     <string name="send_prepare_failed_body">The transaction could not be prepared.</string>
+    <string name="send_broadcast_unavailable_body">Signing and broadcast are not connected yet. Satra did not sign, broadcast, or save this transfer to Activity.</string>
     <string name="send_search_asset_placeholder">Search coin or token</string>
     <string name="send_section_your_assets">Your assets</string>
     <string name="send_section_all_assets">All assets</string>
@@ -500,7 +501,7 @@
     <string name="send_review_action">Review</string>
     <string name="send_review_screen_title">Review</string>
     <string name="send_review_header_title">Review send.</string>
-    <string name="send_review_header_body">Check every detail before Satra saves this transfer for signing.</string>
+    <string name="send_review_header_body">Check every detail before Satra signs and broadcasts this transfer.</string>
     <string name="send_review_network">Network</string>
     <string name="send_review_source">From</string>
     <string name="send_review_total">Total</string>
@@ -513,8 +514,8 @@
     <string name="send_poison_review_again">Review again</string>
     <string name="send_sent_title">Send status</string>
     <string name="send_receipt_empty_body">This send record could not be found.</string>
-    <string name="send_sent_pending_title">Transfer ready</string>
-    <string name="send_sent_pending_body">Satra saved this transfer as pending. Broadcast will complete after the signing layer is connected.</string>
+    <string name="send_sent_pending_title">Not broadcast</string>
+    <string name="send_sent_pending_body">This transfer has no blockchain hash and was not broadcast. It should not appear in Activity.</string>
     <string name="send_receipt_status">Status</string>
     <string name="send_receipt_saved">Saved</string>
     <string name="send_receipt_share">Share</string>
