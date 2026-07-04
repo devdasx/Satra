@@ -943,8 +943,8 @@ private fun SettingsLanguageContent(
 
     supportedLanguageOptions.forEach { option ->
         SelectableSettingsRow(
-            title = stringResource(option.labelRes),
-            body = option.languageTag,
+            title = "${option.flag} ${stringResource(option.labelRes)}",
+            body = stringResource(option.countryRes),
             selected = settings.languageTag == option.languageTag,
             onClick = {
                 performHaptic()
@@ -1289,6 +1289,8 @@ private data class OnboardingPage(
 private data class SupportedLanguageOption(
     val languageTag: String,
     @StringRes val labelRes: Int,
+    @StringRes val countryRes: Int,
+    val flag: String,
 )
 
 private const val AUTO_ADVANCE_DELAY_MILLIS = 5_000L
@@ -1352,31 +1354,31 @@ private val onboardingPages = listOf(
 )
 
 private val supportedLanguageOptions = listOf(
-    SupportedLanguageOption("en", R.string.settings_language_english),
-    SupportedLanguageOption("zh-Hans", R.string.settings_language_chinese_simplified),
-    SupportedLanguageOption("hi", R.string.settings_language_hindi),
-    SupportedLanguageOption("es", R.string.settings_language_spanish),
-    SupportedLanguageOption("fr", R.string.settings_language_french),
-    SupportedLanguageOption("ar", R.string.settings_language_arabic),
-    SupportedLanguageOption("bn", R.string.settings_language_bengali),
-    SupportedLanguageOption("pt", R.string.settings_language_portuguese),
-    SupportedLanguageOption("ru", R.string.settings_language_russian),
-    SupportedLanguageOption("ur", R.string.settings_language_urdu),
-    SupportedLanguageOption("id", R.string.settings_language_indonesian),
-    SupportedLanguageOption("de", R.string.settings_language_german),
-    SupportedLanguageOption("ja", R.string.settings_language_japanese),
-    SupportedLanguageOption("sw", R.string.settings_language_swahili),
-    SupportedLanguageOption("mr", R.string.settings_language_marathi),
-    SupportedLanguageOption("te", R.string.settings_language_telugu),
-    SupportedLanguageOption("tr", R.string.settings_language_turkish),
-    SupportedLanguageOption("ta", R.string.settings_language_tamil),
-    SupportedLanguageOption("vi", R.string.settings_language_vietnamese),
-    SupportedLanguageOption("ko", R.string.settings_language_korean),
-    SupportedLanguageOption("fa", R.string.settings_language_persian),
-    SupportedLanguageOption("it", R.string.settings_language_italian),
-    SupportedLanguageOption("th", R.string.settings_language_thai),
-    SupportedLanguageOption("gu", R.string.settings_language_gujarati),
-    SupportedLanguageOption("pl", R.string.settings_language_polish),
+    SupportedLanguageOption("en", R.string.settings_language_english, R.string.settings_country_united_states, "🇺🇸"),
+    SupportedLanguageOption("zh-Hans", R.string.settings_language_chinese_simplified, R.string.settings_country_china, "🇨🇳"),
+    SupportedLanguageOption("hi", R.string.settings_language_hindi, R.string.settings_country_india, "🇮🇳"),
+    SupportedLanguageOption("es", R.string.settings_language_spanish, R.string.settings_country_spain, "🇪🇸"),
+    SupportedLanguageOption("fr", R.string.settings_language_french, R.string.settings_country_france, "🇫🇷"),
+    SupportedLanguageOption("ar", R.string.settings_language_arabic, R.string.settings_country_saudi_arabia, "🇸🇦"),
+    SupportedLanguageOption("bn", R.string.settings_language_bengali, R.string.settings_country_bangladesh, "🇧🇩"),
+    SupportedLanguageOption("pt", R.string.settings_language_portuguese, R.string.settings_country_brazil, "🇧🇷"),
+    SupportedLanguageOption("ru", R.string.settings_language_russian, R.string.settings_country_russia, "🇷🇺"),
+    SupportedLanguageOption("ur", R.string.settings_language_urdu, R.string.settings_country_pakistan, "🇵🇰"),
+    SupportedLanguageOption("id", R.string.settings_language_indonesian, R.string.settings_country_indonesia, "🇮🇩"),
+    SupportedLanguageOption("de", R.string.settings_language_german, R.string.settings_country_germany, "🇩🇪"),
+    SupportedLanguageOption("ja", R.string.settings_language_japanese, R.string.settings_country_japan, "🇯🇵"),
+    SupportedLanguageOption("sw", R.string.settings_language_swahili, R.string.settings_country_tanzania, "🇹🇿"),
+    SupportedLanguageOption("mr", R.string.settings_language_marathi, R.string.settings_country_india, "🇮🇳"),
+    SupportedLanguageOption("te", R.string.settings_language_telugu, R.string.settings_country_india, "🇮🇳"),
+    SupportedLanguageOption("tr", R.string.settings_language_turkish, R.string.settings_country_turkey, "🇹🇷"),
+    SupportedLanguageOption("ta", R.string.settings_language_tamil, R.string.settings_country_india, "🇮🇳"),
+    SupportedLanguageOption("vi", R.string.settings_language_vietnamese, R.string.settings_country_vietnam, "🇻🇳"),
+    SupportedLanguageOption("ko", R.string.settings_language_korean, R.string.settings_country_south_korea, "🇰🇷"),
+    SupportedLanguageOption("fa", R.string.settings_language_persian, R.string.settings_country_iran, "🇮🇷"),
+    SupportedLanguageOption("it", R.string.settings_language_italian, R.string.settings_country_italy, "🇮🇹"),
+    SupportedLanguageOption("th", R.string.settings_language_thai, R.string.settings_country_thailand, "🇹🇭"),
+    SupportedLanguageOption("gu", R.string.settings_language_gujarati, R.string.settings_country_india, "🇮🇳"),
+    SupportedLanguageOption("pl", R.string.settings_language_polish, R.string.settings_country_poland, "🇵🇱"),
 )
 
 private enum class OnboardingArtwork(
