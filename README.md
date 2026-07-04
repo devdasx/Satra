@@ -1,16 +1,18 @@
 # Satra
 
-Satra is an open-source Android crypto wallet project.
+Satra is an open-source, non-custodial Android crypto wallet built with Kotlin, Jetpack Compose, and Material 3.
 
-The project is starting with product design and screen implementation first, then wallet behavior will be added step by step. The Android app is built with Kotlin, Jetpack Compose, and Material 3. The wallet core will be non-custodial and multi-chain.
+The app is multi-chain by design and uses the network and asset list documented in `docs/SUPPORTED_ASSETS.md`. Wallet data, addresses, balances, transactions, settings, and cached market data are stored locally on device.
 
 ## Current Status
 
-- Android project scaffolded.
-- First onboarding screen implemented in Compose.
+- Android project scaffolded and running as a native Compose app.
+- Onboarding, create-wallet, import-wallet, passcode, biometric setup, receive, activity, markets, settings, scanner, and main wallet screens are implemented.
 - Brand kit added under `brand/satra-brand-kit` and applied to the current UI, app icon, splash theme, colors, typography, and icon resources.
-- Multi-chain wallet core not implemented yet.
-- Supported assets and networks documented in `docs/SUPPORTED_ASSETS.md`.
+- Local wallet database is implemented for wallets, derived addresses, private keys, assets, balances, transactions, app preferences, security settings, address book, notifications, and cached market records.
+- Mnemonic creation/import, passphrase support, private-key import validation, watch-only import, address derivation, receive addresses, QR scanning, EVM sync, Bitcoin-family sync, Solana sync, account-chain sync scaffolding, and market price caching are in place.
+- Send transaction execution and broadcast are still in progress; send preparation screens are present, but production signing/broadcast support must be completed before release.
+- Supported assets and networks are documented in `docs/SUPPORTED_ASSETS.md`.
 
 ## Tech Stack
 
@@ -18,7 +20,9 @@ The project is starting with product design and screen implementation first, the
 - Jetpack Compose
 - Material 3
 - Android Gradle Plugin
-- Multi-chain wallet core planned
+- Local SQLite wallet database
+- Public RPC/API/Electrum sync providers
+- Non-custodial wallet derivation and import flows
 
 ## Supported Assets
 

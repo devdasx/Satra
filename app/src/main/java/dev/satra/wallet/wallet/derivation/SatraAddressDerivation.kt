@@ -59,20 +59,79 @@ object SatraAddressDerivation {
     fun derivePrivateKeyAccount(
         networkId: String,
         privateKey: String,
-    ): DerivedReceiveAccount? {
-        val normalized = privateKey.removePrefix("0x").removePrefix("0X")
-        if (normalized.length != 64 || !normalized.all(Char::isHexDigit)) {
-            return null
+    ): DerivedReceiveAccount? =
+        validatePrivateKeyImport(networkId, privateKey).account
+
+    fun requirePrivateKeyAccount(
+        networkId: String,
+        privateKey: String,
+    ): DerivedReceiveAccount =
+        validatePrivateKeyImport(networkId, privateKey).account
+            ?: throw IllegalArgumentException("Invalid private key for $networkId.")
+
+    fun validatePrivateKeyImport(
+        networkId: String,
+        privateKey: String,
+    ): PrivateKeyImportValidation {
+        val input = privateKey.trim()
+        if (input.isBlank()) {
+            return PrivateKeyImportValidation(error = PrivateKeyImportError.Empty)
         }
-        val spec = specsForNetwork(networkId).firstOrNull { it.curve == DerivationCurve.Secp256k1 }
-            ?: return null
-        val keyBytes = normalized.hexToBytes()
-        val publicKey = secp256k1PublicKey(keyBytes.toPositiveBigInteger(), compressed = true)
-        val uncompressedPublicKey = secp256k1PublicKey(keyBytes.toPositiveBigInteger(), compressed = false)
-        val address = addressFromPublicKey(spec, publicKey, uncompressedPublicKey)
+
+        val specs = specsForNetwork(networkId)
+        if (specs.isEmpty()) {
+            return PrivateKeyImportValidation(error = PrivateKeyImportError.UnsupportedNetwork)
+        }
+
+        specs.firstOrNull { it.curve == DerivationCurve.Secp256k1 }?.let { spec ->
+            parseSecp256k1PrivateKey(networkId, input)?.let { keyBytes ->
+                return PrivateKeyImportValidation(
+                    account = deriveImportedPrivateKeyAccount(
+                        networkId = networkId,
+                        spec = spec,
+                        keyBytes = keyBytes,
+                    ),
+                )
+            }
+        }
+
+        specs.firstOrNull { it.curve == DerivationCurve.Ed25519 }?.let { spec ->
+            parseEd25519PrivateKey(networkId, input)?.let { keyBytes ->
+                return PrivateKeyImportValidation(
+                    account = deriveImportedPrivateKeyAccount(
+                        networkId = networkId,
+                        spec = spec,
+                        keyBytes = keyBytes,
+                    ),
+                )
+            }
+        }
+
+        return PrivateKeyImportValidation(error = PrivateKeyImportError.InvalidFormat)
+    }
+
+    private fun deriveImportedPrivateKeyAccount(
+        networkId: String,
+        spec: ReceiveDerivationSpec,
+        keyBytes: ByteArray,
+    ): DerivedReceiveAccount =
+        when (spec.curve) {
+            DerivationCurve.Secp256k1 -> deriveImportedSecp256k1Account(networkId, spec, keyBytes)
+            DerivationCurve.Ed25519 -> deriveImportedEd25519Account(networkId, spec, keyBytes)
+        }
+
+    private fun deriveImportedSecp256k1Account(
+        networkId: String,
+        spec: ReceiveDerivationSpec,
+        keyBytes: ByteArray,
+    ): DerivedReceiveAccount {
+        val privateKey = keyBytes.toPositiveBigInteger()
+        require(privateKey > BigInteger.ZERO && privateKey < Secp256k1N)
+        val publicKey = secp256k1PublicKey(privateKey, compressed = true)
+        val uncompressedPublicKey = secp256k1PublicKey(privateKey, compressed = false)
         return DerivedReceiveAccount(
             networkId = networkId,
-            address = address,
+            address = addressFromPublicKey(spec, publicKey, uncompressedPublicKey),
             derivationPath = null,
             derivationName = spec.name,
             privateKeyHex = keyBytes.toHex(),
@@ -84,6 +143,93 @@ object SatraAddressDerivation {
             source = "private_key_imported",
         )
     }
+
+    private fun deriveImportedEd25519Account(
+        networkId: String,
+        spec: ReceiveDerivationSpec,
+        keyBytes: ByteArray,
+    ): DerivedReceiveAccount {
+        require(keyBytes.size == PRIVATE_KEY_SIZE_BYTES)
+        val privateKey = Ed25519PrivateKeyParameters(keyBytes, 0)
+        val publicKey = privateKey.generatePublicKey().encoded
+        return DerivedReceiveAccount(
+            networkId = networkId,
+            address = addressFromEd25519(spec, keyBytes, publicKey),
+            derivationPath = null,
+            derivationName = spec.name,
+            privateKeyHex = keyBytes.toHex(),
+            publicKeyHex = publicKey.toHex(),
+            compressedPublicKeyHex = publicKey.toHex(),
+            keyFingerprint = hash160(publicKey).take(4).toByteArray().toHex(),
+            isPrimary = true,
+            addressIndex = 0,
+            source = "private_key_imported",
+        )
+    }
+
+    private fun parseSecp256k1PrivateKey(
+        networkId: String,
+        input: String,
+    ): ByteArray? {
+        parsePrivateKeyHex(input)?.let { key ->
+            return key.takeIf(::isValidSecp256k1PrivateKey)
+        }
+
+        val allowedPrefixes = wifPrefixesForNetwork(networkId) ?: return null
+        val decoded = base58CheckDecode(input, BITCOIN_BASE58_ALPHABET) ?: return null
+        if (decoded.isEmpty() || decoded.first().toInt() and 0xff !in allowedPrefixes) {
+            return null
+        }
+        val keyBytes = when {
+            decoded.size == PRIVATE_KEY_SIZE_BYTES + 1 -> decoded.copyOfRange(1, decoded.size)
+            decoded.size == PRIVATE_KEY_SIZE_BYTES + 2 && decoded.last() == 0x01.toByte() ->
+                decoded.copyOfRange(1, decoded.size - 1)
+            else -> null
+        } ?: return null
+
+        return keyBytes.takeIf(::isValidSecp256k1PrivateKey)
+    }
+
+    private fun parseEd25519PrivateKey(
+        networkId: String,
+        input: String,
+    ): ByteArray? {
+        parsePrivateKeyHex(input)?.let { return it }
+
+        if (networkId == "stellar" && input.startsWith("S")) {
+            stellarSecretSeed(input)?.let { return it }
+        }
+
+        val decoded = base58Decode(input, BITCOIN_BASE58_ALPHABET) ?: return null
+        return when (decoded.size) {
+            PRIVATE_KEY_SIZE_BYTES -> decoded
+            PRIVATE_KEY_SIZE_BYTES * 2 -> decoded.copyOfRange(0, PRIVATE_KEY_SIZE_BYTES)
+            else -> null
+        }
+    }
+
+    private fun parsePrivateKeyHex(input: String): ByteArray? {
+        val normalized = input.removePrefix("0x").removePrefix("0X")
+        return if (normalized.length == PRIVATE_KEY_SIZE_BYTES * 2 && normalized.all(Char::isHexDigit)) {
+            normalized.hexToBytes()
+        } else {
+            null
+        }
+    }
+
+    private fun isValidSecp256k1PrivateKey(keyBytes: ByteArray): Boolean {
+        if (keyBytes.size != PRIVATE_KEY_SIZE_BYTES) return false
+        val key = keyBytes.toPositiveBigInteger()
+        return key > BigInteger.ZERO && key < Secp256k1N
+    }
+
+    private fun wifPrefixesForNetwork(networkId: String): Set<Int>? =
+        when (networkId) {
+            "bitcoin", "bitcoinCash" -> setOf(0x80)
+            "dogecoin" -> setOf(0x9e)
+            "litecoin" -> setOf(0xb0, 0x80)
+            else -> null
+        }
 
     fun specsForNetwork(networkId: String): List<ReceiveDerivationSpec> =
         when (networkId) {
@@ -621,6 +767,18 @@ object SatraAddressDerivation {
     ): String =
         base58(payload + doubleSha256(payload).copyOfRange(0, 4), alphabet)
 
+    private fun base58CheckDecode(
+        input: String,
+        alphabet: String = BITCOIN_BASE58_ALPHABET,
+    ): ByteArray? {
+        val decoded = base58Decode(input, alphabet) ?: return null
+        if (decoded.size < 5) return null
+        val payload = decoded.copyOfRange(0, decoded.size - 4)
+        val checksum = decoded.copyOfRange(decoded.size - 4, decoded.size)
+        val expectedChecksum = doubleSha256(payload).copyOfRange(0, 4)
+        return payload.takeIf { checksum.contentEquals(expectedChecksum) }
+    }
+
     private fun base58(
         data: ByteArray,
         alphabet: String = BITCOIN_BASE58_ALPHABET,
@@ -635,6 +793,25 @@ object SatraAddressDerivation {
         }
         data.takeWhile { it == 0.toByte() }.forEach { _ -> builder.append(alphabet[0]) }
         return builder.reverse().toString()
+    }
+
+    private fun base58Decode(
+        input: String,
+        alphabet: String = BITCOIN_BASE58_ALPHABET,
+    ): ByteArray? {
+        if (input.isBlank()) return null
+        val base = BigInteger.valueOf(58)
+        var value = BigInteger.ZERO
+        input.forEach { char ->
+            val index = alphabet.indexOf(char)
+            if (index < 0) return null
+            value = value.multiply(base).add(BigInteger.valueOf(index.toLong()))
+        }
+        val encoded = value.toByteArray().let { bytes ->
+            if (bytes.size > 1 && bytes.first() == 0.toByte()) bytes.copyOfRange(1, bytes.size) else bytes
+        }
+        val leadingZeros = input.takeWhile { it == alphabet[0] }.length
+        return ByteArray(leadingZeros) + encoded
     }
 
     private fun base32(data: ByteArray): String {
@@ -653,6 +830,38 @@ object SatraAddressDerivation {
             output.append(BASE32_ALPHABET[(buffer shl (5 - bitsLeft)) and 31])
         }
         return output.toString()
+    }
+
+    private fun base32Decode(input: String): ByteArray? {
+        var buffer = 0
+        var bitsLeft = 0
+        val output = mutableListOf<Byte>()
+        input.trim().uppercase().forEach { char ->
+            val value = BASE32_ALPHABET.indexOf(char)
+            if (value < 0) return null
+            buffer = (buffer shl 5) or value
+            bitsLeft += 5
+            if (bitsLeft >= 8) {
+                bitsLeft -= 8
+                output.add(((buffer shr bitsLeft) and 0xff).toByte())
+            }
+        }
+        return output.toByteArray()
+    }
+
+    private fun stellarSecretSeed(input: String): ByteArray? {
+        val decoded = base32Decode(input) ?: return null
+        if (decoded.size != 35 || decoded.first() != (18 shl 3).toByte()) return null
+        val payload = decoded.copyOfRange(0, decoded.size - 2)
+        val checksum = decoded.copyOfRange(decoded.size - 2, decoded.size)
+        val expected = crc16Xmodem(payload).let { crc ->
+            byteArrayOf((crc and 0xff).toByte(), ((crc ushr 8) and 0xff).toByte())
+        }
+        return if (checksum.contentEquals(expected)) {
+            payload.copyOfRange(1, payload.size)
+        } else {
+            null
+        }
     }
 
     private fun bech32Encode(
@@ -804,6 +1013,7 @@ object SatraAddressDerivation {
     private val Secp256k1Params = SECNamedCurves.getByName("secp256k1")
     private val Secp256k1G = Secp256k1Params.g
     private val Secp256k1N = Secp256k1Params.n
+    private const val PRIVATE_KEY_SIZE_BYTES = 32
     private const val BIP32_HARDENED_OFFSET = 0x80000000L
     private const val BIP32_MAX_NORMAL_INDEX = 0x7fffffffL
     private const val BITCOIN_BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
@@ -863,6 +1073,19 @@ data class DerivedReceiveAccount(
     val isChange: Boolean = false,
     val source: String,
 )
+
+data class PrivateKeyImportValidation(
+    val account: DerivedReceiveAccount? = null,
+    val error: PrivateKeyImportError? = null,
+) {
+    val isValid: Boolean = account != null
+}
+
+enum class PrivateKeyImportError {
+    Empty,
+    InvalidFormat,
+    UnsupportedNetwork,
+}
 
 data class ReceiveDerivationSpec(
     val networkId: String,

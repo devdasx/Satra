@@ -124,39 +124,26 @@ class SatraWalletRepository(
         localCurrencyCode: String = DEFAULT_LOCAL_CURRENCY_CODE,
         metadataJson: String = EMPTY_JSON,
     ): String {
-        val receiveAccount = SatraAddressDerivation.derivePrivateKeyAccount(networkId, privateKey)
+        val receiveAccount = SatraAddressDerivation.requirePrivateKeyAccount(networkId, privateKey)
         val walletId = walletDao.createWallet(
             NewWalletRecord(
                 walletName = walletName,
                 walletType = WalletType.Imported.value,
                 walletKeyType = WalletKeyType.PrivateKey.value,
-                walletKeyMaterial = receiveAccount?.privateKeyHex ?: privateKey,
-                walletKeyFingerprint = receiveAccount?.keyFingerprint,
-                walletKeyDerivationPath = receiveAccount?.derivationPath,
+                walletKeyMaterial = receiveAccount.privateKeyHex,
+                walletKeyFingerprint = receiveAccount.keyFingerprint,
+                walletKeyDerivationPath = receiveAccount.derivationPath,
                 localCurrencyCode = localCurrencyCode,
                 isImported = true,
                 isWatchOnly = false,
                 metadataJson = metadataJson,
             ),
         )
-        if (receiveAccount != null) {
-            walletDao.insertImportedPrivateKeyReceiveAccount(
-                walletId = walletId,
-                networkId = networkId,
-                account = receiveAccount,
-            )
-        } else {
-            walletDao.insertWalletPrivateKey(
-                NewWalletPrivateKeyRecord(
-                    walletId = walletId,
-                    networkId = networkId,
-                    keyMaterial = privateKey,
-                    keyFormat = inferPrivateKeyFormat(privateKey),
-                    keySource = WalletPrivateKeySource.Imported.value,
-                    isImported = true,
-                ),
-            )
-        }
+        walletDao.insertImportedPrivateKeyReceiveAccount(
+            walletId = walletId,
+            networkId = networkId,
+            account = receiveAccount,
+        )
         return walletId
     }
 
@@ -872,15 +859,6 @@ class SatraWalletRepository(
                 }
             }
         }
-
-    private fun inferPrivateKeyFormat(privateKey: String): String {
-        val normalized = privateKey.removePrefix("0x")
-        return when {
-            normalized.length == 64 && normalized.all(Char::isHexDigit) -> "hex"
-            privateKey.length in 51..52 -> "wif"
-            else -> "raw"
-        }
-    }
 
     private fun SatraWalletDao.insertDerivedReceiveAccounts(
         walletId: String,

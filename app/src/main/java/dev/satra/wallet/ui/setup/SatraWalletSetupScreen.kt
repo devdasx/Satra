@@ -85,6 +85,7 @@ import dev.satra.wallet.ui.theme.SatraButtonSecondaryBorder
 import dev.satra.wallet.ui.theme.SatraTheme
 import dev.satra.wallet.wallet.bip39.Bip39MnemonicValidation
 import dev.satra.wallet.wallet.bip39.Bip39MnemonicValidator
+import dev.satra.wallet.wallet.derivation.SatraAddressDerivation
 import kotlinx.coroutines.delay
 
 enum class WalletImportMethod(val routeSegment: String, @StringRes val labelRes: Int) {
@@ -478,7 +479,18 @@ fun ImportPrivateKeyScreen(
     onNext: (String) -> Unit = {},
 ) {
     var privateKey by rememberSaveable(network.routeSegment) { mutableStateOf("") }
-    val isPrivateKeyValid = privateKey.trim().isNotEmpty()
+    val privateKeyValidation = remember(network.networkId, privateKey) {
+        SatraAddressDerivation.validatePrivateKeyImport(
+            networkId = network.networkId,
+            privateKey = privateKey,
+        )
+    }
+    val isPrivateKeyValid = privateKeyValidation.isValid
+    val privateKeyErrorRes = if (privateKey.trim().isNotEmpty() && !isPrivateKeyValid) {
+        R.string.wallet_setup_private_key_invalid
+    } else {
+        null
+    }
 
     WalletSetupRouteScreen(
         titleRes = R.string.wallet_setup_screen_import_private_key,
@@ -495,6 +507,7 @@ fun ImportPrivateKeyScreen(
         PrivateKeyEntry(
             selectedNetwork = network,
             privateKey = privateKey,
+            errorRes = privateKeyErrorRes,
             onPrivateKeyChange = { privateKey = it },
         )
     }
@@ -1889,6 +1902,7 @@ private fun NetworkSelectionPanel(
 private fun PrivateKeyEntry(
     selectedNetwork: WalletImportNetwork,
     privateKey: String,
+    @StringRes errorRes: Int?,
     onPrivateKeyChange: (String) -> Unit,
 ) {
     SecretEntryPanel(
@@ -1898,6 +1912,7 @@ private fun PrivateKeyEntry(
         placeholderRes = R.string.wallet_setup_private_key_placeholder,
         noteRes = R.string.wallet_setup_private_key_note,
         selectedNetwork = selectedNetwork,
+        errorRes = errorRes,
     )
 }
 
@@ -1925,6 +1940,7 @@ private fun SecretEntryPanel(
     @StringRes placeholderRes: Int,
     @StringRes noteRes: Int,
     selectedNetwork: WalletImportNetwork,
+    @StringRes errorRes: Int? = null,
 ) {
     FramedTool {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -1949,6 +1965,14 @@ private fun SecretEntryPanel(
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (errorRes != null) {
+                Text(
+                    text = stringResource(errorRes),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.error,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
         }
     }
 }

@@ -9,9 +9,9 @@ import android.os.Bundle
 import android.os.LocaleList
 import android.widget.Toast
 import androidx.annotation.RequiresApi
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.biometric.BiometricPrompt
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
@@ -22,14 +22,21 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import dev.satra.wallet.data.db.AppSettingsRecord
 import dev.satra.wallet.data.db.SatraDatabaseProvider
 import dev.satra.wallet.scanner.SatraScanPurpose
 import dev.satra.wallet.settings.SatraSettings
@@ -38,6 +45,7 @@ import dev.satra.wallet.settings.SatraThemePreference
 import dev.satra.wallet.ui.main.SatraMainScreen
 import dev.satra.wallet.ui.onboarding.SatraOnboardingScreen
 import dev.satra.wallet.ui.scanner.SatraScannerScreen
+import dev.satra.wallet.ui.security.SatraAppLockScreen
 import dev.satra.wallet.ui.setup.CreateWalletBackupScreen
 import dev.satra.wallet.ui.setup.CreateWalletPhraseScreen
 import dev.satra.wallet.ui.setup.ImportChainScreen
@@ -54,9 +62,10 @@ import dev.satra.wallet.ui.setup.WalletSetupFlow
 import dev.satra.wallet.ui.theme.SatraTheme
 import dev.satra.wallet.wallet.bip39.Bip39MnemonicGenerator
 import dev.satra.wallet.wallet.bip39.Bip39MnemonicValidator
+import kotlinx.coroutines.launch
 import java.util.Locale
 
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
     private var screenCaptureCallback: Activity.ScreenCaptureCallback? = null
     private var onScreenCaptured: (() -> Unit)? = null
 
@@ -103,9 +112,77 @@ class MainActivity : ComponentActivity() {
             var pendingWalletId by rememberSaveable { mutableStateOf("") }
             var screenshotWarningRequests by remember { mutableStateOf(0) }
             val navController = rememberNavController()
+            val lifecycleOwner = LocalLifecycleOwner.current
+            val coroutineScope = rememberCoroutineScope()
             val walletRepository = remember {
                 SatraDatabaseProvider.walletRepository(this@MainActivity)
             }
+            var appUnlocked by rememberSaveable { mutableStateOf(false) }
+            var appLockError by rememberSaveable { mutableStateOf(false) }
+            var appLockResetNonce by rememberSaveable { mutableStateOf(0) }
+
+            fun markAppUnlockedAndOpenMain() {
+                appUnlocked = true
+                appLockError = false
+                settingsStore.edit()
+                    .remove(KEY_LAST_BACKGROUND_AT)
+                    .apply()
+                navController.navigate(SatraRoute.main()) {
+                    popUpTo(SatraRoute.APP_LOCK) {
+                        inclusive = true
+                    }
+                    launchSingleTop = true
+                }
+            }
+
+            fun resetLocalPreferencesAfterErase() {
+                appUnlocked = false
+                themePreference = SatraThemePreference.System
+                hapticsEnabled = true
+                languageTag = SatraSettingsDefaults.DEFAULT_LANGUAGE_TAG
+                settingsStore.edit().clear().apply()
+                applyAppLocale(SatraSettingsDefaults.DEFAULT_LANGUAGE_TAG)
+            }
+
+            DisposableEffect(lifecycleOwner, navController, walletRepository, appUnlocked) {
+                val observer = LifecycleEventObserver { _, event ->
+                    when (event) {
+                        Lifecycle.Event.ON_STOP -> {
+                            if (!isFinishing) {
+                                settingsStore.edit()
+                                    .putLong(KEY_LAST_BACKGROUND_AT, System.currentTimeMillis())
+                                    .apply()
+                            }
+                        }
+
+                        Lifecycle.Event.ON_START -> {
+                            coroutineScope.launch {
+                                val walletExists = walletRepository.getPrimaryWallet() != null
+                                val appSettings = walletRepository.getAppSettings()
+                                val currentRoute = navController.currentDestination?.route
+                                if (walletExists &&
+                                    appSettings.requiresAppLock() &&
+                                    shouldLockOnResume(appSettings, appUnlocked, settingsStore) &&
+                                    currentRoute != SatraRoute.APP_LOCK
+                                ) {
+                                    appUnlocked = false
+                                    appLockError = false
+                                    navController.navigate(SatraRoute.APP_LOCK) {
+                                        launchSingleTop = true
+                                    }
+                                }
+                            }
+                        }
+
+                        else -> Unit
+                    }
+                }
+                lifecycleOwner.lifecycle.addObserver(observer)
+                onDispose {
+                    lifecycleOwner.lifecycle.removeObserver(observer)
+                }
+            }
+
             DisposableEffect(Unit) {
                 onScreenCaptured = {
                     screenshotWarningRequests += 1
@@ -218,6 +295,10 @@ class MainActivity : ComponentActivity() {
             }
 
             fun finishWalletSetup(flow: WalletSetupFlow) {
+                appUnlocked = pendingSetupPasscode.isNotBlank()
+                settingsStore.edit()
+                    .remove(KEY_LAST_BACKGROUND_AT)
+                    .apply()
                 resetPendingWalletSetup()
                 navController.navigate(SatraRoute.main(flow)) {
                     popUpTo(SatraRoute.ONBOARDING) {
@@ -258,10 +339,14 @@ class MainActivity : ComponentActivity() {
                 ) {
                     composable(SatraRoute.STARTUP) {
                         LaunchedEffect(walletRepository) {
-                            val destination = if (walletRepository.getPrimaryWallet() != null) {
-                                SatraRoute.main()
-                            } else {
+                            val walletExists = walletRepository.getPrimaryWallet() != null
+                            val appSettings = walletRepository.getAppSettings()
+                            val destination = if (!walletExists) {
                                 SatraRoute.ONBOARDING
+                            } else if (appSettings.requiresAppLock() && !appUnlocked) {
+                                SatraRoute.APP_LOCK
+                            } else {
+                                SatraRoute.main()
                             }
                             navController.navigate(destination) {
                                 popUpTo(SatraRoute.STARTUP) {
@@ -269,6 +354,79 @@ class MainActivity : ComponentActivity() {
                                 }
                                 launchSingleTop = true
                             }
+                        }
+                    }
+
+                    composable(SatraRoute.APP_LOCK) {
+                        var loadedAppSettings by remember { mutableStateOf<AppSettingsRecord?>(null) }
+                        var biometricPromptShown by rememberSaveable { mutableStateOf(false) }
+
+                        fun handleBiometricUnlock() {
+                            showBiometricUnlockPrompt(
+                                onSuccess = {
+                                    markAppUnlockedAndOpenMain()
+                                },
+                                onError = { message ->
+                                    Toast.makeText(
+                                        this@MainActivity,
+                                        message,
+                                        Toast.LENGTH_SHORT,
+                                    ).show()
+                                },
+                            )
+                        }
+
+                        LaunchedEffect(walletRepository) {
+                            loadedAppSettings = walletRepository.getAppSettings()
+                        }
+
+                        val currentAppSettings = loadedAppSettings
+                        if (currentAppSettings != null) {
+                            LaunchedEffect(currentAppSettings.biometricsEnabled) {
+                                if (currentAppSettings.biometricsEnabled && !biometricPromptShown) {
+                                    biometricPromptShown = true
+                                    handleBiometricUnlock()
+                                }
+                            }
+
+                            SatraAppLockScreen(
+                                passcodeLength = currentAppSettings.passcodeLength ?: 6,
+                                biometricsEnabled = currentAppSettings.biometricsEnabled,
+                                settings = settings,
+                                resetNonce = appLockResetNonce,
+                                errorMessage = if (appLockError) {
+                                    getString(R.string.app_lock_wrong_passcode)
+                                } else {
+                                    null
+                                },
+                                onPasscodeComplete = { passcode ->
+                                    coroutineScope.launch {
+                                        val unlocked = walletRepository.verifyAppPasscode(passcode)
+                                        if (unlocked) {
+                                            markAppUnlockedAndOpenMain()
+                                        } else if (walletRepository.getPrimaryWallet() == null) {
+                                            resetLocalPreferencesAfterErase()
+                                            Toast.makeText(
+                                                this@MainActivity,
+                                                getString(R.string.app_lock_wallet_erased),
+                                                Toast.LENGTH_LONG,
+                                            ).show()
+                                            navController.navigate(SatraRoute.ONBOARDING) {
+                                                popUpTo(SatraRoute.APP_LOCK) {
+                                                    inclusive = true
+                                                }
+                                                launchSingleTop = true
+                                            }
+                                        } else {
+                                            appLockError = true
+                                            appLockResetNonce += 1
+                                        }
+                                    }
+                                },
+                                onBiometricClick = {
+                                    handleBiometricUnlock()
+                                },
+                            )
                         }
                     }
 
@@ -695,6 +853,43 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun showBiometricUnlockPrompt(
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        val prompt = BiometricPrompt(
+            this,
+            ContextCompat.getMainExecutor(this),
+            object : BiometricPrompt.AuthenticationCallback() {
+                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                    onSuccess()
+                }
+
+                override fun onAuthenticationError(
+                    errorCode: Int,
+                    errString: CharSequence,
+                ) {
+                    if (errorCode != BiometricPrompt.ERROR_NEGATIVE_BUTTON &&
+                        errorCode != BiometricPrompt.ERROR_USER_CANCELED &&
+                        errorCode != BiometricPrompt.ERROR_CANCELED
+                    ) {
+                        onError(errString.toString())
+                    }
+                }
+
+                override fun onAuthenticationFailed() {
+                    onError(getString(R.string.app_lock_biometric_failed))
+                }
+            },
+        )
+        val promptInfo = BiometricPrompt.PromptInfo.Builder()
+            .setTitle(getString(R.string.app_lock_biometric_prompt_title))
+            .setSubtitle(getString(R.string.app_lock_biometric_prompt_subtitle))
+            .setNegativeButtonText(getString(R.string.app_lock_biometric_prompt_cancel))
+            .build()
+        prompt.authenticate(promptInfo)
+    }
+
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     private fun registerScreenshotDetection() {
         if (screenCaptureCallback != null) {
@@ -720,6 +915,7 @@ private const val SETTINGS_PREFS_NAME = "satra_settings"
 private const val KEY_THEME_PREFERENCE = "theme_preference"
 private const val KEY_HAPTICS_ENABLED = "haptics_enabled"
 private const val KEY_LANGUAGE_TAG = "language_tag"
+private const val KEY_LAST_BACKGROUND_AT = "last_background_at"
 private const val NAV_ANIMATION_MILLIS = 280
 private const val DEFAULT_MNEMONIC_WORD_COUNT = 12
 
@@ -750,6 +946,7 @@ private object SatraRoute {
     const val SCAN_RESULT_AMOUNT = "scan_result_amount"
     const val SCAN_RESULT_SCHEME = "scan_result_scheme"
     const val STARTUP = "startup"
+    const val APP_LOCK = "app-lock"
     const val MAIN_BASE = "main"
     const val MAIN = "$MAIN_BASE?$ARG_SETUP_RESULT={$ARG_SETUP_RESULT}"
     const val ONBOARDING = "onboarding"
@@ -806,3 +1003,21 @@ private fun readLanguageTag(settingsStore: SharedPreferences): String =
         KEY_LANGUAGE_TAG,
         SatraSettingsDefaults.DEFAULT_LANGUAGE_TAG,
     ) ?: SatraSettingsDefaults.DEFAULT_LANGUAGE_TAG
+
+private fun AppSettingsRecord.requiresAppLock(): Boolean =
+    passcodeEnabled &&
+        !passcodeHash.isNullOrBlank() &&
+        !passcodeSalt.isNullOrBlank()
+
+private fun shouldLockOnResume(
+    appSettings: AppSettingsRecord,
+    appUnlocked: Boolean,
+    settingsStore: SharedPreferences,
+): Boolean {
+    if (!appSettings.requiresAppLock()) return false
+    if (!appUnlocked) return true
+    val lastBackgroundAt = settingsStore.getLong(KEY_LAST_BACKGROUND_AT, 0L)
+    if (lastBackgroundAt <= 0L) return false
+    val elapsedMillis = System.currentTimeMillis() - lastBackgroundAt
+    return elapsedMillis >= appSettings.autoLockTimeoutMillis
+}
