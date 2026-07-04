@@ -260,9 +260,6 @@
     <string name="main_nav_settings">Settings</string>
     <string name="markets_title">Markets</string>
     <string name="markets_body">Follow cached prices for every supported coin and token in your selected currency.</string>
-    <string name="markets_summary_title">Supported price list</string>
-    <string name="markets_summary_body">Satra stores the latest local prices so market data can fall back to the database.</string>
-    <string name="markets_summary_count">%1$d assets</string>
     <string name="markets_search_placeholder">Search supported assets</string>
     <string name="markets_supported_assets_title">Supported assets</string>
     <string name="markets_assets_count">%1$d shown</string>

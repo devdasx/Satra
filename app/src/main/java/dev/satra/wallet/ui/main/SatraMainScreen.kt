@@ -1062,8 +1062,6 @@ private fun SatraMarketsScreen(
             ) {
                 MarketsHeader(currencyCode = content.currencyCode)
                 Spacer(modifier = Modifier.height(18.dp))
-                MarketsSummaryCard(rowCount = content.rows.size)
-                Spacer(modifier = Modifier.height(14.dp))
                 MarketsSearchPill()
                 Spacer(modifier = Modifier.height(22.dp))
                 MarketsListHeader(assetCount = content.rows.size)
@@ -1122,47 +1120,6 @@ private fun MarketsHeader(
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold,
-            )
-        }
-    }
-}
-
-@Composable
-private fun MarketsSummaryCard(
-    rowCount: Int,
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.inverseSurface,
-        ),
-    ) {
-        Row(
-            modifier = Modifier.padding(18.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.markets_summary_title),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.inverseOnSurface.copy(alpha = 0.62f),
-                    fontWeight = FontWeight.Bold,
-                )
-                Text(
-                    text = stringResource(R.string.markets_summary_body),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.inverseOnSurface.copy(alpha = 0.72f),
-                )
-            }
-            Spacer(modifier = Modifier.width(16.dp))
-            Text(
-                text = stringResource(R.string.markets_summary_count, rowCount),
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.inverseOnSurface,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.End,
             )
         }
     }
