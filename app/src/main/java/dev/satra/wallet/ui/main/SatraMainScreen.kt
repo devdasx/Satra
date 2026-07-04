@@ -98,7 +98,6 @@ import dev.satra.wallet.data.db.WalletTransactionDirection
 import dev.satra.wallet.data.db.WalletTransactionRecord
 import dev.satra.wallet.data.db.WalletTransactionStatus
 import dev.satra.wallet.data.sync.evm.EvmSyncCompleteness
-import dev.satra.wallet.data.sync.utxo.UtxoElectrumProviderRegistry
 import dev.satra.wallet.settings.SatraSettings
 import dev.satra.wallet.settings.SatraThemePreference
 import kotlinx.coroutines.Dispatchers
@@ -652,7 +651,12 @@ private fun SatraActivityScreen(
                     network.balanceCompleteness != EvmSyncCompleteness.Complete ||
                     network.historyCompleteness != EvmSyncCompleteness.Complete
             }
-            if (evmPartial || utxoPartial || solanaPartial) {
+            val accountChainPartial = result.accountChainSyncResult.networkResults.any { network ->
+                network.error != null ||
+                    network.balanceCompleteness != EvmSyncCompleteness.Complete ||
+                    network.historyCompleteness != EvmSyncCompleteness.Complete
+            }
+            if (evmPartial || utxoPartial || solanaPartial || accountChainPartial) {
                 resources.getString(R.string.activity_partial_sync_error)
             } else {
                 null
@@ -2033,8 +2037,7 @@ private fun ActivitySummaryCard(
                 value = stringResource(
                     R.string.activity_summary_networks_value,
                     syncedNetworkCount,
-                    SupportedAssetCatalog.networks.count { it.family == "evm" } +
-                        UtxoElectrumProviderRegistry.supportedNetworkIds.size,
+                    SupportedAssetCatalog.networks.size,
                 ),
             )
             ActivitySummaryRow(
@@ -3862,7 +3865,8 @@ private fun WalletRecord.syncedNetworkCount(): Int =
         val root = JSONObject(metadataJson)
         (root.optJSONObject("evmSync")?.optInt("syncedNetworkCount") ?: 0) +
             (root.optJSONObject("utxoSync")?.optInt("syncedNetworkCount") ?: 0) +
-            (root.optJSONObject("solanaSync")?.optInt("syncedNetworkCount") ?: 0)
+            (root.optJSONObject("solanaSync")?.optInt("syncedNetworkCount") ?: 0) +
+            (root.optJSONObject("accountChainSync")?.optInt("syncedNetworkCount") ?: 0)
     }.getOrNull() ?: 0
 
 private fun formatActivityTime(

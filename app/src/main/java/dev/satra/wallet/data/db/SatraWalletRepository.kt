@@ -6,6 +6,11 @@ import dev.satra.wallet.data.pricing.SatraAssetPrice
 import dev.satra.wallet.data.pricing.SatraAssetMarketData
 import dev.satra.wallet.data.pricing.SatraPriceSyncResult
 import dev.satra.wallet.data.pricing.SatraPriceSyncService
+import dev.satra.wallet.data.sync.accountchain.AccountChainAssetBalance
+import dev.satra.wallet.data.sync.accountchain.AccountChainNetworkSyncResult
+import dev.satra.wallet.data.sync.accountchain.AccountChainNormalizedTransaction
+import dev.satra.wallet.data.sync.accountchain.AccountChainWalletSyncResult
+import dev.satra.wallet.data.sync.accountchain.AccountChainWalletSyncService
 import dev.satra.wallet.data.sync.evm.EvmAssetBalance
 import dev.satra.wallet.data.sync.evm.EvmNetworkSyncResult
 import dev.satra.wallet.data.sync.evm.EvmNormalizedTransaction
@@ -41,6 +46,7 @@ class SatraWalletRepository(
     private val evmWalletSyncService: EvmWalletSyncService = EvmWalletSyncService(),
     private val utxoWalletSyncService: UtxoWalletSyncService = UtxoWalletSyncService(),
     private val solanaWalletSyncService: SolanaWalletSyncService = SolanaWalletSyncService(),
+    private val accountChainWalletSyncService: AccountChainWalletSyncService = AccountChainWalletSyncService(),
     private val priceSyncService: SatraPriceSyncService = SatraPriceSyncService(),
 ) {
     private val syncPersistenceMutex = Mutex()
@@ -594,6 +600,48 @@ class SatraWalletRepository(
             result.networkResults.single()
         }
 
+    suspend fun syncAccountChainWallet(walletId: String): AccountChainWalletSyncResult =
+        withContext(Dispatchers.IO) {
+            val wallet = walletDao.getWallet(walletId)
+                ?: error("Wallet not found: $walletId")
+            val result = accountChainWalletSyncService.syncWallet(
+                walletId = walletId,
+                addresses = walletDao.getWalletAddresses(walletId),
+                onNetworkResult = { networkResult ->
+                    syncPersistenceMutex.withLock {
+                        persistAccountChainNetworkSyncResult(wallet, networkResult)
+                    }
+                },
+            )
+            syncPersistenceMutex.withLock {
+                persistAccountChainSyncResult(wallet, result)
+            }
+            result
+        }
+
+    suspend fun syncAccountChainNetwork(
+        walletId: String,
+        networkId: String,
+    ): AccountChainNetworkSyncResult =
+        withContext(Dispatchers.IO) {
+            val wallet = walletDao.getWallet(walletId)
+                ?: error("Wallet not found: $walletId")
+            val result = accountChainWalletSyncService.syncWallet(
+                walletId = walletId,
+                addresses = walletDao.getWalletAddresses(walletId),
+                networkId = networkId,
+                onNetworkResult = { networkResult ->
+                    syncPersistenceMutex.withLock {
+                        persistAccountChainNetworkSyncResult(wallet, networkResult)
+                    }
+                },
+            )
+            syncPersistenceMutex.withLock {
+                persistAccountChainSyncResult(wallet, result)
+            }
+            result.networkResults.single()
+        }
+
     suspend fun syncWalletData(
         walletId: String,
         onProgress: suspend () -> Unit = {},
@@ -639,6 +687,18 @@ class SatraWalletRepository(
                         },
                     )
                 }
+                val accountChainDeferred = async {
+                    accountChainWalletSyncService.syncWallet(
+                        walletId = walletId,
+                        addresses = addresses,
+                        onNetworkResult = { networkResult ->
+                            syncPersistenceMutex.withLock {
+                                persistAccountChainNetworkSyncResult(wallet, networkResult)
+                            }
+                            onProgress()
+                        },
+                    )
+                }
                 val pricesDeferred = async {
                     priceSyncService.syncSupportedAssetPricesOrNull(
                         localCurrencyCode = wallet.localCurrencyCode,
@@ -673,6 +733,12 @@ class SatraWalletRepository(
                 }
                 onProgress()
 
+                val accountChainResult = accountChainDeferred.await()
+                syncPersistenceMutex.withLock {
+                    persistAccountChainSyncResult(wallet, accountChainResult)
+                }
+                onProgress()
+
                 val priceResult = pricesDeferred.await()
                 syncPersistenceMutex.withLock {
                     persistWalletPrices(wallet, priceResult)
@@ -683,6 +749,7 @@ class SatraWalletRepository(
                     evmSyncResult = evmResult,
                     utxoSyncResult = utxoResult,
                     solanaSyncResult = solanaResult,
+                    accountChainSyncResult = accountChainResult,
                     priceSyncResult = priceResult,
                 )
             }
@@ -1026,6 +1093,51 @@ class SatraWalletRepository(
         refreshWalletFiatBalance(wallet, nowMillis)
     }
 
+    private fun persistAccountChainSyncResult(
+        wallet: WalletRecord,
+        result: AccountChainWalletSyncResult,
+    ) {
+        val nowMillis = System.currentTimeMillis()
+        result.networkResults.forEach { networkResult -> persistAccountChainNetworkSyncResult(wallet, networkResult) }
+        walletDao.updateWalletSyncMetadata(
+            walletId = wallet.walletId,
+            metadataJson = (walletDao.getWallet(wallet.walletId)?.metadataJson ?: wallet.metadataJson)
+                .withAccountChainSyncResult(result),
+            nowMillis = nowMillis,
+        )
+    }
+
+    private fun persistAccountChainNetworkSyncResult(
+        wallet: WalletRecord,
+        networkResult: AccountChainNetworkSyncResult,
+    ) {
+        val nowMillis = System.currentTimeMillis()
+        val currentAssetsById = walletDao.getWalletAssets(wallet.walletId).associateBy { it.assetId }
+        networkResult.balances.forEach { balance ->
+            walletDao.updateWalletAssetBalance(
+                walletId = wallet.walletId,
+                assetId = balance.assetId,
+                balanceRaw = balance.balanceRaw,
+                balanceDecimal = balance.balanceDecimal,
+                balanceFiatValue = currentAssetsById[balance.assetId].cachedBalanceFiatValue(
+                    balanceDecimal = balance.balanceDecimal,
+                    localCurrencyCode = wallet.localCurrencyCode,
+                ),
+                localCurrencyCode = wallet.localCurrencyCode,
+                metadataJson = balance.toMetadataJson(networkResult),
+                nowMillis = nowMillis,
+            )
+        }
+        networkResult.transactions.forEach { transaction ->
+            walletDao.upsertWalletTransaction(
+                transaction = transaction.toNewWalletTransactionRecord(wallet.localCurrencyCode),
+                nowMillis = nowMillis,
+            )
+        }
+        refreshWalletTransactionFiatValues(wallet, nowMillis)
+        refreshWalletFiatBalance(wallet, nowMillis)
+    }
+
     private fun persistScannedUtxoAccounts(
         walletId: String,
         accounts: List<DerivedReceiveAccount>,
@@ -1203,6 +1315,7 @@ data class SatraWalletDataSyncResult(
     val evmSyncResult: EvmWalletSyncResult,
     val utxoSyncResult: UtxoWalletSyncResult,
     val solanaSyncResult: SolanaWalletSyncResult,
+    val accountChainSyncResult: AccountChainWalletSyncResult,
     val priceSyncResult: SatraPriceSyncResult?,
 )
 
@@ -1435,6 +1548,43 @@ private fun SolanaNormalizedTransaction.toNewWalletTransactionRecord(
         metadataJson = metadataJson,
     )
 
+private fun AccountChainAssetBalance.toMetadataJson(networkResult: AccountChainNetworkSyncResult): String =
+    JSONObject()
+        .put("syncFamily", "account-chain")
+        .put("syncProvider", providerName)
+        .put("syncStatus", networkResult.balanceCompleteness.value)
+        .put("syncHistoryStatus", networkResult.historyCompleteness.value)
+        .put("syncLedgerHeight", ledgerHeight)
+        .put("syncUpdatedAt", syncedAtMillis)
+        .put("syncCursor", networkResult.cursor)
+        .put("syncLastError", networkResult.error)
+        .toString()
+
+private fun AccountChainNormalizedTransaction.toNewWalletTransactionRecord(
+    localCurrencyCode: String,
+): NewWalletTransactionRecord =
+    NewWalletTransactionRecord(
+        walletId = walletId,
+        assetId = assetId,
+        networkId = networkId,
+        transactionHash = transactionHash,
+        direction = direction.value,
+        status = status.value,
+        amountRaw = amountRaw,
+        amountDecimal = amountDecimal,
+        feeRaw = feeRaw,
+        feeDecimal = feeDecimal,
+        feeAssetId = feeAssetId,
+        localCurrencyCode = localCurrencyCode,
+        fromAddress = fromAddress,
+        toAddress = toAddress,
+        blockHeight = blockHeight,
+        blockHash = blockHash,
+        confirmations = confirmations,
+        timestamp = timestampMillis,
+        metadataJson = metadataJson,
+    )
+
 private fun String.withEvmSyncResult(result: EvmWalletSyncResult): String {
     val root = runCatching { JSONObject(this) }.getOrElse { JSONObject() }
     val networks = JSONArray()
@@ -1508,6 +1658,33 @@ private fun String.withSolanaSyncResult(result: SolanaWalletSyncResult): String 
     }
     root.put(
         "solanaSync",
+        JSONObject()
+            .put("networkCount", result.networkResults.size)
+            .put("syncedNetworkCount", result.syncedNetworkCount)
+            .put("networks", networks),
+    )
+    return root.toString()
+}
+
+private fun String.withAccountChainSyncResult(result: AccountChainWalletSyncResult): String {
+    val root = runCatching { JSONObject(this) }.getOrElse { JSONObject() }
+    val networks = JSONArray()
+    result.networkResults.forEach { network ->
+        networks.put(
+            JSONObject()
+                .put("networkId", network.networkId)
+                .put("address", network.address)
+                .put("balanceStatus", network.balanceCompleteness.value)
+                .put("historyStatus", network.historyCompleteness.value)
+                .put("provider", network.providerName)
+                .put("latestLedger", network.latestLedger)
+                .put("cursor", network.cursor)
+                .put("transactionCount", network.transactions.size)
+                .put("error", network.error),
+        )
+    }
+    root.put(
+        "accountChainSync",
         JSONObject()
             .put("networkCount", result.networkResults.size)
             .put("syncedNetworkCount", result.syncedNetworkCount)
