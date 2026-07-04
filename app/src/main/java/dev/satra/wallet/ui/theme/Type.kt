@@ -61,8 +61,8 @@ internal val SatraTypography = Typography(
     labelLarge = TextStyle(
         fontFamily = SatraSystemFontFamily,
         fontWeight = FontWeight.Medium,
-        fontSize = 12.sp,
-        lineHeight = 16.sp,
+        fontSize = 15.sp,
+        lineHeight = 22.sp,
         letterSpacing = 0.sp,
     ),
     labelMedium = TextStyle(

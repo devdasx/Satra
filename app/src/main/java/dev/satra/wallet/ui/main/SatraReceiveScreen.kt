@@ -635,26 +635,20 @@ private fun ReceiveAddressCard(
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = address.address,
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = MaterialTheme.colorScheme.onSurface,
                 overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
                 maxLines = 3,
+                modifier = Modifier.fillMaxWidth(),
             )
-            Spacer(modifier = Modifier.height(12.dp))
-            if (!address.derivationPath.isNullOrBlank()) {
-                Text(
-                    text = "${stringResource(R.string.receive_derivation_path)}: ${address.derivationPath}",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Spacer(modifier = Modifier.height(14.dp))
-            }
+            Spacer(modifier = Modifier.height(14.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -678,6 +672,7 @@ private fun ReceiveAddressCard(
                 ) {
                     Text(
                         text = stringResource(R.string.receive_copy_address),
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                     )
@@ -704,6 +699,7 @@ private fun ReceiveAddressCard(
                 ) {
                     Text(
                         text = stringResource(R.string.receive_share_address),
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                     )
