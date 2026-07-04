@@ -51,6 +51,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -79,8 +80,10 @@ import dev.satra.wallet.data.db.WalletRecord
 import dev.satra.wallet.data.db.WalletTransactionDirection
 import dev.satra.wallet.data.db.WalletTransactionRecord
 import dev.satra.wallet.data.db.WalletTransactionStatus
+import dev.satra.wallet.data.send.SatraSendException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.text.NumberFormat
@@ -262,11 +265,13 @@ fun SatraSendReviewScreen(
         )
 
         is SendDetailsState.Content -> SendReviewContent(
+            walletRepository = walletRepository,
             state = current,
             recipient = Uri.decode(recipient),
             amountText = Uri.decode(amount),
             warnPoison = warnPoison,
             onBack = onBack,
+            onSent = onSent,
         )
     }
 }
@@ -734,23 +739,59 @@ private fun SendAmountContent(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SendReviewContent(
+    walletRepository: SatraWalletRepository,
     state: SendDetailsState.Content,
     recipient: String,
     amountText: String,
     warnPoison: Boolean,
     onBack: () -> Unit,
+    onSent: (String) -> Unit,
 ) {
     val haptic = LocalHapticFeedback.current
+    val scope = rememberCoroutineScope()
     var submitError by remember { mutableStateOf<String?>(null) }
+    var sending by remember { mutableStateOf(false) }
     var showPoisonSheet by remember(warnPoison) { mutableStateOf(false) }
     val amount = amountText.toBigDecimalOrNullSafe() ?: BigDecimal.ZERO
     val feeQuote = estimatedFeeFor(state.row, SendFeeSpeed.Normal)
-    val broadcastUnavailableBody = stringResource(R.string.send_broadcast_unavailable_body)
+    val unsupportedNetworkBody = stringResource(
+        R.string.send_broadcast_unsupported_network_body,
+        state.row.network.displayName,
+    )
+    val missingKeyBody = stringResource(R.string.send_broadcast_missing_key_body)
+    val invalidRecipientBody = stringResource(R.string.send_broadcast_invalid_recipient_body)
+    val invalidAmountBody = stringResource(R.string.send_broadcast_invalid_amount_body)
+    val insufficientBalanceBody = stringResource(R.string.send_broadcast_insufficient_balance_body)
+    val broadcastFailedBody = stringResource(R.string.send_broadcast_failed_body)
     val canSubmit = state.canSign && amount > BigDecimal.ZERO && amount <= state.row.balanceDecimal
 
     fun submit() {
+        if (!canSubmit || sending) return
         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-        submitError = broadcastUnavailableBody
+        submitError = null
+        sending = true
+        scope.launch {
+            runCatching {
+                walletRepository.signAndBroadcastSend(
+                    assetId = state.row.asset.assetId,
+                    recipientAddress = recipient,
+                    amountDecimal = amount,
+                )
+            }.onSuccess { transactionId ->
+                sending = false
+                onSent(transactionId)
+            }.onFailure { error ->
+                sending = false
+                submitError = when (error) {
+                    is SatraSendException.UnsupportedNetwork -> unsupportedNetworkBody
+                    is SatraSendException.MissingSigningKey -> missingKeyBody
+                    is SatraSendException.InvalidRecipient -> invalidRecipientBody
+                    is SatraSendException.InvalidAmount -> invalidAmountBody
+                    is SatraSendException.InsufficientBalance -> insufficientBalanceBody
+                    else -> broadcastFailedBody
+                }
+            }
+        }
     }
 
     if (showPoisonSheet) {
@@ -773,6 +814,7 @@ private fun SendReviewContent(
                 SendPrimaryButton(
                     text = stringResource(R.string.send_poison_send_anyway),
                     enabled = canSubmit,
+                    loading = sending,
                     onClick = {
                         showPoisonSheet = false
                         submit()
@@ -851,7 +893,7 @@ private fun SendReviewContent(
                 SendPrimaryButton(
                     text = stringResource(R.string.send_now_action),
                     enabled = canSubmit,
-                    loading = false,
+                    loading = sending,
                     onClick = {
                         if (warnPoison) {
                             showPoisonSheet = true

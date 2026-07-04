@@ -5,11 +5,22 @@ import java.math.BigInteger
 
 object EvmAbi {
     const val ERC20_BALANCE_OF_SELECTOR = "70a08231"
+    const val ERC20_TRANSFER_SELECTOR = "a9059cbb"
     const val ERC20_TRANSFER_TOPIC =
         "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
 
     fun balanceOfCallData(address: String): String =
         "0x$ERC20_BALANCE_OF_SELECTOR${addressToAbiWord(address)}"
+
+    fun transferCallData(
+        toAddress: String,
+        rawAmount: BigInteger,
+    ): String {
+        require(rawAmount >= BigInteger.ZERO) {
+            "Transfer amount cannot be negative."
+        }
+        return "0x$ERC20_TRANSFER_SELECTOR${addressToAbiWord(toAddress)}${rawAmount.toUint256Word()}"
+    }
 
     fun addressToTopic(address: String): String =
         "0x${addressToAbiWord(address)}"
@@ -40,6 +51,16 @@ object EvmAbi {
         return BigInteger(normalized, 16).toLong()
     }
 
+    fun quantityHex(value: BigInteger): String {
+        require(value >= BigInteger.ZERO) {
+            "JSON-RPC quantity cannot be negative."
+        }
+        return "0x${value.toString(16)}"
+    }
+
+    fun quantityHex(value: Long): String =
+        quantityHex(BigInteger.valueOf(value))
+
     fun rawToDecimalString(
         raw: BigInteger,
         decimals: Int,
@@ -52,6 +73,13 @@ object EvmAbi {
         raw: String,
         decimals: Int,
     ): String = rawToDecimalString(BigInteger(raw), decimals)
+
+    private fun BigInteger.toUint256Word(): String {
+        require(bitLength() <= 256) {
+            "Value exceeds uint256."
+        }
+        return toString(16).padStart(64, '0')
+    }
 }
 
 private fun Char.isHexDigit(): Boolean =

@@ -24,4 +24,24 @@ class EvmAbiTest {
         assertEquals("1.234567", EvmAbi.rawToDecimalString("1234567", 6))
         assertEquals("0", EvmAbi.rawToDecimalString("0", 18))
     }
+
+    @Test
+    fun transferCallDataEncodesRecipientAndAmount() {
+        val callData = EvmAbi.transferCallData(
+            toAddress = "0x2222222222222222222222222222222222222222",
+            rawAmount = BigInteger("1000000"),
+        )
+
+        assertEquals(
+            "0xa9059cbb0000000000000000000000002222222222222222222222222222222222222222" +
+                "00000000000000000000000000000000000000000000000000000000000f4240",
+            callData,
+        )
+    }
+
+    @Test
+    fun quantityHexEncodesJsonRpcQuantities() {
+        assertEquals("0x0", EvmAbi.quantityHex(BigInteger.ZERO))
+        assertEquals("0x5208", EvmAbi.quantityHex(BigInteger.valueOf(21_000L)))
+    }
 }

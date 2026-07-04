@@ -86,6 +86,59 @@ class EvmJsonRpcClientTest {
         assertEquals(1, transport.methodCount("eth_call"))
     }
 
+    @Test
+    fun sendHelpersCallExpectedJsonRpcMethods() = runBlocking {
+        val transport = RecordingTransport { _, body ->
+            val request = JSONObject(body)
+            when (request.getString("method")) {
+                "eth_chainId" -> rpcResult("0x1")
+                "eth_blockNumber" -> rpcResult("0x20")
+                "eth_getTransactionCount" -> {
+                    val params = request.getJSONArray("params")
+                    assertEquals("pending", params.getString(1))
+                    rpcResult("0x9")
+                }
+                "eth_gasPrice" -> rpcResult("0x4a817c800")
+                "eth_estimateGas" -> {
+                    val call = request.getJSONArray("params").getJSONObject(0)
+                    assertEquals("0x1111111111111111111111111111111111111111", call.getString("from"))
+                    assertEquals("0x2222222222222222222222222222222222222222", call.getString("to"))
+                    assertEquals("0x0", call.getString("value"))
+                    rpcResult("0x5208")
+                }
+                "eth_sendRawTransaction" -> {
+                    assertEquals("0xabcdef", request.getJSONArray("params").getString(0))
+                    rpcResult("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+                }
+                else -> error("Unexpected request: $body")
+            }
+        }
+        val client = EvmJsonRpcClient(
+            config = EvmNetworkConfig(
+                networkId = "ethereum",
+                chainId = 1,
+                providers = listOf(EvmProvider("Good", GOOD_RPC_URL)),
+            ),
+            transport = transport,
+            maxAttemptsPerProvider = 1,
+        )
+
+        assertEquals(BigInteger.valueOf(9), client.transactionCount("0x1111111111111111111111111111111111111111").value)
+        assertEquals(BigInteger("20000000000"), client.gasPrice().value)
+        assertEquals(
+            BigInteger.valueOf(21_000),
+            client.estimateGas(
+                fromAddress = "0x1111111111111111111111111111111111111111",
+                toAddress = "0x2222222222222222222222222222222222222222",
+                value = BigInteger.ZERO,
+            ).value,
+        )
+        assertEquals(
+            "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            client.sendRawTransaction("0xabcdef").value,
+        )
+    }
+
     private class RecordingTransport(
         private val responder: (String, String) -> String,
     ) : EvmJsonRpcTransport {

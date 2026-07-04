@@ -467,6 +467,12 @@
     <string name="send_prepare_failed_title">Could not prepare send</string>
     <string name="send_prepare_failed_body">The transaction could not be prepared.</string>
     <string name="send_broadcast_unavailable_body">Signing and broadcast are not connected yet. Satra did not sign, broadcast, or save this transfer to Activity.</string>
+    <string name="send_broadcast_failed_body">Satra could not broadcast this transaction. Nothing was saved to Activity.</string>
+    <string name="send_broadcast_unsupported_network_body">Signing is not available for %1$s yet. Satra did not save this transfer to Activity.</string>
+    <string name="send_broadcast_missing_key_body">No local signing key is available for this network. Satra did not save this transfer to Activity.</string>
+    <string name="send_broadcast_invalid_recipient_body">Check the recipient address for this network before sending.</string>
+    <string name="send_broadcast_invalid_amount_body">Check the amount precision before sending.</string>
+    <string name="send_broadcast_insufficient_balance_body">This wallet does not have enough balance to cover the amount and network fee.</string>
     <string name="send_search_asset_placeholder">Search coin or token</string>
     <string name="send_section_your_assets">Your assets</string>
     <string name="send_section_all_assets">All assets</string>

@@ -84,6 +84,24 @@ class EvmJsonRpcClient(
             EvmAbi.hexToLong(result as String)
         }
 
+    suspend fun transactionCount(
+        address: String,
+        blockTag: String = "pending",
+    ): EvmRpcCallResult<BigInteger> {
+        val params = JSONArray().apply {
+            put("0x${EvmAbi.normalizeAddress(address)}")
+            put(blockTag)
+        }
+        return callVerified("eth_getTransactionCount", params) { result ->
+            EvmAbi.decodeUint256(result as String)
+        }
+    }
+
+    suspend fun gasPrice(): EvmRpcCallResult<BigInteger> =
+        callVerified("eth_gasPrice", JSONArray()) { result ->
+            EvmAbi.decodeUint256(result as String)
+        }
+
     suspend fun nativeBalance(address: String): EvmRpcCallResult<BigInteger> {
         val params = JSONArray().apply {
             put("0x${EvmAbi.normalizeAddress(address)}")
@@ -108,6 +126,36 @@ class EvmJsonRpcClient(
         }
         return callVerified("eth_call", params) { result ->
             EvmAbi.decodeUint256(result as String)
+        }
+    }
+
+    suspend fun estimateGas(
+        fromAddress: String,
+        toAddress: String,
+        value: BigInteger,
+        data: String = "0x",
+    ): EvmRpcCallResult<BigInteger> {
+        val call = JSONObject()
+            .put("from", "0x${EvmAbi.normalizeAddress(fromAddress)}")
+            .put("to", "0x${EvmAbi.normalizeAddress(toAddress)}")
+            .put("value", EvmAbi.quantityHex(value))
+        if (data != "0x") {
+            call.put("data", data)
+        }
+        val params = JSONArray().put(call)
+        return callVerified("eth_estimateGas", params) { result ->
+            EvmAbi.decodeUint256(result as String)
+        }
+    }
+
+    suspend fun sendRawTransaction(rawTransaction: String): EvmRpcCallResult<String> {
+        val normalized = rawTransaction.removePrefix("0x").removePrefix("0X")
+        require(normalized.isNotBlank() && normalized.all(Char::isHexDigit)) {
+            "Invalid raw EVM transaction."
+        }
+        val params = JSONArray().put("0x$normalized")
+        return callVerified("eth_sendRawTransaction", params) { result ->
+            result as String
         }
     }
 
@@ -287,3 +335,6 @@ private data class VerifiedEvmProvider(
     val provider: EvmProvider,
     val blockNumber: Long,
 )
+
+private fun Char.isHexDigit(): Boolean =
+    this in '0'..'9' || this in 'a'..'f' || this in 'A'..'F'

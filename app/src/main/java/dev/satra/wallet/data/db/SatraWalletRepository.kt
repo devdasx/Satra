@@ -6,6 +6,9 @@ import dev.satra.wallet.data.pricing.SatraAssetPrice
 import dev.satra.wallet.data.pricing.SatraAssetMarketData
 import dev.satra.wallet.data.pricing.SatraPriceSyncResult
 import dev.satra.wallet.data.pricing.SatraPriceSyncService
+import dev.satra.wallet.data.send.SatraSendException
+import dev.satra.wallet.data.send.SatraSendRequest
+import dev.satra.wallet.data.send.SatraSendService
 import dev.satra.wallet.data.sync.accountchain.AccountChainAssetBalance
 import dev.satra.wallet.data.sync.accountchain.AccountChainNetworkSyncResult
 import dev.satra.wallet.data.sync.accountchain.AccountChainNormalizedTransaction
@@ -48,6 +51,7 @@ class SatraWalletRepository(
     private val solanaWalletSyncService: SolanaWalletSyncService = SolanaWalletSyncService(),
     private val accountChainWalletSyncService: AccountChainWalletSyncService = AccountChainWalletSyncService(),
     private val priceSyncService: SatraPriceSyncService = SatraPriceSyncService(),
+    private val sendService: SatraSendService = SatraSendService(),
 ) {
     private val syncPersistenceMutex = Mutex()
 
@@ -374,6 +378,95 @@ class SatraWalletRepository(
     suspend fun getWalletPrivateKeys(walletId: String): List<WalletPrivateKeyRecord> =
         withContext(Dispatchers.IO) {
             walletDao.getWalletPrivateKeys(walletId)
+        }
+
+    suspend fun signAndBroadcastSend(
+        assetId: String,
+        recipientAddress: String,
+        amountDecimal: BigDecimal,
+    ): String =
+        withContext(Dispatchers.IO) {
+            val wallet = walletDao.getWallets().firstOrNull { it.isActive }
+                ?: walletDao.getWallets().firstOrNull()
+                ?: throw SatraSendException.MissingWallet()
+            if (wallet.isWatchOnly) {
+                throw SatraSendException.MissingSigningKey()
+            }
+            val asset = SupportedAssetCatalog.assets.firstOrNull { it.assetId == assetId }
+                ?: throw SatraSendException.UnsupportedNetwork(assetId)
+            val network = SupportedAssetCatalog.networks.firstOrNull { it.networkId == asset.networkId }
+                ?: throw SatraSendException.UnsupportedNetwork(asset.networkId)
+            val walletAsset = walletDao.getWalletAssets(wallet.walletId)
+                .firstOrNull { it.assetId == asset.assetId && it.networkId == asset.networkId }
+                ?: throw SatraSendException.UnsupportedNetwork(asset.networkId)
+            val sourceAddress = walletDao.getWalletAddresses(wallet.walletId)
+                .filter { address ->
+                    address.networkId == asset.networkId &&
+                        (address.addressType == WalletAddressType.Receive.value || address.addressType == WalletAddressType.WatchOnly.value)
+                }
+                .sortedWith(
+                    compareByDescending<WalletAddressRecord> { it.isPrimary }
+                        .thenBy { it.addressIndex ?: Int.MAX_VALUE },
+                )
+                .firstOrNull()
+                ?.address
+                ?: throw SatraSendException.MissingSigningKey()
+            val privateKey = walletDao.getWalletPrivateKeys(wallet.walletId)
+                .firstOrNull { key -> key.networkId == asset.networkId && !key.isEncrypted }
+                ?: throw SatraSendException.MissingSigningKey()
+
+            val broadcast = sendService.signAndBroadcast(
+                SatraSendRequest(
+                    walletId = wallet.walletId,
+                    assetId = asset.assetId,
+                    networkId = network.networkId,
+                    assetSymbol = asset.symbol,
+                    assetType = asset.assetType,
+                    decimals = asset.decimals,
+                    contractAddress = asset.contractAddress,
+                    sourceAddress = sourceAddress,
+                    recipientAddress = recipientAddress,
+                    amountDecimal = amountDecimal.stripTrailingZeros().toPlainString(),
+                    balanceRaw = walletAsset.balanceRaw,
+                    privateKeyHex = privateKey.keyMaterial,
+                    localCurrencyCode = wallet.localCurrencyCode,
+                    priceFiatValue = walletAsset.priceFiatValue,
+                ),
+            )
+
+            val fiatValue = amountDecimal
+                .abs()
+                .multiply(walletAsset.priceFiatValue.toBigDecimalOrZero())
+                .stripTrailingZeros()
+                .toPlainString()
+            walletDao.upsertWalletTransaction(
+                NewWalletTransactionRecord(
+                    walletId = wallet.walletId,
+                    assetId = asset.assetId,
+                    networkId = network.networkId,
+                    transactionHash = broadcast.transactionHash,
+                    direction = WalletTransactionDirection.Outgoing.value,
+                    status = WalletTransactionStatus.Pending.value,
+                    amountRaw = "-${broadcast.amountRaw}",
+                    amountDecimal = "-${broadcast.amountDecimal}",
+                    feeRaw = broadcast.feeRaw.toString(),
+                    feeDecimal = broadcast.feeDecimal,
+                    feeAssetId = broadcast.feeAssetId,
+                    fiatValue = fiatValue,
+                    localCurrencyCode = wallet.localCurrencyCode,
+                    fromAddress = broadcast.fromAddress,
+                    toAddress = broadcast.toAddress,
+                    nonce = broadcast.nonce.toString(),
+                    timestamp = broadcast.timestampMillis,
+                    metadataJson = JSONObject()
+                        .put("flow", "send")
+                        .put("broadcast", true)
+                        .put("provider", broadcast.providerName)
+                        .put("rawTransaction", broadcast.rawTransaction)
+                        .put("assetSymbol", asset.symbol)
+                        .toString(),
+                ),
+            )
         }
 
     suspend fun ensureMnemonicReceiveAddresses(walletId: String): List<WalletAddressRecord> =
