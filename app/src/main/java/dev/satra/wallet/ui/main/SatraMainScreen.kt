@@ -1,5 +1,6 @@
 package dev.satra.wallet.ui.main
 
+import android.content.Context
 import android.content.res.Resources
 import android.net.Uri
 import androidx.annotation.DrawableRes
@@ -11,11 +12,11 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -60,14 +61,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -424,6 +426,7 @@ private fun SatraHomeDashboard(
                 walletName = "",
                 status = HomeSyncStatus.Ready,
                 totalBalance = formatFiat("0", DEFAULT_LOCAL_CURRENCY_CODE),
+                totalBalanceAmount = BigDecimal.ZERO,
                 currencyCode = DEFAULT_LOCAL_CURRENCY_CODE,
                 assets = emptyList(),
                 chartTransactions = emptyList(),
@@ -468,6 +471,7 @@ private fun SatraHomeDashboard(
             walletName = "",
             status = HomeSyncStatus.Syncing,
             totalBalance = formatFiat("0", DEFAULT_LOCAL_CURRENCY_CODE),
+            totalBalanceAmount = BigDecimal.ZERO,
             currencyCode = DEFAULT_LOCAL_CURRENCY_CODE,
             assets = emptyList(),
             chartTransactions = emptyList(),
@@ -510,19 +514,17 @@ private fun SatraHomeDashboard(
                     .fillMaxWidth()
                     .widthIn(max = HomeContentMaxWidth)
                     .padding(horizontal = 20.dp, vertical = 20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                SatraHomeHeader(
+                HomeBalanceCard(
                     walletName = content.walletName.ifBlank {
                         stringResource(R.string.home_wallet_label)
                     },
                     status = content.status,
-                )
-                Spacer(modifier = Modifier.height(20.dp))
-                HomeBalanceCard(
                     totalBalance = content.totalBalance,
-                    currencyCode = content.currencyCode,
                     transactions = content.chartTransactions,
                     initialChartData = content.chartData,
+                    isEmpty = content.totalBalanceAmount <= BigDecimal.ZERO,
                     onSendClick = onSendClick,
                     onReceiveClick = onReceiveClick,
                 )
@@ -1541,8 +1543,11 @@ private fun MarketDetailChartCard(
             Spacer(modifier = Modifier.height(12.dp))
             HomeBalanceChart(
                 chartData = content.chartData,
-                selectedPointIndex = selectedPointIndex,
-                onPointSelected = { index -> selectedPointIndex = index },
+                hidden = false,
+                empty = !content.chartData.hasActivity,
+                lineColor = MaterialTheme.colorScheme.onSurface,
+                fillColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
+                baselineColor = MaterialTheme.colorScheme.outline,
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(2.35f),
@@ -1739,9 +1744,9 @@ private fun SatraTokenDetailScreen(
                 Spacer(modifier = Modifier.height(20.dp))
                 HomeBalanceCard(
                     totalBalance = content.totalBalance,
-                    currencyCode = content.currencyCode,
                     transactions = content.chartTransactions,
                     initialChartData = content.chartData,
+                    isEmpty = content.networkBalances.none { row -> row.hasBalance },
                     onSendClick = {
                         if (content.sendRequiresNetwork) {
                             onSendNetworkRequired(content.symbol)
@@ -2257,62 +2262,17 @@ private fun ActivityTransactionCard(
 }
 
 @Composable
-private fun SatraHomeHeader(
-    walletName: String,
-    status: HomeSyncStatus,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column {
-            Text(
-                text = stringResource(R.string.app_name),
-                style = MaterialTheme.typography.headlineLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Bold,
-            )
-            Text(
-                text = walletName,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = FontWeight.Bold,
-            )
-        }
-        Row(
-            modifier = Modifier
-                .clip(RoundedCornerShape(100.dp))
-                .background(MaterialTheme.colorScheme.surfaceContainer)
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.tertiary),
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = stringResource(status.labelRes),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Bold,
-            )
-        }
-    }
-}
-
-@Composable
 private fun HomeBalanceCard(
+    walletName: String? = null,
+    status: HomeSyncStatus? = null,
     totalBalance: String,
-    currencyCode: String,
     transactions: List<WalletTransactionRecord>,
     initialChartData: HomeBalanceChartData,
+    isEmpty: Boolean,
     onSendClick: () -> Unit,
     onReceiveClick: () -> Unit,
 ) {
+    val context = LocalContext.current
     var selectedRange by remember { mutableStateOf(initialChartData.range) }
     val chartData = remember(transactions, selectedRange) {
         buildHomeBalanceChartData(
@@ -2321,143 +2281,183 @@ private fun HomeBalanceCard(
             nowMillis = System.currentTimeMillis(),
         )
     }
-    var selectedPointIndex by remember(chartData.points, selectedRange) {
-        mutableStateOf(chartData.points.lastIndex.coerceAtLeast(0))
+    var balancesHidden by remember {
+        mutableStateOf(
+            context.getSharedPreferences(BALANCE_CARD_PREFS_NAME, Context.MODE_PRIVATE)
+                .getBoolean(BALANCE_CARD_HIDDEN_KEY, false),
+        )
     }
-    val selectedPoint = chartData.points.getOrNull(selectedPointIndex)
+    val cardColor = MaterialTheme.colorScheme.inverseSurface
     val contentColor = MaterialTheme.colorScheme.inverseOnSurface
     val mutedContentColor = contentColor.copy(alpha = 0.64f)
-    val chartPanelColor = contentColor.copy(alpha = 0.08f)
-    val chartChangeColor = if (chartData.changeValue.signum() >= 0) {
-        MaterialTheme.colorScheme.tertiary
-    } else {
-        MaterialTheme.colorScheme.error
+    val cardIsDark = cardColor.luminance() < 0.5f
+    val gainContentColor = if (cardIsDark) Color(0xFF7FC9A6) else Color(0xFF2E7D5A)
+    val lossContentColor = if (cardIsDark) Color(0xFFE08A76) else Color(0xFFB3452E)
+    val deltaIsPositive = chartData.changeValue.signum() >= 0
+    val deltaContainerColor = when {
+        balancesHidden -> Color.Gray.copy(alpha = 0.18f)
+        deltaIsPositive -> gainContentColor.copy(alpha = if (cardIsDark) 0.16f else 0.12f)
+        else -> lossContentColor.copy(alpha = if (cardIsDark) 0.16f else 0.12f)
     }
+    val deltaContentColor = when {
+        balancesHidden -> mutedContentColor
+        deltaIsPositive -> gainContentColor
+        else -> lossContentColor
+    }
+    val buttonBackground = contentColor
+    val buttonContent = cardColor
+    val displayBalance = if (balancesHidden) {
+        stringResource(R.string.home_balance_hidden_value)
+    } else {
+        totalBalance
+    }
+    val displayDelta = if (balancesHidden) {
+        stringResource(R.string.home_balance_hidden_delta)
+    } else {
+        formatPercent(chartData.percentChange)
+    }
+    val rangeInteractionsEnabled = !balancesHidden && !isEmpty && chartData.hasActivity
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        modifier = Modifier
+            .widthIn(max = HomeBalanceCardMaxWidth)
+            .fillMaxWidth(),
+        shape = RoundedCornerShape(26.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.inverseSurface,
+            containerColor = cardColor,
         ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
     ) {
         Column(
-            modifier = Modifier.padding(20.dp),
+            modifier = Modifier.padding(start = 22.dp, top = 22.dp, end = 22.dp, bottom = 20.dp),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column {
-                    Text(
-                        text = stringResource(R.string.home_balance_title),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = mutedContentColor,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Text(
-                        text = currencyCode,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = contentColor.copy(alpha = 0.52f),
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
-                Text(
-                    text = "${formatSignedFiat(chartData.changeValue, currencyCode)} · ${formatPercent(chartData.percentChange)}",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = chartChangeColor,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
-            Spacer(modifier = Modifier.height(14.dp))
-            Text(
-                text = totalBalance,
-                style = MaterialTheme.typography.displayLarge,
-                color = contentColor,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(chartPanelColor)
-                    .padding(14.dp),
-            ) {
+            if (!walletName.isNullOrBlank() || status != null) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = stringResource(R.string.home_chart_selected_value),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = mutedContentColor,
-                            fontWeight = FontWeight.Bold,
-                        )
-                        Text(
-                            text = selectedPoint?.value?.let { value ->
-                                formatFiat(value.toPlainString(), currencyCode)
-                            } ?: stringResource(R.string.home_chart_value_placeholder),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = contentColor,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                        )
-                    }
                     Text(
-                        text = if (chartData.hasActivity && selectedPoint != null) {
-                            formatChartPointTime(selectedPoint.timestampMillis, selectedRange)
-                        } else {
-                            stringResource(R.string.home_chart_value_placeholder)
-                        },
-                        style = MaterialTheme.typography.labelLarge,
-                        color = mutedContentColor,
+                        text = walletName.orEmpty(),
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = contentColor,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    status?.let { syncStatus ->
+                        HomeBalanceStatusPill(
+                            status = syncStatus,
+                            contentColor = contentColor,
+                            mutedContentColor = mutedContentColor,
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.home_balance_title),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = mutedContentColor,
+                    fontWeight = FontWeight.Medium,
+                )
+                IconButton(
+                    onClick = {
+                        balancesHidden = !balancesHidden
+                        context.getSharedPreferences(BALANCE_CARD_PREFS_NAME, Context.MODE_PRIVATE)
+                            .edit()
+                            .putBoolean(BALANCE_CARD_HIDDEN_KEY, balancesHidden)
+                            .apply()
+                    },
+                    modifier = Modifier.size(44.dp),
+                ) {
+                    HomeBalanceEyeIcon(
+                        hidden = balancesHidden,
+                        color = mutedContentColor,
+                        modifier = Modifier.size(18.dp),
                     )
                 }
-                Spacer(modifier = Modifier.height(12.dp))
-                HomeBalanceChart(
-                    chartData = chartData,
-                    selectedPointIndex = selectedPointIndex,
-                    onPointSelected = { index -> selectedPointIndex = index },
-                    lineColor = contentColor,
-                    gridColor = contentColor.copy(alpha = 0.16f),
-                    fillColor = contentColor.copy(alpha = 0.11f),
-                    selectedColor = contentColor,
-                    surfaceColor = MaterialTheme.colorScheme.inverseSurface,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(2.45f),
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = displayBalance,
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.displaySmall.copy(fontFeatureSettings = "tnum"),
+                    color = contentColor,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
-                Spacer(modifier = Modifier.height(12.dp))
-                HomeChartRangeSelector(
-                    selectedRange = selectedRange,
-                    onRangeSelected = { range -> selectedRange = range },
-                    selectedContainerColor = contentColor,
-                    selectedContentColor = MaterialTheme.colorScheme.inverseSurface,
-                    unselectedContentColor = mutedContentColor,
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = displayDelta,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(100.dp))
+                        .background(deltaContainerColor)
+                        .alpha(if (isEmpty) 0f else 1f)
+                        .padding(horizontal = 9.dp, vertical = 5.dp),
+                    style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
+                    color = deltaContentColor,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
                 )
             }
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+            HomeBalanceChart(
+                chartData = chartData,
+                hidden = balancesHidden,
+                empty = isEmpty,
+                lineColor = contentColor,
+                fillColor = contentColor.copy(alpha = 0.09f),
+                baselineColor = contentColor.copy(alpha = 0.25f),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(72.dp),
+            )
+            Spacer(modifier = Modifier.height(14.dp))
+            HomeChartRangeSelector(
+                selectedRange = selectedRange,
+                onRangeSelected = { range -> selectedRange = range },
+                enabled = rangeInteractionsEnabled,
+                selectedContainerColor = buttonBackground,
+                selectedContentColor = buttonContent,
+                unselectedContentColor = mutedContentColor,
+            )
+            Spacer(modifier = Modifier.height(16.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                HomePrimaryActionButton(
+                HomeBalanceActionButton(
                     label = stringResource(R.string.home_action_move),
                     iconRes = R.drawable.ic_brand_move,
                     onClick = onSendClick,
+                    solid = !isEmpty,
+                    enabled = !isEmpty,
+                    solidContainerColor = buttonBackground,
+                    solidContentColor = buttonContent,
+                    outlinedContentColor = contentColor,
                     modifier = Modifier.weight(1f),
                 )
-                HomeSecondaryActionButton(
+                HomeBalanceActionButton(
                     label = stringResource(R.string.home_action_receive),
                     iconRes = R.drawable.ic_brand_receive,
                     onClick = onReceiveClick,
+                    solid = isEmpty,
+                    enabled = true,
+                    solidContainerColor = buttonBackground,
+                    solidContentColor = buttonContent,
+                    outlinedContentColor = contentColor,
                     modifier = Modifier.weight(1f),
                 )
             }
@@ -2466,29 +2466,29 @@ private fun HomeBalanceCard(
 }
 
 @Composable
-private fun HomePrimaryActionButton(
-    label: String,
-    @DrawableRes iconRes: Int,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
+private fun HomeBalanceStatusPill(
+    status: HomeSyncStatus,
+    contentColor: Color,
+    mutedContentColor: Color,
 ) {
-    Button(
-        onClick = onClick,
-        modifier = modifier.height(52.dp),
-        shape = RoundedCornerShape(100.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.inverseOnSurface,
-            contentColor = MaterialTheme.colorScheme.inverseSurface,
-        ),
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(100.dp))
+            .background(contentColor.copy(alpha = 0.1f))
+            .padding(horizontal = 9.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(
-            painter = painterResource(iconRes),
-            contentDescription = null,
-            modifier = Modifier.size(18.dp),
+        Box(
+            modifier = Modifier
+                .size(7.dp)
+                .clip(CircleShape)
+                .background(contentColor),
         )
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(6.dp))
         Text(
-            text = label,
+            text = stringResource(status.labelRes),
+            style = MaterialTheme.typography.labelSmall,
+            color = mutedContentColor,
             fontWeight = FontWeight.Bold,
             maxLines = 1,
         )
@@ -2496,67 +2496,115 @@ private fun HomePrimaryActionButton(
 }
 
 @Composable
-private fun HomeSecondaryActionButton(
+private fun HomeBalanceActionButton(
     label: String,
     @DrawableRes iconRes: Int,
     onClick: () -> Unit,
+    solid: Boolean,
+    enabled: Boolean,
+    solidContainerColor: Color,
+    solidContentColor: Color,
+    outlinedContentColor: Color,
     modifier: Modifier = Modifier,
 ) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = modifier.height(52.dp),
-        shape = RoundedCornerShape(100.dp),
-        border = BorderStroke(
-            width = 1.dp,
-            color = MaterialTheme.colorScheme.inverseOnSurface.copy(alpha = 0.24f),
-        ),
-        colors = ButtonDefaults.outlinedButtonColors(
-            contentColor = MaterialTheme.colorScheme.inverseOnSurface,
-        ),
-    ) {
-        Icon(
-            painter = painterResource(iconRes),
-            contentDescription = null,
-            modifier = Modifier.size(18.dp),
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = label,
-            fontWeight = FontWeight.Bold,
-            maxLines = 1,
-        )
+    if (solid) {
+        Button(
+            onClick = onClick,
+            enabled = enabled,
+            modifier = modifier.height(46.dp),
+            shape = RoundedCornerShape(100.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = solidContainerColor,
+                contentColor = solidContentColor,
+                disabledContainerColor = solidContainerColor.copy(alpha = 0.16f),
+                disabledContentColor = outlinedContentColor.copy(alpha = 0.45f),
+            ),
+            contentPadding = PaddingValues(horizontal = 10.dp),
+        ) {
+            HomeBalanceActionButtonContent(
+                label = label,
+                iconRes = iconRes,
+            )
+        }
+    } else {
+        OutlinedButton(
+            onClick = onClick,
+            enabled = enabled,
+            modifier = modifier.height(46.dp),
+            shape = RoundedCornerShape(100.dp),
+            border = BorderStroke(
+                width = 1.dp,
+                color = outlinedContentColor.copy(alpha = if (enabled) 0.28f else 0.14f),
+            ),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = outlinedContentColor,
+                disabledContentColor = outlinedContentColor.copy(alpha = 0.36f),
+            ),
+            contentPadding = PaddingValues(horizontal = 10.dp),
+        ) {
+            HomeBalanceActionButtonContent(
+                label = label,
+                iconRes = iconRes,
+            )
+        }
     }
+}
+
+@Composable
+private fun HomeBalanceActionButtonContent(
+    label: String,
+    @DrawableRes iconRes: Int,
+) {
+    Icon(
+        painter = painterResource(iconRes),
+        contentDescription = null,
+        modifier = Modifier.size(17.dp),
+    )
+    Spacer(modifier = Modifier.width(7.dp))
+    Text(
+        text = label,
+        style = MaterialTheme.typography.labelLarge,
+        fontWeight = FontWeight.Bold,
+        maxLines = 1,
+    )
 }
 
 @Composable
 private fun HomeChartRangeSelector(
     selectedRange: HomeChartRange,
     onRangeSelected: (HomeChartRange) -> Unit,
+    enabled: Boolean = true,
     selectedContainerColor: Color = MaterialTheme.colorScheme.primary,
     selectedContentColor: Color = MaterialTheme.colorScheme.onPrimary,
     unselectedContentColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .alpha(if (enabled) 1f else 0.42f),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         HomeChartRange.entries.forEach { range ->
             val selected = selectedRange == range
             if (selected) {
                 Button(
                     onClick = { onRangeSelected(range) },
+                    enabled = enabled,
                     modifier = Modifier
                         .weight(1f)
-                        .height(36.dp),
+                        .height(32.dp),
                     shape = RoundedCornerShape(100.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = selectedContainerColor,
                         contentColor = selectedContentColor,
+                        disabledContainerColor = selectedContainerColor,
+                        disabledContentColor = selectedContentColor,
                     ),
-                    contentPadding = ButtonDefaults.ContentPadding,
+                    contentPadding = PaddingValues(horizontal = 4.dp),
                 ) {
                     Text(
                         text = stringResource(range.labelRes),
+                        style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                     )
@@ -2564,13 +2612,16 @@ private fun HomeChartRangeSelector(
             } else {
                 TextButton(
                     onClick = { onRangeSelected(range) },
+                    enabled = enabled,
                     modifier = Modifier
                         .weight(1f)
-                        .height(36.dp),
+                        .height(32.dp),
                     shape = RoundedCornerShape(100.dp),
+                    contentPadding = PaddingValues(horizontal = 4.dp),
                 ) {
                     Text(
                         text = stringResource(range.labelRes),
+                        style = MaterialTheme.typography.labelMedium,
                         color = unselectedContentColor,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
@@ -2584,48 +2635,35 @@ private fun HomeChartRangeSelector(
 @Composable
 private fun HomeBalanceChart(
     chartData: HomeBalanceChartData,
-    selectedPointIndex: Int,
-    onPointSelected: (Int) -> Unit,
+    hidden: Boolean,
+    empty: Boolean,
     lineColor: Color = MaterialTheme.colorScheme.onSurface,
-    gridColor: Color = MaterialTheme.colorScheme.outlineVariant,
-    fillColor: Color = MaterialTheme.colorScheme.primaryContainer,
-    selectedColor: Color = MaterialTheme.colorScheme.primary,
-    surfaceColor: Color = MaterialTheme.colorScheme.surface,
+    fillColor: Color = lineColor.copy(alpha = 0.09f),
+    baselineColor: Color = lineColor.copy(alpha = 0.25f),
     modifier: Modifier = Modifier,
 ) {
-    var chartPixelWidth by remember { mutableStateOf(0f) }
-
     Canvas(
-        modifier = modifier
-            .onSizeChanged { size -> chartPixelWidth = size.width.toFloat() }
-            .pointerInput(chartData.points, chartPixelWidth) {
-                detectDragGestures(
-                    onDragStart = { offset ->
-                        onPointSelected(
-                            nearestHomeChartPointIndex(
-                                xPosition = offset.x,
-                                chartWidth = chartPixelWidth,
-                                pointCount = chartData.points.size,
-                            ),
-                        )
-                    },
-                    onDrag = { change, _ ->
-                        onPointSelected(
-                            nearestHomeChartPointIndex(
-                                xPosition = change.position.x,
-                                chartWidth = chartPixelWidth,
-                                pointCount = chartData.points.size,
-                            ),
-                        )
-                    },
-                )
-            },
+        modifier = modifier,
     ) {
-        val horizontalPadding = 8.dp.toPx()
-        val topPadding = 8.dp.toPx()
-        val bottomPadding = 12.dp.toPx()
+        val horizontalPadding = 5.dp.toPx()
+        val topPadding = 5.dp.toPx()
+        val bottomPadding = 7.dp.toPx()
         val chartHeight = size.height - topPadding - bottomPadding
         val chartWidth = size.width - horizontalPadding * 2
+        if (chartHeight <= 0f || chartWidth <= 0f) return@Canvas
+
+        if (hidden) {
+            val centerY = topPadding + chartHeight / 2f
+            drawLine(
+                color = baselineColor,
+                start = Offset(horizontalPadding, centerY),
+                end = Offset(size.width - horizontalPadding, centerY),
+                strokeWidth = 2.5.dp.toPx(),
+                cap = StrokeCap.Round,
+            )
+            return@Canvas
+        }
+
         val minValue = chartData.points.minOfOrNull { point -> point.value } ?: BigDecimal.ZERO
         val maxValue = chartData.points.maxOfOrNull { point -> point.value } ?: BigDecimal.ZERO
         val valueRange = (maxValue - minValue).takeIf { it.compareTo(BigDecimal.ZERO) != 0 }
@@ -2645,50 +2683,122 @@ private fun HomeBalanceChart(
             Offset(x, y)
         }
         if (coordinates.isEmpty()) return@Canvas
-        val path = Path().apply {
-            coordinates.forEachIndexed { index, offset ->
-                if (index == 0) moveTo(offset.x, offset.y) else lineTo(offset.x, offset.y)
-            }
+        val baselineY = if (empty || !chartData.hasActivity) {
+            topPadding + chartHeight / 2f
+        } else {
+            coordinates.first().y
         }
+        drawDottedBaseline(
+            color = baselineColor,
+            startX = horizontalPadding,
+            endX = size.width - horizontalPadding,
+            y = baselineY,
+        )
+        if (empty || !chartData.hasActivity) return@Canvas
+
+        val path = smoothHomeChartPath(coordinates)
         val area = Path().apply {
             moveTo(coordinates.first().x, size.height - bottomPadding)
-            coordinates.forEach { offset -> lineTo(offset.x, offset.y) }
+            addPath(path)
             lineTo(coordinates.last().x, size.height - bottomPadding)
             close()
         }
 
-        repeat(3) { index ->
-            val y = topPadding + chartHeight * (index + 1) / 4f
-            drawLine(
-                color = gridColor,
-                start = Offset(0f, y),
-                end = Offset(size.width, y),
-                strokeWidth = 1.dp.toPx(),
-            )
-        }
-        drawPath(path = area, color = fillColor.copy(alpha = 0.42f))
+        drawPath(path = area, color = fillColor)
         drawPath(
             path = path,
             color = lineColor,
-            style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round),
+            style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round),
         )
-        val selectedCoordinate = coordinates.getOrNull(selectedPointIndex) ?: coordinates.last()
-        drawLine(
-            color = selectedColor.copy(alpha = 0.42f),
-            start = Offset(selectedCoordinate.x, topPadding),
-            end = Offset(selectedCoordinate.x, size.height - bottomPadding),
-            strokeWidth = 1.dp.toPx(),
+        val nowCoordinate = coordinates.last()
+        drawCircle(
+            color = lineColor,
+            radius = 4.5.dp.toPx(),
+            center = nowCoordinate,
         )
         drawCircle(
-            color = selectedColor,
-            radius = 5.dp.toPx(),
-            center = selectedCoordinate,
+            color = fillColor.copy(alpha = 0.95f),
+            radius = 2.2.dp.toPx(),
+            center = nowCoordinate,
+        )
+    }
+}
+
+private fun smoothHomeChartPath(coordinates: List<Offset>): Path {
+    return Path().apply {
+        coordinates.forEachIndexed { index, offset ->
+            if (index == 0) {
+                moveTo(offset.x, offset.y)
+            } else {
+                val previous = coordinates[index - 1]
+                val midX = (previous.x + offset.x) / 2f
+                cubicTo(
+                    midX,
+                    previous.y,
+                    midX,
+                    offset.y,
+                    offset.x,
+                    offset.y,
+                )
+            }
+        }
+    }
+}
+
+private fun DrawScope.drawDottedBaseline(
+    color: Color,
+    startX: Float,
+    endX: Float,
+    y: Float,
+) {
+    val radius = 1.4.dp.toPx()
+    val spacing = 8.dp.toPx()
+    var x = startX
+    while (x <= endX) {
+        drawCircle(
+            color = color,
+            radius = radius,
+            center = Offset(x, y),
+        )
+        x += spacing
+    }
+}
+
+@Composable
+private fun HomeBalanceEyeIcon(
+    hidden: Boolean,
+    color: Color,
+    modifier: Modifier = Modifier,
+) {
+    Canvas(modifier = modifier) {
+        val width = size.width
+        val height = size.height
+        val center = Offset(width / 2f, height / 2f)
+        val strokeWidth = 1.8.dp.toPx()
+        val eyePath = Path().apply {
+            moveTo(width * 0.08f, height * 0.5f)
+            cubicTo(width * 0.25f, height * 0.18f, width * 0.75f, height * 0.18f, width * 0.92f, height * 0.5f)
+            cubicTo(width * 0.75f, height * 0.82f, width * 0.25f, height * 0.82f, width * 0.08f, height * 0.5f)
+        }
+        drawPath(
+            path = eyePath,
+            color = color,
+            style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
         )
         drawCircle(
-            color = surfaceColor,
-            radius = 2.4.dp.toPx(),
-            center = selectedCoordinate,
+            color = color,
+            radius = minOf(width, height) * 0.16f,
+            center = center,
         )
+        if (hidden) {
+            drawLine(
+                color = color,
+                start = Offset(width * 0.1f, height * 0.9f),
+                end = Offset(width * 0.9f, height * 0.1f),
+                strokeWidth = strokeWidth,
+                cap = StrokeCap.Round,
+            )
+        }
     }
 }
 
@@ -3132,6 +3242,7 @@ private sealed interface HomeDashboardState {
         val walletName: String,
         val status: HomeSyncStatus,
         val totalBalance: String,
+        val totalBalanceAmount: BigDecimal,
         val currencyCode: String,
         val assets: List<HomeAssetRow>,
         val chartTransactions: List<WalletTransactionRecord>,
@@ -3213,6 +3324,7 @@ private fun WalletRecord.toHomeDashboardState(
         walletName = walletName,
         status = status,
         totalBalance = formatFiat(totalFiat.toPlainString(), localCurrencyCode),
+        totalBalanceAmount = totalFiat,
         currencyCode = localCurrencyCode,
         assets = walletAssets.toHomeAssetRows(localCurrencyCode),
         chartTransactions = walletTransactions,
@@ -3579,16 +3691,6 @@ private fun formatFiat(
     return formatter.format(amount)
 }
 
-private fun formatSignedFiat(
-    value: BigDecimal,
-    currencyCode: String,
-): String =
-    when {
-        value.signum() > 0 -> "+${formatFiat(value.abs().toPlainString(), currencyCode)}"
-        value.signum() < 0 -> "-${formatFiat(value.abs().toPlainString(), currencyCode)}"
-        else -> formatFiat("0", currencyCode)
-    }
-
 private fun buildMarketPriceChartData(
     chart7dJson: String,
     fallbackPrice: BigDecimal,
@@ -3915,6 +4017,9 @@ internal object SatraMainRoute {
 }
 
 private val HomeContentMaxWidth = 720.dp
+private val HomeBalanceCardMaxWidth = 340.dp
+private const val BALANCE_CARD_PREFS_NAME = "satra_balance_card"
+private const val BALANCE_CARD_HIDDEN_KEY = "satra.balanceHidden"
 private const val CRYPTO_DISPLAY_DECIMALS = 8
 private val ActivityDateFormatter: DateTimeFormatter =
     DateTimeFormatter.ofPattern("MMM d, HH:mm", Locale.US)
