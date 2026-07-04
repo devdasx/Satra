@@ -273,8 +273,8 @@
     <string name="home_assets_count_placeholder">5 shown</string>
     <string name="home_ready_body">Your Satra wallet is ready. Asset, account, and transaction screens will be connected as wallet core work begins.</string>
     <string name="activity_title">Activity</string>
-    <string name="activity_body">EVM balances and transaction history sync from the public providers configured for supported networks.</string>
-    <string name="activity_summary_networks">EVM networks</string>
+    <string name="activity_body">Balances and transaction history sync from public providers configured for supported networks.</string>
+    <string name="activity_summary_networks">Synced networks</string>
     <string name="activity_summary_networks_value">%1$d of %2$d synced</string>
     <string name="activity_summary_transactions">Transactions</string>
     <string name="activity_summary_transactions_value">%1$d stored</string>
@@ -284,10 +284,10 @@
     <string name="asset_detail_balances_title">Balances by network</string>
     <string name="asset_detail_activity_title">Activity</string>
     <string name="asset_detail_activity_empty">No activity for this asset yet.</string>
-    <string name="activity_syncing_title">Syncing EVM activity…</string>
-    <string name="activity_syncing_body">Satra is checking supported EVM networks, token balances, and indexed history.</string>
-    <string name="activity_empty_title">No EVM activity yet.</string>
-    <string name="activity_empty_body">When this wallet has supported EVM transactions, they will appear here after sync.</string>
+    <string name="activity_syncing_title">Syncing activity…</string>
+    <string name="activity_syncing_body">Satra is checking supported EVM and Bitcoin-family networks, balances, and history.</string>
+    <string name="activity_empty_title">No activity yet.</string>
+    <string name="activity_empty_body">When this wallet has supported transactions, they will appear here after sync.</string>
     <string name="activity_direction_received">Received</string>
     <string name="activity_direction_sent">Sent</string>
     <string name="activity_direction_self">Self transfer</string>

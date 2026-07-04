@@ -36,6 +36,26 @@ object SatraAddressDerivation {
         }
     }
 
+    fun deriveUtxoScanAccounts(
+        mnemonic: String,
+        passphrase: String? = null,
+        networkId: String,
+        startIndex: Int = 0,
+        gapLimit: Int = 20,
+    ): List<DerivedReceiveAccount> {
+        require(startIndex >= 0) { "Start index cannot be negative." }
+        require(gapLimit > 0) { "Gap limit must be positive." }
+        val seed = EvmWalletDerivation.mnemonicToSeed(mnemonic, passphrase.orEmpty())
+        return utxoScanSpecsForNetwork(networkId, startIndex, gapLimit).map { spec ->
+            deriveAccount(
+                networkId = networkId,
+                spec = spec,
+                seed = seed,
+                isImported = false,
+            )
+        }
+    }
+
     fun derivePrivateKeyAccount(
         networkId: String,
         privateKey: String,
@@ -241,6 +261,95 @@ object SatraAddressDerivation {
             else -> emptyList()
         }
 
+    private fun utxoScanSpecsForNetwork(
+        networkId: String,
+        startIndex: Int,
+        gapLimit: Int,
+    ): List<ReceiveDerivationSpec> {
+        val templates = when (networkId) {
+            "bitcoin" -> listOf(
+                UtxoScanTemplate(
+                    name = "taproot",
+                    purpose = 86,
+                    coinType = 0,
+                    format = AddressFormat.BitcoinTaproot(hrp = "bc"),
+                ),
+                UtxoScanTemplate(
+                    name = "segwit",
+                    purpose = 84,
+                    coinType = 0,
+                    format = AddressFormat.BitcoinSegwit(hrp = "bc"),
+                ),
+                UtxoScanTemplate(
+                    name = "nested_segwit",
+                    purpose = 49,
+                    coinType = 0,
+                    format = AddressFormat.BitcoinNestedSegwit(p2shPrefix = 5),
+                ),
+                UtxoScanTemplate(
+                    name = "legacy",
+                    purpose = 44,
+                    coinType = 0,
+                    format = AddressFormat.Base58P2pkh(prefix = 0),
+                ),
+            )
+            "bitcoinCash" -> listOf(
+                UtxoScanTemplate(
+                    name = "cashaddr",
+                    purpose = 44,
+                    coinType = 145,
+                    format = AddressFormat.CashAddr(prefix = "bitcoincash"),
+                ),
+            )
+            "dogecoin" -> listOf(
+                UtxoScanTemplate(
+                    name = "legacy",
+                    purpose = 44,
+                    coinType = 3,
+                    format = AddressFormat.Base58P2pkh(prefix = 30),
+                ),
+            )
+            "litecoin" -> listOf(
+                UtxoScanTemplate(
+                    name = "segwit",
+                    purpose = 84,
+                    coinType = 2,
+                    format = AddressFormat.BitcoinSegwit(hrp = "ltc"),
+                ),
+                UtxoScanTemplate(
+                    name = "nested_segwit",
+                    purpose = 49,
+                    coinType = 2,
+                    format = AddressFormat.BitcoinNestedSegwit(p2shPrefix = 50),
+                ),
+                UtxoScanTemplate(
+                    name = "legacy",
+                    purpose = 44,
+                    coinType = 2,
+                    format = AddressFormat.Base58P2pkh(prefix = 48),
+                ),
+            )
+            else -> emptyList()
+        }
+
+        return templates.flatMap { template ->
+            listOf(false, true).flatMap { isChange ->
+                (startIndex until startIndex + gapLimit).map { index ->
+                    ReceiveDerivationSpec(
+                        networkId = networkId,
+                        name = template.name,
+                        path = "m/${template.purpose}'/${template.coinType}'/0'/${if (isChange) 1 else 0}/$index",
+                        curve = DerivationCurve.Secp256k1,
+                        addressFormat = template.format,
+                        isPrimary = false,
+                        addressIndex = index,
+                        isChange = isChange,
+                    )
+                }
+            }
+        }
+    }
+
     private fun deriveAccount(
         networkId: String,
         spec: ReceiveDerivationSpec,
@@ -263,6 +372,7 @@ object SatraAddressDerivation {
                     keyFingerprint = hash160(publicKey).take(4).toByteArray().toHex(),
                     isPrimary = spec.isPrimary,
                     addressIndex = spec.addressIndex,
+                    isChange = spec.isChange,
                     source = if (isImported) "mnemonic_imported" else "mnemonic_derived",
                 )
             }
@@ -281,6 +391,7 @@ object SatraAddressDerivation {
                     keyFingerprint = hash160(publicKey).take(4).toByteArray().toHex(),
                     isPrimary = spec.isPrimary,
                     addressIndex = spec.addressIndex,
+                    isChange = spec.isChange,
                     source = if (isImported) "mnemonic_imported" else "mnemonic_derived",
                 )
             }
@@ -295,6 +406,8 @@ object SatraAddressDerivation {
             AddressFormat.Evm -> evmAddress(uncompressedPublicKey)
             AddressFormat.Tron -> base58Check(byteArrayOf(0x41) + evmAddressBytes(uncompressedPublicKey))
             is AddressFormat.BitcoinSegwit -> bech32Segwit(format.hrp, hash160(compressedPublicKey))
+            is AddressFormat.BitcoinTaproot -> taprootAddress(format.hrp, compressedPublicKey)
+            is AddressFormat.BitcoinNestedSegwit -> nestedSegwitAddress(format.p2shPrefix, compressedPublicKey)
             is AddressFormat.Base58P2pkh -> base58Check(byteArrayOf(format.prefix.toByte()) + hash160(compressedPublicKey))
             is AddressFormat.CashAddr -> cashAddr(format.prefix, hash160(compressedPublicKey))
             AddressFormat.Ripple -> rippleAddress(hash160(compressedPublicKey))
@@ -375,6 +488,29 @@ object SatraAddressDerivation {
     ): String =
         bech32Encode(hrp, byteArrayOf(0) + convertBits(publicKeyHash, 8, 5, true), Bech32Checksum.Bech32)
 
+    private fun taprootAddress(
+        hrp: String,
+        compressedPublicKey: ByteArray,
+    ): String {
+        val internalPoint = Secp256k1Params.curve.decodePoint(compressedPublicKey).normalize().let { point ->
+            if (point.affineYCoord.toBigInteger().testBit(0)) point.negate().normalize() else point
+        }
+        val internalKey = internalPoint.affineXCoord.encoded
+        val tweak = taggedHash("TapTweak", internalKey).toPositiveBigInteger()
+        require(tweak < Secp256k1N)
+        val outputPoint = internalPoint.add(Secp256k1G.multiply(tweak)).normalize()
+        val outputKey = outputPoint.affineXCoord.encoded
+        return bech32Encode(hrp, byteArrayOf(1) + convertBits(outputKey, 8, 5, true), Bech32Checksum.Bech32m)
+    }
+
+    private fun nestedSegwitAddress(
+        p2shPrefix: Int,
+        compressedPublicKey: ByteArray,
+    ): String {
+        val redeemScript = byteArrayOf(0x00, 0x14) + hash160(compressedPublicKey)
+        return base58Check(byteArrayOf(p2shPrefix.toByte()) + hash160(redeemScript))
+    }
+
     private fun bech32(
         hrp: String,
         payload: ByteArray,
@@ -440,6 +576,14 @@ object SatraAddressDerivation {
 
     private fun doubleSha256(data: ByteArray): ByteArray =
         sha256(sha256(data))
+
+    private fun taggedHash(
+        tag: String,
+        data: ByteArray,
+    ): ByteArray {
+        val tagHash = sha256(tag.toByteArray(Charsets.US_ASCII))
+        return sha256(tagHash + tagHash + data)
+    }
 
     private fun ripemd160(data: ByteArray): ByteArray {
         val digest = RIPEMD160Digest()
@@ -676,6 +820,13 @@ object SatraAddressDerivation {
         0x1e4f43e470L,
     )
 
+    private data class UtxoScanTemplate(
+        val name: String,
+        val purpose: Int,
+        val coinType: Int,
+        val format: AddressFormat,
+    )
+
     private data class DerivedNode(
         val privateKey: ByteArray,
         val chainCode: ByteArray,
@@ -709,6 +860,7 @@ data class DerivedReceiveAccount(
     val keyFingerprint: String,
     val isPrimary: Boolean,
     val addressIndex: Int,
+    val isChange: Boolean = false,
     val source: String,
 )
 
@@ -720,6 +872,7 @@ data class ReceiveDerivationSpec(
     val addressFormat: AddressFormat,
     val isPrimary: Boolean,
     val addressIndex: Int = 0,
+    val isChange: Boolean = false,
 )
 
 enum class DerivationCurve {
@@ -738,6 +891,8 @@ sealed interface AddressFormat {
     data object Sui : AddressFormat
     data object TonV4R2 : AddressFormat
     data class BitcoinSegwit(val hrp: String) : AddressFormat
+    data class BitcoinTaproot(val hrp: String) : AddressFormat
+    data class BitcoinNestedSegwit(val p2shPrefix: Int) : AddressFormat
     data class Base58P2pkh(val prefix: Int) : AddressFormat
     data class CashAddr(val prefix: String) : AddressFormat
     data class Cosmos(val hrp: String) : AddressFormat
@@ -746,6 +901,7 @@ sealed interface AddressFormat {
 
 private enum class Bech32Checksum(val constant: Int) {
     Bech32(1),
+    Bech32m(0x2bc830a3),
 }
 
 private fun Char.isHexDigit(): Boolean =

@@ -10,6 +10,11 @@ import dev.satra.wallet.data.sync.evm.EvmNetworkSyncResult
 import dev.satra.wallet.data.sync.evm.EvmNormalizedTransaction
 import dev.satra.wallet.data.sync.evm.EvmWalletSyncResult
 import dev.satra.wallet.data.sync.evm.EvmWalletSyncService
+import dev.satra.wallet.data.sync.utxo.UtxoAssetBalance
+import dev.satra.wallet.data.sync.utxo.UtxoNetworkSyncResult
+import dev.satra.wallet.data.sync.utxo.UtxoNormalizedTransaction
+import dev.satra.wallet.data.sync.utxo.UtxoWalletSyncResult
+import dev.satra.wallet.data.sync.utxo.UtxoWalletSyncService
 import dev.satra.wallet.settings.SatraPasscodeHasher
 import dev.satra.wallet.wallet.bip39.Bip39MnemonicValidator
 import dev.satra.wallet.wallet.derivation.DerivedReceiveAccount
@@ -26,6 +31,7 @@ import java.math.RoundingMode
 class SatraWalletRepository(
     private val walletDao: SatraWalletDao,
     private val evmWalletSyncService: EvmWalletSyncService = EvmWalletSyncService(),
+    private val utxoWalletSyncService: UtxoWalletSyncService = UtxoWalletSyncService(),
     private val priceSyncService: SatraPriceSyncService = SatraPriceSyncService(),
 ) {
     fun createMnemonicWallet(
@@ -422,6 +428,34 @@ class SatraWalletRepository(
             result.networkResults.single()
         }
 
+    suspend fun syncUtxoWallet(walletId: String): UtxoWalletSyncResult =
+        withContext(Dispatchers.IO) {
+            val wallet = walletDao.getWallet(walletId)
+                ?: error("Wallet not found: $walletId")
+            val result = utxoWalletSyncService.syncWallet(
+                wallet = wallet,
+                addresses = walletDao.getWalletAddresses(walletId),
+            )
+            persistUtxoSyncResult(wallet, result)
+            result
+        }
+
+    suspend fun syncUtxoNetwork(
+        walletId: String,
+        networkId: String,
+    ): UtxoNetworkSyncResult =
+        withContext(Dispatchers.IO) {
+            val wallet = walletDao.getWallet(walletId)
+                ?: error("Wallet not found: $walletId")
+            val result = utxoWalletSyncService.syncWallet(
+                wallet = wallet,
+                addresses = walletDao.getWalletAddresses(walletId),
+                networkId = networkId,
+            )
+            persistUtxoSyncResult(wallet, result)
+            result.networkResults.single()
+        }
+
     suspend fun syncWalletData(walletId: String): SatraWalletDataSyncResult =
         withContext(Dispatchers.IO) {
             val wallet = walletDao.getWallet(walletId)
@@ -434,6 +468,12 @@ class SatraWalletRepository(
                         addresses = addresses,
                     )
                 }
+                val utxoDeferred = async {
+                    utxoWalletSyncService.syncWallet(
+                        wallet = wallet,
+                        addresses = addresses,
+                    )
+                }
                 val pricesDeferred = async {
                     priceSyncService.syncSupportedAssetPricesOrNull(wallet.localCurrencyCode)
                 }
@@ -441,11 +481,15 @@ class SatraWalletRepository(
                 val evmResult = evmDeferred.await()
                 persistEvmSyncResult(wallet, evmResult)
 
+                val utxoResult = utxoDeferred.await()
+                persistUtxoSyncResult(wallet, utxoResult)
+
                 val priceResult = pricesDeferred.await()
                 persistWalletPrices(wallet, priceResult)
 
                 SatraWalletDataSyncResult(
                     evmSyncResult = evmResult,
+                    utxoSyncResult = utxoResult,
                     priceSyncResult = priceResult,
                 )
             }
@@ -500,10 +544,11 @@ class SatraWalletRepository(
                     walletId = walletId,
                     networkId = account.networkId,
                     address = account.address,
-                    addressType = WalletAddressType.Receive.value,
+                    addressType = if (account.isChange) WalletAddressType.Change.value else WalletAddressType.Receive.value,
                     derivationPath = account.derivationPath,
                     publicKey = account.publicKeyHex,
                     isPrimary = account.isPrimary,
+                    isChange = account.isChange,
                     addressIndex = account.addressIndex,
                     label = account.derivationLabel,
                     metadataJson = account.metadataJson(),
@@ -590,9 +635,63 @@ class SatraWalletRepository(
         }
         walletDao.updateWalletSyncMetadata(
             walletId = wallet.walletId,
-            metadataJson = wallet.metadataJson.withEvmSyncResult(result),
+            metadataJson = (walletDao.getWallet(wallet.walletId)?.metadataJson ?: wallet.metadataJson)
+                .withEvmSyncResult(result),
             nowMillis = nowMillis,
         )
+    }
+
+    private fun persistUtxoSyncResult(
+        wallet: WalletRecord,
+        result: UtxoWalletSyncResult,
+    ) {
+        persistScannedUtxoAccounts(wallet.walletId, result.networkResults.flatMap { it.scannedAccounts })
+        val nowMillis = System.currentTimeMillis()
+        result.networkResults.forEach { networkResult ->
+            networkResult.balances.forEach { balance ->
+                walletDao.updateWalletAssetBalance(
+                    walletId = wallet.walletId,
+                    assetId = balance.assetId,
+                    balanceRaw = balance.balanceRaw,
+                    balanceDecimal = balance.balanceDecimal,
+                    balanceFiatValue = "0",
+                    localCurrencyCode = wallet.localCurrencyCode,
+                    metadataJson = balance.toMetadataJson(networkResult),
+                    nowMillis = nowMillis,
+                )
+            }
+            networkResult.transactions.forEach { transaction ->
+                walletDao.upsertWalletTransaction(
+                    transaction = transaction.toNewWalletTransactionRecord(wallet.localCurrencyCode),
+                    nowMillis = nowMillis,
+                )
+            }
+        }
+        walletDao.updateWalletSyncMetadata(
+            walletId = wallet.walletId,
+            metadataJson = (walletDao.getWallet(wallet.walletId)?.metadataJson ?: wallet.metadataJson)
+                .withUtxoSyncResult(result),
+            nowMillis = nowMillis,
+        )
+    }
+
+    private fun persistScannedUtxoAccounts(
+        walletId: String,
+        accounts: List<DerivedReceiveAccount>,
+    ) {
+        if (accounts.isEmpty()) return
+        val existing = walletDao.getWalletAddresses(walletId)
+        val existingKeys = existing.map { address ->
+            "${address.networkId}:${address.derivationPath}:${address.address}"
+        }.toSet()
+        val missing = accounts
+            .distinctBy { "${it.networkId}:${it.derivationPath}:${it.address}" }
+            .filterNot { account ->
+                "${account.networkId}:${account.derivationPath}:${account.address}" in existingKeys
+            }
+        if (missing.isNotEmpty()) {
+            walletDao.insertDerivedReceiveAccounts(walletId, missing)
+        }
     }
 
     private fun persistWalletPrices(
@@ -642,6 +741,7 @@ class SatraWalletRepository(
 
 data class SatraWalletDataSyncResult(
     val evmSyncResult: EvmWalletSyncResult,
+    val utxoSyncResult: UtxoWalletSyncResult,
     val priceSyncResult: SatraPriceSyncResult?,
 )
 
@@ -680,7 +780,9 @@ private fun SatraPendingSendRequest.toMetadataJson(networkId: String): String =
 private val DerivedReceiveAccount.derivationLabel: String
     get() = when (derivationName) {
         "phantom" -> "Phantom"
+        "taproot" -> "Taproot"
         "segwit" -> "SegWit"
+        "nested_segwit" -> "Nested SegWit"
         "cashaddr" -> "CashAddr"
         "legacy" -> "Legacy"
         else -> "Trust Wallet"
@@ -692,6 +794,8 @@ private fun DerivedReceiveAccount.metadataJson(): String =
         .put("accountSource", source)
         .put("derivationName", derivationName)
         .put("derivationPath", derivationPath)
+        .put("isChange", isChange)
+        .put("addressIndex", addressIndex)
         .put("keyFingerprint", keyFingerprint)
         .put("source", SatraAddressDerivation.SOURCE)
         .toString()
@@ -735,6 +839,60 @@ private fun EvmNormalizedTransaction.toNewWalletTransactionRecord(
         metadataJson = metadataJson,
     )
 
+private fun UtxoAssetBalance.toMetadataJson(networkResult: UtxoNetworkSyncResult): String =
+    JSONObject()
+        .put("syncFamily", "utxo")
+        .put("syncProvider", providerName)
+        .put("syncStatus", networkResult.balanceCompleteness.value)
+        .put("syncHistoryStatus", networkResult.historyCompleteness.value)
+        .put("syncBlockHeight", blockHeight)
+        .put("syncUpdatedAt", syncedAtMillis)
+        .put("addressesScanned", networkResult.addressesScanned)
+        .put("syncLastError", networkResult.error)
+        .put(
+            "utxos",
+            JSONArray().also { items ->
+                utxos.forEach { utxo ->
+                    items.put(
+                        JSONObject()
+                            .put("transactionHash", utxo.transactionHash)
+                            .put("outputIndex", utxo.outputIndex)
+                            .put("valueSats", utxo.valueSats)
+                            .put("height", utxo.height)
+                            .put("address", utxo.address)
+                            .put("derivationPath", utxo.derivationPath)
+                            .put("isChange", utxo.isChange),
+                    )
+                }
+            },
+        )
+        .toString()
+
+private fun UtxoNormalizedTransaction.toNewWalletTransactionRecord(
+    localCurrencyCode: String,
+): NewWalletTransactionRecord =
+    NewWalletTransactionRecord(
+        walletId = walletId,
+        assetId = assetId,
+        networkId = networkId,
+        transactionHash = transactionHash,
+        direction = direction.value,
+        status = status.value,
+        amountRaw = amountRaw,
+        amountDecimal = amountDecimal,
+        feeRaw = feeRaw,
+        feeDecimal = feeDecimal,
+        feeAssetId = feeAssetId,
+        localCurrencyCode = localCurrencyCode,
+        fromAddress = fromAddress,
+        toAddress = toAddress,
+        blockHeight = blockHeight,
+        blockHash = blockHash,
+        confirmations = confirmations,
+        timestamp = timestampMillis,
+        metadataJson = metadataJson,
+    )
+
 private fun String.withEvmSyncResult(result: EvmWalletSyncResult): String {
     val root = runCatching { JSONObject(this) }.getOrElse { JSONObject() }
     val networks = JSONArray()
@@ -754,6 +912,32 @@ private fun String.withEvmSyncResult(result: EvmWalletSyncResult): String {
     }
     root.put(
         "evmSync",
+        JSONObject()
+            .put("networkCount", result.networkResults.size)
+            .put("syncedNetworkCount", result.syncedNetworkCount)
+            .put("networks", networks),
+    )
+    return root.toString()
+}
+
+private fun String.withUtxoSyncResult(result: UtxoWalletSyncResult): String {
+    val root = runCatching { JSONObject(this) }.getOrElse { JSONObject() }
+    val networks = JSONArray()
+    result.networkResults.forEach { network ->
+        networks.put(
+            JSONObject()
+                .put("networkId", network.networkId)
+                .put("addressesScanned", network.addressesScanned)
+                .put("balanceStatus", network.balanceCompleteness.value)
+                .put("historyStatus", network.historyCompleteness.value)
+                .put("provider", network.providerName)
+                .put("latestBlockHeight", network.latestBlockHeight)
+                .put("transactionCount", network.transactions.size)
+                .put("error", network.error),
+        )
+    }
+    root.put(
+        "utxoSync",
         JSONObject()
             .put("networkCount", result.networkResults.size)
             .put("syncedNetworkCount", result.syncedNetworkCount)

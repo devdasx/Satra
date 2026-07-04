@@ -88,8 +88,8 @@ import dev.satra.wallet.data.db.WalletRecord
 import dev.satra.wallet.data.db.WalletTransactionDirection
 import dev.satra.wallet.data.db.WalletTransactionRecord
 import dev.satra.wallet.data.db.WalletTransactionStatus
-import dev.satra.wallet.data.sync.evm.EvmProviderRegistry
 import dev.satra.wallet.data.sync.evm.EvmSyncCompleteness
+import dev.satra.wallet.data.sync.utxo.UtxoElectrumProviderRegistry
 import dev.satra.wallet.settings.SatraSettings
 import dev.satra.wallet.settings.SatraThemePreference
 import kotlinx.coroutines.async
@@ -544,21 +544,26 @@ private fun SatraActivityScreen(
                 walletName = latestWallet.walletName,
                 status = status,
                 transactions = transactions,
-                syncedNetworkCount = latestWallet.evmSyncedNetworkCount(),
+                syncedNetworkCount = latestWallet.syncedNetworkCount(),
                 error = error,
             )
         }
 
         loadContent(HomeSyncStatus.Syncing)
         val syncError = runCatching {
-            val result = walletRepository.syncEvmWallet(wallet.walletId)
-            if (result.networkResults.any { network ->
+            val result = walletRepository.syncWalletData(wallet.walletId)
+            val evmPartial = result.evmSyncResult.networkResults.any { network ->
                     network.error != null ||
                         network.balanceCompleteness != EvmSyncCompleteness.Complete ||
                         network.historyCompleteness != EvmSyncCompleteness.Complete
                 }
-            ) {
-                "Partial EVM sync"
+            val utxoPartial = result.utxoSyncResult.networkResults.any { network ->
+                network.error != null ||
+                    network.balanceCompleteness != EvmSyncCompleteness.Complete ||
+                    network.historyCompleteness != EvmSyncCompleteness.Complete
+            }
+            if (evmPartial || utxoPartial) {
+                "Partial activity sync"
             } else {
                 null
             }
@@ -1045,7 +1050,8 @@ private fun ActivitySummaryCard(
                 value = stringResource(
                     R.string.activity_summary_networks_value,
                     syncedNetworkCount,
-                    EvmProviderRegistry.supportedNetworkIds.size,
+                    SupportedAssetCatalog.networks.count { it.family == "evm" } +
+                        UtxoElectrumProviderRegistry.supportedNetworkIds.size,
                 ),
             )
             ActivitySummaryRow(
@@ -2253,7 +2259,8 @@ private fun List<WalletTransactionRecord>.toActivityRows(
 ): List<ActivityTransactionRow> {
     val catalogAssetsById = SupportedAssetCatalog.assets.associateBy { it.assetId }
     val networksById = SupportedAssetCatalog.networks.associateBy { it.networkId }
-    return filter { transaction -> transaction.networkId in EvmProviderRegistry.supportedNetworkIds }
+    val supportedNetworkIds = SupportedAssetCatalog.networks.map { it.networkId }.toSet()
+    return filter { transaction -> transaction.networkId in supportedNetworkIds }
         .mapNotNull { transaction ->
             val asset = catalogAssetsById[transaction.assetId] ?: return@mapNotNull null
             val network = networksById[transaction.networkId] ?: return@mapNotNull null
@@ -2454,11 +2461,11 @@ private fun WalletTransactionRecord.activityCounterparty(resources: Resources): 
         }
     } ?: resources.getString(R.string.activity_counterparty_unavailable)
 
-private fun WalletRecord.evmSyncedNetworkCount(): Int =
+private fun WalletRecord.syncedNetworkCount(): Int =
     runCatching {
-        org.json.JSONObject(metadataJson)
-            .optJSONObject("evmSync")
-            ?.optInt("syncedNetworkCount")
+        val root = org.json.JSONObject(metadataJson)
+        (root.optJSONObject("evmSync")?.optInt("syncedNetworkCount") ?: 0) +
+            (root.optJSONObject("utxoSync")?.optInt("syncedNetworkCount") ?: 0)
     }.getOrNull() ?: 0
 
 private fun formatActivityTime(
