@@ -2444,8 +2444,6 @@ private fun HomeBalanceCard(
     var selectedPointIndex by remember(chartData.points, balancesHidden) {
         mutableStateOf((chartData.points.size - 1).coerceAtLeast(0))
     }
-    val selectedPoint = chartData.points.getOrNull(selectedPointIndex)
-        ?: chartData.points.lastOrNull()
     val chartCanDraw = chartData.hasDrawablePoints && chartData.hasActivity
     val cardColor = MaterialTheme.colorScheme.inverseSurface
     val contentColor = MaterialTheme.colorScheme.inverseOnSurface
@@ -2469,10 +2467,7 @@ private fun HomeBalanceCard(
     val displayBalance = if (balancesHidden) {
         stringResource(R.string.home_balance_hidden_value)
     } else {
-        selectedPoint
-            ?.takeIf { chartCanDraw }
-            ?.let { point -> formatFiat(point.value.toPlainString(), currencyCode) }
-            ?: totalBalance
+        totalBalance
     }
     val displayDelta = if (balancesHidden) {
         stringResource(R.string.home_balance_hidden_delta)
