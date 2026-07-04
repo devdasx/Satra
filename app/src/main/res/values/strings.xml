@@ -104,6 +104,10 @@
     <string name="wallet_setup_screen_biometrics">Biometrics</string>
     <string name="wallet_setup_screen_success">Success</string>
     <string name="wallet_setup_save_failed">Wallet setup could not be saved. Please try again.</string>
+    <string name="wallet_setup_complete_created_title">Wallet created</string>
+    <string name="wallet_setup_complete_imported_title">Wallet imported</string>
+    <string name="wallet_setup_complete_body">Satra saved this wallet on your device and started syncing balances and history from public providers.</string>
+    <string name="wallet_setup_complete_action">Continue</string>
     <string name="wallet_setup_action_continue">Continue</string>
     <string name="wallet_setup_action_cancel">Cancel</string>
     <string name="wallet_setup_action_set_passcode">Set passcode</string>
@@ -342,6 +346,7 @@
     <string name="activity_direction_sent">Sent</string>
     <string name="activity_direction_self">Self transfer</string>
     <string name="activity_direction_transaction">Transaction</string>
+    <string name="activity_transaction_subtitle_on_network">%1$s on %2$s · %3$s</string>
     <string name="activity_status_success">Success</string>
     <string name="activity_status_pending">Pending</string>
     <string name="activity_status_canceled">Canceled</string>

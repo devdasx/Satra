@@ -29,16 +29,29 @@ internal fun SatraAssetNetworkIcon(
     @DrawableRes networkIconRes: Int,
     modifier: Modifier = Modifier,
 ) {
+    SatraBadgedIcon(
+        primaryIconRes = assetIconRes,
+        badgeIconRes = networkIconRes,
+        modifier = modifier,
+    )
+}
+
+@Composable
+internal fun SatraBadgedIcon(
+    @DrawableRes primaryIconRes: Int,
+    @DrawableRes badgeIconRes: Int,
+    modifier: Modifier = Modifier,
+) {
     Box(modifier = modifier.size(48.dp)) {
         Image(
-            painter = painterResource(assetIconRes),
+            painter = painterResource(primaryIconRes),
             contentDescription = null,
             modifier = Modifier
                 .size(42.dp)
                 .align(Alignment.CenterStart),
         )
         Image(
-            painter = painterResource(networkIconRes),
+            painter = painterResource(badgeIconRes),
             contentDescription = null,
             modifier = Modifier
                 .size(18.dp)

@@ -118,6 +118,20 @@ class EvmJsonRpcClient(
         }
     }
 
+    suspend fun blockByNumber(blockNumber: Long): EvmRpcCallResult<EvmBlockHeader> {
+        val params = JSONArray()
+            .put("0x${blockNumber.toString(16)}")
+            .put(false)
+        return callVerified("eth_getBlockByNumber", params) { result ->
+            val block = result as JSONObject
+            EvmBlockHeader(
+                blockNumber = EvmAbi.hexToLong(block.optString("number", "0x${blockNumber.toString(16)}")),
+                blockHash = block.optString("hash").takeIf(String::isNotBlank),
+                timestampMillis = EvmAbi.hexToLong(block.optString("timestamp", "0x0")) * 1_000L,
+            )
+        }
+    }
+
     private suspend fun <T> callVerified(
         method: String,
         params: JSONArray,

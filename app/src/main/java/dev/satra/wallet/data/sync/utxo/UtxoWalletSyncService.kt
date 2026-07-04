@@ -102,7 +102,6 @@ class UtxoWalletSyncService(
                     latestBlockHeight = latestBlockHeight,
                     scripts = scan.scripts,
                     historiesByScriptHash = scan.historiesByScriptHash,
-                    nowMillis = nowMillis,
                 )
                 val utxos = scan.unspentByScriptHash.values.flatten()
                 val balanceRaw = utxos.sumOf { it.valueSats }.coerceAtLeast(0L)
@@ -264,7 +263,6 @@ class UtxoWalletSyncService(
         latestBlockHeight: Long,
         scripts: List<UtxoWatchedScript>,
         historiesByScriptHash: Map<String, List<UtxoHistoryEntry>>,
-        nowMillis: Long,
     ): List<UtxoNormalizedTransaction> {
         val scriptByHex = scripts.associateBy { it.scriptPubKeyHex }
         val histories = historiesByScriptHash.values.flatten()
@@ -275,6 +273,10 @@ class UtxoWalletSyncService(
         if (transactionHashes.isEmpty()) return emptyList()
 
         val transactions = fetchTransactions(provider, transactionHashes)
+        val blockHeadersByHeight = fetchBlockHeaders(
+            provider = provider,
+            heights = heightByTransactionHash.values.filter { height -> height > 0L },
+        )
         val parsedTransactions = transactions.mapValues { (_, tx) ->
             runCatching { UtxoTransactionParser.parse(tx.hex) }.getOrNull()
         }.filterValues { it != null }.mapValues { checkNotNull(it.value) }
@@ -317,6 +319,7 @@ class UtxoWalletSyncService(
                 WalletTransactionDirection.Unknown -> maxOf(receivedSats, spentSats)
             }.coerceAtLeast(0L)
             val height = heightByTransactionHash[txHash]?.takeIf { it > 0L }
+            val blockHeader = height?.let(blockHeadersByHeight::get)
             val confirmations = verbose?.confirmations
                 ?: height?.let { (latestBlockHeight - it + 1L).coerceAtLeast(0L).toInt() }
                 ?: 0
@@ -361,9 +364,9 @@ class UtxoWalletSyncService(
                 fromAddress = fromAddress,
                 toAddress = toAddress,
                 blockHeight = height,
-                blockHash = verbose?.blockHash,
+                blockHash = verbose?.blockHash ?: blockHeader?.blockHash,
                 confirmations = confirmations,
-                timestampMillis = verbose?.timestampMillis ?: nowMillis,
+                timestampMillis = verbose?.timestampMillis ?: blockHeader?.timestampMillis ?: 0L,
                 providerName = provider.name,
                 metadataJson = JSONObject()
                     .put("syncFamily", "utxo")
@@ -375,6 +378,18 @@ class UtxoWalletSyncService(
                     .toString(),
             )
         }.sortedByDescending { it.timestampMillis }
+    }
+
+    private suspend fun fetchBlockHeaders(
+        provider: UtxoElectrumProvider,
+        heights: List<Long>,
+    ): Map<Long, UtxoBlockHeader> = coroutineScope {
+        heights
+            .distinct()
+            .chunked(maxBatchSize)
+            .map { chunk -> async { electrumClient.getBlockHeaders(provider, chunk) } }
+            .awaitAll()
+            .fold(mutableMapOf()) { acc, next -> acc.apply { putAll(next) } }
     }
 
     private suspend fun fetchTransactions(

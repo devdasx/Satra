@@ -571,7 +571,7 @@ private suspend fun syncAptosHistory(
                 supportedAssetsByType = supportedAssetsByType,
                 nativeAsset = nativeAsset,
                 providerName = result.provider.name,
-                fallbackTimestampMillis = nowMillis,
+                fallbackTimestampMillis = 0L,
             )
         }
         .distinctBy { it.transactionHash to it.assetId to it.metadataJson }
@@ -1147,7 +1147,7 @@ private suspend fun syncRippleHistory(
                 tokensByContract = tokensByContract,
                 latestLedger = latestLedger,
                 providerName = response.provider.name,
-                fallbackTimestampMillis = nowMillis,
+                fallbackTimestampMillis = 0L,
             )
         }
     return AccountChainHistoryResult(
@@ -1403,7 +1403,7 @@ private suspend fun syncSuiHistory(
                 asset = asset,
                 latestLedger = latestLedger,
                 providerName = provider.name,
-                fallbackTimestampMillis = nowMillis,
+                fallbackTimestampMillis = 0L,
             )
         }
         .sortedByDescending { it.timestampMillis }
@@ -1769,7 +1769,7 @@ private suspend fun syncKavaHistory(
                 address = address,
                 assetsByDenom = assetsByDenom,
                 providerName = provider.name,
-                fallbackTimestampMillis = nowMillis,
+                fallbackTimestampMillis = 0L,
             )
         }
         .sortedByDescending { it.timestampMillis }

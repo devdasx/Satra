@@ -33,6 +33,9 @@ data class HomeBalanceChartData(
 ) {
     val hasActivity: Boolean
         get() = transactionCount > 0
+
+    val hasDrawablePoints: Boolean
+        get() = points.isNotEmpty()
 }
 
 fun buildHomeBalanceChartData(

@@ -123,3 +123,9 @@ data class UtxoVerboseTransaction(
     val confirmations: Int?,
     val timestampMillis: Long?,
 )
+
+data class UtxoBlockHeader(
+    val height: Long,
+    val blockHash: String?,
+    val timestampMillis: Long,
+)

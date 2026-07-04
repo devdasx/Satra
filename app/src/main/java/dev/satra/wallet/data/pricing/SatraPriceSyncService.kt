@@ -141,13 +141,14 @@ class SatraPriceSyncService(
         ).takeIf { it.prices.isNotEmpty() || it.marketData.isNotEmpty() }
             ?.let { onPartialResult(it) }
 
-        val exchangeFallbackQuotes = (supportedSymbols - coinGeckoMarketQuotes.keys)
+        val exchangeFallbackMarketQuotes = (supportedSymbols - coinGeckoMarketQuotes.keys)
             .map { symbol ->
                 async(dispatcher) {
+                    val assetName = assets.firstOrNull { asset -> asset.priceSymbol == symbol }?.name ?: symbol
                     val quote = listOf(
-                        { marketDataClient.getBinanceUsdtPrice(symbol) },
-                        { marketDataClient.getOkxUsdtPrice(symbol) },
-                        { marketDataClient.getKuCoinUsdtPrice(symbol) },
+                        { marketDataClient.getBinanceUsdtMarketQuote(symbol, assetName) },
+                        { marketDataClient.getOkxUsdtMarketQuote(symbol, assetName) },
+                        { marketDataClient.getKuCoinUsdtMarketQuote(symbol, assetName) },
                     ).firstNotNullOfOrNull { provider ->
                         runCatching { provider() }.getOrNull()
                     }
@@ -159,8 +160,8 @@ class SatraPriceSyncService(
                             fxQuote = fxQuote,
                             coinbaseQuotes = emptyMap(),
                             coinGeckoQuotes = emptyMap(),
-                            exchangeFallbackQuotes = mapOf(symbol to quote),
-                            marketQuotesBySymbol = mapOf(symbol to quote.toMarketQuote(symbol, assets)),
+                            exchangeFallbackQuotes = mapOf(symbol to quote.toPriceQuote()),
+                            marketQuotesBySymbol = mapOf(symbol to quote),
                             nowMillis = nowMillis,
                         ).takeIf { it.prices.isNotEmpty() || it.marketData.isNotEmpty() }
                             ?.let { onPartialResult(it) }
@@ -171,6 +172,8 @@ class SatraPriceSyncService(
             .awaitAll()
             .mapNotNull { (symbol, quote) -> quote?.let { symbol to it } }
             .toMap()
+        val exchangeFallbackQuotes = exchangeFallbackMarketQuotes
+            .mapValues { (_, quote) -> quote.toPriceQuote() }
 
         buildPriceSyncResult(
             normalizedCurrency = normalizedCurrency,
@@ -181,7 +184,7 @@ class SatraPriceSyncService(
             coinGeckoQuotes = coinGeckoQuotes,
             exchangeFallbackQuotes = exchangeFallbackQuotes,
             marketQuotesBySymbol = supportedSymbols.associateWith { symbol ->
-                coinGeckoMarketQuotes[symbol] ?: exchangeFallbackQuotes[symbol]?.toMarketQuote(symbol, assets)
+                coinGeckoMarketQuotes[symbol] ?: exchangeFallbackMarketQuotes[symbol]
             },
             nowMillis = nowMillis,
         ).also { onPartialResult(it) }
@@ -214,6 +217,8 @@ class SatraPriceSyncService(
             val normalizedSymbol = symbol.uppercase()
             val normalizedCurrency = localCurrencyCode.uppercase()
             val coinGeckoId = SatraAssetPriceCatalog.coinGeckoIdsBySymbol[normalizedSymbol]
+            val assetName = assets.firstOrNull { asset -> asset.priceSymbol == normalizedSymbol }?.name
+                ?: normalizedSymbol
             val fxQuote = runCatching { marketDataClient.getUsdFxRate(normalizedCurrency) }
                 .getOrDefault(
                     FxRateQuote(
@@ -232,12 +237,22 @@ class SatraPriceSyncService(
                 }.getOrNull()
             } else {
                 null
+            } ?: if (coinGeckoId != null) {
+                runCatching {
+                    marketDataClient.getCoinGeckoUsdMarketChart(
+                        assetSymbol = normalizedSymbol,
+                        coinGeckoId = coinGeckoId,
+                        assetName = assetName,
+                    )
+                }.getOrNull()
+            } else {
+                null
             } ?: listOf(
-                { marketDataClient.getBinanceUsdtPrice(normalizedSymbol) },
-                { marketDataClient.getOkxUsdtPrice(normalizedSymbol) },
-                { marketDataClient.getKuCoinUsdtPrice(normalizedSymbol) },
+                { marketDataClient.getBinanceUsdtMarketQuote(normalizedSymbol, assetName) },
+                { marketDataClient.getOkxUsdtMarketQuote(normalizedSymbol, assetName) },
+                { marketDataClient.getKuCoinUsdtMarketQuote(normalizedSymbol, assetName) },
             ).firstNotNullOfOrNull { provider ->
-                runCatching { provider().toMarketQuote(normalizedSymbol, assets) }.getOrNull()
+                runCatching { provider() }.getOrNull()
             }
 
             quote?.toSatraAssetMarketData(
@@ -307,20 +322,14 @@ private fun buildPriceSyncResult(
     )
 }
 
-private fun CryptoPriceQuote.toMarketQuote(
-    symbol: String,
-    assets: List<SupportedAsset>,
-): AssetMarketQuote {
-    val assetName = assets.firstOrNull { asset -> asset.priceSymbol == symbol }?.name ?: symbol
-    return AssetMarketQuote(
-        assetSymbol = symbol,
-        name = assetName,
+private fun AssetMarketQuote.toPriceQuote(): CryptoPriceQuote =
+    CryptoPriceQuote(
+        assetSymbol = assetSymbol,
         quoteCurrency = quoteCurrency,
         price = price,
         provider = provider,
         providerAssetId = providerAssetId,
     )
-}
 
 private fun AssetMarketQuote.toSatraAssetMarketData(
     symbol: String,
@@ -333,7 +342,8 @@ private fun AssetMarketQuote.toSatraAssetMarketData(
         name = name,
         coinGeckoId = providerAssetId?.takeIf {
             provider == SatraMarketDataClient.COINGECKO_MARKETS_PROVIDER ||
-                provider == SatraMarketDataClient.COINGECKO_DETAIL_PROVIDER
+                provider == SatraMarketDataClient.COINGECKO_DETAIL_PROVIDER ||
+                provider == SatraMarketDataClient.COINGECKO_MARKET_CHART_PROVIDER
         },
         localCurrencyCode = localCurrencyCode,
         usdPrice = price,

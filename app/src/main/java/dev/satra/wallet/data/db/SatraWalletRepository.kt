@@ -828,7 +828,7 @@ class SatraWalletRepository(
                 localCurrencyCode = currencyCode,
             )
             detail?.let { marketData ->
-                walletDao.upsertAssetMarketData(marketData.toNewAssetMarketDataRecord())
+                upsertMergedAssetMarketData(marketData.toNewAssetMarketDataRecord())
             }
             walletDao.getAssetMarketData(symbol)
         }
@@ -1306,8 +1306,15 @@ class SatraWalletRepository(
 
     private fun persistMarketData(marketData: List<SatraAssetMarketData>) {
         marketData.forEach { item ->
-            walletDao.upsertAssetMarketData(item.toNewAssetMarketDataRecord())
+            upsertMergedAssetMarketData(item.toNewAssetMarketDataRecord())
         }
+    }
+
+    private fun upsertMergedAssetMarketData(marketData: NewAssetMarketDataRecord) {
+        val existing = walletDao.getAssetMarketData(marketData.symbol)
+        walletDao.upsertAssetMarketData(
+            existing?.let { marketData.mergedWithExisting(it) } ?: marketData,
+        )
     }
 }
 
@@ -1364,6 +1371,56 @@ private fun SatraAssetMarketData.toNewAssetMarketDataRecord(): NewAssetMarketDat
             .put("providerAssetId", coinGeckoId)
             .toString(),
     )
+
+private fun NewAssetMarketDataRecord.mergedWithExisting(
+    existing: AssetMarketDataRecord,
+): NewAssetMarketDataRecord {
+    val currencyMatches = localCurrencyCode == existing.localCurrencyCode
+    val usdToLocalRate = priceLocal.toBigDecimalOrZero()
+        .divide(
+            priceUsd.toBigDecimalOrZero().takeIf { it > BigDecimal.ZERO } ?: BigDecimal.ONE,
+            18,
+            RoundingMode.HALF_UP,
+        )
+
+    fun mergeText(newValue: String?, oldValue: String?): String? =
+        newValue?.takeIf(String::isNotBlank) ?: oldValue?.takeIf(String::isNotBlank)
+
+    fun mergeJsonArray(newValue: String, oldValue: String): String =
+        newValue.takeUnless { value -> value.isBlank() || value == "[]" }
+            ?: oldValue.takeUnless { value -> value.isBlank() || value == "[]" }
+            ?: "[]"
+
+    fun localFromUsd(usdValue: String?): String? =
+        usdValue
+            ?.toBigDecimalOrZero()
+            ?.takeIf { it > BigDecimal.ZERO }
+            ?.multiply(usdToLocalRate)
+            ?.stripTrailingZeros()
+            ?.toPlainString()
+
+    val mergedMarketCapUsd = marketCapUsd ?: existing.marketCapUsd
+    val mergedVolumeUsd = volume24hUsd ?: existing.volume24hUsd
+
+    return copy(
+        name = name.ifBlank { existing.name },
+        coinGeckoId = coinGeckoId ?: existing.coinGeckoId,
+        marketCapUsd = mergedMarketCapUsd,
+        marketCapLocal = marketCapLocal
+            ?: existing.marketCapLocal?.takeIf { currencyMatches }
+            ?: localFromUsd(mergedMarketCapUsd),
+        volume24hUsd = mergedVolumeUsd,
+        volume24hLocal = volume24hLocal
+            ?: existing.volume24hLocal?.takeIf { currencyMatches }
+            ?: localFromUsd(mergedVolumeUsd),
+        high24hUsd = high24hUsd ?: existing.high24hUsd,
+        low24hUsd = low24hUsd ?: existing.low24hUsd,
+        priceChange24hPercent = priceChange24hPercent ?: existing.priceChange24hPercent,
+        description = mergeText(description, existing.description),
+        homepageUrl = mergeText(homepageUrl, existing.homepageUrl),
+        chart7dJson = mergeJsonArray(chart7dJson, existing.chart7dJson),
+    )
+}
 
 private fun SatraPendingSendRequest.toMetadataJson(networkId: String): String =
     JSONObject()

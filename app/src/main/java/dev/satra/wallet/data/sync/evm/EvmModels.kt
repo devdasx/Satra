@@ -32,6 +32,12 @@ data class EvmRpcCallResult<T>(
     val blockNumber: Long? = null,
 )
 
+data class EvmBlockHeader(
+    val blockNumber: Long,
+    val blockHash: String?,
+    val timestampMillis: Long,
+)
+
 enum class EvmSyncCompleteness(val value: String) {
     Complete("complete"),
     Partial("partial"),

@@ -10,6 +10,7 @@ import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.net.InetSocketAddress
 import java.net.Socket
+import java.security.MessageDigest
 import java.util.concurrent.atomic.AtomicInteger
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLSocket
@@ -185,6 +186,31 @@ class UtxoElectrumClient(
             verbose
         }
 
+    suspend fun getBlockHeaders(
+        provider: UtxoElectrumProvider,
+        heights: List<Long>,
+    ): Map<Long, UtxoBlockHeader> =
+        withContext(Dispatchers.IO) {
+            val distinctHeights = heights.distinct().filter { it > 0L }
+            if (distinctHeights.isEmpty()) return@withContext emptyMap()
+            val responses = callBatchResponses(
+                provider = provider,
+                method = "blockchain.block.header",
+                params = distinctHeights.map { listOf(it) },
+            )
+            responses.mapIndexedNotNull { index, response ->
+                response.error?.let { return@mapIndexedNotNull null }
+                val headerHex = response.result as? String ?: return@mapIndexedNotNull null
+                val timestampSeconds = headerTimestampSeconds(headerHex) ?: return@mapIndexedNotNull null
+                val height = distinctHeights[index]
+                height to UtxoBlockHeader(
+                    height = height,
+                    blockHash = blockHashFromHeaderHex(headerHex),
+                    timestampMillis = timestampSeconds * 1_000L,
+                )
+            }.toMap()
+        }
+
     private fun callBatchResponses(
         provider: UtxoElectrumProvider,
         method: String,
@@ -269,6 +295,7 @@ class UtxoElectrumClient(
 
     private companion object {
         val NextRequestId = AtomicInteger(0)
+        val Sha256 = MessageDigest.getInstance("SHA-256")
         val TrustAllSslContext: SSLContext = SSLContext.getInstance("TLS").apply {
             init(
                 null,
@@ -287,6 +314,32 @@ class UtxoElectrumClient(
                 ),
                 java.security.SecureRandom(),
             )
+        }
+
+        fun headerTimestampSeconds(headerHex: String): Long? {
+            val header = headerHex.hexToBytesOrNull()?.takeIf { it.size >= 80 } ?: return null
+            return ((header[68].toLong() and 0xffL) or
+                ((header[69].toLong() and 0xffL) shl 8) or
+                ((header[70].toLong() and 0xffL) shl 16) or
+                ((header[71].toLong() and 0xffL) shl 24))
+                .takeIf { it > 0L }
+        }
+
+        fun blockHashFromHeaderHex(headerHex: String): String? {
+            val header = headerHex.hexToBytesOrNull()?.takeIf { it.size >= 80 } ?: return null
+            val firstHash = synchronized(Sha256) { Sha256.digest(header) }
+            val secondHash = synchronized(Sha256) { Sha256.digest(firstHash) }
+            return secondHash.reversedArray().joinToString("") { byte -> "%02x".format(byte) }
+        }
+
+        fun String.hexToBytesOrNull(): ByteArray? {
+            val normalized = trim()
+            if (normalized.length % 2 != 0) return null
+            return runCatching {
+                ByteArray(normalized.length / 2) { index ->
+                    normalized.substring(index * 2, index * 2 + 2).toInt(16).toByte()
+                }
+            }.getOrNull()
         }
     }
 }

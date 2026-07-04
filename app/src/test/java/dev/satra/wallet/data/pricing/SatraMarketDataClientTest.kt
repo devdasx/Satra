@@ -3,6 +3,7 @@ package dev.satra.wallet.data.pricing
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.math.BigDecimal
+import java.math.RoundingMode
 
 class SatraMarketDataClientTest {
     @Test
@@ -208,6 +209,100 @@ class SatraMarketDataClientTest {
         assertEquals(BigDecimal("61234.56"), client.getBinanceUsdtPrice("btc").price)
         assertEquals(BigDecimal("3000.12"), client.getOkxUsdtPrice("eth").price)
         assertEquals(BigDecimal("150.5"), client.getKuCoinUsdtPrice("sol").price)
+    }
+
+    @Test
+    fun coinGeckoMarketChartParsesPriceHistoryFallback() {
+        val transport = RecordingTransport(
+            "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=7&precision=full" to """
+                {"prices":[[1000,60000.25],[2000,61234.56]]}
+            """.trimIndent(),
+        )
+        val client = SatraMarketDataClient(transport)
+
+        val quote = client.getCoinGeckoUsdMarketChart("btc", "bitcoin", "Bitcoin")
+
+        assertEquals("BTC", quote.assetSymbol)
+        assertEquals("Bitcoin", quote.name)
+        assertEquals(BigDecimal("61234.56"), quote.price)
+        assertEquals("[60000.25,61234.56]", quote.chart7dJson)
+        assertEquals(SatraMarketDataClient.COINGECKO_MARKET_CHART_PROVIDER, quote.provider)
+    }
+
+    @Test
+    fun binanceMarketFallbackParsesStatsAndKlines() {
+        val transport = RecordingTransport(
+            "https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT" to """
+                {
+                    "symbol":"BTCUSDT",
+                    "lastPrice":"61234.56",
+                    "quoteVolume":"25000000000",
+                    "highPrice":"62000",
+                    "lowPrice":"60000",
+                    "priceChangePercent":"1.25"
+                }
+            """.trimIndent(),
+            "https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1h&limit=168" to """
+                [[1,"60000","61000","59000","60500"],[2,"60500","61500","60000","61234.56"]]
+            """.trimIndent(),
+        )
+        val client = SatraMarketDataClient(transport)
+
+        val quote = client.getBinanceUsdtMarketQuote("btc", "Bitcoin")
+
+        assertEquals(BigDecimal("61234.56"), quote.price)
+        assertEquals(BigDecimal("25000000000"), quote.volume24h)
+        assertEquals(BigDecimal("62000"), quote.high24h)
+        assertEquals(BigDecimal("60000"), quote.low24h)
+        assertEquals(BigDecimal("1.25"), quote.priceChange24hPercent)
+        assertEquals("[60500,61234.56]", quote.chart7dJson)
+        assertEquals(SatraMarketDataClient.BINANCE_MARKET_PROVIDER, quote.provider)
+    }
+
+    @Test
+    fun okxMarketFallbackParsesStatsAndCandles() {
+        val transport = RecordingTransport(
+            "https://www.okx.com/api/v5/market/ticker?instId=ETH-USDT" to """
+                {"code":"0","data":[{"last":"3000","open24h":"2900","volCcy24h":"10000000","high24h":"3050","low24h":"2850"}]}
+            """.trimIndent(),
+            "https://www.okx.com/api/v5/market/candles?instId=ETH-USDT&bar=1H&limit=168" to """
+                {"code":"0","data":[["2","0","0","0","3000"],["1","0","0","0","2950"]]}
+            """.trimIndent(),
+        )
+        val client = SatraMarketDataClient(transport)
+
+        val quote = client.getOkxUsdtMarketQuote("eth", "Ether")
+
+        assertEquals(BigDecimal("3000"), quote.price)
+        assertEquals(BigDecimal("10000000"), quote.volume24h)
+        assertEquals(BigDecimal("3050"), quote.high24h)
+        assertEquals(BigDecimal("2850"), quote.low24h)
+        assertEquals(BigDecimal("3.45"), quote.priceChange24hPercent?.setScale(2, RoundingMode.HALF_UP))
+        assertEquals("[2950,3000]", quote.chart7dJson)
+        assertEquals(SatraMarketDataClient.OKX_MARKET_PROVIDER, quote.provider)
+    }
+
+    @Test
+    fun kuCoinMarketFallbackParsesStatsAndCandles() {
+        val transport = RecordingTransport(
+            "https://api.kucoin.com/api/v1/market/stats?symbol=SOL-USDT" to """
+                {"code":"200000","data":{"last":"150.5","volValue":"5000000","high":"155","low":"145","changeRate":"0.02"}}
+            """.trimIndent(),
+            "https://api.kucoin.com/api/v1/market/candles?type=1hour&symbol=SOL-USDT&startAt=995200&endAt=1600000" to """
+                {"code":"200000","data":[["2","0","151"],["1","0","150.5"]]}
+            """.trimIndent(),
+        )
+        val client = SatraMarketDataClient(transport)
+
+        val quote = client.getKuCoinUsdtMarketQuote("sol", "Solana", nowSeconds = 1_600_000)
+
+        assertEquals(BigDecimal("150.5"), quote.price)
+        assertEquals(BigDecimal("5000000"), quote.volume24h)
+        assertEquals(BigDecimal("155"), quote.high24h)
+        assertEquals(BigDecimal("145"), quote.low24h)
+        assertEquals(0, BigDecimal("2.00").compareTo(quote.priceChange24hPercent))
+        assertEquals("[150.5,151]", quote.chart7dJson)
+        assertEquals(SatraMarketDataClient.KUCOIN_MARKET_PROVIDER, quote.provider)
     }
 
     @Test

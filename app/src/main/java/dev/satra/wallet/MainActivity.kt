@@ -48,7 +48,6 @@ import dev.satra.wallet.ui.setup.ImportWatchOnlyAddressScreen
 import dev.satra.wallet.ui.setup.SetupBiometricsScreen
 import dev.satra.wallet.ui.setup.SetupConfirmPasscodeScreen
 import dev.satra.wallet.ui.setup.SetupPasscodeScreen
-import dev.satra.wallet.ui.setup.SetupSuccessScreen
 import dev.satra.wallet.ui.setup.WalletImportMethod
 import dev.satra.wallet.ui.setup.WalletImportNetwork
 import dev.satra.wallet.ui.setup.WalletSetupFlow
@@ -218,6 +217,16 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
+            fun finishWalletSetup(flow: WalletSetupFlow) {
+                resetPendingWalletSetup()
+                navController.navigate(SatraRoute.main(flow)) {
+                    popUpTo(SatraRoute.ONBOARDING) {
+                        inclusive = true
+                    }
+                    launchSingleTop = true
+                }
+            }
+
             SatraTheme(darkTheme = darkTheme) {
                 NavHost(
                     navController = navController,
@@ -250,7 +259,7 @@ class MainActivity : ComponentActivity() {
                     composable(SatraRoute.STARTUP) {
                         LaunchedEffect(walletRepository) {
                             val destination = if (walletRepository.getPrimaryWallet() != null) {
-                                SatraRoute.MAIN
+                                SatraRoute.main()
                             } else {
                                 SatraRoute.ONBOARDING
                             }
@@ -533,7 +542,7 @@ class MainActivity : ComponentActivity() {
                             onSkip = {
                                 pendingSetupPasscode = ""
                                 if (persistPendingWalletSetup(flow, biometricsEnabled = false)) {
-                                    navController.navigate(SatraRoute.setupSuccess(flow))
+                                    finishWalletSetup(flow)
                                 }
                             },
                         )
@@ -593,52 +602,37 @@ class MainActivity : ComponentActivity() {
                             },
                             onContinue = { biometricsEnabled ->
                                 if (persistPendingWalletSetup(flow, biometricsEnabled)) {
-                                    navController.navigate(SatraRoute.setupSuccess(flow))
+                                    finishWalletSetup(flow)
                                 }
                             },
                             onSkip = {
                                 if (persistPendingWalletSetup(flow, biometricsEnabled = false)) {
-                                    navController.navigate(SatraRoute.setupSuccess(flow))
+                                    finishWalletSetup(flow)
                                 }
                             },
                         )
                     }
 
                     composable(
-                        route = SatraRoute.SETUP_SUCCESS,
+                        route = SatraRoute.MAIN,
                         arguments = listOf(
-                            navArgument(SatraRoute.ARG_FLOW) {
+                            navArgument(SatraRoute.ARG_SETUP_RESULT) {
                                 type = NavType.StringType
+                                nullable = true
+                                defaultValue = null
                             },
                         ),
                     ) { backStackEntry ->
-                        val flow = WalletSetupFlow.fromRoute(
-                            backStackEntry.arguments?.getString(SatraRoute.ARG_FLOW),
-                        )
-
-                        SetupSuccessScreen(
-                            flow = flow,
-                            settings = settings,
-                            onBack = {
-                                navController.popBackStack()
-                            },
-                            onOpenWallet = {
-                                resetPendingWalletSetup()
-                                navController.navigate(SatraRoute.MAIN) {
-                                    popUpTo(SatraRoute.ONBOARDING) {
-                                        inclusive = true
-                                    }
-                                    launchSingleTop = true
-                                }
-                            },
-                        )
-                    }
-
-                    composable(SatraRoute.MAIN) {
+                        val setupResultSegment = backStackEntry.arguments
+                            ?.getString(SatraRoute.ARG_SETUP_RESULT)
+                        val setupCompletionFlow = setupResultSegment
+                            ?.takeIf(String::isNotBlank)
+                            ?.let(WalletSetupFlow::fromRoute)
                         SatraMainScreen(
                             walletRepository = walletRepository,
                             settings = settings,
                             appVersion = BuildConfig.VERSION_NAME,
+                            setupCompletionFlow = setupCompletionFlow,
                             onThemePreferenceChange = { preference ->
                                 themePreference = preference
                                 settingsStore.edit()
@@ -750,12 +744,14 @@ private object SatraRoute {
     const val ARG_METHOD = "method"
     const val ARG_NETWORK = "network"
     const val ARG_SCAN_PURPOSE = "scanPurpose"
+    const val ARG_SETUP_RESULT = "setupResult"
     const val SCAN_RESULT_VALUE = "scan_result_value"
     const val SCAN_RESULT_KIND = "scan_result_kind"
     const val SCAN_RESULT_AMOUNT = "scan_result_amount"
     const val SCAN_RESULT_SCHEME = "scan_result_scheme"
     const val STARTUP = "startup"
-    const val MAIN = "main"
+    const val MAIN_BASE = "main"
+    const val MAIN = "$MAIN_BASE?$ARG_SETUP_RESULT={$ARG_SETUP_RESULT}"
     const val ONBOARDING = "onboarding"
     const val CREATE_WALLET_BACKUP = "create-wallet/backup"
     const val CREATE_WALLET_PHRASE = "create-wallet/recovery-phrase"
@@ -767,7 +763,9 @@ private object SatraRoute {
     const val SETUP_PASSCODE = "setup/{$ARG_FLOW}/passcode"
     const val SETUP_CONFIRM_PASSCODE = "setup/{$ARG_FLOW}/confirm-passcode"
     const val SETUP_BIOMETRICS = "setup/{$ARG_FLOW}/biometrics"
-    const val SETUP_SUCCESS = "setup/{$ARG_FLOW}/success"
+
+    fun main(flow: WalletSetupFlow? = null): String =
+        flow?.let { "$MAIN_BASE?$ARG_SETUP_RESULT=${it.routeSegment}" } ?: MAIN_BASE
 
     fun importChain(method: WalletImportMethod): String =
         "import-wallet/${method.routeSegment}/chain"
@@ -788,9 +786,6 @@ private object SatraRoute {
 
     fun setupBiometrics(flow: WalletSetupFlow): String =
         "setup/${flow.routeSegment}/biometrics"
-
-    fun setupSuccess(flow: WalletSetupFlow): String =
-        "setup/${flow.routeSegment}/success"
 }
 
 private fun readThemePreference(settingsStore: SharedPreferences): SatraThemePreference {

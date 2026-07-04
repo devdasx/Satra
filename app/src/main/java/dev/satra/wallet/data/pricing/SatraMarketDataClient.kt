@@ -219,6 +219,143 @@ class SatraMarketDataClient(
         )
     }
 
+    fun getCoinGeckoUsdMarketChart(
+        assetSymbol: String,
+        coinGeckoId: String,
+        assetName: String = assetSymbol,
+    ): AssetMarketQuote {
+        val symbol = assetSymbol.normalizedTicker()
+        val response = transport.get(
+            "https://api.coingecko.com/api/v3/coins/${urlEncode(coinGeckoId)}/market_chart" +
+                "?vs_currency=usd" +
+                "&days=7" +
+                "&precision=full",
+        )
+        val prices = JSONObject(response).getJSONArray("prices")
+        val chartPrices = buildList {
+            for (index in 0 until prices.length()) {
+                prices.optJSONArray(index)
+                    ?.opt(1)
+                    ?.toString()
+                    ?.takeIf(String::isNotBlank)
+                    ?.toBigDecimalOrNull()
+                    ?.let(::add)
+            }
+        }
+        val latestPrice = chartPrices.lastOrNull()
+            ?: error("CoinGecko chart did not include USD prices for $coinGeckoId.")
+        return AssetMarketQuote(
+            assetSymbol = symbol,
+            name = assetName,
+            quoteCurrency = "USD",
+            price = latestPrice,
+            provider = COINGECKO_MARKET_CHART_PROVIDER,
+            providerAssetId = coinGeckoId,
+            chart7dJson = JSONArray(chartPrices).toString(),
+        )
+    }
+
+    fun getBinanceUsdtMarketQuote(
+        assetSymbol: String,
+        assetName: String = assetSymbol,
+    ): AssetMarketQuote {
+        val symbol = assetSymbol.normalizedTicker()
+        val providerAssetId = "${symbol}USDT"
+        val ticker = JSONObject(
+            transport.get(
+                "https://api.binance.com/api/v3/ticker/24hr?symbol=${urlEncode(providerAssetId)}",
+            ),
+        )
+        val klines = JSONArray(
+            transport.get(
+                "https://api.binance.com/api/v3/klines?symbol=${urlEncode(providerAssetId)}&interval=1h&limit=168",
+            ),
+        )
+        return AssetMarketQuote(
+            assetSymbol = symbol,
+            name = assetName,
+            quoteCurrency = "USD",
+            price = ticker.optBigDecimal("lastPrice")
+                ?: ticker.getString("weightedAvgPrice").toBigDecimal(),
+            provider = BINANCE_MARKET_PROVIDER,
+            providerAssetId = providerAssetId,
+            volume24h = ticker.optBigDecimal("quoteVolume") ?: ticker.optBigDecimal("volume"),
+            high24h = ticker.optBigDecimal("highPrice"),
+            low24h = ticker.optBigDecimal("lowPrice"),
+            priceChange24hPercent = ticker.optBigDecimal("priceChangePercent"),
+            chart7dJson = klines.closePricesJson(closeIndex = 4),
+        )
+    }
+
+    fun getOkxUsdtMarketQuote(
+        assetSymbol: String,
+        assetName: String = assetSymbol,
+    ): AssetMarketQuote {
+        val symbol = assetSymbol.normalizedTicker()
+        val providerAssetId = "${symbol}-USDT"
+        val ticker = JSONObject(
+            transport.get(
+                "https://www.okx.com/api/v5/market/ticker?instId=${urlEncode(providerAssetId)}",
+            ),
+        ).getJSONArray("data").getJSONObject(0)
+        val candles = JSONObject(
+            transport.get(
+                "https://www.okx.com/api/v5/market/candles?instId=${urlEncode(providerAssetId)}&bar=1H&limit=168",
+            ),
+        ).getJSONArray("data")
+        val lastPrice = ticker.getString("last").toBigDecimal()
+        return AssetMarketQuote(
+            assetSymbol = symbol,
+            name = assetName,
+            quoteCurrency = "USD",
+            price = lastPrice,
+            provider = OKX_MARKET_PROVIDER,
+            providerAssetId = providerAssetId,
+            volume24h = ticker.optBigDecimal("volCcy24h") ?: ticker.optBigDecimal("vol24h"),
+            high24h = ticker.optBigDecimal("high24h"),
+            low24h = ticker.optBigDecimal("low24h"),
+            priceChange24hPercent = ticker.optBigDecimal("open24h")?.let { open ->
+                percentChange(open, lastPrice - open)
+            },
+            chart7dJson = candles.closePricesJson(closeIndex = 4, reverse = true),
+        )
+    }
+
+    fun getKuCoinUsdtMarketQuote(
+        assetSymbol: String,
+        assetName: String = assetSymbol,
+        nowSeconds: Long = System.currentTimeMillis() / 1_000L,
+    ): AssetMarketQuote {
+        val symbol = assetSymbol.normalizedTicker()
+        val providerAssetId = "${symbol}-USDT"
+        val stats = JSONObject(
+            transport.get(
+                "https://api.kucoin.com/api/v1/market/stats?symbol=${urlEncode(providerAssetId)}",
+            ),
+        ).getJSONObject("data")
+        val startSeconds = nowSeconds - 7L * 24L * 60L * 60L
+        val candles = JSONObject(
+            transport.get(
+                "https://api.kucoin.com/api/v1/market/candles?type=1hour&symbol=${urlEncode(providerAssetId)}" +
+                    "&startAt=$startSeconds" +
+                    "&endAt=$nowSeconds",
+            ),
+        ).getJSONArray("data")
+        return AssetMarketQuote(
+            assetSymbol = symbol,
+            name = assetName,
+            quoteCurrency = "USD",
+            price = stats.getString("last").toBigDecimal(),
+            provider = KUCOIN_MARKET_PROVIDER,
+            providerAssetId = providerAssetId,
+            volume24h = stats.optBigDecimal("volValue") ?: stats.optBigDecimal("vol"),
+            high24h = stats.optBigDecimal("high"),
+            low24h = stats.optBigDecimal("low"),
+            priceChange24hPercent = stats.optBigDecimal("changeRate")?.multiply(BigDecimal("100")),
+            chart7dJson = candles.closePricesJson(closeIndex = 2, reverse = true),
+        )
+    }
+
     fun getBinanceUsdtPrice(assetSymbol: String): CryptoPriceQuote =
         getExchangeUsdtPrice(
             assetSymbol = assetSymbol,
@@ -350,6 +487,34 @@ class SatraMarketDataClient(
         return null
     }
 
+    private fun JSONArray.closePricesJson(
+        closeIndex: Int,
+        reverse: Boolean = false,
+    ): String {
+        val closes = buildList {
+            for (index in 0 until length()) {
+                optJSONArray(index)
+                    ?.opt(closeIndex)
+                    ?.toString()
+                    ?.takeIf(String::isNotBlank)
+                    ?.toBigDecimalOrNull()
+                    ?.let(::add)
+            }
+        }.let { values -> if (reverse) values.asReversed() else values }
+        return JSONArray(closes).toString()
+    }
+
+    private fun percentChange(
+        startValue: BigDecimal,
+        changeValue: BigDecimal,
+    ): BigDecimal? {
+        if (startValue.compareTo(BigDecimal.ZERO) == 0) return null
+        return changeValue
+            .divide(startValue.abs(), 6, java.math.RoundingMode.HALF_UP)
+            .multiply(BigDecimal("100"))
+            .stripTrailingZeros()
+    }
+
     private fun String.cleanHtmlText(): String =
         replace(Regex("<[^>]+>"), " ")
             .replace("&amp;", "&")
@@ -363,9 +528,13 @@ class SatraMarketDataClient(
         const val COINGECKO_PROVIDER = "coingecko-simple-public"
         const val COINGECKO_MARKETS_PROVIDER = "coingecko-markets-public"
         const val COINGECKO_DETAIL_PROVIDER = "coingecko-detail-public"
+        const val COINGECKO_MARKET_CHART_PROVIDER = "coingecko-market-chart-public"
         const val BINANCE_PROVIDER = "binance-spot-public"
+        const val BINANCE_MARKET_PROVIDER = "binance-spot-public+binance-klines-public"
         const val OKX_PROVIDER = "okx-spot-public"
+        const val OKX_MARKET_PROVIDER = "okx-spot-public+okx-candles-public"
         const val KUCOIN_PROVIDER = "kucoin-spot-public"
+        const val KUCOIN_MARKET_PROVIDER = "kucoin-spot-public+kucoin-candles-public"
         const val FRANKFURTER_PROVIDER = "frankfurter-public"
         const val EXCHANGE_RATE_API_OPEN_PROVIDER = "exchangerate-api-open-public"
     }

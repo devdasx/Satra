@@ -509,6 +509,7 @@ class EvmHistorySyncService(
                                 fromBlock = fromBlock,
                                 toBlock = latestBlock,
                             )
+                            val blockMetadataByNumber = logs.value.fetchLogBlockMetadata(client)
                             EvmLogScanResult(
                                 providerName = logs.provider.name,
                                 transactions = logs.value.toTransferTransactions(
@@ -519,7 +520,7 @@ class EvmHistorySyncService(
                                     direction = request.direction,
                                     providerName = logs.provider.name,
                                     latestKnownBlock = latestBlock,
-                                    nowMillis = nowMillis,
+                                    blockMetadataByNumber = blockMetadataByNumber,
                                 ),
                             )
                         }
@@ -599,6 +600,38 @@ class EvmHistorySyncService(
         )
     }
 
+    private suspend fun JSONArray.fetchLogBlockMetadata(
+        client: EvmJsonRpcClient,
+    ): Map<Long, EvmLogBlockMetadata> = coroutineScope {
+        val blockNumbers = buildSet {
+            for (index in 0 until length()) {
+                val item = optJSONObject(index) ?: continue
+                val blockHeight = EvmAbi.hexToLong(item.optString("blockNumber", "0x0"))
+                    .takeIf { it > 0L }
+                    ?: continue
+                add(blockHeight)
+            }
+        }
+        val limiter = Semaphore(maxParallelLogScans.coerceAtLeast(1))
+        blockNumbers
+            .map { blockNumber ->
+                async {
+                    limiter.withPermit {
+                        val header = runCatching { client.blockByNumber(blockNumber).value }.getOrNull()
+                        blockNumber to header?.let {
+                            EvmLogBlockMetadata(
+                                blockHash = it.blockHash,
+                                timestampMillis = it.timestampMillis,
+                            )
+                        }
+                    }
+                }
+            }
+            .awaitAll()
+            .mapNotNull { (blockNumber, metadata) -> metadata?.let { blockNumber to it } }
+            .toMap()
+    }
+
     private fun transferFilter(
         contract: String,
         indexedAddressTopicPosition: Int,
@@ -656,6 +689,11 @@ private data class EvmLogScanRequest(
 private data class EvmLogScanResult(
     val providerName: String,
     val transactions: List<EvmNormalizedTransaction>,
+)
+
+private data class EvmLogBlockMetadata(
+    val blockHash: String?,
+    val timestampMillis: Long,
 )
 
 private fun <T, R> EvmBlockscoutPageResult<T>.mapItems(
@@ -855,7 +893,7 @@ private fun JSONArray.toTransferTransactions(
     direction: WalletTransactionDirection,
     providerName: String,
     latestKnownBlock: Long,
-    nowMillis: Long,
+    blockMetadataByNumber: Map<Long, EvmLogBlockMetadata>,
 ): List<EvmNormalizedTransaction> = buildList {
     for (index in 0 until length()) {
         val item = optJSONObject(index) ?: continue
@@ -863,6 +901,7 @@ private fun JSONArray.toTransferTransactions(
         val from = topics.optString(1).topicToAddress()
         val to = topics.optString(2).topicToAddress()
         val blockHeight = EvmAbi.hexToLong(item.optString("blockNumber", "0x0"))
+        val blockMetadata = blockMetadataByNumber[blockHeight]
         val amountRaw = EvmAbi.decodeUint256(item.optString("data", "0x0")).toString()
         add(
             EvmNormalizedTransaction(
@@ -884,10 +923,11 @@ private fun JSONArray.toTransferTransactions(
                 fromAddress = from,
                 toAddress = to,
                 blockHeight = blockHeight,
-                blockHash = item.optString("blockHash").takeIf(String::isNotBlank),
+                blockHash = item.optString("blockHash").takeIf(String::isNotBlank)
+                    ?: blockMetadata?.blockHash,
                 confirmations = confirmations(latestKnownBlock, blockHeight),
                 nonce = null,
-                timestampMillis = nowMillis,
+                timestampMillis = blockMetadata?.timestampMillis ?: 0L,
                 providerName = providerName,
                 metadataJson = JSONObject()
                     .put("syncProvider", providerName)

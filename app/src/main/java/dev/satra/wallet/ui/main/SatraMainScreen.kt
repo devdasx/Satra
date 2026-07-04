@@ -14,6 +14,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -62,6 +64,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -74,6 +77,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -100,6 +104,7 @@ import dev.satra.wallet.data.db.WalletTransactionStatus
 import dev.satra.wallet.data.sync.evm.EvmSyncCompleteness
 import dev.satra.wallet.settings.SatraSettings
 import dev.satra.wallet.settings.SatraThemePreference
+import dev.satra.wallet.ui.setup.WalletSetupFlow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -120,6 +125,7 @@ fun SatraMainScreen(
     walletRepository: SatraWalletRepository,
     settings: SatraSettings,
     appVersion: String,
+    setupCompletionFlow: WalletSetupFlow? = null,
     onThemePreferenceChange: (SatraThemePreference) -> Unit,
     onHapticsEnabledChange: (Boolean) -> Unit,
     onLanguageTagChange: (String) -> Unit,
@@ -130,6 +136,9 @@ fun SatraMainScreen(
     val tabs = remember { SatraMainTab.entries }
     val backStackEntry by tabNavController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route ?: SatraMainTab.Home.route
+    var activeSetupCompletionFlow by rememberSaveable(setupCompletionFlow?.routeSegment) {
+        mutableStateOf(setupCompletionFlow)
+    }
     var balancesHidden by remember {
         mutableStateOf(
             context.getSharedPreferences(BALANCE_CARD_PREFS_NAME, Context.MODE_PRIVATE)
@@ -392,6 +401,15 @@ fun SatraMainScreen(
             }
         }
     }
+
+    activeSetupCompletionFlow?.let { flow ->
+        SetupCompletionBottomSheet(
+            flow = flow,
+            onDismiss = {
+                activeSetupCompletionFlow = null
+            },
+        )
+    }
 }
 
 @Composable
@@ -430,6 +448,57 @@ private fun SatraBottomNavigationBar(
                     unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 ),
             )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SetupCompletionBottomSheet(
+    flow: WalletSetupFlow,
+    onDismiss: () -> Unit,
+) {
+    val titleRes = when (flow) {
+        WalletSetupFlow.Create -> R.string.wallet_setup_complete_created_title
+        WalletSetupFlow.Import -> R.string.wallet_setup_complete_imported_title
+    }
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surface,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 28.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp),
+        ) {
+            Text(
+                text = stringResource(titleRes),
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = stringResource(R.string.wallet_setup_complete_body),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Button(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(100.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.onSurface,
+                    contentColor = MaterialTheme.colorScheme.surface,
+                ),
+            ) {
+                Text(
+                    text = stringResource(R.string.wallet_setup_complete_action),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
         }
     }
 }
@@ -561,6 +630,7 @@ private fun SatraHomeDashboard(
                     },
                     status = content.status,
                     totalBalance = content.totalBalance,
+                    currencyCode = content.currencyCode,
                     transactions = content.chartTransactions,
                     initialChartData = content.chartData,
                     isEmpty = content.totalBalanceAmount <= BigDecimal.ZERO,
@@ -944,10 +1014,10 @@ private fun TransactionDetailSummaryCard(
             modifier = Modifier.padding(18.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Image(
-                painter = painterResource(content.iconRes),
-                contentDescription = null,
-                modifier = Modifier.size(48.dp),
+            SatraBadgedIcon(
+                primaryIconRes = content.iconRes,
+                badgeIconRes = content.networkIconRes,
+                modifier = Modifier.size(56.dp),
             )
             Spacer(modifier = Modifier.width(14.dp))
             Column(
@@ -1616,7 +1686,9 @@ private fun MarketDetailChartCard(
             HomeBalanceChart(
                 chartData = content.chartData,
                 hidden = false,
-                empty = !content.chartData.hasActivity,
+                empty = !content.chartData.hasDrawablePoints,
+                selectedPointIndex = selectedPointIndex,
+                onSelectedPointChange = { selectedPointIndex = it },
                 lineColor = MaterialTheme.colorScheme.onSurface,
                 fillColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
                 baselineColor = MaterialTheme.colorScheme.outline,
@@ -1818,6 +1890,7 @@ private fun SatraTokenDetailScreen(
                 Spacer(modifier = Modifier.height(20.dp))
                 HomeBalanceCard(
                     totalBalance = content.totalBalance,
+                    currencyCode = content.currencyCode,
                     transactions = content.chartTransactions,
                     initialChartData = content.chartData,
                     isEmpty = content.networkBalances.none { row -> row.hasBalance },
@@ -1988,10 +2061,10 @@ private fun TokenNetworkBalanceListRow(
             .padding(horizontal = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Image(
-            painter = painterResource(row.iconRes),
-            contentDescription = null,
-            modifier = Modifier.size(40.dp),
+        SatraBadgedIcon(
+            primaryIconRes = row.networkIconRes,
+            badgeIconRes = row.assetIconRes,
+            modifier = Modifier.size(48.dp),
         )
         Spacer(modifier = Modifier.width(12.dp))
         Text(
@@ -2287,10 +2360,10 @@ private fun ActivityTransactionCard(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Image(
-                    painter = painterResource(transaction.iconRes),
-                    contentDescription = null,
-                    modifier = Modifier.size(40.dp),
+                SatraBadgedIcon(
+                    primaryIconRes = transaction.iconRes,
+                    badgeIconRes = transaction.networkIconRes,
+                    modifier = Modifier.size(48.dp),
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(
@@ -2351,6 +2424,7 @@ private fun HomeBalanceCard(
     walletName: String? = null,
     status: HomeSyncStatus? = null,
     totalBalance: String,
+    currencyCode: String = DEFAULT_LOCAL_CURRENCY_CODE,
     transactions: List<WalletTransactionRecord>,
     initialChartData: HomeBalanceChartData,
     isEmpty: Boolean,
@@ -2367,6 +2441,12 @@ private fun HomeBalanceCard(
             nowMillis = System.currentTimeMillis(),
         )
     }
+    var selectedPointIndex by remember(chartData.points, balancesHidden) {
+        mutableStateOf((chartData.points.size - 1).coerceAtLeast(0))
+    }
+    val selectedPoint = chartData.points.getOrNull(selectedPointIndex)
+        ?: chartData.points.lastOrNull()
+    val chartCanDraw = chartData.hasDrawablePoints && chartData.hasActivity
     val cardColor = MaterialTheme.colorScheme.inverseSurface
     val contentColor = MaterialTheme.colorScheme.inverseOnSurface
     val mutedContentColor = contentColor.copy(alpha = 0.64f)
@@ -2389,14 +2469,17 @@ private fun HomeBalanceCard(
     val displayBalance = if (balancesHidden) {
         stringResource(R.string.home_balance_hidden_value)
     } else {
-        totalBalance
+        selectedPoint
+            ?.takeIf { chartCanDraw }
+            ?.let { point -> formatFiat(point.value.toPlainString(), currencyCode) }
+            ?: totalBalance
     }
     val displayDelta = if (balancesHidden) {
         stringResource(R.string.home_balance_hidden_delta)
     } else {
         formatPercent(chartData.percentChange)
     }
-    val rangeInteractionsEnabled = !balancesHidden && !isEmpty && chartData.hasActivity
+    val rangeInteractionsEnabled = !balancesHidden && chartData.hasActivity
 
     Card(
         modifier = Modifier
@@ -2491,7 +2574,9 @@ private fun HomeBalanceCard(
             HomeBalanceChart(
                 chartData = chartData,
                 hidden = balancesHidden,
-                empty = isEmpty,
+                empty = !chartCanDraw,
+                selectedPointIndex = selectedPointIndex,
+                onSelectedPointChange = { selectedPointIndex = it },
                 lineColor = contentColor,
                 fillColor = contentColor.copy(alpha = 0.09f),
                 baselineColor = contentColor.copy(alpha = 0.25f),
@@ -2712,13 +2797,66 @@ private fun HomeBalanceChart(
     chartData: HomeBalanceChartData,
     hidden: Boolean,
     empty: Boolean,
+    selectedPointIndex: Int,
+    onSelectedPointChange: (Int) -> Unit,
     lineColor: Color = MaterialTheme.colorScheme.onSurface,
     fillColor: Color = lineColor.copy(alpha = 0.09f),
     baselineColor: Color = lineColor.copy(alpha = 0.25f),
     modifier: Modifier = Modifier,
 ) {
+    val interactionEnabled = !hidden && !empty && chartData.points.isNotEmpty()
+    fun selectedIndex(): Int =
+        selectedPointIndex.coerceIn(0, (chartData.points.size - 1).coerceAtLeast(0))
+
+    fun chartPointIndexForX(xPosition: Float, width: Float, horizontalPadding: Float): Int {
+        val chartWidth = width - horizontalPadding * 2f
+        return nearestHomeChartPointIndex(
+            xPosition = xPosition - horizontalPadding,
+            chartWidth = chartWidth,
+            pointCount = chartData.points.size,
+        )
+    }
+
     Canvas(
-        modifier = modifier,
+        modifier = modifier
+            .pointerInput(interactionEnabled, chartData.points) {
+                if (!interactionEnabled) return@pointerInput
+                detectTapGestures { offset ->
+                    val horizontalPadding = 5.dp.toPx()
+                    onSelectedPointChange(
+                        chartPointIndexForX(
+                            xPosition = offset.x,
+                            width = size.width.toFloat(),
+                            horizontalPadding = horizontalPadding,
+                        ),
+                    )
+                }
+            }
+            .pointerInput(interactionEnabled, chartData.points) {
+                if (!interactionEnabled) return@pointerInput
+                detectDragGestures(
+                    onDragStart = { offset ->
+                        val horizontalPadding = 5.dp.toPx()
+                        onSelectedPointChange(
+                            chartPointIndexForX(
+                                xPosition = offset.x,
+                                width = size.width.toFloat(),
+                                horizontalPadding = horizontalPadding,
+                            ),
+                        )
+                    },
+                    onDrag = { change, _ ->
+                        val horizontalPadding = 5.dp.toPx()
+                        onSelectedPointChange(
+                            chartPointIndexForX(
+                                xPosition = change.position.x,
+                                width = size.width.toFloat(),
+                                horizontalPadding = horizontalPadding,
+                            ),
+                        )
+                    },
+                )
+            },
     ) {
         val horizontalPadding = 5.dp.toPx()
         val topPadding = 5.dp.toPx()
@@ -2769,7 +2907,7 @@ private fun HomeBalanceChart(
             endX = size.width - horizontalPadding,
             y = baselineY,
         )
-        if (empty || !chartData.hasActivity) return@Canvas
+        if (empty) return@Canvas
 
         val path = smoothHomeChartPath(coordinates)
         val area = Path().apply {
@@ -2785,7 +2923,7 @@ private fun HomeBalanceChart(
             color = lineColor,
             style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round),
         )
-        val nowCoordinate = coordinates.last()
+        val nowCoordinate = coordinates[selectedIndex()]
         drawCircle(
             color = lineColor,
             radius = 4.5.dp.toPx(),
@@ -3297,6 +3435,7 @@ internal data class HomeAssetRow(
 private data class ActivityTransactionRow(
     val transactionId: String,
     @DrawableRes val iconRes: Int,
+    @DrawableRes val networkIconRes: Int,
     val direction: String,
     val title: String,
     val subtitle: String,
@@ -3366,7 +3505,9 @@ private data class TokenNetworkBalanceRow(
     val assetId: String,
     val networkId: String,
     val network: String,
-    @DrawableRes val iconRes: Int,
+    val networkSymbol: String,
+    @DrawableRes val networkIconRes: Int,
+    @DrawableRes val assetIconRes: Int,
     val amount: String,
     val fiatValue: String,
     val fiatValueAmount: BigDecimal,
@@ -3425,6 +3566,7 @@ private sealed interface TransactionDetailState {
     data class Content(
         val transactionId: String,
         @DrawableRes val iconRes: Int,
+        @DrawableRes val networkIconRes: Int,
         val direction: String,
         val title: String,
         val subtitle: String,
@@ -3625,7 +3767,9 @@ private fun List<WalletAssetRecord>.toTokenNetworkBalanceRows(localCurrencyCode:
             assetId = walletAsset.assetId,
             networkId = walletAsset.networkId,
             network = network.displayName,
-            iconRes = assetIconRes(asset.symbol),
+            networkSymbol = network.nativeSymbol,
+            networkIconRes = networkIconRes(network.networkId),
+            assetIconRes = assetIconRes(asset.symbol),
             amount = "${formatCryptoAmount(walletAsset.balanceDecimal)} ${asset.symbol}",
             fiatValue = formatFiat(walletAsset.balanceFiatValue, localCurrencyCode),
             fiatValueAmount = fiatValue,
@@ -3644,20 +3788,33 @@ private fun List<WalletTransactionRecord>.toActivityRows(
     resources: Resources,
 ): List<ActivityTransactionRow> {
     val catalogAssetsById = SupportedAssetCatalog.assets.associateBy { it.assetId }
-    val supportedNetworkIds = SupportedAssetCatalog.networks.map { it.networkId }.toSet()
+    val networksById = SupportedAssetCatalog.networks.associateBy { it.networkId }
+    val supportedNetworkIds = networksById.keys
     val localPricesByAssetId = walletAssets.associate { asset ->
         asset.assetId to asset.priceFiatValue.toBigDecimalOrZero()
     }
     return filter { transaction -> transaction.networkId in supportedNetworkIds }
         .mapNotNull { transaction ->
             val asset = catalogAssetsById[transaction.assetId] ?: return@mapNotNull null
+            val network = networksById[transaction.networkId] ?: return@mapNotNull null
             val direction = transaction.direction.activityDirectionLabel(resources)
+            val time = formatTransactionListTime(
+                timestampMillis = transaction.timestamp,
+                status = transaction.status,
+                resources = resources,
+            )
             ActivityTransactionRow(
                 transactionId = transaction.transactionId,
                 iconRes = assetIconRes(asset.symbol),
+                networkIconRes = networkIconRes(network.networkId),
                 direction = transaction.direction,
                 title = "$direction ${asset.symbol}",
-                subtitle = formatActivityTime(transaction.timestamp, resources),
+                subtitle = resources.getString(
+                    R.string.activity_transaction_subtitle_on_network,
+                    direction,
+                    network.nativeSymbol,
+                    time,
+                ),
                 amount = "${transaction.direction.activityAmountPrefix()}${formatCryptoAmount(transaction.amountDecimal)} ${asset.symbol}",
                 fiatValue = transaction.displayFiatValue(
                     localCurrencyCode = localCurrencyCode,
@@ -3688,8 +3845,9 @@ private fun WalletTransactionRecord.toTransactionDetailContent(
     val networksById = SupportedAssetCatalog.networks.associateBy { it.networkId }
     val asset = catalogAssetsById[assetId] ?: return null
     val network = networksById[networkId]
-    val status = status.activityStatusLabel(resources)
     val directionLabel = direction.activityDirectionLabel(resources)
+    val networkSymbol = network?.nativeSymbol ?: networkId
+    val transactionTime = formatTransactionDetailTime(timestamp, resources)
     val displayAmount = "${direction.activityAmountPrefix()}${formatCryptoAmount(amountDecimal)} ${asset.symbol}"
     val displayFiat = displayFiatValue(
         localCurrencyCode = localCurrencyCode,
@@ -3707,7 +3865,7 @@ private fun WalletTransactionRecord.toTransactionDetailContent(
         add(TransactionDetailRow(resources.getString(R.string.activity_detail_transaction_id), transactionId))
         add(TransactionDetailRow(resources.getString(R.string.activity_detail_asset), "${asset.name} (${asset.symbol})"))
         add(TransactionDetailRow(resources.getString(R.string.activity_detail_network), network?.displayName ?: networkId))
-        add(TransactionDetailRow(resources.getString(R.string.activity_detail_status), status))
+        add(TransactionDetailRow(resources.getString(R.string.activity_detail_status), status.activityStatusLabel(resources)))
         add(TransactionDetailRow(resources.getString(R.string.activity_detail_direction), directionLabel))
         add(TransactionDetailRow(resources.getString(R.string.activity_detail_amount), displayAmount, sensitive = true))
         add(TransactionDetailRow(resources.getString(R.string.activity_detail_value), displayFiat, sensitive = true))
@@ -3724,16 +3882,21 @@ private fun WalletTransactionRecord.toTransactionDetailContent(
         memo?.takeIf(String::isNotBlank)?.let { memoValue ->
             add(TransactionDetailRow(resources.getString(R.string.activity_detail_memo), memoValue))
         }
-        add(TransactionDetailRow(resources.getString(R.string.activity_detail_time), formatActivityTime(timestamp, resources)))
-        add(TransactionDetailRow(resources.getString(R.string.activity_detail_first_seen), formatActivityTime(firstSeenAt, resources)))
+        add(TransactionDetailRow(resources.getString(R.string.activity_detail_time), transactionTime))
         add(TransactionDetailRow(resources.getString(R.string.activity_detail_updated), formatActivityTime(updatedAt, resources)))
     }
     return TransactionDetailState.Content(
         transactionId = transactionId,
         iconRes = assetIconRes(asset.symbol),
+        networkIconRes = networkIconRes(networkId),
         direction = direction,
         title = "$directionLabel ${asset.symbol}",
-        subtitle = "${network?.displayName ?: networkId} · $status · ${formatActivityTime(timestamp, resources)}",
+        subtitle = resources.getString(
+            R.string.activity_transaction_subtitle_on_network,
+            directionLabel,
+            networkSymbol,
+            transactionTime,
+        ),
         amount = displayAmount,
         fiatValue = displayFiat,
         details = detailRows,
@@ -3851,7 +4014,7 @@ private fun buildMarketPriceChartData(
             }
         }
     }.getOrDefault(emptyList())
-        .ifEmpty { listOf(fallbackPrice) }
+        .ifEmpty { listOf(fallbackPrice, fallbackPrice) }
     val rangeStart = nowMillis - (HomeChartRange.OneWeek.durationMillis ?: 0L)
     val stepMillis = if (prices.size <= 1) {
         0L
@@ -4009,6 +4172,27 @@ private fun formatActivityTime(
         else -> ActivityDateFormatter.format(timestamp)
     }
 }
+
+private fun formatTransactionDetailTime(
+    timestampMillis: Long,
+    resources: Resources,
+): String =
+    if (timestampMillis > 0L) {
+        formatActivityTime(timestampMillis, resources)
+    } else {
+        resources.getString(R.string.activity_detail_unavailable)
+    }
+
+private fun formatTransactionListTime(
+    timestampMillis: Long,
+    status: String,
+    resources: Resources,
+): String =
+    when {
+        timestampMillis > 0L -> formatActivityTime(timestampMillis, resources)
+        status == WalletTransactionStatus.Pending.value -> resources.getString(R.string.activity_status_pending)
+        else -> resources.getString(R.string.activity_detail_unavailable)
+    }
 
 private fun WalletTransactionRecord.displayFiatValue(
     localCurrencyCode: String,
