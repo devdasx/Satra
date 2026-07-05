@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Satra</string>
+    <string name="satra_support_email" translatable="false">care@satra.app</string>
     <string name="wallet_default_created_name">Satra Wallet</string>
     <string name="wallet_default_imported_name">Imported Wallet</string>
     <string name="wallet_default_watch_only_name">Watch-only Wallet</string>
@@ -48,7 +49,7 @@
     <string name="settings_url_documentation" translatable="false">https://github.com/devdasx/Satra#readme</string>
     <string name="settings_url_report_bug" translatable="false">https://github.com/devdasx/Satra/issues/new?labels=bug</string>
     <string name="settings_url_request_feature" translatable="false">https://github.com/devdasx/Satra/issues/new?labels=enhancement</string>
-    <string name="settings_url_contact" translatable="false">https://github.com/devdasx/Satra/issues/new?labels=question</string>
+    <string name="settings_url_contact" translatable="false">mailto:care@satra.app</string>
     <string name="settings_language_english">English</string>
     <string name="settings_language_chinese_simplified">Chinese (Simplified)</string>
     <string name="settings_language_hindi">Hindi</string>

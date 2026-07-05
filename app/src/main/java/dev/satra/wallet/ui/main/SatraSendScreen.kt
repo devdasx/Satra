@@ -3135,7 +3135,8 @@ private fun contactSupportForReceipt(
         state.amountFormatted,
         time,
     )
-    val uri = Uri.parse("mailto:care@satra.app").buildUpon()
+    val supportEmail = context.getString(R.string.satra_support_email)
+    val uri = Uri.parse("mailto:$supportEmail").buildUpon()
         .appendQueryParameter("subject", subject)
         .appendQueryParameter("body", body)
         .build()
