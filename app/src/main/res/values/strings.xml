@@ -16,8 +16,8 @@
     <string name="onboarding_terms_of_use">Terms of Use</string>
     <string name="onboarding_source_pill_label">Verify source code</string>
     <string name="onboarding_open_source_url" translatable="false">https://github.com/devdasx/Satra</string>
-    <string name="onboarding_privacy_policy_url" translatable="false">https://github.com/devdasx/Satra/blob/main/docs/legal/PRIVACY_POLICY.md</string>
-    <string name="onboarding_terms_of_use_url" translatable="false">https://github.com/devdasx/Satra/blob/main/docs/legal/TERMS_OF_USE.md</string>
+    <string name="onboarding_privacy_policy_url" translatable="false">https://satra.app/privacy</string>
+    <string name="onboarding_terms_of_use_url" translatable="false">https://satra.app/terms</string>
     <string name="settings_title">Settings</string>
     <string name="settings_back_content_description">Go back</string>
     <string name="settings_open_indicator" translatable="false">&gt;</string>
@@ -997,8 +997,8 @@
     <string name="settings_legal_body">Privacy policy, terms of use, and public source links.</string>
     <string name="settings_privacy_policy">Privacy Policy</string>
     <string name="settings_terms_of_use">Terms of Use</string>
-    <string name="settings_url_privacy" translatable="false">https://github.com/devdasx/Satra/blob/main/docs/legal/PRIVACY_POLICY.md</string>
-    <string name="settings_url_terms" translatable="false">https://github.com/devdasx/Satra/blob/main/docs/legal/TERMS_OF_USE.md</string>
+    <string name="settings_url_privacy" translatable="false">https://satra.app/privacy</string>
+    <string name="settings_url_terms" translatable="false">https://satra.app/terms</string>
     <string name="settings_url_source" translatable="false">https://github.com/devdasx/Satra</string>
     <string name="settings_danger_title">Reset wallet</string>
     <string name="settings_danger_body">Erase all local wallets, addresses, keys, transactions, settings, and saved contacts.</string>
