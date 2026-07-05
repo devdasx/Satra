@@ -1415,6 +1415,8 @@ internal fun SatraAboutScreen(
 @Composable
 internal fun SatraLegalScreen(onBack: () -> Unit) {
     val context = LocalContext.current
+    val privacyUrl = stringResource(R.string.settings_url_privacy)
+    val termsUrl = stringResource(R.string.settings_url_terms)
     fun openUrl(url: String) {
         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
     }
@@ -1428,15 +1430,15 @@ internal fun SatraLegalScreen(onBack: () -> Unit) {
                 SettingsRow(
                     iconRes = R.drawable.ic_brand_list,
                     title = stringResource(R.string.settings_privacy_policy),
-                    body = stringResource(R.string.settings_url_privacy),
-                    onClick = { openUrl("https://satra.app/privacy") },
+                    body = privacyUrl,
+                    onClick = { openUrl(privacyUrl) },
                 )
                 SettingsDivider()
                 SettingsRow(
                     iconRes = R.drawable.ic_brand_list,
                     title = stringResource(R.string.settings_terms_of_use),
-                    body = stringResource(R.string.settings_url_terms),
-                    onClick = { openUrl("https://satra.app/terms") },
+                    body = termsUrl,
+                    onClick = { openUrl(termsUrl) },
                 )
             }
         }

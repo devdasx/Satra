@@ -28,6 +28,11 @@ The app is multi-chain by design and uses the network and asset list documented 
 
 Satra supports only the networks, native coins, and tokens listed in `docs/SUPPORTED_ASSETS.md`.
 
+## Legal
+
+- [Privacy Policy](docs/legal/PRIVACY_POLICY.md)
+- [Terms of Use](docs/legal/TERMS_OF_USE.md)
+
 ## Development
 
 Satra's visual identity comes from `brand/satra-brand-kit/README.md`; use the kit's semantic tokens and assets instead of ad hoc colors, fonts, or logo treatments.
