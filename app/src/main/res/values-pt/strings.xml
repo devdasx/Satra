@@ -303,6 +303,7 @@
     <string name="home_wallet_switcher_title">Carteiras</string>
     <string name="home_wallet_switcher_body">Escolha a carteira que Satra mostra neste dispositivo.</string>
     <string name="home_wallet_switcher_active">Ativo</string>
+    <string name="home_wallet_switcher_manage">Gerenciar carteiras</string>
     <string name="home_wallet_switcher_create">Criar carteira</string>
     <string name="home_wallet_switcher_import">Importar carteira</string>
     <string name="home_wallet_switcher_empty_title">Ainda não há carteiras</string>
@@ -440,6 +441,7 @@
     <string name="receive_address_variant">Tipo de endereço</string>
     <string name="receive_assets_title">Escolha o ativo</string>
     <string name="receive_assets_count">%1$d suportado</string>
+    <string name="asset_type_native">Nativo</string>
     <string name="send_choose_asset_title">Enviar</string>
     <string name="send_choose_network_title">Escolha a rede</string>
     <string name="send_compose_title">Enviar detalhes</string>
@@ -493,6 +495,9 @@
     <string name="send_section_your_assets">Seus ativos</string>
     <string name="send_section_all_assets">Todos os compatíveis</string>
     <string name="send_assets_shown">%1$d mostrado</string>
+    <string name="send_no_spendable_assets_title">Ainda não há ativos para enviar</string>
+    <string name="send_no_spendable_assets_body">Receba fundos antes de enviar. Você ainda pode procurar ativos compatíveis se precisar verificar o suporte de rede.</string>
+    <string name="send_browse_supported_assets">Procurar ativos compatíveis</string>
     <string name="send_asset_empty_search">Nenhum recurso corresponde a esta pesquisa.</string>
     <string name="send_asset_empty_search_title">Nenhum recurso correspondente</string>
     <string name="send_asset_empty_search_body">Nada corresponde — a Satra só lista ativos da sua lista publicada.</string>
@@ -652,11 +657,17 @@
     <string name="settings_wallet_management_no_private_keys">Esta carteira não possui chaves privadas locais para fazer backup.</string>
     <string name="settings_wallet_management_search_private_keys">Pesquisar chaves privadas</string>
     <string name="settings_wallet_management_no_private_key_matches">Nenhuma chave privada corresponde a esta pesquisa.</string>
+    <string name="settings_wallet_management_hidden_secret_value">Oculto até ser revelado</string>
+    <string name="settings_wallet_management_backup_verify_body">Digite o código de acesso do app para ver este backup. Biometria não é permitida para exportar frase de recuperação ou chaves privadas.</string>
+    <string name="settings_wallet_management_backup_no_passcode_body">Ative o código de acesso do app antes de exportar frases de recuperação ou chaves privadas.</string>
+    <string name="settings_wallet_management_continue_to_backup">Continuar para backup</string>
     <string name="settings_wallet_management_recovery_phrase_label">Frase de recuperação</string>
     <string name="settings_wallet_management_recovery_phrase_body">Escreva essas palavras em ordem e mantenha-as privadas.</string>
     <string name="settings_wallet_management_passphrase_label">Senha de recuperação</string>
     <string name="settings_wallet_management_passphrase_body">Este segredo extra é necessário com a frase de recuperação.</string>
     <string name="settings_wallet_management_copy_secret">Copiar valor de backup</string>
+    <string name="settings_wallet_management_reveal_secret">Revelar valor do backup</string>
+    <string name="settings_wallet_management_hide_secret">Ocultar valor do backup</string>
     <string name="settings_wallet_management_remove_warning_body">A remoção de uma carteira exclui seus endereços locais, segredos criptografados, saldos e cache de transações deste dispositivo.</string>
     <string name="settings_wallet_management_remove_warning">Você está removendo %1$s. Satra não pode restaurar esta carteira a menos que você já tenha feito backup de sua frase de recuperação ou chaves privadas.</string>
     <string name="settings_wallet_management_remove_confirm_label">Digite REMOVE para continuar</string>
@@ -691,6 +702,10 @@
     <string name="settings_currency_title">Moeda</string>
     <string name="settings_currency_body">Escolha a moeda local usada para saldos. Satra precifica ativos em USD primeiro e depois converte por meio de taxas de câmbio gratuitas.</string>
     <string name="settings_currency_option_title">%1$s · %2$s</string>
+    <string name="settings_currency_search_placeholder">Pesquisar moedas</string>
+    <string name="settings_currency_search_clear">Limpar pesquisa de moeda</string>
+    <string name="settings_currency_no_search_results_title">Nenhuma moeda correspondente</string>
+    <string name="settings_currency_no_search_results_body">Tente pesquisar por código, nome ou símbolo da moeda.</string>
     <string name="settings_currency_name_adp">Peseta de Andorra</string>
     <string name="settings_currency_name_aed">Dirham dos Emirados Árabes Unidos</string>
     <string name="settings_currency_name_afa">Afegão afegão (1927–2002)</string>

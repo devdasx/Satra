@@ -303,6 +303,7 @@
     <string name="home_wallet_switcher_title">ওয়ালেট</string>
     <string name="home_wallet_switcher_body">এই ডিভাইসে Satra শো ওয়ালেট বেছে নিন।</string>
     <string name="home_wallet_switcher_active">সক্রিয়</string>
+    <string name="home_wallet_switcher_manage">ওয়ালেট পরিচালনা করুন</string>
     <string name="home_wallet_switcher_create">মানিব্যাগ তৈরি করুন</string>
     <string name="home_wallet_switcher_import">মানিব্যাগ আমদানি করুন</string>
     <string name="home_wallet_switcher_empty_title">এখনো কোনো মানিব্যাগ নেই</string>
@@ -440,6 +441,7 @@
     <string name="receive_address_variant">ঠিকানার ধরন</string>
     <string name="receive_assets_title">সম্পদ চয়ন করুন</string>
     <string name="receive_assets_count">%1$d সমর্থিত</string>
+    <string name="asset_type_native">স্থানীয়</string>
     <string name="send_choose_asset_title">পাঠান</string>
     <string name="send_choose_network_title">নেটওয়ার্ক নির্বাচন করুন</string>
     <string name="send_compose_title">বিস্তারিত পাঠান</string>
@@ -493,6 +495,9 @@
     <string name="send_section_your_assets">আপনার সম্পদ</string>
     <string name="send_section_all_assets">সব সমর্থিত</string>
     <string name="send_assets_shown">%1$d দেখানো হয়েছে</string>
+    <string name="send_no_spendable_assets_title">এখনও পাঠানোর মতো কোনো অ্যাসেট নেই</string>
+    <string name="send_no_spendable_assets_body">পাঠানোর আগে ফান্ড গ্রহণ করুন। নেটওয়ার্ক সমর্থন যাচাই করতে চাইলে আপনি এখনও সমর্থিত অ্যাসেট ব্রাউজ করতে পারেন।</string>
+    <string name="send_browse_supported_assets">সমর্থিত অ্যাসেট ব্রাউজ করুন</string>
     <string name="send_asset_empty_search">কোনো সম্পদ এই অনুসন্ধানের সাথে মেলে না।</string>
     <string name="send_asset_empty_search_title">কোনো মিলে যাওয়া সম্পদ নেই</string>
     <string name="send_asset_empty_search_body">কিছুই মেলেনি — Satra শুধু প্রকাশিত তালিকার সম্পদ দেখায়।</string>
@@ -652,11 +657,17 @@
     <string name="settings_wallet_management_no_private_keys">এই ওয়ালেটে ব্যাক আপ করার জন্য স্থানীয় ব্যক্তিগত কী নেই৷</string>
     <string name="settings_wallet_management_search_private_keys">প্রাইভেট কী খুঁজুন</string>
     <string name="settings_wallet_management_no_private_key_matches">এই অনুসন্ধানের সাথে কোনো প্রাইভেট কী মেলেনি।</string>
+    <string name="settings_wallet_management_hidden_secret_value">প্রকাশ না করা পর্যন্ত লুকানো</string>
+    <string name="settings_wallet_management_backup_verify_body">এই ব্যাকআপ দেখতে আপনার অ্যাপ পাসকোড দিন। রিকভারি ফ্রেজ বা প্রাইভেট কী এক্সপোর্টের জন্য বায়োমেট্রিক ব্যবহার করা যাবে না।</string>
+    <string name="settings_wallet_management_backup_no_passcode_body">রিকভারি ফ্রেজ বা প্রাইভেট কী এক্সপোর্ট করার আগে অ্যাপ পাসকোড চালু করুন।</string>
+    <string name="settings_wallet_management_continue_to_backup">ব্যাকআপে চালিয়ে যান</string>
     <string name="settings_wallet_management_recovery_phrase_label">পুনরুদ্ধার বাক্যাংশ</string>
     <string name="settings_wallet_management_recovery_phrase_body">এই শব্দগুলিকে ক্রমানুসারে লিখুন এবং সেগুলিকে ব্যক্তিগত রাখুন।</string>
     <string name="settings_wallet_management_passphrase_label">পুনরুদ্ধার পাসফ্রেজ</string>
     <string name="settings_wallet_management_passphrase_body">এই অতিরিক্ত গোপন পুনরুদ্ধার শব্দগুচ্ছ সঙ্গে প্রয়োজন.</string>
     <string name="settings_wallet_management_copy_secret">ব্যাকআপ মান কপি করুন</string>
+    <string name="settings_wallet_management_reveal_secret">ব্যাকআপ মান দেখান</string>
+    <string name="settings_wallet_management_hide_secret">ব্যাকআপ মান লুকান</string>
     <string name="settings_wallet_management_remove_warning_body">একটি ওয়ালেট সরানো হলে এই ডিভাইস থেকে তার স্থানীয় ঠিকানা, এনক্রিপ্ট করা গোপনীয়তা, ব্যালেন্স এবং লেনদেন ক্যাশে মুছে যায়।</string>
     <string name="settings_wallet_management_remove_warning">আপনি %1$s সরিয়ে দিচ্ছেন। Satra এই ওয়ালেটটি পুনরুদ্ধার করতে পারে না যদি না আপনি ইতিমধ্যেই এর পুনরুদ্ধার বাক্যাংশ বা ব্যক্তিগত কী ব্যাক আপ না করেন৷</string>
     <string name="settings_wallet_management_remove_confirm_label">চালিয়ে যেতে REMOVE টাইপ করুন</string>
@@ -691,6 +702,10 @@
     <string name="settings_currency_title">মুদ্রা</string>
     <string name="settings_currency_body">ব্যালেন্সের জন্য ব্যবহৃত স্থানীয় মুদ্রা বেছে নিন। Satra মূল্য সম্পত্তি USD-এ প্রথমে, তারপর বিনামূল্যে FX হারের মাধ্যমে রূপান্তরিত হয়।</string>
     <string name="settings_currency_option_title">%1$s · %2$s</string>
+    <string name="settings_currency_search_placeholder">মুদ্রা খুঁজুন</string>
+    <string name="settings_currency_search_clear">মুদ্রা অনুসন্ধান মুছুন</string>
+    <string name="settings_currency_no_search_results_title">মিল থাকা কোনো মুদ্রা নেই</string>
+    <string name="settings_currency_no_search_results_body">মুদ্রার কোড, নাম বা প্রতীক দিয়ে অনুসন্ধান করে দেখুন।</string>
     <string name="settings_currency_name_adp">আন্দোরান পেসেটা</string>
     <string name="settings_currency_name_aed">সংযুক্ত আরব আমিরাতের দিরহাম</string>
     <string name="settings_currency_name_afa">আফগান আফগানী (1927-2002)</string>

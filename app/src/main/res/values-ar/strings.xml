@@ -303,6 +303,7 @@
     <string name="home_wallet_switcher_title">Wallets</string>
     <string name="home_wallet_switcher_body">اختر المحفظة التي يظهرها Satra على هذا الجهاز.</string>
     <string name="home_wallet_switcher_active">Active</string>
+    <string name="home_wallet_switcher_manage">إدارة المحافظ</string>
     <string name="home_wallet_switcher_create">إنشاء محفظة</string>
     <string name="home_wallet_switcher_import">استيراد المحفظة</string>
     <string name="home_wallet_switcher_empty_title">لا توجد محافظ حتى الآن</string>
@@ -440,6 +441,7 @@
     <string name="receive_address_variant">نوع العنوان</string>
     <string name="receive_assets_title">اختر الأصل</string>
     <string name="receive_assets_count">%1$d مدعوم</string>
+    <string name="asset_type_native">أصلي</string>
     <string name="send_choose_asset_title">إرسال</string>
     <string name="send_choose_network_title">اختر شبكة</string>
     <string name="send_compose_title">إرسال التفاصيل</string>
@@ -493,6 +495,9 @@
     <string name="send_section_your_assets">أصولك</string>
     <string name="send_section_all_assets">كل المدعوم</string>
     <string name="send_assets_shown">%1$d المعروضة</string>
+    <string name="send_no_spendable_assets_title">لا توجد أصول للإرسال بعد</string>
+    <string name="send_no_spendable_assets_body">استلم أموالًا قبل الإرسال. لا يزال بإمكانك تصفح الأصول المدعومة إذا كنت تريد التحقق من دعم الشبكات.</string>
+    <string name="send_browse_supported_assets">تصفح الأصول المدعومة</string>
     <string name="send_asset_empty_search">لا توجد أصول تطابق هذا البحث.</string>
     <string name="send_asset_empty_search_title">لا توجد أصول مطابقة</string>
     <string name="send_asset_empty_search_body">لا يوجد تطابق — تعرض Satra فقط الأصول من قائمتها المنشورة.</string>
@@ -652,11 +657,17 @@
     <string name="settings_wallet_management_no_private_keys">لا تحتوي هذه المحفظة على مفاتيح خاصة محلية للنسخ الاحتياطي.</string>
     <string name="settings_wallet_management_search_private_keys">البحث في المفاتيح الخاصة</string>
     <string name="settings_wallet_management_no_private_key_matches">لا توجد مفاتيح خاصة تطابق هذا البحث.</string>
+    <string name="settings_wallet_management_hidden_secret_value">مخفي حتى يتم كشفه</string>
+    <string name="settings_wallet_management_backup_verify_body">أدخل رمز مرور التطبيق لعرض هذه النسخة الاحتياطية. لا يُسمح باستخدام القياسات الحيوية لتصدير عبارة الاسترداد أو المفاتيح الخاصة.</string>
+    <string name="settings_wallet_management_backup_no_passcode_body">فعّل رمز مرور التطبيق قبل تصدير عبارات الاسترداد أو المفاتيح الخاصة.</string>
+    <string name="settings_wallet_management_continue_to_backup">المتابعة إلى النسخة الاحتياطية</string>
     <string name="settings_wallet_management_recovery_phrase_label">عبارة الاسترداد</string>
     <string name="settings_wallet_management_recovery_phrase_body">اكتب هذه الكلمات بالترتيب واحتفظ بها خاصة.</string>
     <string name="settings_wallet_management_passphrase_label">عبارة مرور الاسترداد</string>
     <string name="settings_wallet_management_passphrase_body">هذا السر الإضافي مطلوب مع عبارة الاسترداد.</string>
     <string name="settings_wallet_management_copy_secret">نسخ قيمة النسخة الاحتياطية</string>
+    <string name="settings_wallet_management_reveal_secret">كشف قيمة النسخة الاحتياطية</string>
+    <string name="settings_wallet_management_hide_secret">إخفاء قيمة النسخة الاحتياطية</string>
     <string name="settings_wallet_management_remove_warning_body">تؤدي إزالة المحفظة إلى حذف عناوينها المحلية وأسرارها المشفرة وأرصدتها وذاكرة التخزين المؤقت للمعاملات من هذا الجهاز.</string>
     <string name="settings_wallet_management_remove_warning">أنت تقوم بإزالة%1$s. لا يمكن لـ Satra استعادة هذه المحفظة إلا إذا كان لديك بالفعل نسخة احتياطية من عبارة الاسترداد أو المفاتيح الخاصة.</string>
     <string name="settings_wallet_management_remove_confirm_label">اكتب REMOVE للمتابعة</string>
@@ -691,6 +702,10 @@
     <string name="settings_currency_title">العملة</string>
     <string name="settings_currency_body">اختر العملة المحلية المستخدمة للأرصدة. تقوم Satra بتسعير الأصول بـ USD أولاً، ثم تقوم بالتحويل من خلال أسعار صرف العملات الأجنبية المجانية.</string>
     <string name="settings_currency_option_title">%1$s ·%2$s</string>
+    <string name="settings_currency_search_placeholder">البحث عن العملات</string>
+    <string name="settings_currency_search_clear">مسح بحث العملات</string>
+    <string name="settings_currency_no_search_results_title">لا توجد عملات مطابقة</string>
+    <string name="settings_currency_no_search_results_body">جرّب البحث برمز العملة أو اسمها أو علامتها.</string>
     <string name="settings_currency_name_adp">البيسيتا الأندورية</string>
     <string name="settings_currency_name_aed">درهم الإمارات العربية المتحدة</string>
     <string name="settings_currency_name_afa">الأفغاني الأفغاني (1927–2002)</string>

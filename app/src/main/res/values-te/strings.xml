@@ -303,6 +303,7 @@
     <string name="home_wallet_switcher_title">పర్సులు</string>
     <string name="home_wallet_switcher_body">ఈ పరికరంలో వాలెట్ Satra షోలను ఎంచుకోండి.</string>
     <string name="home_wallet_switcher_active">చురుకుగా</string>
+    <string name="home_wallet_switcher_manage">వాలెట్లను నిర్వహించండి</string>
     <string name="home_wallet_switcher_create">వాలెట్ సృష్టించండి</string>
     <string name="home_wallet_switcher_import">వాలెట్‌ను దిగుమతి చేయండి</string>
     <string name="home_wallet_switcher_empty_title">ఇంకా వాలెట్లు లేవు</string>
@@ -440,6 +441,7 @@
     <string name="receive_address_variant">చిరునామా రకం</string>
     <string name="receive_assets_title">ఆస్తిని ఎంచుకోండి</string>
     <string name="receive_assets_count">%1$d మద్దతు ఉంది</string>
+    <string name="asset_type_native">స్థానిక</string>
     <string name="send_choose_asset_title">పంపండి</string>
     <string name="send_choose_network_title">నెట్‌వర్క్‌ని ఎంచుకోండి</string>
     <string name="send_compose_title">వివరాలు పంపండి</string>
@@ -493,6 +495,9 @@
     <string name="send_section_your_assets">మీ ఆస్తులు</string>
     <string name="send_section_all_assets">మద్దతు ఉన్నవన్నీ</string>
     <string name="send_assets_shown">%1$d చూపబడింది</string>
+    <string name="send_no_spendable_assets_title">పంపడానికి ఇంకా ఆస్తులు లేవు</string>
+    <string name="send_no_spendable_assets_body">పంపే ముందు నిధులను స్వీకరించండి. నెట్‌వర్క్ మద్దతు తనిఖీ చేయాలంటే మీరు మద్దతు ఉన్న ఆస్తులను ఇంకా బ్రౌజ్ చేయవచ్చు.</string>
+    <string name="send_browse_supported_assets">మద్దతు ఉన్న ఆస్తులను బ్రౌజ్ చేయండి</string>
     <string name="send_asset_empty_search">ఈ శోధనకు సరిపోలే ఆస్తులు ఏవీ లేవు.</string>
     <string name="send_asset_empty_search_title">సరిపోలే ఆస్తులు లేవు</string>
     <string name="send_asset_empty_search_body">ఏదీ సరిపోలలేదు — Satra ప్రచురించిన జాబితాలోని ఆస్తులనే చూపుతుంది.</string>
@@ -652,11 +657,17 @@
     <string name="settings_wallet_management_no_private_keys">ఈ వాలెట్‌లో బ్యాకప్ చేయడానికి స్థానిక ప్రైవేట్ కీలు లేవు.</string>
     <string name="settings_wallet_management_search_private_keys">ప్రైవేట్ కీలను వెతకండి</string>
     <string name="settings_wallet_management_no_private_key_matches">ఈ శోధనకు సరిపోలే ప్రైవేట్ కీలు లేవు.</string>
+    <string name="settings_wallet_management_hidden_secret_value">బహిర్గతం చేసే వరకు దాచబడింది</string>
+    <string name="settings_wallet_management_backup_verify_body">ఈ బ్యాకప్‌ను చూడడానికి మీ యాప్ పాస్‌కోడ్‌ను నమోదు చేయండి. రికవరీ ఫ్రేజ్ లేదా ప్రైవేట్ కీల ఎగుమతికి బయోమెట్రిక్స్ అనుమతించబడవు.</string>
+    <string name="settings_wallet_management_backup_no_passcode_body">రికవరీ ఫ్రేజ్‌లు లేదా ప్రైవేట్ కీలను ఎగుమతి చేసే ముందు యాప్ పాస్‌కోడ్‌ను ఆన్ చేయండి.</string>
+    <string name="settings_wallet_management_continue_to_backup">బ్యాకప్‌కు కొనసాగండి</string>
     <string name="settings_wallet_management_recovery_phrase_label">రికవరీ పదబంధం</string>
     <string name="settings_wallet_management_recovery_phrase_body">ఈ పదాలను క్రమంలో వ్రాసి వాటిని ప్రైవేట్‌గా ఉంచండి.</string>
     <string name="settings_wallet_management_passphrase_label">రికవరీ పాస్‌ఫ్రేజ్</string>
     <string name="settings_wallet_management_passphrase_body">రికవరీ పదబంధంతో ఈ అదనపు రహస్యం అవసరం.</string>
     <string name="settings_wallet_management_copy_secret">బ్యాకప్ విలువను కాపీ చేయండి</string>
+    <string name="settings_wallet_management_reveal_secret">బ్యాకప్ విలువను చూపించండి</string>
+    <string name="settings_wallet_management_hide_secret">బ్యాకప్ విలువను దాచండి</string>
     <string name="settings_wallet_management_remove_warning_body">వాలెట్‌ను తీసివేయడం వలన ఈ పరికరం నుండి దాని స్థానిక చిరునామాలు, గుప్తీకరించిన రహస్యాలు, బ్యాలెన్స్‌లు మరియు లావాదేవీ కాష్ తొలగించబడతాయి.</string>
     <string name="settings_wallet_management_remove_warning">మీరు %1$sని తీసివేస్తున్నారు. మీరు ఇప్పటికే దాని పునరుద్ధరణ పదబంధాన్ని లేదా ప్రైవేట్ కీలను బ్యాకప్ చేసి ఉంటే తప్ప Satra ఈ వాలెట్‌ని పునరుద్ధరించలేరు.</string>
     <string name="settings_wallet_management_remove_confirm_label">కొనసాగించడానికి REMOVE అని టైప్ చేయండి</string>
@@ -691,6 +702,10 @@
     <string name="settings_currency_title">కరెన్సీ</string>
     <string name="settings_currency_body">నిల్వల కోసం ఉపయోగించే స్థానిక కరెన్సీని ఎంచుకోండి. Satra ధరల ఆస్తులు ముందుగా USDలో, తర్వాత ఉచిత FX ​​రేట్ల ద్వారా మార్చబడతాయి.</string>
     <string name="settings_currency_option_title">%1$s · %2$s</string>
+    <string name="settings_currency_search_placeholder">కరెన్సీలను వెతకండి</string>
+    <string name="settings_currency_search_clear">కరెన్సీ శోధనను క్లియర్ చేయండి</string>
+    <string name="settings_currency_no_search_results_title">సరిపోలే కరెన్సీలు లేవు</string>
+    <string name="settings_currency_no_search_results_body">కరెన్సీ కోడ్, పేరు లేదా గుర్తుతో శోధించండి.</string>
     <string name="settings_currency_name_adp">అండోరన్ పెసెటా</string>
     <string name="settings_currency_name_aed">యునైటెడ్ ఆరబ్ ఎమిరేట్స్ దిరామ్</string>
     <string name="settings_currency_name_afa">ఆఫ్ఘన్ ఆఫ్ఘని (1927–2002)</string>

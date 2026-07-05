@@ -303,6 +303,7 @@
     <string name="home_wallet_switcher_title">銀包</string>
     <string name="home_wallet_switcher_body">揀呢部裝置上面顯示嘅錢包 Satra 。</string>
     <string name="home_wallet_switcher_active">活躍</string>
+    <string name="home_wallet_switcher_manage">管理銀包</string>
     <string name="home_wallet_switcher_create">建立錢包</string>
     <string name="home_wallet_switcher_import">匯入錢包</string>
     <string name="home_wallet_switcher_empty_title">仲未有銀包</string>
@@ -440,6 +441,7 @@
     <string name="receive_address_variant">地址類型</string>
     <string name="receive_assets_title">揀資產</string>
     <string name="receive_assets_count">支援 %1$d</string>
+    <string name="asset_type_native">原生</string>
     <string name="send_choose_asset_title">寄送</string>
     <string name="send_choose_network_title">揀網絡</string>
     <string name="send_compose_title">傳送詳情</string>
@@ -493,6 +495,9 @@
     <string name="send_section_your_assets">你嘅資產</string>
     <string name="send_section_all_assets">全部支援</string>
     <string name="send_assets_shown">顯示咗 %1$d</string>
+    <string name="send_no_spendable_assets_title">暫時未有可發送資產</string>
+    <string name="send_no_spendable_assets_body">請先收款再發送。如需查看網絡支援，你仍可瀏覽支援嘅資產。</string>
+    <string name="send_browse_supported_assets">瀏覽支援資產</string>
     <string name="send_asset_empty_search">冇資產同呢個搜尋相符。</string>
     <string name="send_asset_empty_search_title">冇匹配嘅資產</string>
     <string name="send_asset_empty_search_body">冇相符項目 — Satra 只會列出已發布清單入面嘅資產。</string>
@@ -652,11 +657,17 @@
     <string name="settings_wallet_management_no_private_keys">呢個錢包冇本地私人密鑰可以備份。</string>
     <string name="settings_wallet_management_search_private_keys">搜尋私鑰</string>
     <string name="settings_wallet_management_no_private_key_matches">沒有私鑰符合此搜尋。</string>
+    <string name="settings_wallet_management_hidden_secret_value">顯示前隱藏</string>
+    <string name="settings_wallet_management_backup_verify_body">輸入應用程式密碼以查看此備份。匯出恢復詞或私鑰時不可使用生物識別。</string>
+    <string name="settings_wallet_management_backup_no_passcode_body">請先開啟應用程式密碼，然後再匯出恢復詞或私鑰。</string>
+    <string name="settings_wallet_management_continue_to_backup">繼續備份</string>
     <string name="settings_wallet_management_recovery_phrase_label">復原詞組</string>
     <string name="settings_wallet_management_recovery_phrase_body">按順序寫呢啲字，同埋保密。</string>
     <string name="settings_wallet_management_passphrase_label">恢復密碼短語</string>
     <string name="settings_wallet_management_passphrase_body">呢個額外嘅秘密係復原短語所需要嘅。</string>
     <string name="settings_wallet_management_copy_secret">複製備份值</string>
+    <string name="settings_wallet_management_reveal_secret">顯示備份值</string>
+    <string name="settings_wallet_management_hide_secret">隱藏備份值</string>
     <string name="settings_wallet_management_remove_warning_body">移除錢包會喺呢部裝置刪除佢嘅本地地址、加密秘密、餘額同埋交易快取。</string>
     <string name="settings_wallet_management_remove_warning">你移除緊 %1$s 。除非你已經備份咗佢嘅恢復短語或者私人密鑰，否則 Satra 唔可以還原呢個錢包。</string>
     <string name="settings_wallet_management_remove_confirm_label">輸入 REMOVE 繼續</string>
@@ -691,6 +702,10 @@
     <string name="settings_currency_title">貨幣</string>
     <string name="settings_currency_body">揀用嚟結餘嘅本地貨幣。 Satra 先以 USD 定價資產，然後透過免費外匯利率轉換。</string>
     <string name="settings_currency_option_title">%1$s · %2$s</string>
+    <string name="settings_currency_search_placeholder">搜尋貨幣</string>
+    <string name="settings_currency_search_clear">清除貨幣搜尋</string>
+    <string name="settings_currency_no_search_results_title">冇相符貨幣</string>
+    <string name="settings_currency_no_search_results_body">請試下用貨幣代碼、名稱或符號搜尋。</string>
     <string name="settings_currency_name_adp">安道爾 · 佩塞塔</string>
     <string name="settings_currency_name_aed">阿拉伯聯合酋長國迪拉姆</string>
     <string name="settings_currency_name_afa">阿富汗人阿富汗人（1927年至2002年）</string>

@@ -303,6 +303,7 @@
     <string name="home_wallet_switcher_title">Ví</string>
     <string name="home_wallet_switcher_body">Chọn ví Satra hiển thị trên thiết bị này.</string>
     <string name="home_wallet_switcher_active">Tích cực</string>
+    <string name="home_wallet_switcher_manage">Quản lý ví</string>
     <string name="home_wallet_switcher_create">Tạo ví</string>
     <string name="home_wallet_switcher_import">Nhập ví</string>
     <string name="home_wallet_switcher_empty_title">Chưa có ví</string>
@@ -440,6 +441,7 @@
     <string name="receive_address_variant">Loại địa chỉ</string>
     <string name="receive_assets_title">Chọn nội dung</string>
     <string name="receive_assets_count">Hỗ trợ %1$d</string>
+    <string name="asset_type_native">Gốc</string>
     <string name="send_choose_asset_title">Gửi</string>
     <string name="send_choose_network_title">Chọn mạng</string>
     <string name="send_compose_title">Gửi chi tiết</string>
@@ -493,6 +495,9 @@
     <string name="send_section_your_assets">Tài sản của bạn</string>
     <string name="send_section_all_assets">Tất cả được hỗ trợ</string>
     <string name="send_assets_shown">%1$d hiển thị</string>
+    <string name="send_no_spendable_assets_title">Chưa có tài sản để gửi</string>
+    <string name="send_no_spendable_assets_body">Hãy nhận tiền trước khi gửi. Bạn vẫn có thể duyệt các tài sản được hỗ trợ nếu cần kiểm tra hỗ trợ mạng.</string>
+    <string name="send_browse_supported_assets">Duyệt tài sản được hỗ trợ</string>
     <string name="send_asset_empty_search">Không có nội dung nào khớp với tìm kiếm này.</string>
     <string name="send_asset_empty_search_title">Không có nội dung phù hợp</string>
     <string name="send_asset_empty_search_body">Không có kết quả phù hợp — Satra chỉ liệt kê tài sản từ danh sách đã công bố.</string>
@@ -652,11 +657,17 @@
     <string name="settings_wallet_management_no_private_keys">Ví này không có khóa riêng cục bộ để sao lưu.</string>
     <string name="settings_wallet_management_search_private_keys">Tìm khóa riêng tư</string>
     <string name="settings_wallet_management_no_private_key_matches">Không có khóa riêng tư nào khớp với tìm kiếm này.</string>
+    <string name="settings_wallet_management_hidden_secret_value">Ẩn cho đến khi hiển thị</string>
+    <string name="settings_wallet_management_backup_verify_body">Nhập mã khóa ứng dụng để xem bản sao lưu này. Không được dùng sinh trắc học để xuất cụm từ khôi phục hoặc khóa riêng.</string>
+    <string name="settings_wallet_management_backup_no_passcode_body">Bật mã khóa ứng dụng trước khi xuất cụm từ khôi phục hoặc khóa riêng.</string>
+    <string name="settings_wallet_management_continue_to_backup">Tiếp tục tới sao lưu</string>
     <string name="settings_wallet_management_recovery_phrase_label">Cụm từ khôi phục</string>
     <string name="settings_wallet_management_recovery_phrase_body">Viết những từ này theo thứ tự và giữ chúng ở chế độ riêng tư.</string>
     <string name="settings_wallet_management_passphrase_label">Cụm mật khẩu khôi phục</string>
     <string name="settings_wallet_management_passphrase_body">Bí mật bổ sung này là bắt buộc với cụm từ khôi phục.</string>
     <string name="settings_wallet_management_copy_secret">Sao chép giá trị dự phòng</string>
+    <string name="settings_wallet_management_reveal_secret">Hiển thị giá trị sao lưu</string>
+    <string name="settings_wallet_management_hide_secret">Ẩn giá trị sao lưu</string>
     <string name="settings_wallet_management_remove_warning_body">Việc xóa ví sẽ xóa địa chỉ cục bộ, bí mật được mã hóa, số dư và bộ đệm giao dịch khỏi thiết bị này.</string>
     <string name="settings_wallet_management_remove_warning">Bạn đang loại bỏ %1$s. Satra không thể khôi phục ví này trừ khi bạn đã sao lưu cụm từ khôi phục hoặc khóa riêng.</string>
     <string name="settings_wallet_management_remove_confirm_label">Gõ REMOVE để tiếp tục</string>
@@ -691,6 +702,10 @@
     <string name="settings_currency_title">Tiền tệ</string>
     <string name="settings_currency_body">Chọn loại nội tệ được sử dụng cho số dư. Satra định giá tài sản bằng USD trước, sau đó chuyển đổi thông qua tỷ giá hối đoái miễn phí.</string>
     <string name="settings_currency_option_title">%1$s · %2$s</string>
+    <string name="settings_currency_search_placeholder">Tìm tiền tệ</string>
+    <string name="settings_currency_search_clear">Xóa tìm kiếm tiền tệ</string>
+    <string name="settings_currency_no_search_results_title">Không có tiền tệ phù hợp</string>
+    <string name="settings_currency_no_search_results_body">Thử tìm theo mã, tên hoặc ký hiệu tiền tệ.</string>
     <string name="settings_currency_name_adp">Đồng Peseta của Andora</string>
     <string name="settings_currency_name_aed">Dirham UAE</string>
     <string name="settings_currency_name_afa">Đồng Afghani của Afghanistan (1927–2002)</string>

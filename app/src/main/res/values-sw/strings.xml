@@ -303,6 +303,7 @@
     <string name="home_wallet_switcher_title">Pochi</string>
     <string name="home_wallet_switcher_body">Chagua onyesho la mkoba la Satra kwenye kifaa hiki.</string>
     <string name="home_wallet_switcher_active">Inayotumika</string>
+    <string name="home_wallet_switcher_manage">Dhibiti pochi</string>
     <string name="home_wallet_switcher_create">Unda mkoba</string>
     <string name="home_wallet_switcher_import">Ingiza pochi</string>
     <string name="home_wallet_switcher_empty_title">Hakuna pochi bado</string>
@@ -440,6 +441,7 @@
     <string name="receive_address_variant">Aina ya anwani</string>
     <string name="receive_assets_title">Chagua mali</string>
     <string name="receive_assets_count">%1$d inaungwa mkono</string>
+    <string name="asset_type_native">Asili</string>
     <string name="send_choose_asset_title">Tuma</string>
     <string name="send_choose_network_title">Chagua mtandao</string>
     <string name="send_compose_title">Tuma maelezo</string>
@@ -493,6 +495,9 @@
     <string name="send_section_your_assets">Mali zako</string>
     <string name="send_section_all_assets">Zote zinazotumika</string>
     <string name="send_assets_shown">%1$d imeonyeshwa</string>
+    <string name="send_no_spendable_assets_title">Bado hakuna mali za kutuma</string>
+    <string name="send_no_spendable_assets_body">Pokea fedha kabla ya kutuma. Bado unaweza kuvinjari mali zinazotumika ikiwa unahitaji kuangalia usaidizi wa mtandao.</string>
+    <string name="send_browse_supported_assets">Vinjari mali zinazotumika</string>
     <string name="send_asset_empty_search">Hakuna vipengee vinavyolingana na utafutaji huu.</string>
     <string name="send_asset_empty_search_title">Hakuna mali zinazolingana</string>
     <string name="send_asset_empty_search_body">Hakuna kinacholingana — Satra huorodhesha tu mali zilizo kwenye orodha yake iliyochapishwa.</string>
@@ -652,11 +657,17 @@
     <string name="settings_wallet_management_no_private_keys">Mkoba huu hauna funguo za kibinafsi za ndani za kuhifadhi nakala.</string>
     <string name="settings_wallet_management_search_private_keys">Tafuta funguo binafsi</string>
     <string name="settings_wallet_management_no_private_key_matches">Hakuna funguo binafsi zinazolingana na utafutaji huu.</string>
+    <string name="settings_wallet_management_hidden_secret_value">Imefichwa hadi ionyeshwe</string>
+    <string name="settings_wallet_management_backup_verify_body">Weka nambari ya siri ya programu ili kuona nakala hii. Biometriki haziruhusiwi kwa kuhamisha kifungu cha kurejesha au funguo binafsi.</string>
+    <string name="settings_wallet_management_backup_no_passcode_body">Washa nambari ya siri ya programu kabla ya kuhamisha vifungu vya kurejesha au funguo binafsi.</string>
+    <string name="settings_wallet_management_continue_to_backup">Endelea kwenye nakala</string>
     <string name="settings_wallet_management_recovery_phrase_label">Maneno ya kurejesha</string>
     <string name="settings_wallet_management_recovery_phrase_body">Andika maneno haya kwa mpangilio na uyaweke faragha.</string>
     <string name="settings_wallet_management_passphrase_label">Nenosiri la urejeshaji</string>
     <string name="settings_wallet_management_passphrase_body">Siri hii ya ziada inahitajika kwa maneno ya kurejesha.</string>
     <string name="settings_wallet_management_copy_secret">Nakili thamani ya chelezo</string>
+    <string name="settings_wallet_management_reveal_secret">Onyesha thamani ya nakala</string>
+    <string name="settings_wallet_management_hide_secret">Ficha thamani ya nakala</string>
     <string name="settings_wallet_management_remove_warning_body">Kuondoa pochi hufuta anwani zake za ndani, siri zilizosimbwa, salio na akiba ya muamala kutoka kwa kifaa hiki.</string>
     <string name="settings_wallet_management_remove_warning">Unaondoa %1$s. Satra haiwezi kurejesha pochi hii isipokuwa tayari una kifungu chake cha maneno cha urejeshaji au funguo za faragha zilizochelezwa.</string>
     <string name="settings_wallet_management_remove_confirm_label">Andika REMOVE ili kuendelea</string>
@@ -691,6 +702,10 @@
     <string name="settings_currency_title">Sarafu</string>
     <string name="settings_currency_body">Chagua sarafu ya nchi inayotumika kusalia. Bidhaa za bei za Satra katika USD kwanza, kisha kubadilisha kupitia viwango vya FX visivyolipishwa.</string>
     <string name="settings_currency_option_title">%1$s · %2$s</string>
+    <string name="settings_currency_search_placeholder">Tafuta sarafu</string>
+    <string name="settings_currency_search_clear">Futa utafutaji wa sarafu</string>
+    <string name="settings_currency_no_search_results_title">Hakuna sarafu zinazolingana</string>
+    <string name="settings_currency_no_search_results_body">Jaribu kutafuta kwa msimbo, jina, au alama ya sarafu.</string>
     <string name="settings_currency_name_adp">Andorran Peseta</string>
     <string name="settings_currency_name_aed">Dirham ya Falme za Kiarabu</string>
     <string name="settings_currency_name_afa">Afghan Afghani (1927-2002)</string>

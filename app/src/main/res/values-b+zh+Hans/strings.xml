@@ -303,6 +303,7 @@
     <string name="home_wallet_switcher_title">钱包</string>
     <string name="home_wallet_switcher_body">选择该设备上显示的钱包Satra。</string>
     <string name="home_wallet_switcher_active">积极的</string>
+    <string name="home_wallet_switcher_manage">管理钱包</string>
     <string name="home_wallet_switcher_create">创建钱包</string>
     <string name="home_wallet_switcher_import">导入钱包</string>
     <string name="home_wallet_switcher_empty_title">还没有钱包</string>
@@ -440,6 +441,7 @@
     <string name="receive_address_variant">地址类型</string>
     <string name="receive_assets_title">选择资产</string>
     <string name="receive_assets_count">支持%1$d</string>
+    <string name="asset_type_native">原生</string>
     <string name="send_choose_asset_title">发送</string>
     <string name="send_choose_network_title">选择网络</string>
     <string name="send_compose_title">发送详细信息</string>
@@ -493,6 +495,9 @@
     <string name="send_section_your_assets">您的资产</string>
     <string name="send_section_all_assets">全部支持</string>
     <string name="send_assets_shown">%1$d</string>
+    <string name="send_no_spendable_assets_title">还没有可发送的资产</string>
+    <string name="send_no_spendable_assets_body">请先接收资金再发送。你仍可浏览支持的资产以查看网络支持情况。</string>
+    <string name="send_browse_supported_assets">浏览支持的资产</string>
     <string name="send_asset_empty_search">没有与此搜索匹配的资产。</string>
     <string name="send_asset_empty_search_title">没有匹配的资产</string>
     <string name="send_asset_empty_search_body">没有匹配项 — Satra 只列出其已发布列表中的资产。</string>
@@ -652,11 +657,17 @@
     <string name="settings_wallet_management_no_private_keys">该钱包没有本地私钥可供备份。</string>
     <string name="settings_wallet_management_search_private_keys">搜索私钥</string>
     <string name="settings_wallet_management_no_private_key_matches">没有私钥匹配此搜索。</string>
+    <string name="settings_wallet_management_hidden_secret_value">显示前隐藏</string>
+    <string name="settings_wallet_management_backup_verify_body">输入应用密码以查看此备份。导出助记词或私钥时不能使用生物识别。</string>
+    <string name="settings_wallet_management_backup_no_passcode_body">请先开启应用密码，然后再导出助记词或私钥。</string>
+    <string name="settings_wallet_management_continue_to_backup">继续备份</string>
     <string name="settings_wallet_management_recovery_phrase_label">恢复短语</string>
     <string name="settings_wallet_management_recovery_phrase_body">按顺序写下这些单词并保密。</string>
     <string name="settings_wallet_management_passphrase_label">恢复密码</string>
     <string name="settings_wallet_management_passphrase_body">恢复短语需要此额外密码。</string>
     <string name="settings_wallet_management_copy_secret">复制备份值</string>
+    <string name="settings_wallet_management_reveal_secret">显示备份值</string>
+    <string name="settings_wallet_management_hide_secret">隐藏备份值</string>
     <string name="settings_wallet_management_remove_warning_body">删除钱包会从此设备中删除其本地地址、加密机密、余额和交易缓存。</string>
     <string name="settings_wallet_management_remove_warning">您正在删除%1$s。 Satra 无法恢复此钱包，除非您已经备份了其恢复短语或私钥。</string>
     <string name="settings_wallet_management_remove_confirm_label">输入 REMOVE 继续</string>
@@ -691,6 +702,10 @@
     <string name="settings_currency_title">货币</string>
     <string name="settings_currency_body">选择用于余额的本地货币。 Satra 首先对 USD 中的资产进行定价，然后通过自由汇率进行转换。</string>
     <string name="settings_currency_option_title">%1$s ·%2$s</string>
+    <string name="settings_currency_search_placeholder">搜索货币</string>
+    <string name="settings_currency_search_clear">清除货币搜索</string>
+    <string name="settings_currency_no_search_results_title">没有匹配的货币</string>
+    <string name="settings_currency_no_search_results_body">请尝试按货币代码、名称或符号搜索。</string>
     <string name="settings_currency_name_adp">安道尔比塞塔</string>
     <string name="settings_currency_name_aed">阿联酋迪拉姆</string>
     <string name="settings_currency_name_afa">阿富汗人 (1927–2002)</string>

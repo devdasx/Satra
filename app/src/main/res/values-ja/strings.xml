@@ -303,6 +303,7 @@
     <string name="home_wallet_switcher_title">ウォレット</string>
     <string name="home_wallet_switcher_body">このデバイスで Satra が表示されるウォレットを選択します。</string>
     <string name="home_wallet_switcher_active">アクティブ</string>
+    <string name="home_wallet_switcher_manage">ウォレットを管理</string>
     <string name="home_wallet_switcher_create">ウォレットの作成</string>
     <string name="home_wallet_switcher_import">ウォレットをインポート</string>
     <string name="home_wallet_switcher_empty_title">まだウォレットがありません</string>
@@ -440,6 +441,7 @@
     <string name="receive_address_variant">アドレスの種類</string>
     <string name="receive_assets_title">アセットの選択</string>
     <string name="receive_assets_count">%1$d 対応</string>
+    <string name="asset_type_native">ネイティブ</string>
     <string name="send_choose_asset_title">送信</string>
     <string name="send_choose_network_title">ネットワークの選択</string>
     <string name="send_compose_title">詳細を送信する</string>
@@ -493,6 +495,9 @@
     <string name="send_section_your_assets">あなたの資産</string>
     <string name="send_section_all_assets">対応済みすべて</string>
     <string name="send_assets_shown">%1$dを表示</string>
+    <string name="send_no_spendable_assets_title">送信できる資産はまだありません</string>
+    <string name="send_no_spendable_assets_body">送信する前に資金を受け取ってください。ネットワーク対応状況を確認するために、対応資産を参照することはできます。</string>
+    <string name="send_browse_supported_assets">対応資産を参照</string>
     <string name="send_asset_empty_search">この検索に一致するアセットはありません。</string>
     <string name="send_asset_empty_search_title">一致するアセットがありません</string>
     <string name="send_asset_empty_search_body">一致するものがありません — Satra は公開リスト内の資産だけを表示します。</string>
@@ -652,11 +657,17 @@
     <string name="settings_wallet_management_no_private_keys">このウォレットにはバックアップするローカル秘密キーがありません。</string>
     <string name="settings_wallet_management_search_private_keys">秘密鍵を検索</string>
     <string name="settings_wallet_management_no_private_key_matches">この検索に一致する秘密鍵はありません。</string>
+    <string name="settings_wallet_management_hidden_secret_value">表示するまで非表示</string>
+    <string name="settings_wallet_management_backup_verify_body">このバックアップを表示するにはアプリのパスコードを入力してください。リカバリーフレーズまたは秘密鍵のエクスポートでは生体認証は使用できません。</string>
+    <string name="settings_wallet_management_backup_no_passcode_body">リカバリーフレーズまたは秘密鍵をエクスポートする前に、アプリのパスコードをオンにしてください。</string>
+    <string name="settings_wallet_management_continue_to_backup">バックアップへ進む</string>
     <string name="settings_wallet_management_recovery_phrase_label">回復フレーズ</string>
     <string name="settings_wallet_management_recovery_phrase_body">これらの言葉を順番に書き、非公開にしてください。</string>
     <string name="settings_wallet_management_passphrase_label">回復パスフレーズ</string>
     <string name="settings_wallet_management_passphrase_body">この追加のシークレットは、リカバリ フレーズで必要になります。</string>
     <string name="settings_wallet_management_copy_secret">バックアップ値をコピーする</string>
+    <string name="settings_wallet_management_reveal_secret">バックアップ値を表示</string>
+    <string name="settings_wallet_management_hide_secret">バックアップ値を非表示</string>
     <string name="settings_wallet_management_remove_warning_body">ウォレットを削除すると、そのローカル アドレス、暗号化されたシークレット、残高、およびトランザクション キャッシュがこのデバイスから削除されます。</string>
     <string name="settings_wallet_management_remove_warning">%1$s を削除しています。 Satra は、回復フレーズまたは秘密鍵を既にバックアップしていない限り、このウォレットを復元できません。</string>
     <string name="settings_wallet_management_remove_confirm_label">続行するには「REMOVE」と入力してください</string>
@@ -691,6 +702,10 @@
     <string name="settings_currency_title">通貨</string>
     <string name="settings_currency_body">残高に使用する現地通貨を選択します。 Satra は、最初に USD で資産の価格を設定し、その後、無料の為替レートを通じて変換します。</string>
     <string name="settings_currency_option_title">%1$s · %2$s</string>
+    <string name="settings_currency_search_placeholder">通貨を検索</string>
+    <string name="settings_currency_search_clear">通貨検索をクリア</string>
+    <string name="settings_currency_no_search_results_title">一致する通貨がありません</string>
+    <string name="settings_currency_no_search_results_body">通貨コード、名前、または記号で検索してみてください。</string>
     <string name="settings_currency_name_adp">アンドラ ペセタ</string>
     <string name="settings_currency_name_aed">アラブ首長国連邦ディルハム</string>
     <string name="settings_currency_name_afa">アフガニスタン アフガニスタン (1927–2002)</string>

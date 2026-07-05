@@ -303,6 +303,7 @@
     <string name="home_wallet_switcher_title">Mga pitaka</string>
     <string name="home_wallet_switcher_body">Piliin ang wallet na Satra na ipinapakita sa device na ito.</string>
     <string name="home_wallet_switcher_active">Aktibo</string>
+    <string name="home_wallet_switcher_manage">Pamahalaan ang mga wallet</string>
     <string name="home_wallet_switcher_create">Gumawa ng wallet</string>
     <string name="home_wallet_switcher_import">Mag-import ng wallet</string>
     <string name="home_wallet_switcher_empty_title">Wala pang wallet</string>
@@ -440,6 +441,7 @@
     <string name="receive_address_variant">Uri ng address</string>
     <string name="receive_assets_title">Pumili ng asset</string>
     <string name="receive_assets_count">%1$d suportado</string>
+    <string name="asset_type_native">Native</string>
     <string name="send_choose_asset_title">Ipadala</string>
     <string name="send_choose_network_title">Pumili ng network</string>
     <string name="send_compose_title">Magpadala ng mga detalye</string>
@@ -493,6 +495,9 @@
     <string name="send_section_your_assets">Ang iyong mga ari-arian</string>
     <string name="send_section_all_assets">Lahat ng suportado</string>
     <string name="send_assets_shown">%1$d ipinapakita</string>
+    <string name="send_no_spendable_assets_title">Wala pang asset na maipapadala</string>
+    <string name="send_no_spendable_assets_body">Tumanggap muna ng pondo bago magpadala. Maaari mo pa ring tingnan ang mga suportadong asset kung kailangan mong suriin ang suporta ng network.</string>
+    <string name="send_browse_supported_assets">Tingnan ang mga suportadong asset</string>
     <string name="send_asset_empty_search">Walang asset na tumutugma sa paghahanap na ito.</string>
     <string name="send_asset_empty_search_title">Walang tumutugmang asset</string>
     <string name="send_asset_empty_search_body">Walang tumutugma — inililista lang ng Satra ang mga asset mula sa inilathalang listahan nito.</string>
@@ -652,11 +657,17 @@
     <string name="settings_wallet_management_no_private_keys">Ang wallet na ito ay walang mga lokal na pribadong key upang i-back up.</string>
     <string name="settings_wallet_management_search_private_keys">Maghanap ng mga private key</string>
     <string name="settings_wallet_management_no_private_key_matches">Walang private key na tumutugma sa paghahanap na ito.</string>
+    <string name="settings_wallet_management_hidden_secret_value">Nakatago hanggang ipakita</string>
+    <string name="settings_wallet_management_backup_verify_body">Ilagay ang passcode ng app para makita ang backup na ito. Hindi pinapayagan ang biometrics para sa pag-export ng recovery phrase o private keys.</string>
+    <string name="settings_wallet_management_backup_no_passcode_body">I-on ang passcode ng app bago mag-export ng mga recovery phrase o private key.</string>
+    <string name="settings_wallet_management_continue_to_backup">Magpatuloy sa backup</string>
     <string name="settings_wallet_management_recovery_phrase_label">Parirala sa pagbawi</string>
     <string name="settings_wallet_management_recovery_phrase_body">Isulat ang mga salitang ito sa pagkakasunud-sunod at panatilihing pribado ang mga ito.</string>
     <string name="settings_wallet_management_passphrase_label">Passphrase sa pagbawi</string>
     <string name="settings_wallet_management_passphrase_body">Ang dagdag na lihim na ito ay kinakailangan kasama ng parirala sa pagbawi.</string>
     <string name="settings_wallet_management_copy_secret">Kopyahin ang backup na halaga</string>
+    <string name="settings_wallet_management_reveal_secret">Ipakita ang backup value</string>
+    <string name="settings_wallet_management_hide_secret">Itago ang backup value</string>
     <string name="settings_wallet_management_remove_warning_body">Ang pag-alis ng wallet ay magtatanggal ng mga lokal na address, naka-encrypt na lihim, balanse, at cache ng transaksyon nito mula sa device na ito.</string>
     <string name="settings_wallet_management_remove_warning">Tinatanggal mo ang %1$s. Hindi maibabalik ng Satra ang wallet na ito maliban na lang kung naka-back up na ang parirala sa pagbawi o mga pribadong key nito.</string>
     <string name="settings_wallet_management_remove_confirm_label">I-type ang REMOVE upang magpatuloy</string>
@@ -691,6 +702,10 @@
     <string name="settings_currency_title">Pera</string>
     <string name="settings_currency_body">Piliin ang lokal na pera na ginagamit para sa mga balanse. Presyo muna ng Satra ang mga asset sa USD, pagkatapos ay nagko-convert sa pamamagitan ng mga libreng FX rate.</string>
     <string name="settings_currency_option_title">%1$s · %2$s</string>
+    <string name="settings_currency_search_placeholder">Maghanap ng mga currency</string>
+    <string name="settings_currency_search_clear">I-clear ang paghahanap ng currency</string>
+    <string name="settings_currency_no_search_results_title">Walang tumutugmang currency</string>
+    <string name="settings_currency_no_search_results_body">Subukang maghanap gamit ang currency code, pangalan, o simbolo.</string>
     <string name="settings_currency_name_adp">Andorran Peseta</string>
     <string name="settings_currency_name_aed">Dirham ng United Arab Emirates</string>
     <string name="settings_currency_name_afa">Afghan Afghani (1927–2002)</string>

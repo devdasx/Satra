@@ -449,6 +449,7 @@
     <string name="receive_address_variant">Address type</string>
     <string name="receive_assets_title">Choose asset</string>
     <string name="receive_assets_count">%1$d supported</string>
+    <string name="asset_type_native">Native</string>
     <string name="send_choose_asset_title">Send</string>
     <string name="send_choose_network_title">Choose network</string>
     <string name="send_compose_title">Send details</string>

@@ -303,6 +303,7 @@
     <string name="home_wallet_switcher_title">वॉलेट</string>
     <string name="home_wallet_switcher_body">या डिव्हाइसवर Satra शो वॉलेट निवडा.</string>
     <string name="home_wallet_switcher_active">सक्रिय</string>
+    <string name="home_wallet_switcher_manage">वॉलेट व्यवस्थापित करा</string>
     <string name="home_wallet_switcher_create">वॉलेट तयार करा</string>
     <string name="home_wallet_switcher_import">वॉलेट आयात करा</string>
     <string name="home_wallet_switcher_empty_title">अजून पाकीट नाही</string>
@@ -440,6 +441,7 @@
     <string name="receive_address_variant">पत्त्याचा प्रकार</string>
     <string name="receive_assets_title">मालमत्ता निवडा</string>
     <string name="receive_assets_count">%1$d समर्थित</string>
+    <string name="asset_type_native">मूळ</string>
     <string name="send_choose_asset_title">पाठवा</string>
     <string name="send_choose_network_title">नेटवर्क निवडा</string>
     <string name="send_compose_title">तपशील पाठवा</string>
@@ -493,6 +495,9 @@
     <string name="send_section_your_assets">तुमची मालमत्ता</string>
     <string name="send_section_all_assets">सर्व समर्थित</string>
     <string name="send_assets_shown">%1$d दर्शविले</string>
+    <string name="send_no_spendable_assets_title">पाठवण्यासाठी अजून कोणतेही अॅसेट नाहीत</string>
+    <string name="send_no_spendable_assets_body">पाठवण्यापूर्वी निधी प्राप्त करा. नेटवर्क समर्थन तपासण्यासाठी तुम्ही समर्थित अॅसेट अजूनही ब्राउझ करू शकता.</string>
+    <string name="send_browse_supported_assets">समर्थित अॅसेट ब्राउझ करा</string>
     <string name="send_asset_empty_search">या शोधाशी कोणतीही मालमत्ता जुळत नाही.</string>
     <string name="send_asset_empty_search_title">कोणतीही जुळणारी मालमत्ता नाही</string>
     <string name="send_asset_empty_search_body">काहीही जुळत नाही — Satra फक्त प्रकाशित यादीतील मालमत्ता दाखवते.</string>
@@ -652,11 +657,17 @@
     <string name="settings_wallet_management_no_private_keys">या वॉलेटमध्ये बॅकअप घेण्यासाठी स्थानिक खाजगी की नाहीत.</string>
     <string name="settings_wallet_management_search_private_keys">खाजगी की शोधा</string>
     <string name="settings_wallet_management_no_private_key_matches">या शोधाशी कोणतीही खाजगी की जुळत नाही.</string>
+    <string name="settings_wallet_management_hidden_secret_value">उघड करेपर्यंत लपवलेले</string>
+    <string name="settings_wallet_management_backup_verify_body">हा बॅकअप पाहण्यासाठी अॅप पासकोड प्रविष्ट करा. रिकव्हरी फ्रेज किंवा खाजगी की निर्यात करण्यासाठी बायोमेट्रिक्स अनुमत नाहीत.</string>
+    <string name="settings_wallet_management_backup_no_passcode_body">रिकव्हरी फ्रेज किंवा खाजगी की निर्यात करण्यापूर्वी अॅप पासकोड सुरू करा.</string>
+    <string name="settings_wallet_management_continue_to_backup">बॅकअपकडे सुरू ठेवा</string>
     <string name="settings_wallet_management_recovery_phrase_label">पुनर्प्राप्ती वाक्यांश</string>
     <string name="settings_wallet_management_recovery_phrase_body">हे शब्द क्रमाने लिहा आणि ते खाजगी ठेवा.</string>
     <string name="settings_wallet_management_passphrase_label">पुनर्प्राप्ती सांकेतिक वाक्यांश</string>
     <string name="settings_wallet_management_passphrase_body">पुनर्प्राप्ती वाक्यांशासह हे अतिरिक्त रहस्य आवश्यक आहे.</string>
     <string name="settings_wallet_management_copy_secret">बॅकअप मूल्य कॉपी करा</string>
+    <string name="settings_wallet_management_reveal_secret">बॅकअप मूल्य दाखवा</string>
+    <string name="settings_wallet_management_hide_secret">बॅकअप मूल्य लपवा</string>
     <string name="settings_wallet_management_remove_warning_body">वॉलेट काढून टाकल्याने त्याचे स्थानिक पत्ते, कूटबद्ध रहस्ये, शिल्लक आणि व्यवहार कॅशे या डिव्हाइसवरून हटवले जातात.</string>
     <string name="settings_wallet_management_remove_warning">तुम्ही %1$s काढत आहात. Satra हे पाकीट पुनर्संचयित करू शकत नाही जोपर्यंत तुम्ही आधीच रिकव्हरी वाक्यांश किंवा खाजगी की बॅकअप घेतल्याशिवाय.</string>
     <string name="settings_wallet_management_remove_confirm_label">सुरू ठेवण्यासाठी REMOVE टाइप करा</string>
@@ -691,6 +702,10 @@
     <string name="settings_currency_title">चलन</string>
     <string name="settings_currency_body">शिल्लक ठेवण्यासाठी वापरलेले स्थानिक चलन निवडा. Satra किंमत मालमत्ता प्रथम USD मध्ये, नंतर विनामूल्य FX दरांद्वारे रूपांतरित होते.</string>
     <string name="settings_currency_option_title">%1$s · %2$s</string>
+    <string name="settings_currency_search_placeholder">चलने शोधा</string>
+    <string name="settings_currency_search_clear">चलन शोध साफ करा</string>
+    <string name="settings_currency_no_search_results_title">जुळणारी चलने नाहीत</string>
+    <string name="settings_currency_no_search_results_body">चलन कोड, नाव किंवा चिन्ह वापरून शोधून पाहा.</string>
     <string name="settings_currency_name_adp">अंडोरन पेसेटा</string>
     <string name="settings_currency_name_aed">संयुक्त अरब अमिराती दिरहाम</string>
     <string name="settings_currency_name_afa">अफगाण अफगाणी (1927-2002)</string>

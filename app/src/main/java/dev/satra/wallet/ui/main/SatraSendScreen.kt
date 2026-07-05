@@ -391,13 +391,14 @@ fun SatraSendSentScreen(
     onDone: () -> Unit,
     onSendAnother: () -> Unit,
 ) {
+    val nativeAssetLabel = stringResource(R.string.asset_type_native)
     var state by remember(transactionId) {
         mutableStateOf<SendReceiptState>(SendReceiptState.Loading)
     }
 
-    LaunchedEffect(walletRepository, transactionId, initialWalletSnapshot?.walletId) {
+    LaunchedEffect(walletRepository, transactionId, initialWalletSnapshot?.walletId, nativeAssetLabel) {
         while (true) {
-            val receipt = walletRepository.loadSendReceipt(Uri.decode(transactionId))
+            val receipt = walletRepository.loadSendReceipt(Uri.decode(transactionId), nativeAssetLabel)
             state = receipt
             onWalletSnapshotLoaded(walletRepository.loadMainWalletSnapshot())
             val isPending = (receipt as? SendReceiptState.Content)
@@ -500,6 +501,7 @@ private fun SendNetworkSelectionContent(
     onNetworkSelected: (String) -> Unit,
 ) {
     val haptic = LocalHapticFeedback.current
+    val nativeAssetLabel = stringResource(R.string.asset_type_native)
     SatraChooseAssetScaffold(
         title = stringResource(R.string.send_choose_network_title),
         onBack = onBack,
@@ -514,7 +516,7 @@ private fun SendNetworkSelectionContent(
         items(state.assets, key = { row -> row.asset.assetId }) { row ->
             ChooseNetworkRow(
                 networkName = row.network.displayName,
-                standard = row.networkStandardLabel(),
+                standard = row.networkStandardLabel(nativeAssetLabel),
                 primaryAmount = formatCryptoAmount(row.balanceDecimal),
                 secondaryAmount = if (row.fiatAmount > BigDecimal.ZERO) {
                     row.fiatFormatted
@@ -774,6 +776,7 @@ private fun SendReviewContent(
     onSent: (String) -> Unit,
 ) {
     val haptic = LocalHapticFeedback.current
+    val nativeAssetLabel = stringResource(R.string.asset_type_native)
     val scope = rememberCoroutineScope()
     var submitError by remember { mutableStateOf<String?>(null) }
     var sending by remember { mutableStateOf(false) }
@@ -894,7 +897,7 @@ private fun SendReviewContent(
                         rows = listOf(
                             stringResource(R.string.send_review_to) to recipient.shortAddress(),
                             stringResource(R.string.send_review_network) to
-                                "${state.row.network.displayName} · ${state.row.networkStandardLabel()}",
+                                "${state.row.network.displayName} · ${state.row.networkStandardLabel(nativeAssetLabel)}",
                             stringResource(R.string.send_review_fee) to "~${feeQuote.displayText}",
                             stringResource(R.string.send_review_total) to
                                 stringResource(R.string.send_review_total_plus_fee, amountFormatted),
@@ -1604,6 +1607,7 @@ private fun SendAssetGroupRow(
 
 @Composable
 private fun SendRecipientContextLine(row: SendAssetRow) {
+    val nativeAssetLabel = stringResource(R.string.asset_type_native)
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -1639,7 +1643,7 @@ private fun SendRecipientContextLine(row: SendAssetRow) {
         )
         Spacer(modifier = Modifier.width(4.dp))
         Text(
-            text = stringResource(R.string.send_recipient_context_standard, row.networkStandardLabel()),
+            text = stringResource(R.string.send_recipient_context_standard, row.networkStandardLabel(nativeAssetLabel)),
             style = MaterialTheme.typography.labelMedium.copy(fontSize = 12.5.sp, lineHeight = 18.sp),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = FontWeight.Medium,
@@ -2619,7 +2623,10 @@ private fun SatraMainWalletSnapshot.toSendDetailsState(assetId: String): SendDet
         }
     }
 
-private fun SatraMainWalletSnapshot.toSendReceiptState(transactionId: String): SendReceiptState =
+private fun SatraMainWalletSnapshot.toSendReceiptState(
+    transactionId: String,
+    nativeAssetLabel: String,
+): SendReceiptState =
     when (val walletRecord = wallet) {
         null -> SendReceiptState.Empty
         else -> {
@@ -2637,7 +2644,7 @@ private fun SatraMainWalletSnapshot.toSendReceiptState(transactionId: String): S
                 amountFormatted = transaction.receiptAmountFormatted(asset),
                 fiatFormatted = transaction.receiptFiatFormatted(),
                 networkFeeFormatted = transaction.receiptFeeFormatted(network),
-                networkStandardLabel = networkStandardLabelFor(asset, network),
+                networkStandardLabel = networkStandardLabelFor(asset, network, nativeAssetLabel),
                 explorerUrl = transaction.transactionHash?.let { hash -> explorerUrlFor(network.networkId, hash) },
             )
         }
@@ -2688,7 +2695,10 @@ private suspend fun SatraWalletRepository.loadSendDetails(assetId: String): Send
         }
     }
 
-private suspend fun SatraWalletRepository.loadSendReceipt(transactionId: String): SendReceiptState =
+private suspend fun SatraWalletRepository.loadSendReceipt(
+    transactionId: String,
+    nativeAssetLabel: String,
+): SendReceiptState =
     coroutineScope {
         val transaction = getWalletTransaction(transactionId)
             ?: return@coroutineScope SendReceiptState.Empty
@@ -2706,7 +2716,7 @@ private suspend fun SatraWalletRepository.loadSendReceipt(transactionId: String)
             amountFormatted = transaction.receiptAmountFormatted(asset),
             fiatFormatted = transaction.receiptFiatFormatted(),
             networkFeeFormatted = transaction.receiptFeeFormatted(network),
-            networkStandardLabel = networkStandardLabelFor(asset, network),
+            networkStandardLabel = networkStandardLabelFor(asset, network, nativeAssetLabel),
             explorerUrl = transaction.transactionHash?.let { hash -> explorerUrlFor(network.networkId, hash) },
         )
     }
@@ -2848,16 +2858,17 @@ private fun List<SendAssetRow>.sortedByNetworkValue(): List<SendAssetRow> =
             .thenBy { row -> row.network.displayName.lowercase(Locale.US) },
     )
 
-private fun SendAssetRow.networkStandardLabel(): String =
-    networkStandardLabelFor(asset, network)
+private fun SendAssetRow.networkStandardLabel(nativeAssetLabel: String): String =
+    networkStandardLabelFor(asset, network, nativeAssetLabel)
 
 private fun networkStandardLabelFor(
     asset: SupportedAsset,
     network: SupportedNetwork,
+    nativeAssetLabel: String,
 ): String =
     asset.tokenStandard
         ?: network.tokenStandard
-        ?: if (asset.assetType == "NATIVE") "Native" else network.family.uppercase(Locale.US)
+        ?: if (asset.assetType == "NATIVE") nativeAssetLabel else network.family.uppercase(Locale.US)
 
 private fun List<WalletTransactionRecord>.toRecentRecipients(networkId: String): List<SendRecentRecipient> =
     asSequence()

@@ -303,6 +303,7 @@
     <string name="home_wallet_switcher_title">Wallets</string>
     <string name="home_wallet_switcher_body">Choose di wallet Satra shows on this device.</string>
     <string name="home_wallet_switcher_active">Active</string>
+    <string name="home_wallet_switcher_manage">Manage wallets</string>
     <string name="home_wallet_switcher_create">Create wallet</string>
     <string name="home_wallet_switcher_import">Import wallet</string>
     <string name="home_wallet_switcher_empty_title">No wallets yet</string>
@@ -440,6 +441,7 @@
     <string name="receive_address_variant">Address type</string>
     <string name="receive_assets_title">Choose asset</string>
     <string name="receive_assets_count">%1$d supported</string>
+    <string name="asset_type_native">Native</string>
     <string name="send_choose_asset_title">Send</string>
     <string name="send_choose_network_title">Choose network</string>
     <string name="send_compose_title">Send details</string>
@@ -493,6 +495,9 @@
     <string name="send_section_your_assets">Your assets</string>
     <string name="send_section_all_assets">All supported</string>
     <string name="send_assets_shown">%1$d shown</string>
+    <string name="send_no_spendable_assets_title">No asset to send yet</string>
+    <string name="send_no_spendable_assets_body">Receive money before you send. You fit still check supported assets if you want see network support.</string>
+    <string name="send_browse_supported_assets">Browse supported assets</string>
     <string name="send_asset_empty_search">No assets match this search.</string>
     <string name="send_asset_empty_search_title">No matching assets</string>
     <string name="send_asset_empty_search_body">Nothing matches — Satra only lists assets from its published list.</string>
@@ -652,11 +657,17 @@
     <string name="settings_wallet_management_no_private_keys">This wallet no dey have local private keys to back up.</string>
     <string name="settings_wallet_management_search_private_keys">Search private keys</string>
     <string name="settings_wallet_management_no_private_key_matches">No private keys match this search.</string>
+    <string name="settings_wallet_management_hidden_secret_value">Hidden until you reveal am</string>
+    <string name="settings_wallet_management_backup_verify_body">Enter your app passcode to see this backup. Biometric no dey allowed for recovery phrase or private key export.</string>
+    <string name="settings_wallet_management_backup_no_passcode_body">Turn on app passcode before you export recovery phrases or private keys.</string>
+    <string name="settings_wallet_management_continue_to_backup">Continue to backup</string>
     <string name="settings_wallet_management_recovery_phrase_label">Recovery phrase</string>
     <string name="settings_wallet_management_recovery_phrase_body">Write these words in order and keep them private.</string>
     <string name="settings_wallet_management_passphrase_label">Recovery passphrase</string>
     <string name="settings_wallet_management_passphrase_body">This extra secret is required with di recovery phrase.</string>
     <string name="settings_wallet_management_copy_secret">Copy backup value</string>
+    <string name="settings_wallet_management_reveal_secret">Reveal backup value</string>
+    <string name="settings_wallet_management_hide_secret">Hide backup value</string>
     <string name="settings_wallet_management_remove_warning_body">Removing a wallet deletes its local addresses, encrypted secrets, balances, and transaction cache from this device.</string>
     <string name="settings_wallet_management_remove_warning">You dey removing %1$s. Satra no fit restore this wallet unless you already have its recovery phrase or private keys backed up.</string>
     <string name="settings_wallet_management_remove_confirm_label">Type REMOVE to continue</string>
@@ -691,6 +702,10 @@
     <string name="settings_currency_title">Currency</string>
     <string name="settings_currency_body">Choose di local currency used for balances. Satra prices assets in USD first, then converts through free FX rates.</string>
     <string name="settings_currency_option_title">%1$s · %2$s</string>
+    <string name="settings_currency_search_placeholder">Search currencies</string>
+    <string name="settings_currency_search_clear">Clear currency search</string>
+    <string name="settings_currency_no_search_results_title">No matching currencies</string>
+    <string name="settings_currency_no_search_results_body">Try search by currency code, name, or symbol.</string>
     <string name="settings_currency_name_adp">Andorran Peseta</string>
     <string name="settings_currency_name_aed">United Arab Emirates Dirham</string>
     <string name="settings_currency_name_afa">Afghan Afghani (1927–2002)</string>

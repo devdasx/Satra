@@ -303,6 +303,7 @@
     <string name="home_wallet_switcher_title">Кошельки</string>
     <string name="home_wallet_switcher_body">Выберите кошелек, который Satra показывает на этом устройстве.</string>
     <string name="home_wallet_switcher_active">Активный</string>
+    <string name="home_wallet_switcher_manage">Управлять кошельками</string>
     <string name="home_wallet_switcher_create">Создать кошелек</string>
     <string name="home_wallet_switcher_import">Импортировать кошелек</string>
     <string name="home_wallet_switcher_empty_title">Кошельков пока нет</string>
@@ -440,6 +441,7 @@
     <string name="receive_address_variant">Тип адреса</string>
     <string name="receive_assets_title">Выберите актив</string>
     <string name="receive_assets_count">%1$d поддерживается</string>
+    <string name="asset_type_native">Нативный</string>
     <string name="send_choose_asset_title">Отправить</string>
     <string name="send_choose_network_title">Выберите сеть</string>
     <string name="send_compose_title">Отправить подробности</string>
@@ -493,6 +495,9 @@
     <string name="send_section_your_assets">Ваши активы</string>
     <string name="send_section_all_assets">Все поддерживаемые</string>
     <string name="send_assets_shown">%1$d показано</string>
+    <string name="send_no_spendable_assets_title">Пока нет активов для отправки</string>
+    <string name="send_no_spendable_assets_body">Получите средства перед отправкой. Вы также можете просмотреть поддерживаемые активы, чтобы проверить поддержку сетей.</string>
+    <string name="send_browse_supported_assets">Просмотреть поддерживаемые активы</string>
     <string name="send_asset_empty_search">Нет объектов, соответствующих этому запросу.</string>
     <string name="send_asset_empty_search_title">Нет подходящих объектов</string>
     <string name="send_asset_empty_search_body">Совпадений нет — Satra показывает только активы из опубликованного списка.</string>
@@ -652,11 +657,17 @@
     <string name="settings_wallet_management_no_private_keys">В этом кошельке нет локальных закрытых ключей для резервного копирования.</string>
     <string name="settings_wallet_management_search_private_keys">Поиск приватных ключей</string>
     <string name="settings_wallet_management_no_private_key_matches">Нет приватных ключей, соответствующих этому поиску.</string>
+    <string name="settings_wallet_management_hidden_secret_value">Скрыто до раскрытия</string>
+    <string name="settings_wallet_management_backup_verify_body">Введите код доступа приложения, чтобы увидеть эту резервную копию. Биометрия недоступна для экспорта фразы восстановления или приватных ключей.</string>
+    <string name="settings_wallet_management_backup_no_passcode_body">Включите код доступа приложения перед экспортом фраз восстановления или приватных ключей.</string>
+    <string name="settings_wallet_management_continue_to_backup">Перейти к резервной копии</string>
     <string name="settings_wallet_management_recovery_phrase_label">Восстановительная фраза</string>
     <string name="settings_wallet_management_recovery_phrase_body">Напишите эти слова по порядку и держите их в тайне.</string>
     <string name="settings_wallet_management_passphrase_label">Кодовая фраза восстановления</string>
     <string name="settings_wallet_management_passphrase_body">Этот дополнительный секрет необходим для фразы восстановления.</string>
     <string name="settings_wallet_management_copy_secret">Скопировать резервное значение</string>
+    <string name="settings_wallet_management_reveal_secret">Показать значение резервной копии</string>
+    <string name="settings_wallet_management_hide_secret">Скрыть значение резервной копии</string>
     <string name="settings_wallet_management_remove_warning_body">При удалении кошелька с этого устройства удаляются его локальные адреса, зашифрованные секреты, балансы и кеш транзакций.</string>
     <string name="settings_wallet_management_remove_warning">Вы удаляете %1$s. Satra не ​​сможет восстановить этот кошелек, если у вас уже нет резервной копии его фразы восстановления или закрытых ключей.</string>
     <string name="settings_wallet_management_remove_confirm_label">Введите REMOVE, чтобы продолжить.</string>
@@ -691,6 +702,10 @@
     <string name="settings_currency_title">Валюта</string>
     <string name="settings_currency_body">Выберите местную валюту, используемую для балансов. Satra сначала оценивает активы в USD, а затем конвертирует их по свободным валютным курсам.</string>
     <string name="settings_currency_option_title">%1$s · %2$s</string>
+    <string name="settings_currency_search_placeholder">Поиск валют</string>
+    <string name="settings_currency_search_clear">Очистить поиск валюты</string>
+    <string name="settings_currency_no_search_results_title">Нет подходящих валют</string>
+    <string name="settings_currency_no_search_results_body">Попробуйте искать по коду, названию или символу валюты.</string>
     <string name="settings_currency_name_adp">Андоррская песета</string>
     <string name="settings_currency_name_aed">Дирхам ОАЭ</string>
     <string name="settings_currency_name_afa">Афганский афгани (1927–2002)</string>

@@ -303,6 +303,7 @@
     <string name="home_wallet_switcher_title">Dompet</string>
     <string name="home_wallet_switcher_body">Pilih dompet yang ditampilkan Satra di perangkat ini.</string>
     <string name="home_wallet_switcher_active">Aktif</string>
+    <string name="home_wallet_switcher_manage">Kelola dompet</string>
     <string name="home_wallet_switcher_create">Buat dompet</string>
     <string name="home_wallet_switcher_import">Impor dompet</string>
     <string name="home_wallet_switcher_empty_title">Belum ada dompet</string>
@@ -440,6 +441,7 @@
     <string name="receive_address_variant">Jenis alamat</string>
     <string name="receive_assets_title">Pilih aset</string>
     <string name="receive_assets_count">%1$d didukung</string>
+    <string name="asset_type_native">Asli</string>
     <string name="send_choose_asset_title">Kirim</string>
     <string name="send_choose_network_title">Pilih jaringan</string>
     <string name="send_compose_title">Kirim detailnya</string>
@@ -493,6 +495,9 @@
     <string name="send_section_your_assets">Aset Anda</string>
     <string name="send_section_all_assets">Semua yang didukung</string>
     <string name="send_assets_shown">%1$d ditampilkan</string>
+    <string name="send_no_spendable_assets_title">Belum ada aset untuk dikirim</string>
+    <string name="send_no_spendable_assets_body">Terima dana sebelum mengirim. Anda masih dapat menelusuri aset yang didukung jika perlu memeriksa dukungan jaringan.</string>
+    <string name="send_browse_supported_assets">Telusuri aset yang didukung</string>
     <string name="send_asset_empty_search">Tidak ada aset yang cocok dengan penelusuran ini.</string>
     <string name="send_asset_empty_search_title">Tidak ada aset yang cocok</string>
     <string name="send_asset_empty_search_body">Tidak ada yang cocok — Satra hanya menampilkan aset dari daftar yang dipublikasikan.</string>
@@ -652,11 +657,17 @@
     <string name="settings_wallet_management_no_private_keys">Dompet ini tidak memiliki kunci pribadi lokal untuk dicadangkan.</string>
     <string name="settings_wallet_management_search_private_keys">Cari kunci privat</string>
     <string name="settings_wallet_management_no_private_key_matches">Tidak ada kunci privat yang cocok dengan pencarian ini.</string>
+    <string name="settings_wallet_management_hidden_secret_value">Tersembunyi hingga ditampilkan</string>
+    <string name="settings_wallet_management_backup_verify_body">Masukkan kode sandi aplikasi untuk melihat cadangan ini. Biometrik tidak diizinkan untuk mengekspor frasa pemulihan atau kunci privat.</string>
+    <string name="settings_wallet_management_backup_no_passcode_body">Aktifkan kode sandi aplikasi sebelum mengekspor frasa pemulihan atau kunci privat.</string>
+    <string name="settings_wallet_management_continue_to_backup">Lanjutkan ke cadangan</string>
     <string name="settings_wallet_management_recovery_phrase_label">Frase pemulihan</string>
     <string name="settings_wallet_management_recovery_phrase_body">Tuliskan kata-kata ini secara berurutan dan jaga kerahasiaannya.</string>
     <string name="settings_wallet_management_passphrase_label">Frasa sandi pemulihan</string>
     <string name="settings_wallet_management_passphrase_body">Rahasia tambahan ini diperlukan dengan frase pemulihan.</string>
     <string name="settings_wallet_management_copy_secret">Salin nilai cadangan</string>
+    <string name="settings_wallet_management_reveal_secret">Tampilkan nilai cadangan</string>
+    <string name="settings_wallet_management_hide_secret">Sembunyikan nilai cadangan</string>
     <string name="settings_wallet_management_remove_warning_body">Menghapus dompet akan menghapus alamat lokal, rahasia terenkripsi, saldo, dan cache transaksi dari perangkat ini.</string>
     <string name="settings_wallet_management_remove_warning">Anda menghapus %1$s. Satra tidak dapat memulihkan dompet ini kecuali Anda sudah memiliki cadangan frase pemulihan atau kunci pribadinya.</string>
     <string name="settings_wallet_management_remove_confirm_label">Ketik REMOVE untuk melanjutkan</string>
@@ -691,6 +702,10 @@
     <string name="settings_currency_title">Mata uang</string>
     <string name="settings_currency_body">Pilih mata uang lokal yang digunakan untuk saldo. Satra memberi harga aset dalam USD terlebih dahulu, lalu mengonversinya melalui kurs FX gratis.</string>
     <string name="settings_currency_option_title">%1$s · %2$s</string>
+    <string name="settings_currency_search_placeholder">Cari mata uang</string>
+    <string name="settings_currency_search_clear">Hapus pencarian mata uang</string>
+    <string name="settings_currency_no_search_results_title">Tidak ada mata uang yang cocok</string>
+    <string name="settings_currency_no_search_results_body">Coba cari berdasarkan kode, nama, atau simbol mata uang.</string>
     <string name="settings_currency_name_adp">Peseta Andorra</string>
     <string name="settings_currency_name_aed">Dirham Uni Emirat Arab</string>
     <string name="settings_currency_name_afa">Afghan Afganistan (1927–2002)</string>

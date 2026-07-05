@@ -303,6 +303,7 @@
     <string name="home_wallet_switcher_title">Cüzdanlar</string>
     <string name="home_wallet_switcher_body">Bu cihazda Satra\'nun gösterdiği cüzdanı seçin.</string>
     <string name="home_wallet_switcher_active">Aktif</string>
+    <string name="home_wallet_switcher_manage">Cüzdanları yönet</string>
     <string name="home_wallet_switcher_create">Cüzdan oluştur</string>
     <string name="home_wallet_switcher_import">Cüzdanı içe aktar</string>
     <string name="home_wallet_switcher_empty_title">Henüz cüzdan yok</string>
@@ -440,6 +441,7 @@
     <string name="receive_address_variant">Adres türü</string>
     <string name="receive_assets_title">Varlık seçin</string>
     <string name="receive_assets_count">%1$d destekleniyor</string>
+    <string name="asset_type_native">Yerel</string>
     <string name="send_choose_asset_title">Gönder</string>
     <string name="send_choose_network_title">Ağ seçin</string>
     <string name="send_compose_title">Ayrıntıları gönder</string>
@@ -493,6 +495,9 @@
     <string name="send_section_your_assets">Varlıklarınız</string>
     <string name="send_section_all_assets">Tüm desteklenenler</string>
     <string name="send_assets_shown">%1$d gösteriliyor</string>
+    <string name="send_no_spendable_assets_title">Henüz gönderilecek varlık yok</string>
+    <string name="send_no_spendable_assets_body">Göndermeden önce fon alın. Ağ desteğini kontrol etmek isterseniz desteklenen varlıklara yine de göz atabilirsiniz.</string>
+    <string name="send_browse_supported_assets">Desteklenen varlıklara göz at</string>
     <string name="send_asset_empty_search">Bu aramayla eşleşen öğe yok.</string>
     <string name="send_asset_empty_search_title">Eşleşen öğe yok</string>
     <string name="send_asset_empty_search_body">Eşleşme yok — Satra yalnızca yayımlanan listesindeki varlıkları gösterir.</string>
@@ -652,11 +657,17 @@
     <string name="settings_wallet_management_no_private_keys">Bu cüzdanın yedeklenecek yerel özel anahtarları yok.</string>
     <string name="settings_wallet_management_search_private_keys">Özel anahtarları ara</string>
     <string name="settings_wallet_management_no_private_key_matches">Bu aramayla eşleşen özel anahtar yok.</string>
+    <string name="settings_wallet_management_hidden_secret_value">Açıklanana kadar gizli</string>
+    <string name="settings_wallet_management_backup_verify_body">Bu yedeği görmek için uygulama parolanızı girin. Kurtarma ifadesi veya özel anahtar dışa aktarma için biyometriye izin verilmez.</string>
+    <string name="settings_wallet_management_backup_no_passcode_body">Kurtarma ifadelerini veya özel anahtarları dışa aktarmadan önce uygulama parolasını açın.</string>
+    <string name="settings_wallet_management_continue_to_backup">Yedeklemeye devam et</string>
     <string name="settings_wallet_management_recovery_phrase_label">Kurtarma ifadesi</string>
     <string name="settings_wallet_management_recovery_phrase_body">Bu kelimeleri sırayla yazın ve gizli tutun.</string>
     <string name="settings_wallet_management_passphrase_label">Kurtarma parolası</string>
     <string name="settings_wallet_management_passphrase_body">Bu ekstra sır, kurtarma ifadesinde gereklidir.</string>
     <string name="settings_wallet_management_copy_secret">Yedekleme değerini kopyala</string>
+    <string name="settings_wallet_management_reveal_secret">Yedek değerini göster</string>
+    <string name="settings_wallet_management_hide_secret">Yedek değerini gizle</string>
     <string name="settings_wallet_management_remove_warning_body">Bir cüzdanın kaldırılması, yerel adreslerini, şifrelenmiş sırlarını, bakiyelerini ve işlem önbelleğini bu cihazdan siler.</string>
     <string name="settings_wallet_management_remove_warning">%1$s\'yu kaldırıyorsunuz. Satra, kurtarma ifadesini veya özel anahtarlarını zaten yedeklemediğiniz sürece bu cüzdanı geri yükleyemez.</string>
     <string name="settings_wallet_management_remove_confirm_label">Devam etmek için REMOVE yazın</string>
@@ -691,6 +702,10 @@
     <string name="settings_currency_title">Para birimi</string>
     <string name="settings_currency_body">Bakiyeler için kullanılan yerel para birimini seçin. Satra, varlıkları önce USD cinsinden fiyatlandırır, ardından serbest döviz kurları aracılığıyla dönüştürür.</string>
     <string name="settings_currency_option_title">%1$s · %2$s</string>
+    <string name="settings_currency_search_placeholder">Para birimlerini ara</string>
+    <string name="settings_currency_search_clear">Para birimi aramasını temizle</string>
+    <string name="settings_currency_no_search_results_title">Eşleşen para birimi yok</string>
+    <string name="settings_currency_no_search_results_body">Para birimi kodu, adı veya sembolüyle aramayı deneyin.</string>
     <string name="settings_currency_name_adp">Andorra Pezetası</string>
     <string name="settings_currency_name_aed">Birleşik Arap Emirlikleri dirhemi</string>
     <string name="settings_currency_name_afa">Afganistan Afganisi (1927–2002)</string>

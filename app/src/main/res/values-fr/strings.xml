@@ -303,6 +303,7 @@
     <string name="home_wallet_switcher_title">Portefeuilles</string>
     <string name="home_wallet_switcher_body">Choisissez le portefeuille que Satra affiche sur cet appareil.</string>
     <string name="home_wallet_switcher_active">Active</string>
+    <string name="home_wallet_switcher_manage">Gérer les portefeuilles</string>
     <string name="home_wallet_switcher_create">Créer un portefeuille</string>
     <string name="home_wallet_switcher_import">Importer un portefeuille</string>
     <string name="home_wallet_switcher_empty_title">Aucun portefeuille pour l\'instant</string>
@@ -440,6 +441,7 @@
     <string name="receive_address_variant">Type d\'adresse</string>
     <string name="receive_assets_title">Choisir l\'actif</string>
     <string name="receive_assets_count">%1$d pris en charge</string>
+    <string name="asset_type_native">Natif</string>
     <string name="send_choose_asset_title">Envoyer</string>
     <string name="send_choose_network_title">Choisissez le réseau</string>
     <string name="send_compose_title">Envoyer les détails</string>
@@ -493,6 +495,9 @@
     <string name="send_section_your_assets">Vos actifs</string>
     <string name="send_section_all_assets">Tous les actifs pris en charge</string>
     <string name="send_assets_shown">%1$d affichés</string>
+    <string name="send_no_spendable_assets_title">Aucun actif à envoyer pour le moment</string>
+    <string name="send_no_spendable_assets_body">Recevez des fonds avant d’envoyer. Vous pouvez toujours parcourir les actifs pris en charge si vous devez vérifier la compatibilité des réseaux.</string>
+    <string name="send_browse_supported_assets">Parcourir les actifs pris en charge</string>
     <string name="send_asset_empty_search">Aucun actif ne correspond à cette recherche.</string>
     <string name="send_asset_empty_search_title">Aucun actif correspondant</string>
     <string name="send_asset_empty_search_body">Aucune correspondance — Satra liste uniquement les actifs de sa liste publiée.</string>
@@ -652,11 +657,17 @@
     <string name="settings_wallet_management_no_private_keys">Ce portefeuille n\'a pas de clés privées locales à sauvegarder.</string>
     <string name="settings_wallet_management_search_private_keys">Rechercher des clés privées</string>
     <string name="settings_wallet_management_no_private_key_matches">Aucune clé privée ne correspond à cette recherche.</string>
+    <string name="settings_wallet_management_hidden_secret_value">Masqué jusqu’à révélation</string>
+    <string name="settings_wallet_management_backup_verify_body">Saisissez le code d’accès de l’application pour voir cette sauvegarde. La biométrie n’est pas autorisée pour exporter une phrase de récupération ou des clés privées.</string>
+    <string name="settings_wallet_management_backup_no_passcode_body">Activez le code d’accès de l’application avant d’exporter des phrases de récupération ou des clés privées.</string>
+    <string name="settings_wallet_management_continue_to_backup">Continuer vers la sauvegarde</string>
     <string name="settings_wallet_management_recovery_phrase_label">Phrase de récupération</string>
     <string name="settings_wallet_management_recovery_phrase_body">Écrivez ces mots dans l\'ordre et gardez-les privés.</string>
     <string name="settings_wallet_management_passphrase_label">Phrase secrète de récupération</string>
     <string name="settings_wallet_management_passphrase_body">Ce secret supplémentaire est requis avec la phrase de récupération.</string>
     <string name="settings_wallet_management_copy_secret">Copier la valeur de sauvegarde</string>
+    <string name="settings_wallet_management_reveal_secret">Révéler la valeur de sauvegarde</string>
+    <string name="settings_wallet_management_hide_secret">Masquer la valeur de sauvegarde</string>
     <string name="settings_wallet_management_remove_warning_body">La suppression d\'un portefeuille supprime ses adresses locales, ses secrets chiffrés, ses soldes et son cache de transactions de cet appareil.</string>
     <string name="settings_wallet_management_remove_warning">Vous supprimez%1$s. Satra ne peut pas restaurer ce portefeuille à moins que vous ayez déjà sauvegardé sa phrase de récupération ou ses clés privées.</string>
     <string name="settings_wallet_management_remove_confirm_label">Tapez REMOVE pour continuer</string>
@@ -691,6 +702,10 @@
     <string name="settings_currency_title">Devise</string>
     <string name="settings_currency_body">Choisissez la devise locale utilisée pour les soldes. Satra évalue d\'abord les actifs en USD, puis les convertit via les taux de change gratuits.</string>
     <string name="settings_currency_option_title">%1$s ·%2$s</string>
+    <string name="settings_currency_search_placeholder">Rechercher des devises</string>
+    <string name="settings_currency_search_clear">Effacer la recherche de devise</string>
+    <string name="settings_currency_no_search_results_title">Aucune devise correspondante</string>
+    <string name="settings_currency_no_search_results_body">Essayez de rechercher par code, nom ou symbole de devise.</string>
     <string name="settings_currency_name_adp">Peseta andorrane</string>
     <string name="settings_currency_name_aed">Dirham des Émirats arabes unis</string>
     <string name="settings_currency_name_afa">Afghani afghan (1927–2002)</string>

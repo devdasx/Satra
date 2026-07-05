@@ -317,6 +317,7 @@ private fun ReceiveNetworkSelectionContent(
     onNetworkSelected: (String) -> Unit,
 ) {
     val haptic = LocalHapticFeedback.current
+    val nativeAssetLabel = stringResource(R.string.asset_type_native)
     SatraChooseAssetScaffold(
         title = stringResource(R.string.receive_choose_network_title),
         onBack = onBack,
@@ -334,7 +335,7 @@ private fun ReceiveNetworkSelectionContent(
         ) { row ->
             ChooseNetworkRow(
                 networkName = row.network.displayName,
-                standard = row.networkStandardLabel(),
+                standard = row.networkStandardLabel(nativeAssetLabel),
                 primaryAmount = formatReceiveCryptoAmount(row.balanceAmount),
                 secondaryAmount = if (row.fiatAmount > BigDecimal.ZERO) {
                     row.fiatFormatted
@@ -884,10 +885,10 @@ private fun List<ReceiveAssetRow>.sortedByNetworkValue(): List<ReceiveAssetRow> 
             .thenBy { row -> row.network.displayName.lowercase(Locale.US) },
     )
 
-private fun ReceiveAssetRow.networkStandardLabel(): String =
+private fun ReceiveAssetRow.networkStandardLabel(nativeAssetLabel: String): String =
     asset.tokenStandard
         ?: network.tokenStandard
-        ?: if (asset.assetType == "NATIVE") "Native" else network.family.uppercase(Locale.US)
+        ?: if (asset.assetType == "NATIVE") nativeAssetLabel else network.family.uppercase(Locale.US)
 
 private fun String.toBigDecimalOrZero(): BigDecimal =
     runCatching { BigDecimal(this) }.getOrDefault(BigDecimal.ZERO)

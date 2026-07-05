@@ -303,6 +303,7 @@
     <string name="home_wallet_switcher_title">Wallets</string>
     <string name="home_wallet_switcher_body">Zaɓi walat ɗin Satra akan wannan na\'urar.</string>
     <string name="home_wallet_switcher_active">Mai aiki</string>
+    <string name="home_wallet_switcher_manage">Sarrafa wallet</string>
     <string name="home_wallet_switcher_create">Ƙirƙiri walat</string>
     <string name="home_wallet_switcher_import">Shigo da walat</string>
     <string name="home_wallet_switcher_empty_title">Babu walat tukuna</string>
@@ -440,6 +441,7 @@
     <string name="receive_address_variant">Nau\'in adireshin</string>
     <string name="receive_assets_title">Zaɓi kadari</string>
     <string name="receive_assets_count">%1$d yana goyan bayan</string>
+    <string name="asset_type_native">Na asali</string>
     <string name="send_choose_asset_title">Aika</string>
     <string name="send_choose_network_title">Zaɓi hanyar sadarwa</string>
     <string name="send_compose_title">Aika cikakkun bayanai</string>
@@ -493,6 +495,9 @@
     <string name="send_section_your_assets">Dukiyar ku</string>
     <string name="send_section_all_assets">Duk masu tallafi</string>
     <string name="send_assets_shown">An nuna %1$d</string>
+    <string name="send_no_spendable_assets_title">Babu kadarori da za a aika tukuna</string>
+    <string name="send_no_spendable_assets_body">Karɓi kuɗi kafin aikawa. Har yanzu za ka iya duba kadarorin da ake tallafawa idan kana son tabbatar da tallafin cibiyar sadarwa.</string>
+    <string name="send_browse_supported_assets">Duba kadarorin da ake tallafawa</string>
     <string name="send_asset_empty_search">Babu wata kadara da ta dace da wannan binciken.</string>
     <string name="send_asset_empty_search_title">Babu kadarorin da suka dace</string>
     <string name="send_asset_empty_search_body">Babu da ya dace — Satra yana nuna kadarori ne kawai daga jerin da aka wallafa.</string>
@@ -652,11 +657,17 @@
     <string name="settings_wallet_management_no_private_keys">Wannan walat ɗin bashi da maɓallan sirri na gida don adanawa.</string>
     <string name="settings_wallet_management_search_private_keys">Nemo maɓallan sirri</string>
     <string name="settings_wallet_management_no_private_key_matches">Babu maɓallan sirri da suka dace da wannan binciken.</string>
+    <string name="settings_wallet_management_hidden_secret_value">A ɓoye har sai an nuna</string>
+    <string name="settings_wallet_management_backup_verify_body">Shigar da lambar sirrin app don ganin wannan ajiyar. Ba a yarda da biometric don fitar da kalmar dawo da asusu ko maɓallan sirri ba.</string>
+    <string name="settings_wallet_management_backup_no_passcode_body">Kunna lambar sirrin app kafin fitar da kalmomin dawo da asusu ko maɓallan sirri.</string>
+    <string name="settings_wallet_management_continue_to_backup">Ci gaba zuwa ajiya</string>
     <string name="settings_wallet_management_recovery_phrase_label">Maganar farfadowa</string>
     <string name="settings_wallet_management_recovery_phrase_body">Rubuta waɗannan kalmomi a cikin tsari kuma a ɓoye su.</string>
     <string name="settings_wallet_management_passphrase_label">Kalmar wucewar dawowa</string>
     <string name="settings_wallet_management_passphrase_body">Ana buƙatar wannan ƙarin sirri tare da kalmar dawo da kalmar.</string>
     <string name="settings_wallet_management_copy_secret">Kwafi darajar madadin</string>
+    <string name="settings_wallet_management_reveal_secret">Nuna ƙimar ajiyar</string>
+    <string name="settings_wallet_management_hide_secret">Ɓoye ƙimar ajiyar</string>
     <string name="settings_wallet_management_remove_warning_body">Cire walat yana share adiresoshin gida, rufaffen sirri, ma\'auni, da ma\'ajin mu\'amala daga wannan na\'urar.</string>
     <string name="settings_wallet_management_remove_warning">Kuna cire %1$s. Satra ba zai iya maido da wannan wallet ɗin ba sai dai idan kun riga kun sami goyan bayan jimlar dawo da ita ko maɓallan sirri.</string>
     <string name="settings_wallet_management_remove_confirm_label">Buga REMOVE don ci gaba</string>
@@ -691,6 +702,10 @@
     <string name="settings_currency_title">Kudi</string>
     <string name="settings_currency_body">Zaɓi kuɗin gida da ake amfani da shi don ma\'auni. Satra yana fara sayar da kadarorin a cikin USD, sannan yana canzawa ta farashin FX kyauta.</string>
     <string name="settings_currency_option_title">%1$s · %2$s</string>
+    <string name="settings_currency_search_placeholder">Nemo kuɗaɗe</string>
+    <string name="settings_currency_search_clear">Share binciken kuɗi</string>
+    <string name="settings_currency_no_search_results_title">Babu kuɗin da ya dace</string>
+    <string name="settings_currency_no_search_results_body">Gwada nema ta lambar kuɗi, suna, ko alama.</string>
     <string name="settings_currency_name_adp">Andorran Peseta</string>
     <string name="settings_currency_name_aed">Dirham na Haɗaɗɗiyar Daular Larabawa</string>
     <string name="settings_currency_name_afa">Afghan Afghani (1927-2002)</string>

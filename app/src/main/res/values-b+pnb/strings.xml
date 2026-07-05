@@ -303,6 +303,7 @@
     <string name="home_wallet_switcher_title">بٹوے</string>
     <string name="home_wallet_switcher_body">اس آلے تے دکھائے جان آلے پرس Satra دا انتخاب کرو۔</string>
     <string name="home_wallet_switcher_active">ترکھا</string>
+    <string name="home_wallet_switcher_manage">والیٹس سنبھالو</string>
     <string name="home_wallet_switcher_create">پرس بناؤ</string>
     <string name="home_wallet_switcher_import">درآمد پرس</string>
     <string name="home_wallet_switcher_empty_title">اجے تک کوئی پرس نئیں</string>
@@ -440,6 +441,7 @@
     <string name="receive_address_variant">پتے دی قسم</string>
     <string name="receive_assets_title">اثاثہ دا انتخاب کرو</string>
     <string name="receive_assets_count">%1$d سپورٹ کیتا گیا</string>
+    <string name="asset_type_native">مقامی</string>
     <string name="send_choose_asset_title">گھلو</string>
     <string name="send_choose_network_title">نیٹ ورک دا انتخاب کرو</string>
     <string name="send_compose_title">تفصیلات بھیجو</string>
@@ -493,6 +495,9 @@
     <string name="send_section_your_assets">تہاڈے اثاثے</string>
     <string name="send_section_all_assets">سارے سپورٹڈ</string>
     <string name="send_assets_shown">%1$d وکھایا گیا</string>
+    <string name="send_no_spendable_assets_title">بھیجن لئی ہن تک کوئی اثاثہ نہیں</string>
+    <string name="send_no_spendable_assets_body">بھیجن توں پہلے فنڈز وصول کرو۔ نیٹ ورک سپورٹ ویکھن لئی تسی ہن وی سپورٹڈ اثاثے براؤز کر سکدے او۔</string>
+    <string name="send_browse_supported_assets">سپورٹڈ اثاثے براؤز کرو</string>
     <string name="send_asset_empty_search">کوئی وی اثاثہ ایس کھوج نال میل نئیں کھاندا۔</string>
     <string name="send_asset_empty_search_title">کوئی مماثل اثاثے نئیں</string>
     <string name="send_asset_empty_search_body">کجھ وی میل نہیں کھاندا — Satra صرف اپنی شائع شدہ فہرست دے اثاثے دکھاندا اے۔</string>
@@ -652,11 +657,17 @@
     <string name="settings_wallet_management_no_private_keys">اس پرس چ بیک اپ لین لئی مقامی نجی چابیاں نئیں ہن۔</string>
     <string name="settings_wallet_management_search_private_keys">پرائیویٹ کنجیاں لبھو</string>
     <string name="settings_wallet_management_no_private_key_matches">اس تلاش نال کوئی پرائیویٹ کنجی نہیں ملی۔</string>
+    <string name="settings_wallet_management_hidden_secret_value">دکھاؤن تک لکیا ہویا</string>
+    <string name="settings_wallet_management_backup_verify_body">ایہ بیک اپ ویکھن لئی ایپ پاس کوڈ درج کرو۔ ریکوری فریز یا پرائیویٹ کیز ایکسپورٹ کرن لئی بایومیٹرک دی اجازت نہیں۔</string>
+    <string name="settings_wallet_management_backup_no_passcode_body">ریکوری فریز یا پرائیویٹ کیز ایکسپورٹ کرن توں پہلے ایپ پاس کوڈ چالو کرو۔</string>
+    <string name="settings_wallet_management_continue_to_backup">بیک اپ ول جاری رکھو</string>
     <string name="settings_wallet_management_recovery_phrase_label">وصولی دا جملہ</string>
     <string name="settings_wallet_management_recovery_phrase_body">ایہناں لفظاں نو ترتیب نال لکھو تے ایہناں نو خفیہ رکھو۔</string>
     <string name="settings_wallet_management_passphrase_label">ریکوری پاس فریس</string>
     <string name="settings_wallet_management_passphrase_body">وصولی دے جملے دے نال ایہ اضافی راز درکار اے۔</string>
     <string name="settings_wallet_management_copy_secret">بیک اپ دی قیمت کاپی کرو</string>
+    <string name="settings_wallet_management_reveal_secret">بیک اپ ویلیو دکھاؤ</string>
+    <string name="settings_wallet_management_hide_secret">بیک اپ ویلیو لکاؤ</string>
     <string name="settings_wallet_management_remove_warning_body">پرس نو ہٹان نال اس آلے توں اس دے مقامی پتے، خفیہ کردہ راز، بیلنس تے لین دین دا کیشہ خارج ہو جاندا اے۔</string>
     <string name="settings_wallet_management_remove_warning">تسی %1$s ہٹا رئے او۔ Satra اس پرس نو بحال نئیں کر سکدا جدوں تک کہ تہاڈے کول پہلے توں ای اس دی بازیابی دا جملہ یا نجی چابیاں دا بیک اپ نئیں اے۔</string>
     <string name="settings_wallet_management_remove_confirm_label">جاری رکھن لئی REMOVE ٹائپ کرو</string>
@@ -691,6 +702,10 @@
     <string name="settings_currency_title">کرنسی</string>
     <string name="settings_currency_body">بیلنس دے لیی استعمال ہون آلی مقامی کرنسی دا انتخاب کرو۔ Satra پہلے USD وچ اثاثیاں دی قیمت طے کردا اے، فیر مفت ایف ایکس شرحاں دے ذریعے تبدیل کردا اے۔</string>
     <string name="settings_currency_option_title">%1$s · %2$s</string>
+    <string name="settings_currency_search_placeholder">کرنسیاں لبھو</string>
+    <string name="settings_currency_search_clear">کرنسی تلاش صاف کرو</string>
+    <string name="settings_currency_no_search_results_title">کوئی ملدی کرنسی نہیں</string>
+    <string name="settings_currency_no_search_results_body">کرنسی کوڈ، ناں، یا نشان نال تلاش کر کے ویکھو۔</string>
     <string name="settings_currency_name_adp">اینڈوران پیسیٹا</string>
     <string name="settings_currency_name_aed">متحدہ عرب امارات درہم</string>
     <string name="settings_currency_name_afa">افغان افغانی (1927–2002)</string>

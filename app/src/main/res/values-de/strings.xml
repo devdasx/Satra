@@ -303,6 +303,7 @@
     <string name="home_wallet_switcher_title">Wallets</string>
     <string name="home_wallet_switcher_body">Wählen Sie die Wallet aus, die Satra auf diesem Gerät anzeigt.</string>
     <string name="home_wallet_switcher_active">Aktiv</string>
+    <string name="home_wallet_switcher_manage">Wallets verwalten</string>
     <string name="home_wallet_switcher_create">Wallet erstellen</string>
     <string name="home_wallet_switcher_import">Wallet importieren</string>
     <string name="home_wallet_switcher_empty_title">Noch keine Wallets</string>
@@ -440,6 +441,7 @@
     <string name="receive_address_variant">Adresstyp</string>
     <string name="receive_assets_title">Wählen Sie Vermögenswert</string>
     <string name="receive_assets_count">%1$d unterstützt</string>
+    <string name="asset_type_native">Nativ</string>
     <string name="send_choose_asset_title">Senden</string>
     <string name="send_choose_network_title">Wählen Sie Netzwerk</string>
     <string name="send_compose_title">Details senden</string>
@@ -493,6 +495,9 @@
     <string name="send_section_your_assets">Ihr Vermögen</string>
     <string name="send_section_all_assets">Alle unterstützten</string>
     <string name="send_assets_shown">%1$d angezeigt</string>
+    <string name="send_no_spendable_assets_title">Noch keine Assets zum Senden</string>
+    <string name="send_no_spendable_assets_body">Empfange zuerst Guthaben, bevor du sendest. Du kannst weiterhin unterstützte Assets durchsuchen, um die Netzwerkunterstützung zu prüfen.</string>
+    <string name="send_browse_supported_assets">Unterstützte Assets durchsuchen</string>
     <string name="send_asset_empty_search">Zu dieser Suche passen keine Assets.</string>
     <string name="send_asset_empty_search_title">Keine passenden Vermögenswerte</string>
     <string name="send_asset_empty_search_body">Keine Übereinstimmung — Satra listet nur Assets aus der veröffentlichten Liste.</string>
@@ -652,11 +657,17 @@
     <string name="settings_wallet_management_no_private_keys">Dieses Wallet verfügt nicht über lokale private Schlüssel zum Sichern.</string>
     <string name="settings_wallet_management_search_private_keys">Private Schlüssel suchen</string>
     <string name="settings_wallet_management_no_private_key_matches">Keine privaten Schlüssel passen zu dieser Suche.</string>
+    <string name="settings_wallet_management_hidden_secret_value">Bis zur Anzeige verborgen</string>
+    <string name="settings_wallet_management_backup_verify_body">Gib den App-Passcode ein, um dieses Backup anzuzeigen. Biometrie ist für den Export von Wiederherstellungsphrasen oder privaten Schlüsseln nicht erlaubt.</string>
+    <string name="settings_wallet_management_backup_no_passcode_body">Aktiviere den App-Passcode, bevor du Wiederherstellungsphrasen oder private Schlüssel exportierst.</string>
+    <string name="settings_wallet_management_continue_to_backup">Weiter zum Backup</string>
     <string name="settings_wallet_management_recovery_phrase_label">Wiederherstellungssatz</string>
     <string name="settings_wallet_management_recovery_phrase_body">Schreiben Sie diese Wörter der Reihe nach auf und halten Sie sie für sich.</string>
     <string name="settings_wallet_management_passphrase_label">Wiederherstellungspassphrase</string>
     <string name="settings_wallet_management_passphrase_body">Dieses zusätzliche Geheimnis ist für die Wiederherstellungsphrase erforderlich.</string>
     <string name="settings_wallet_management_copy_secret">Sicherungswert kopieren</string>
+    <string name="settings_wallet_management_reveal_secret">Backup-Wert anzeigen</string>
+    <string name="settings_wallet_management_hide_secret">Backup-Wert verbergen</string>
     <string name="settings_wallet_management_remove_warning_body">Durch das Entfernen einer Wallet werden ihre lokalen Adressen, verschlüsselten Geheimnisse, Guthaben und der Transaktionscache von diesem Gerät gelöscht.</string>
     <string name="settings_wallet_management_remove_warning">Sie entfernen %1$s. Satra kann dieses Wallet nicht wiederherstellen, es sei denn, Sie haben bereits die Wiederherstellungsphrase oder die privaten Schlüssel gesichert.</string>
     <string name="settings_wallet_management_remove_confirm_label">Geben Sie REMOVE ein, um fortzufahren</string>
@@ -691,6 +702,10 @@
     <string name="settings_currency_title">Währung</string>
     <string name="settings_currency_body">Wählen Sie die lokale Währung aus, die für Salden verwendet wird. Satra bewertet Vermögenswerte zunächst in USD und rechnet sie dann durch kostenlose Wechselkurse um.</string>
     <string name="settings_currency_option_title">%1$s · %2$s</string>
+    <string name="settings_currency_search_placeholder">Währungen suchen</string>
+    <string name="settings_currency_search_clear">Währungssuche löschen</string>
+    <string name="settings_currency_no_search_results_title">Keine passenden Währungen</string>
+    <string name="settings_currency_no_search_results_body">Suche nach Währungscode, Name oder Symbol.</string>
     <string name="settings_currency_name_adp">Andorranische Peseta</string>
     <string name="settings_currency_name_aed">Dirham der Vereinigten Arabischen Emirate</string>
     <string name="settings_currency_name_afa">Afghanischer Afghani (1927–2002)</string>

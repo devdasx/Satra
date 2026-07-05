@@ -303,6 +303,7 @@
     <string name="home_wallet_switcher_title">بٹوے</string>
     <string name="home_wallet_switcher_body">اس ڈیوائس پر والیٹ Satra شوز کا انتخاب کریں۔</string>
     <string name="home_wallet_switcher_active">فعال</string>
+    <string name="home_wallet_switcher_manage">والٹس کا نظم کریں</string>
     <string name="home_wallet_switcher_create">پرس بنائیں</string>
     <string name="home_wallet_switcher_import">پرس درآمد کریں۔</string>
     <string name="home_wallet_switcher_empty_title">ابھی تک کوئی بٹوہ نہیں۔</string>
@@ -440,6 +441,7 @@
     <string name="receive_address_variant">ایڈریس کی قسم</string>
     <string name="receive_assets_title">اثاثہ منتخب کریں۔</string>
     <string name="receive_assets_count">%1$d تعاون یافتہ</string>
+    <string name="asset_type_native">مقامی</string>
     <string name="send_choose_asset_title">بھیجیں۔</string>
     <string name="send_choose_network_title">نیٹ ورک کا انتخاب کریں۔</string>
     <string name="send_compose_title">تفصیلات بھیجیں۔</string>
@@ -493,6 +495,9 @@
     <string name="send_section_your_assets">آپ کے اثاثے</string>
     <string name="send_section_all_assets">تمام معاونت یافتہ</string>
     <string name="send_assets_shown">%1$d دکھایا گیا ہے۔</string>
+    <string name="send_no_spendable_assets_title">بھیجنے کے لیے ابھی کوئی اثاثہ نہیں</string>
+    <string name="send_no_spendable_assets_body">بھیجنے سے پہلے فنڈز وصول کریں۔ اگر آپ کو نیٹ ورک سپورٹ دیکھنی ہو تو آپ اب بھی سپورٹڈ اثاثے براؤز کر سکتے ہیں۔</string>
+    <string name="send_browse_supported_assets">سپورٹڈ اثاثے براؤز کریں</string>
     <string name="send_asset_empty_search">کوئی اثاثہ اس تلاش سے مماثل نہیں ہے۔</string>
     <string name="send_asset_empty_search_title">کوئی مماثل اثاثے نہیں ہیں۔</string>
     <string name="send_asset_empty_search_body">کوئی مماثلت نہیں — Satra صرف اپنی شائع شدہ فہرست کے اثاثے دکھاتا ہے۔</string>
@@ -652,11 +657,17 @@
     <string name="settings_wallet_management_no_private_keys">اس بٹوے میں بیک اپ لینے کے لیے مقامی نجی کلیدیں نہیں ہیں۔</string>
     <string name="settings_wallet_management_search_private_keys">پرائیویٹ کیز تلاش کریں</string>
     <string name="settings_wallet_management_no_private_key_matches">اس تلاش سے کوئی پرائیویٹ کیز مطابقت نہیں رکھتیں۔</string>
+    <string name="settings_wallet_management_hidden_secret_value">ظاہر کرنے تک پوشیدہ</string>
+    <string name="settings_wallet_management_backup_verify_body">یہ بیک اپ دیکھنے کے لیے اپنا ایپ پاس کوڈ درج کریں۔ ریکوری فریز یا پرائیویٹ کیز ایکسپورٹ کرنے کے لیے بایومیٹرک کی اجازت نہیں ہے۔</string>
+    <string name="settings_wallet_management_backup_no_passcode_body">ریکوری فریز یا پرائیویٹ کیز ایکسپورٹ کرنے سے پہلے ایپ پاس کوڈ آن کریں۔</string>
+    <string name="settings_wallet_management_continue_to_backup">بیک اپ پر جاری رکھیں</string>
     <string name="settings_wallet_management_recovery_phrase_label">بازیابی کا جملہ</string>
     <string name="settings_wallet_management_recovery_phrase_body">ان الفاظ کو ترتیب سے لکھیں اور انہیں نجی رکھیں۔</string>
     <string name="settings_wallet_management_passphrase_label">بازیابی کا پاسفریز</string>
     <string name="settings_wallet_management_passphrase_body">یہ اضافی راز بازیافت کے جملہ کے ساتھ درکار ہے۔</string>
     <string name="settings_wallet_management_copy_secret">بیک اپ ویلیو کاپی کریں۔</string>
+    <string name="settings_wallet_management_reveal_secret">بیک اپ ویلیو ظاہر کریں</string>
+    <string name="settings_wallet_management_hide_secret">بیک اپ ویلیو چھپائیں</string>
     <string name="settings_wallet_management_remove_warning_body">بٹوے کو ہٹانے سے اس ڈیوائس سے اس کے مقامی پتے، خفیہ کردہ راز، بیلنس اور لین دین کا کیش حذف ہو جاتا ہے۔</string>
     <string name="settings_wallet_management_remove_warning">آپ %1$s کو ہٹا رہے ہیں۔ Satra اس بٹوے کو بحال نہیں کر سکتا جب تک کہ آپ کے پاس پہلے سے ہی اس کی بازیابی کے جملہ یا نجی کلیدوں کا بیک اپ نہ ہو۔</string>
     <string name="settings_wallet_management_remove_confirm_label">جاری رکھنے کے لیے REMOVE ٹائپ کریں۔</string>
@@ -691,6 +702,10 @@
     <string name="settings_currency_title">کرنسی</string>
     <string name="settings_currency_body">بیلنس کے لیے استعمال ہونے والی مقامی کرنسی کا انتخاب کریں۔ Satra قیمتوں کے اثاثوں کو پہلے USD میں، پھر مفت FX ریٹس کے ذریعے تبدیل کرتا ہے۔</string>
     <string name="settings_currency_option_title">%1$s · %2$s</string>
+    <string name="settings_currency_search_placeholder">کرنسیاں تلاش کریں</string>
+    <string name="settings_currency_search_clear">کرنسی تلاش صاف کریں</string>
+    <string name="settings_currency_no_search_results_title">کوئی مماثل کرنسی نہیں</string>
+    <string name="settings_currency_no_search_results_body">کرنسی کوڈ، نام، یا علامت سے تلاش کرنے کی کوشش کریں۔</string>
     <string name="settings_currency_name_adp">اینڈوران پیسیٹا</string>
     <string name="settings_currency_name_aed">متحدہ عرب امارات درہم</string>
     <string name="settings_currency_name_afa">افغان افغانی (1927-2002)</string>
