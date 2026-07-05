@@ -168,6 +168,12 @@ class SolanaWalletSyncServiceTest {
 
         override suspend fun parsedAccountInfo(address: String): SolanaRpcCallResult<JSONObject?> =
             SolanaRpcCallResult(null, provider, SLOT)
+
+        override suspend fun latestBlockhash(): SolanaRpcCallResult<String> =
+            SolanaRpcCallResult("11111111111111111111111111111111", provider, SLOT)
+
+        override suspend fun sendTransaction(base64Transaction: String): SolanaRpcCallResult<String> =
+            SolanaRpcCallResult(SIGNATURE, provider, SLOT)
     }
 
     private fun parsedUsdcReceiveTransaction(includeBlockTime: Boolean = true): JSONObject =

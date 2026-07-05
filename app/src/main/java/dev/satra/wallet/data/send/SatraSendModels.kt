@@ -14,7 +14,9 @@ data class SatraSendRequest(
     val recipientAddress: String,
     val amountDecimal: String,
     val balanceRaw: String,
+    val walletAssetMetadataJson: String = "{}",
     val privateKeyHex: String,
+    val privateKeysHexByAddress: Map<String, String> = emptyMap(),
     val localCurrencyCode: String,
     val priceFiatValue: String,
 )

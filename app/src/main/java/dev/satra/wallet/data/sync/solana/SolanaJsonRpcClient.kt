@@ -83,6 +83,8 @@ interface SolanaRpcClient {
     suspend fun blockTime(slot: Long): SolanaRpcCallResult<Long?>
     suspend fun tokenLargestAccounts(mint: String): SolanaRpcCallResult<JSONArray>
     suspend fun parsedAccountInfo(address: String): SolanaRpcCallResult<JSONObject?>
+    suspend fun latestBlockhash(): SolanaRpcCallResult<String>
+    suspend fun sendTransaction(base64Transaction: String): SolanaRpcCallResult<String>
 }
 
 class SolanaJsonRpcClient(
@@ -189,6 +191,35 @@ class SolanaJsonRpcClient(
         ) { result ->
             val value = (result as JSONObject).opt("value")
             value.takeUnless { it == JSONObject.NULL } as? JSONObject
+        }
+
+    override suspend fun latestBlockhash(): SolanaRpcCallResult<String> =
+        callVerified(
+            method = "getLatestBlockhash",
+            params = JSONArray()
+                .put(JSONObject().put("commitment", "confirmed")),
+        ) { result ->
+            (result as JSONObject)
+                .optJSONObject("value")
+                ?.optString("blockhash")
+                ?.takeIf(String::isNotBlank)
+                ?: error("Missing Solana latest blockhash.")
+        }
+
+    override suspend fun sendTransaction(base64Transaction: String): SolanaRpcCallResult<String> =
+        callVerified(
+            method = "sendTransaction",
+            params = JSONArray()
+                .put(base64Transaction)
+                .put(
+                    JSONObject()
+                        .put("encoding", "base64")
+                        .put("skipPreflight", false)
+                        .put("preflightCommitment", "confirmed")
+                        .put("maxRetries", 5),
+                ),
+        ) { result ->
+            result as String
         }
 
     private suspend fun <T> callVerified(

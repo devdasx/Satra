@@ -536,7 +536,7 @@ class SatraWalletRepository(
             val walletAsset = walletDao.getWalletAssets(wallet.walletId)
                 .firstOrNull { it.assetId == asset.assetId && it.networkId == asset.networkId }
                 ?: throw SatraSendException.UnsupportedNetwork(asset.networkId)
-            val sourceAddress = walletDao.getWalletAddresses(wallet.walletId)
+            val sourceAddressRecord = walletDao.getWalletAddresses(wallet.walletId)
                 .filter { address ->
                     address.networkId == asset.networkId &&
                         (address.addressType == WalletAddressType.Receive.value || address.addressType == WalletAddressType.WatchOnly.value)
@@ -546,13 +546,23 @@ class SatraWalletRepository(
                         .thenBy { it.addressIndex ?: Int.MAX_VALUE },
                 )
                 .firstOrNull()
-                ?.address
                 ?: throw SatraSendException.MissingSigningKey()
-            val privateKey = walletDao.getWalletPrivateKeys(wallet.walletId)
-                .firstOrNull { key -> key.networkId == asset.networkId }
+            val privateKeys = walletDao.getWalletPrivateKeys(wallet.walletId)
+            val privateKey = privateKeys
+                .firstOrNull { key -> key.addressId == sourceAddressRecord.addressId }
+                ?: privateKeys.firstOrNull { key -> key.networkId == asset.networkId }
                 ?: throw SatraSendException.MissingSigningKey()
             val privateKeyHex = decryptSecret(privateKey.secretId)
                 ?: throw SatraSendException.MissingSigningKey()
+            val addressesById = walletDao.getWalletAddresses(wallet.walletId).associateBy { it.addressId }
+            val privateKeysHexByAddress = privateKeys
+                .filter { key -> key.networkId == asset.networkId }
+                .mapNotNull { key ->
+                    val address = key.addressId?.let(addressesById::get)?.address ?: return@mapNotNull null
+                    val secret = decryptSecret(key.secretId) ?: return@mapNotNull null
+                    address to secret
+                }
+                .toMap()
 
             val broadcast = sendService.signAndBroadcast(
                 SatraSendRequest(
@@ -563,11 +573,13 @@ class SatraWalletRepository(
                     assetType = asset.assetType,
                     decimals = asset.decimals,
                     contractAddress = asset.contractAddress,
-                    sourceAddress = sourceAddress,
+                    sourceAddress = sourceAddressRecord.address,
                     recipientAddress = recipientAddress,
                     amountDecimal = amountDecimal.stripTrailingZeros().toPlainString(),
                     balanceRaw = walletAsset.balanceRaw,
+                    walletAssetMetadataJson = walletAsset.metadataJson,
                     privateKeyHex = privateKeyHex,
+                    privateKeysHexByAddress = privateKeysHexByAddress,
                     localCurrencyCode = wallet.localCurrencyCode,
                     priceFiatValue = walletAsset.priceFiatValue,
                 ),

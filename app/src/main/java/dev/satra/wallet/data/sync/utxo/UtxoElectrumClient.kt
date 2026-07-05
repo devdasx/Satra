@@ -211,6 +211,38 @@ class UtxoElectrumClient(
             }.toMap()
         }
 
+    suspend fun estimateFeePerKilobyte(
+        provider: UtxoElectrumProvider,
+        targetBlocks: Int = 3,
+    ): Double =
+        withContext(Dispatchers.IO) {
+            val response = callBatchResponses(
+                provider = provider,
+                method = "blockchain.estimatefee",
+                params = listOf(listOf(targetBlocks.coerceAtLeast(1))),
+            ).single()
+            response.error?.let { error(it) }
+            (response.result as? Number)?.toDouble()
+                ?.takeIf { it > 0.0 }
+                ?: error("Missing Electrum fee estimate.")
+        }
+
+    suspend fun broadcastTransaction(
+        provider: UtxoElectrumProvider,
+        rawTransactionHex: String,
+    ): String =
+        withContext(Dispatchers.IO) {
+            val response = callBatchResponses(
+                provider = provider,
+                method = "blockchain.transaction.broadcast",
+                params = listOf(listOf(rawTransactionHex)),
+            ).single()
+            response.error?.let { error(it) }
+            (response.result as? String)
+                ?.takeIf(String::isNotBlank)
+                ?: error("Missing Electrum broadcast transaction hash.")
+        }
+
     private fun callBatchResponses(
         provider: UtxoElectrumProvider,
         method: String,

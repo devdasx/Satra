@@ -2,11 +2,40 @@ package dev.satra.wallet.data.send
 
 import dev.satra.wallet.data.assets.SupportedAssetCatalog
 import dev.satra.wallet.data.assets.SupportedNetwork
+import dev.satra.wallet.data.send.aptos.AptosSendClient
+import dev.satra.wallet.data.send.aptos.AptosSigningRequest
+import dev.satra.wallet.data.send.aptos.AptosTransactionSigner
+import dev.satra.wallet.data.send.cosmos.CosmosDirectSigner
+import dev.satra.wallet.data.send.cosmos.CosmosSendClient
+import dev.satra.wallet.data.send.cosmos.CosmosSigningRequest
 import dev.satra.wallet.data.send.evm.EvmLegacyTransaction
 import dev.satra.wallet.data.send.evm.EvmLegacyTransactionSigner
+import dev.satra.wallet.data.send.near.NearSendClient
+import dev.satra.wallet.data.send.near.NearSigningRequest
+import dev.satra.wallet.data.send.near.NearTransactionSigner
+import dev.satra.wallet.data.send.ripple.RippleSendClient
+import dev.satra.wallet.data.send.ripple.RippleSigningRequest
+import dev.satra.wallet.data.send.ripple.RippleTransactionSigner
+import dev.satra.wallet.data.send.solana.SolanaSigningRequest
+import dev.satra.wallet.data.send.solana.SolanaTransactionSigner
+import dev.satra.wallet.data.send.stellar.StellarSendClient
+import dev.satra.wallet.data.send.stellar.StellarSigningRequest
+import dev.satra.wallet.data.send.stellar.StellarTransactionSigner
+import dev.satra.wallet.data.send.sui.SuiSendClient
+import dev.satra.wallet.data.send.tron.TronSendClient
+import dev.satra.wallet.data.send.utxo.UtxoSigningRequest
+import dev.satra.wallet.data.send.utxo.UtxoTransactionSigner
+import dev.satra.wallet.data.sync.accountchain.AccountChainProvider
+import dev.satra.wallet.data.sync.accountchain.AccountChainProviderRegistry
 import dev.satra.wallet.data.sync.evm.EvmAbi
 import dev.satra.wallet.data.sync.evm.EvmJsonRpcClient
 import dev.satra.wallet.data.sync.evm.EvmProviderRegistry
+import dev.satra.wallet.data.sync.solana.SolanaJsonRpcClient
+import dev.satra.wallet.data.sync.solana.SolanaProviderRegistry
+import dev.satra.wallet.data.sync.utxo.UtxoElectrumClient
+import dev.satra.wallet.data.sync.utxo.UtxoElectrumProvider
+import dev.satra.wallet.data.sync.utxo.UtxoElectrumProviderRegistry
+import dev.satra.wallet.data.sync.utxo.UtxoScript
 import java.math.BigDecimal
 import java.math.BigInteger
 import java.math.RoundingMode
@@ -19,7 +48,16 @@ class SatraSendService {
             ?: throw SatraSendException.UnsupportedNetwork(request.networkId)
 
         return when (network.family) {
+            "aptos" -> signAndBroadcastAptos(request, network)
+            "cosmos" -> signAndBroadcastCosmos(request, network)
             "evm" -> signAndBroadcastEvm(request, network)
+            "near" -> signAndBroadcastNear(request, network)
+            "ripple" -> signAndBroadcastRipple(request, network)
+            "utxo" -> signAndBroadcastUtxo(request, network)
+            "solana" -> signAndBroadcastSolana(request, network)
+            "stellar" -> signAndBroadcastStellar(request, network)
+            "sui" -> signAndBroadcastSui(request, network)
+            "tron" -> signAndBroadcastTron(request, network)
             else -> throw SatraSendException.UnsupportedNetwork(request.networkId)
         }
     }
@@ -132,6 +170,670 @@ class SatraSendService {
         )
     }
 
+    private suspend fun signAndBroadcastAptos(
+        request: SatraSendRequest,
+        network: SupportedNetwork,
+    ): SatraBroadcastResult {
+        val amountRaw = decimalToRaw(request.amountDecimal, request.decimals)
+        val availableRaw = request.balanceRaw.toBigIntegerOrZero()
+        if (availableRaw < amountRaw) {
+            throw SatraSendException.InsufficientBalance()
+        }
+        try {
+            AptosTransactionSigner.normalizeAddress(request.sourceAddress)
+            AptosTransactionSigner.normalizeAddress(request.recipientAddress)
+            request.contractAddress?.let(AptosTransactionSigner::normalizeAddress)
+        } catch (error: Throwable) {
+            throw SatraSendException.InvalidRecipient(error)
+        }
+        val config = AccountChainProviderRegistry.requireConfig(request.networkId)
+        val fullnodeProviders = config.providers.filter { provider -> provider.name.contains("fullnode") }
+            .ifEmpty { config.providers }
+        val client = AptosSendClient()
+        val isNative = request.assetType.uppercase(Locale.US) == "NATIVE"
+        var lastError: Throwable? = null
+        fullnodeProviders.forEach { provider ->
+            try {
+                val sequence = client.accountSequence(provider, request.sourceAddress)
+                val gasUnitPrice = client.gasUnitPrice(provider)
+                val maxGasAmount = DEFAULT_APTOS_MAX_GAS_AMOUNT
+                val signed = AptosTransactionSigner.sign(
+                    AptosSigningRequest(
+                        sourceAddress = request.sourceAddress,
+                        recipientAddress = request.recipientAddress,
+                        amountRaw = amountRaw,
+                        assetMetadataAddress = if (isNative) null else request.contractAddress,
+                        sequenceNumber = sequence,
+                        gasUnitPrice = gasUnitPrice,
+                        maxGasAmount = maxGasAmount,
+                        expirationTimestampSeconds = (System.currentTimeMillis() / 1_000L + APTOS_EXPIRATION_SECONDS).toULong(),
+                        privateKeyHex = request.privateKeyHex,
+                    ),
+                )
+                if (isNative && availableRaw < amountRaw.add(signed.maxFeeOctas)) {
+                    throw SatraSendException.InsufficientBalance()
+                }
+                val txHash = client.submitSignedTransaction(provider, signed.signedTransactionBytes)
+                val feeAssetId = SupportedAssetCatalog.assets
+                    .firstOrNull { asset -> asset.networkId == request.networkId && asset.assetType == "NATIVE" }
+                    ?.assetId
+                return SatraBroadcastResult(
+                    transactionHash = txHash,
+                    rawTransaction = signed.signedTransactionHex,
+                    providerName = provider.name,
+                    fromAddress = AptosTransactionSigner.normalizeAddress(request.sourceAddress),
+                    toAddress = AptosTransactionSigner.normalizeAddress(request.recipientAddress),
+                    amountRaw = amountRaw,
+                    amountDecimal = EvmAbi.rawToDecimalString(amountRaw, request.decimals),
+                    feeRaw = signed.maxFeeOctas,
+                    feeDecimal = EvmAbi.rawToDecimalString(signed.maxFeeOctas, network.nativeDecimals),
+                    feeAssetId = feeAssetId,
+                    nonce = BigInteger.valueOf(sequence.toLong()),
+                    timestampMillis = System.currentTimeMillis(),
+                )
+            } catch (error: Throwable) {
+                lastError = error
+            }
+        }
+        throw SatraSendException.BroadcastFailed(lastError ?: IllegalStateException("No Aptos provider broadcast succeeded."))
+    }
+
+    private suspend fun signAndBroadcastCosmos(
+        request: SatraSendRequest,
+        network: SupportedNetwork,
+    ): SatraBroadcastResult {
+        val amountRaw = decimalToRaw(request.amountDecimal, request.decimals)
+        val availableRaw = request.balanceRaw.toBigIntegerOrZero()
+        val isNative = request.assetType.uppercase(Locale.US) == "NATIVE"
+        val denom = if (isNative) {
+            CosmosDirectSigner.KAVA_NATIVE_DENOM
+        } else {
+            request.contractAddress ?: throw SatraSendException.UnsupportedNetwork(request.networkId)
+        }
+        val feeUkava = BigInteger.valueOf(DEFAULT_KAVA_FEE_UKAVA)
+        if (availableRaw < amountRaw || (isNative && availableRaw < amountRaw.add(feeUkava))) {
+            throw SatraSendException.InsufficientBalance()
+        }
+        if (request.sourceAddress.isBlank() || request.recipientAddress.isBlank()) {
+            throw SatraSendException.InvalidRecipient()
+        }
+        val config = AccountChainProviderRegistry.requireConfig(request.networkId)
+        val client = CosmosSendClient()
+        var lastError: Throwable? = null
+        config.providers.forEach { provider ->
+            try {
+                val account = client.account(provider, request.sourceAddress)
+                val signed = CosmosDirectSigner.sign(
+                    CosmosSigningRequest(
+                        fromAddress = request.sourceAddress,
+                        toAddress = request.recipientAddress,
+                        denom = denom,
+                        amountRaw = amountRaw,
+                        accountNumber = account.accountNumber,
+                        sequence = account.sequence,
+                        gasLimit = DEFAULT_KAVA_GAS_LIMIT,
+                        feeUkava = feeUkava,
+                        privateKeyHex = request.privateKeyHex,
+                    ),
+                )
+                val txHash = client.broadcast(provider, signed.txRawBase64)
+                val feeAssetId = SupportedAssetCatalog.assets
+                    .firstOrNull { asset -> asset.networkId == request.networkId && asset.assetType == "NATIVE" }
+                    ?.assetId
+                return SatraBroadcastResult(
+                    transactionHash = txHash,
+                    rawTransaction = signed.txRawBase64,
+                    providerName = provider.name,
+                    fromAddress = request.sourceAddress,
+                    toAddress = request.recipientAddress,
+                    amountRaw = amountRaw,
+                    amountDecimal = EvmAbi.rawToDecimalString(amountRaw, request.decimals),
+                    feeRaw = signed.feeUkava,
+                    feeDecimal = EvmAbi.rawToDecimalString(signed.feeUkava, network.nativeDecimals),
+                    feeAssetId = feeAssetId,
+                    nonce = BigInteger.valueOf(account.sequence),
+                    timestampMillis = System.currentTimeMillis(),
+                )
+            } catch (error: Throwable) {
+                lastError = error
+            }
+        }
+        throw SatraSendException.BroadcastFailed(lastError ?: IllegalStateException("No Cosmos provider broadcast succeeded."))
+    }
+
+    private suspend fun signAndBroadcastStellar(
+        request: SatraSendRequest,
+        network: SupportedNetwork,
+    ): SatraBroadcastResult {
+        if (request.assetType.uppercase(Locale.US) != "NATIVE") {
+            throw SatraSendException.UnsupportedNetwork(request.networkId)
+        }
+        val amountRaw = decimalToRaw(request.amountDecimal, request.decimals)
+        val availableRaw = request.balanceRaw.toBigIntegerOrZero()
+        if (availableRaw < amountRaw.add(BigInteger.valueOf(STELLAR_BASE_FEE_STROOPS.toLong()))) {
+            throw SatraSendException.InsufficientBalance()
+        }
+        try {
+            StellarTransactionSigner.validateAddress(request.sourceAddress)
+            StellarTransactionSigner.validateAddress(request.recipientAddress)
+        } catch (error: Throwable) {
+            throw SatraSendException.InvalidRecipient(error)
+        }
+        val config = AccountChainProviderRegistry.requireConfig(request.networkId)
+        val client = StellarSendClient()
+        var lastError: Throwable? = null
+        config.providers.forEach { provider ->
+            try {
+                val sequence = client.accountSequence(provider, request.sourceAddress)
+                val createAccount = !client.accountExists(provider, request.recipientAddress)
+                val signed = StellarTransactionSigner.sign(
+                    StellarSigningRequest(
+                        sourceAddress = request.sourceAddress,
+                        recipientAddress = request.recipientAddress,
+                        amountRaw = amountRaw,
+                        accountSequence = sequence,
+                        createAccount = createAccount,
+                        privateKeyHex = request.privateKeyHex,
+                    ),
+                )
+                val txHash = client.submitTransaction(provider, signed.envelopeBase64)
+                val feeRaw = BigInteger.valueOf(signed.feeStroops.toLong())
+                return SatraBroadcastResult(
+                    transactionHash = txHash,
+                    rawTransaction = signed.envelopeBase64,
+                    providerName = provider.name,
+                    fromAddress = request.sourceAddress,
+                    toAddress = request.recipientAddress,
+                    amountRaw = amountRaw,
+                    amountDecimal = EvmAbi.rawToDecimalString(amountRaw, request.decimals),
+                    feeRaw = feeRaw,
+                    feeDecimal = EvmAbi.rawToDecimalString(feeRaw, network.nativeDecimals),
+                    feeAssetId = request.assetId,
+                    nonce = BigInteger.valueOf(sequence + 1L),
+                    timestampMillis = System.currentTimeMillis(),
+                )
+            } catch (error: Throwable) {
+                lastError = error
+            }
+        }
+        throw SatraSendException.BroadcastFailed(lastError ?: IllegalStateException("No Stellar provider broadcast succeeded."))
+    }
+
+    private suspend fun signAndBroadcastNear(
+        request: SatraSendRequest,
+        network: SupportedNetwork,
+    ): SatraBroadcastResult {
+        val amountRaw = decimalToRaw(request.amountDecimal, request.decimals)
+        val availableRaw = request.balanceRaw.toBigIntegerOrZero()
+        val isNative = request.assetType.uppercase(Locale.US) == "NATIVE"
+        if (availableRaw < amountRaw) {
+            throw SatraSendException.InsufficientBalance()
+        }
+        if (request.sourceAddress.isBlank() || request.recipientAddress.isBlank()) {
+            throw SatraSendException.InvalidRecipient()
+        }
+        val config = AccountChainProviderRegistry.requireConfig(request.networkId)
+        val rpcProviders = config.providers.filter { provider -> provider.name.contains("rpc") }
+            .ifEmpty { config.providers }
+        val client = NearSendClient()
+        val publicKey = try {
+            NearTransactionSigner.publicKeyForPrivateKey(request.privateKeyHex)
+        } catch (error: Throwable) {
+            throw SatraSendException.MissingSigningKey()
+        }
+        var lastError: Throwable? = null
+        rpcProviders.forEach { provider ->
+            try {
+                val accessKey = client.accessKey(provider, request.sourceAddress, publicKey)
+                val signed = NearTransactionSigner.sign(
+                    NearSigningRequest(
+                        sourceAddress = request.sourceAddress,
+                        recipientAddress = request.recipientAddress,
+                        amountRaw = amountRaw,
+                        tokenContract = if (isNative) null else request.contractAddress
+                            ?: throw SatraSendException.UnsupportedNetwork(request.networkId),
+                        nonce = accessKey.nonce,
+                        recentBlockHash = accessKey.blockHash,
+                        privateKeyHex = request.privateKeyHex,
+                    ),
+                )
+                if (isNative && availableRaw < amountRaw.add(signed.feeYocto)) {
+                    throw SatraSendException.InsufficientBalance()
+                }
+                val txHash = client.broadcast(provider, signed.signedTransactionBase64)
+                val feeAssetId = SupportedAssetCatalog.assets
+                    .firstOrNull { asset -> asset.networkId == request.networkId && asset.assetType == "NATIVE" }
+                    ?.assetId
+                return SatraBroadcastResult(
+                    transactionHash = txHash.ifBlank { signed.transactionHashBase58 },
+                    rawTransaction = signed.signedTransactionBase64,
+                    providerName = provider.name,
+                    fromAddress = request.sourceAddress,
+                    toAddress = request.recipientAddress,
+                    amountRaw = amountRaw,
+                    amountDecimal = EvmAbi.rawToDecimalString(amountRaw, request.decimals),
+                    feeRaw = signed.feeYocto,
+                    feeDecimal = EvmAbi.rawToDecimalString(signed.feeYocto, network.nativeDecimals),
+                    feeAssetId = feeAssetId,
+                    nonce = BigInteger(accessKey.nonce.toString()),
+                    timestampMillis = System.currentTimeMillis(),
+                )
+            } catch (error: Throwable) {
+                lastError = error
+            }
+        }
+        throw SatraSendException.BroadcastFailed(lastError ?: IllegalStateException("No NEAR provider broadcast succeeded."))
+    }
+
+    private suspend fun signAndBroadcastRipple(
+        request: SatraSendRequest,
+        network: SupportedNetwork,
+    ): SatraBroadcastResult {
+        if (request.assetType.uppercase(Locale.US) != "NATIVE") {
+            throw SatraSendException.UnsupportedNetwork(request.networkId)
+        }
+        val amountRaw = decimalToRaw(request.amountDecimal, request.decimals)
+        val availableRaw = request.balanceRaw.toBigIntegerOrZero()
+        try {
+            RippleTransactionSigner.validateAddress(request.sourceAddress)
+            RippleTransactionSigner.validateAddress(request.recipientAddress)
+        } catch (error: Throwable) {
+            throw SatraSendException.InvalidRecipient(error)
+        }
+        val config = AccountChainProviderRegistry.requireConfig(request.networkId)
+        val client = RippleSendClient()
+        var lastError: Throwable? = null
+        config.providers.forEach { provider ->
+            try {
+                val account = client.accountInfo(provider, request.sourceAddress)
+                val ledger = client.currentLedger(provider).takeIf { it > 0L } ?: account.ledgerIndex
+                val feeDrops = client.feeDrops(provider).coerceAtLeast(BigInteger.TEN)
+                if (availableRaw < amountRaw.add(feeDrops)) {
+                    throw SatraSendException.InsufficientBalance()
+                }
+                val signed = RippleTransactionSigner.sign(
+                    RippleSigningRequest(
+                        sourceAddress = request.sourceAddress,
+                        recipientAddress = request.recipientAddress,
+                        amountDrops = amountRaw,
+                        feeDrops = feeDrops,
+                        sequence = account.sequence,
+                        lastLedgerSequence = ledger + XRPL_LAST_LEDGER_OFFSET,
+                        privateKeyHex = request.privateKeyHex,
+                    ),
+                )
+                val txHash = client.submit(provider, signed.transactionBlobHex)
+                return SatraBroadcastResult(
+                    transactionHash = txHash.ifBlank { signed.transactionHash },
+                    rawTransaction = signed.transactionBlobHex,
+                    providerName = provider.name,
+                    fromAddress = request.sourceAddress,
+                    toAddress = request.recipientAddress,
+                    amountRaw = amountRaw,
+                    amountDecimal = EvmAbi.rawToDecimalString(amountRaw, request.decimals),
+                    feeRaw = signed.feeDrops,
+                    feeDecimal = EvmAbi.rawToDecimalString(signed.feeDrops, network.nativeDecimals),
+                    feeAssetId = request.assetId,
+                    nonce = BigInteger.valueOf(account.sequence),
+                    timestampMillis = System.currentTimeMillis(),
+                )
+            } catch (error: Throwable) {
+                lastError = error
+            }
+        }
+        throw SatraSendException.BroadcastFailed(lastError ?: IllegalStateException("No XRPL provider broadcast succeeded."))
+    }
+
+    private suspend fun signAndBroadcastSui(
+        request: SatraSendRequest,
+        network: SupportedNetwork,
+    ): SatraBroadcastResult {
+        if (request.assetType.uppercase(Locale.US) != "NATIVE") {
+            throw SatraSendException.UnsupportedNetwork(request.networkId)
+        }
+        val amountRaw = decimalToRaw(request.amountDecimal, request.decimals)
+        val availableRaw = request.balanceRaw.toBigIntegerOrZero()
+        val gasBudget = BigInteger.valueOf(DEFAULT_SUI_GAS_BUDGET_MIST)
+        if (availableRaw < amountRaw.add(gasBudget)) {
+            throw SatraSendException.InsufficientBalance()
+        }
+        if (!request.sourceAddress.isSuiAddress() || !request.recipientAddress.isSuiAddress()) {
+            throw SatraSendException.InvalidRecipient()
+        }
+        val config = AccountChainProviderRegistry.requireConfig(request.networkId)
+        val client = SuiSendClient()
+        var lastError: Throwable? = null
+        config.providers.forEach { provider ->
+            try {
+                val coins = client.coins(provider, request.sourceAddress, SUI_COIN_TYPE)
+                    .sortedByDescending { coin -> coin.balance }
+                val selected = mutableListOf<String>()
+                var total = BigInteger.ZERO
+                for (coin in coins) {
+                    selected += coin.objectId
+                    total = total.add(coin.balance)
+                    if (total >= amountRaw.add(gasBudget)) break
+                }
+                if (total < amountRaw.add(gasBudget)) {
+                    throw SatraSendException.InsufficientBalance()
+                }
+                val txBytes = client.buildNativePay(
+                    provider = provider,
+                    signer = request.sourceAddress,
+                    inputCoins = selected,
+                    recipient = request.recipientAddress,
+                    amountMist = amountRaw,
+                    gasBudgetMist = gasBudget,
+                )
+                val signature = client.signatureBase64(txBytes, request.privateKeyHex, request.sourceAddress)
+                val digest = client.executeTransaction(provider, txBytes, signature)
+                return SatraBroadcastResult(
+                    transactionHash = digest,
+                    rawTransaction = "$txBytes:$signature",
+                    providerName = provider.name,
+                    fromAddress = request.sourceAddress,
+                    toAddress = request.recipientAddress,
+                    amountRaw = amountRaw,
+                    amountDecimal = EvmAbi.rawToDecimalString(amountRaw, request.decimals),
+                    feeRaw = gasBudget,
+                    feeDecimal = EvmAbi.rawToDecimalString(gasBudget, network.nativeDecimals),
+                    feeAssetId = request.assetId,
+                    nonce = BigInteger.ZERO,
+                    timestampMillis = System.currentTimeMillis(),
+                )
+            } catch (error: Throwable) {
+                lastError = error
+            }
+        }
+        throw SatraSendException.BroadcastFailed(lastError ?: IllegalStateException("No Sui provider broadcast succeeded."))
+    }
+
+    private suspend fun signAndBroadcastSolana(
+        request: SatraSendRequest,
+        network: SupportedNetwork,
+    ): SatraBroadcastResult {
+        val amountRaw = decimalToRaw(request.amountDecimal, request.decimals)
+        val availableRaw = request.balanceRaw.toBigIntegerOrZero()
+        val isNative = request.assetType.uppercase(Locale.US) == "NATIVE"
+        if (availableRaw < amountRaw) {
+            throw SatraSendException.InsufficientBalance()
+        }
+        try {
+            SolanaTransactionSigner.publicKeyBytes(request.sourceAddress)
+            SolanaTransactionSigner.publicKeyBytes(request.recipientAddress)
+        } catch (error: Throwable) {
+            throw SatraSendException.InvalidRecipient(error)
+        }
+        val client = SolanaJsonRpcClient(SolanaProviderRegistry.requireConfig(request.networkId))
+        val tokenAccounts = SolanaTransactionSigner.parseTokenAccounts(request.walletAssetMetadataJson)
+        val contractAddress = if (isNative) null else request.contractAddress
+            ?: throw SatraSendException.UnsupportedNetwork(request.networkId)
+        val recipientTokenAccount = if (contractAddress == null) {
+            null
+        } else {
+            val senderTokenAccount = tokenAccounts
+                .filter { account -> account.owner == request.sourceAddress && account.mint == contractAddress }
+                .filter { account -> account.amountRaw.toBigIntegerOrZero() >= amountRaw }
+                .maxByOrNull { account -> account.amountRaw.toBigIntegerOrZero() }
+                ?: throw SatraSendException.InsufficientBalance()
+            SolanaTransactionSigner.associatedTokenAddress(
+                ownerAddress = request.recipientAddress,
+                mintAddress = contractAddress,
+                tokenProgramId = senderTokenAccount.programId,
+            )
+        }
+        val createRecipientTokenAccount = if (recipientTokenAccount == null) {
+            false
+        } else {
+            try {
+                client.parsedAccountInfo(recipientTokenAccount).value == null
+            } catch (error: Throwable) {
+                throw SatraSendException.BroadcastFailed(error)
+            }
+        }
+        val blockhash = try {
+            client.latestBlockhash().value
+        } catch (error: Throwable) {
+            throw SatraSendException.BroadcastFailed(error)
+        }
+        val signed = try {
+            SolanaTransactionSigner.sign(
+                SolanaSigningRequest(
+                    sourceAddress = request.sourceAddress,
+                    recipientAddress = request.recipientAddress,
+                    amountRaw = amountRaw,
+                    decimals = request.decimals,
+                    contractAddress = contractAddress,
+                    recentBlockhash = blockhash,
+                    privateKeyHex = request.privateKeyHex,
+                    senderTokenAccounts = tokenAccounts,
+                    recipientTokenAccount = recipientTokenAccount,
+                    createRecipientTokenAccount = createRecipientTokenAccount,
+                ),
+            )
+        } catch (error: IllegalArgumentException) {
+            throw SatraSendException.InvalidAmount(error)
+        } catch (error: Throwable) {
+            throw SatraSendException.MissingSigningKey()
+        }
+        if (isNative && availableRaw < amountRaw.add(BigInteger.valueOf(signed.feeLamports))) {
+            throw SatraSendException.InsufficientBalance()
+        }
+        val broadcast = try {
+            client.sendTransaction(signed.transactionBase64)
+        } catch (error: Throwable) {
+            throw SatraSendException.BroadcastFailed(error)
+        }
+        val feeAssetId = SupportedAssetCatalog.assets
+            .firstOrNull { asset -> asset.networkId == request.networkId && asset.assetType == "NATIVE" }
+            ?.assetId
+        return SatraBroadcastResult(
+            transactionHash = broadcast.value.ifBlank { signed.signature },
+            rawTransaction = signed.transactionBase64,
+            providerName = broadcast.provider.name,
+            fromAddress = request.sourceAddress,
+            toAddress = request.recipientAddress,
+            amountRaw = amountRaw,
+            amountDecimal = EvmAbi.rawToDecimalString(amountRaw, request.decimals),
+            feeRaw = BigInteger.valueOf(signed.feeLamports),
+            feeDecimal = EvmAbi.rawToDecimalString(BigInteger.valueOf(signed.feeLamports), network.nativeDecimals),
+            feeAssetId = feeAssetId,
+            nonce = BigInteger.ZERO,
+            timestampMillis = System.currentTimeMillis(),
+        )
+    }
+
+    private suspend fun signAndBroadcastTron(
+        request: SatraSendRequest,
+        network: SupportedNetwork,
+    ): SatraBroadcastResult {
+        val amountRaw = decimalToRaw(request.amountDecimal, request.decimals)
+        val availableRaw = request.balanceRaw.toBigIntegerOrZero()
+        if (availableRaw < amountRaw) {
+            throw SatraSendException.InsufficientBalance()
+        }
+        try {
+            TronSendClient.validateTronAddress(request.sourceAddress)
+            TronSendClient.validateTronAddress(request.recipientAddress)
+        } catch (error: Throwable) {
+            throw SatraSendException.InvalidRecipient(error)
+        }
+        val config = AccountChainProviderRegistry.requireConfig(request.networkId)
+        val client = TronSendClient()
+        val isNative = request.assetType.uppercase(Locale.US) == "NATIVE"
+        val feeRaw = if (isNative) {
+            BigInteger.ZERO
+        } else {
+            BigInteger.valueOf(TronSendClient.DEFAULT_TRC20_FEE_LIMIT_SUN)
+        }
+        val broadcast = signAndBroadcastWithTronProviders(
+            client = client,
+            providers = config.providers,
+            request = request,
+            amountRaw = amountRaw,
+            isNative = isNative,
+        )
+        val feeAssetId = SupportedAssetCatalog.assets
+            .firstOrNull { asset -> asset.networkId == request.networkId && asset.assetType == "NATIVE" }
+            ?.assetId
+        return SatraBroadcastResult(
+            transactionHash = broadcast.transactionHash,
+            rawTransaction = broadcast.rawTransaction,
+            providerName = broadcast.provider.name,
+            fromAddress = request.sourceAddress,
+            toAddress = request.recipientAddress,
+            amountRaw = amountRaw,
+            amountDecimal = EvmAbi.rawToDecimalString(amountRaw, request.decimals),
+            feeRaw = feeRaw,
+            feeDecimal = EvmAbi.rawToDecimalString(feeRaw, network.nativeDecimals),
+            feeAssetId = feeAssetId,
+            nonce = BigInteger.ZERO,
+            timestampMillis = System.currentTimeMillis(),
+        )
+    }
+
+    private suspend fun signAndBroadcastWithTronProviders(
+        client: TronSendClient,
+        providers: List<AccountChainProvider>,
+        request: SatraSendRequest,
+        amountRaw: BigInteger,
+        isNative: Boolean,
+    ): TronBroadcast {
+        var lastError: Throwable? = null
+        providers.forEach { provider ->
+            try {
+                val unsigned = if (isNative) {
+                    client.createNativeTransfer(
+                        provider = provider,
+                        ownerAddress = request.sourceAddress,
+                        recipientAddress = request.recipientAddress,
+                        amountSun = amountRaw,
+                    )
+                } else {
+                    val contractAddress = request.contractAddress
+                        ?: throw SatraSendException.UnsupportedNetwork(request.networkId)
+                    client.createTrc20Transfer(
+                        provider = provider,
+                        ownerAddress = request.sourceAddress,
+                        recipientAddress = request.recipientAddress,
+                        contractAddress = contractAddress,
+                        amountRaw = amountRaw,
+                    )
+                }
+                val signed = client.signTransaction(unsigned, request.privateKeyHex)
+                val txHash = client.broadcast(provider, signed)
+                return TronBroadcast(
+                    transactionHash = txHash,
+                    rawTransaction = signed.signedTransactionJson.toString(),
+                    provider = provider,
+                )
+            } catch (error: Throwable) {
+                lastError = error
+            }
+        }
+        throw SatraSendException.BroadcastFailed(lastError ?: IllegalStateException("No TRON provider broadcast succeeded."))
+    }
+
+    private suspend fun signAndBroadcastUtxo(
+        request: SatraSendRequest,
+        network: SupportedNetwork,
+    ): SatraBroadcastResult {
+        if (request.assetType.uppercase(Locale.US) != "NATIVE") {
+            throw SatraSendException.UnsupportedNetwork(request.networkId)
+        }
+        val config = UtxoElectrumProviderRegistry.requireConfig(request.networkId)
+        val client = UtxoElectrumClient()
+        val amountRaw = decimalToRaw(request.amountDecimal, request.decimals)
+        val availableRaw = request.balanceRaw.toBigIntegerOrZero()
+        if (availableRaw < amountRaw) {
+            throw SatraSendException.InsufficientBalance()
+        }
+        try {
+            UtxoScript.scriptPubKey(request.networkId, request.recipientAddress)
+        } catch (error: Throwable) {
+            throw SatraSendException.InvalidRecipient(error)
+        }
+
+        val utxos = UtxoTransactionSigner.parseUtxos(request.walletAssetMetadataJson)
+        val keysByAddress = request.privateKeysHexByAddress
+            .ifEmpty { mapOf(request.sourceAddress to request.privateKeyHex) }
+        val feeRate = estimateUtxoFeeRateSatsPerVByte(client, config.providers, request.networkId)
+        val signed = try {
+            UtxoTransactionSigner.sign(
+                UtxoSigningRequest(
+                    networkId = request.networkId,
+                    sourceAddress = request.sourceAddress,
+                    recipientAddress = request.recipientAddress,
+                    changeAddress = request.sourceAddress,
+                    amountRaw = amountRaw,
+                    feeRateSatsPerVByte = feeRate,
+                    utxos = utxos,
+                    privateKeysHexByAddress = keysByAddress,
+                ),
+            )
+        } catch (error: IllegalArgumentException) {
+            if (error.message?.contains("Insufficient", ignoreCase = true) == true) {
+                throw SatraSendException.InsufficientBalance()
+            }
+            throw SatraSendException.MissingSigningKey()
+        } catch (error: Throwable) {
+            throw SatraSendException.BroadcastFailed(error)
+        }
+
+        val broadcast = broadcastUtxoTransaction(client, config.providers, signed.rawTransactionHex)
+        val feeAssetId = SupportedAssetCatalog.assets
+            .firstOrNull { asset -> asset.networkId == request.networkId && asset.assetType == "NATIVE" }
+            ?.assetId
+        return SatraBroadcastResult(
+            transactionHash = broadcast.transactionHash.ifBlank { signed.transactionHash },
+            rawTransaction = signed.rawTransactionHex,
+            providerName = broadcast.provider.name,
+            fromAddress = request.sourceAddress,
+            toAddress = request.recipientAddress,
+            amountRaw = amountRaw,
+            amountDecimal = EvmAbi.rawToDecimalString(amountRaw, request.decimals),
+            feeRaw = BigInteger.valueOf(signed.feeSats),
+            feeDecimal = EvmAbi.rawToDecimalString(BigInteger.valueOf(signed.feeSats), network.nativeDecimals),
+            feeAssetId = feeAssetId,
+            nonce = BigInteger.ZERO,
+            timestampMillis = System.currentTimeMillis(),
+        )
+    }
+
+    private suspend fun estimateUtxoFeeRateSatsPerVByte(
+        client: UtxoElectrumClient,
+        providers: List<UtxoElectrumProvider>,
+        networkId: String,
+    ): Double {
+        providers.forEach { provider ->
+            val estimate = runCatching { client.estimateFeePerKilobyte(provider, targetBlocks = 3) }.getOrNull()
+            if (estimate != null && estimate > 0.0) {
+                return (estimate * SATOSHIS_PER_COIN / BYTES_PER_KILOBYTE)
+                    .coerceAtLeast(defaultUtxoFeeRate(networkId))
+            }
+        }
+        return defaultUtxoFeeRate(networkId)
+    }
+
+    private suspend fun broadcastUtxoTransaction(
+        client: UtxoElectrumClient,
+        providers: List<UtxoElectrumProvider>,
+        rawTransactionHex: String,
+    ): UtxoBroadcast {
+        var lastError: Throwable? = null
+        providers.forEach { provider ->
+            try {
+                return UtxoBroadcast(
+                    transactionHash = client.broadcastTransaction(provider, rawTransactionHex),
+                    provider = provider,
+                )
+            } catch (error: Throwable) {
+                lastError = error
+            }
+        }
+        throw SatraSendException.BroadcastFailed(lastError ?: IllegalStateException("No Electrum provider broadcast succeeded."))
+    }
+
     private fun decimalToRaw(
         amountDecimal: String,
         decimals: Int,
@@ -176,7 +878,40 @@ class SatraSendService {
         const val GAS_BUFFER_NUMERATOR = 120L
         const val GAS_BUFFER_DENOMINATOR = 100L
         const val MIN_EVM_GAS_LIMIT = 21_000L
+        const val SATOSHIS_PER_COIN = 100_000_000.0
+        const val BYTES_PER_KILOBYTE = 1_000.0
+        const val APTOS_EXPIRATION_SECONDS = 600L
+        const val DEFAULT_APTOS_MAX_GAS_AMOUNT = 100_000UL
+        const val STELLAR_BASE_FEE_STROOPS = 100
+        const val DEFAULT_SUI_GAS_BUDGET_MIST = 5_000_000L
+        const val SUI_COIN_TYPE = "0x2::sui::SUI"
+        const val DEFAULT_KAVA_GAS_LIMIT = 200_000L
+        const val DEFAULT_KAVA_FEE_UKAVA = 20_000L
+        const val XRPL_LAST_LEDGER_OFFSET = 20L
     }
+}
+
+private data class UtxoBroadcast(
+    val transactionHash: String,
+    val provider: UtxoElectrumProvider,
+)
+
+private data class TronBroadcast(
+    val transactionHash: String,
+    val rawTransaction: String,
+    val provider: AccountChainProvider,
+)
+
+private fun defaultUtxoFeeRate(networkId: String): Double =
+    when (networkId) {
+        "bitcoin" -> 5.0
+        "dogecoin" -> 2.0
+        else -> 2.0
+    }
+
+private fun String.isSuiAddress(): Boolean {
+    val normalized = removePrefix("0x").removePrefix("0X")
+    return normalized.length == 64 && normalized.all(Char::isHexDigit)
 }
 
 private fun Char.isHexDigit(): Boolean =
