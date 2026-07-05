@@ -27,6 +27,10 @@
     <string name="settings_haptics_title">Dokunsal geribildirim</string>
     <string name="settings_haptics_body">Önemli dokunuşlar için cihaz titreşimini kullanın.</string>
     <string name="settings_language_title">Dil</string>
+    <string name="settings_language_search_placeholder">Dilleri ara</string>
+    <string name="settings_language_search_clear">Dil aramasını temizle</string>
+    <string name="settings_language_no_search_results_title">Eşleşen dil yok</string>
+    <string name="settings_language_no_search_results_body">Dil adı veya ülke ile aramayı deneyin.</string>
     <string name="settings_help_title">Yardım ve destek</string>
     <string name="settings_help_body">Belgeler, kaynak, hatalar, özellikler ve iletişim.</string>
     <string name="settings_about_title">Satra Hakkında</string>
@@ -313,7 +317,7 @@
     <string name="home_balance_hidden_delta">••</string>
     <string name="home_balance_currency_usd">USD</string>
     <string name="home_balance_placeholder">$0.00</string>
-    <string name="home_balance_change_placeholder">$0.00 today</string>
+    <string name="home_balance_change_placeholder">bugün 0,00$</string>
     <string name="home_action_move">Göndermek</string>
     <string name="home_action_receive">Almak</string>
     <string name="home_chart_title">Denge tablosu</string>
@@ -533,7 +537,7 @@
     <string name="send_fee_pill_title">Ağ ücreti</string>
     <string name="send_fee_sheet_title">Ağ ücreti</string>
     <string name="send_fee_speed_slow">Yavaş</string>
-    <string name="send_fee_speed_normal">Normal</string>
+    <string name="send_fee_speed_normal">Standart</string>
     <string name="send_fee_speed_fast">Hızlı</string>
     <string name="send_review_action">Gözden geçirmek</string>
     <string name="send_review_screen_title">Gözden geçirmek</string>

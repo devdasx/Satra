@@ -27,6 +27,10 @@
     <string name="settings_haptics_title">Haptic feedback</string>
     <string name="settings_haptics_body">Use device vibration for important taps.</string>
     <string name="settings_language_title">Language</string>
+    <string name="settings_language_search_placeholder">Search languages</string>
+    <string name="settings_language_search_clear">Clear language search</string>
+    <string name="settings_language_no_search_results_title">No matching languages</string>
+    <string name="settings_language_no_search_results_body">Try search with language name or country.</string>
     <string name="settings_help_title">Help &amp; support</string>
     <string name="settings_help_body">Documentation, source, bugs, features, and contact.</string>
     <string name="settings_about_title">About Satra</string>

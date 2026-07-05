@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Satra</string>
-    <string name="wallet_default_created_name">Satra Wallet</string>
+    <string name="wallet_default_created_name">Satra-Geldbörse</string>
     <string name="wallet_default_imported_name">Importiertes Wallet</string>
     <string name="wallet_default_watch_only_name">Watch-only-Wallet</string>
     <string name="wallet_symbol">◎</string>
@@ -18,7 +18,7 @@
     <string name="settings_title">Einstellungen</string>
     <string name="settings_back_content_description">Zurück</string>
     <string name="settings_section_appearance">Aussehen</string>
-    <string name="settings_theme_system">System</string>
+    <string name="settings_theme_system">Systemmodus</string>
     <string name="settings_theme_system_body">Folgen Sie diesem Gerät.</string>
     <string name="settings_theme_light">Hell</string>
     <string name="settings_theme_light_body">Verwenden Sie den Satra-Hellmodus.</string>
@@ -27,11 +27,15 @@
     <string name="settings_haptics_title">Haptisches Feedback</string>
     <string name="settings_haptics_body">Nutzen Sie die Gerätevibration für wichtige Tippvorgänge.</string>
     <string name="settings_language_title">Sprache</string>
+    <string name="settings_language_search_placeholder">Sprachen suchen</string>
+    <string name="settings_language_search_clear">Sprachsuche löschen</string>
+    <string name="settings_language_no_search_results_title">Keine passenden Sprachen</string>
+    <string name="settings_language_no_search_results_body">Suche nach Sprachname oder Land.</string>
     <string name="settings_help_title">Hilfe und Support</string>
     <string name="settings_help_body">Dokumentation, Quelle, Fehler, Funktionen und Kontakt.</string>
     <string name="settings_about_title">Über Satra</string>
     <string name="settings_about_body">Version, Bedingungen und Datenschutz.</string>
-    <string name="settings_about_version">Version</string>
+    <string name="settings_about_version">Versionsnummer</string>
     <string name="settings_help_read_documentation">Dokumentation lesen</string>
     <string name="settings_help_view_source">Quelle ansehen auf GitHub</string>
     <string name="settings_help_report_bug">Melden Sie einen Fehler</string>
@@ -129,7 +133,7 @@
     <string name="wallet_setup_recovery_phrase_use_12_body">Die Standardlänge der Wiederherstellungsphrase für die meisten Wallets.</string>
     <string name="wallet_setup_recovery_phrase_use_24">Verwenden Sie eine Phrase mit 24 Wörtern</string>
     <string name="wallet_setup_recovery_phrase_use_24_body">Eine längere Wiederherstellungsphrase, die aus mehr Entropie generiert wird.</string>
-    <string name="wallet_setup_passphrase_label">Passphrase (optional)</string>
+    <string name="wallet_setup_passphrase_label">Optionale Passphrase</string>
     <string name="wallet_setup_passphrase_placeholder">Extra geheimes Wort oder Satz</string>
     <string name="wallet_setup_passphrase_note">Verwenden Sie die genaue Passphrase, einschließlich Leerzeichen und Groß-/Kleinschreibung. Lassen Sie das Feld leer, wenn dieses Portemonnaie keines verwendet.</string>
     <string name="wallet_setup_passphrase_toggle">Passphrase verwenden</string>
@@ -167,11 +171,11 @@
     <string name="wallet_setup_success_body">Die Einrichtung ist abgeschlossen. Sie können die Sicherheitsoptionen und unterstützten Assets später in den Wallet-Einstellungen überprüfen.</string>
     <string name="wallet_setup_success_create_body">Satra hat diese Wallet auf Ihrem Gerät erstellt. Wiederherstellungs-, Signierungs- und Datenschutzeinstellungen sind sofort einsatzbereit.</string>
     <string name="wallet_setup_success_import_body">Satra hat diese Wallet auf Ihr Gerät importiert. Sie können jetzt Konten, Vermögenswerte und Sicherheitseinstellungen überprüfen.</string>
-    <string name="wallet_setup_success_wallet">Wallet</string>
+    <string name="wallet_setup_success_wallet">Geldbörse</string>
     <string name="wallet_setup_success_wallet_created">Erstellt</string>
     <string name="wallet_setup_success_wallet_imported">Importiert</string>
     <string name="wallet_setup_success_security">Sicherheit</string>
-    <string name="wallet_setup_success_security_optional">Optional</string>
+    <string name="wallet_setup_success_security_optional">Wahlweise</string>
     <string name="wallet_setup_success_storage">Lagerung</string>
     <string name="wallet_setup_success_storage_local">Lokal</string>
     <string name="wallet_setup_success_access">Zugang</string>
@@ -211,9 +215,9 @@
     <string name="wallet_setup_watch_address_placeholder">Fügen Sie die Adresse für die ausgewählte Kette ein…</string>
     <string name="wallet_setup_watch_address_note">Diese Adresse kann überwacht werden, sie kann jedoch nicht von diesem Gerät aus signieren oder ausgeben.</string>
     <string name="wallet_setup_selected_network">Netzwerk</string>
-    <string name="wallet_setup_network_family_utxo">Bitcoin-family network</string>
-    <string name="wallet_setup_network_family_evm">EVM network</string>
-    <string name="wallet_setup_network_family_non_evm">Non-EVM network</string>
+    <string name="wallet_setup_network_family_utxo">Netzwerk der Bitcoin-Familie</string>
+    <string name="wallet_setup_network_family_evm">EVM-Netzwerk</string>
+    <string name="wallet_setup_network_family_non_evm">Nicht-EVM-Netzwerk</string>
     <string name="wallet_setup_network_bitcoin">Bitcoin</string>
     <string name="wallet_setup_network_bitcoin_cash">Bitcoin Cash</string>
     <string name="wallet_setup_network_dogecoin">Dogecoin</string>
@@ -300,7 +304,7 @@
     <string name="home_wallet_status_syncing">Synchronisierung</string>
     <string name="home_wallet_label">Hauptbrieftasche</string>
     <string name="home_wallet_menu_content_description">Öffnen Sie den Wallet-Umschalter</string>
-    <string name="home_wallet_switcher_title">Wallets</string>
+    <string name="home_wallet_switcher_title">Geldbörsen</string>
     <string name="home_wallet_switcher_body">Wählen Sie die Wallet aus, die Satra auf diesem Gerät anzeigt.</string>
     <string name="home_wallet_switcher_active">Aktiv</string>
     <string name="home_wallet_switcher_manage">Wallets verwalten</string>
@@ -313,7 +317,7 @@
     <string name="home_balance_hidden_delta">••</string>
     <string name="home_balance_currency_usd">USD</string>
     <string name="home_balance_placeholder">$0.00</string>
-    <string name="home_balance_change_placeholder">$0.00 today</string>
+    <string name="home_balance_change_placeholder">Heute 0,00 $</string>
     <string name="home_action_move">Senden</string>
     <string name="home_action_receive">Empfangen</string>
     <string name="home_chart_title">Bilanzdiagramm</string>
@@ -342,7 +346,7 @@
     <string name="home_assets_filter_sort_by">Sortieren nach</string>
     <string name="home_assets_sort_value">Wert</string>
     <string name="home_assets_sort_amount">Betrag</string>
-    <string name="home_assets_sort_name">Name</string>
+    <string name="home_assets_sort_name">Bezeichnung</string>
     <string name="home_assets_filter_chain">Kette</string>
     <string name="home_assets_filter_all_chains">Alle Ketten</string>
     <string name="home_assets_count_placeholder">5 dargestellt</string>
@@ -396,18 +400,18 @@
     <string name="activity_detail_transaction_id">Transaktions-ID</string>
     <string name="activity_detail_asset">Vermögenswert</string>
     <string name="activity_detail_network">Netzwerk</string>
-    <string name="activity_detail_status">Status</string>
+    <string name="activity_detail_status">Zustand</string>
     <string name="activity_detail_direction">Richtung</string>
     <string name="activity_detail_amount">Betrag</string>
     <string name="activity_detail_value">Wert</string>
     <string name="activity_detail_fee">Gebühr</string>
     <string name="activity_detail_from">Von</string>
     <string name="activity_detail_to">Zu</string>
-    <string name="activity_detail_hash">Hash</string>
+    <string name="activity_detail_hash">Transaktionshash</string>
     <string name="activity_detail_block_height">Blockhöhe</string>
     <string name="activity_detail_block_hash">Hash blockieren</string>
     <string name="activity_detail_confirmations">Bestätigungen</string>
-    <string name="activity_detail_nonce">Nonce</string>
+    <string name="activity_detail_nonce">Nonce-Wert</string>
     <string name="activity_detail_memo">Notiz</string>
     <string name="activity_detail_time">Zeit</string>
     <string name="activity_detail_first_seen">Zum ersten Mal gesehen</string>
@@ -529,11 +533,11 @@
     <string name="send_amount_header_body">Wählen Sie vor der Überprüfung den Betrag und die Netzwerkgebühr aus.</string>
     <string name="send_amount_available">Verfügbar %1$s</string>
     <string name="send_amount_available_on">Verfügbar: %1$s auf %2$s</string>
-    <string name="send_amount_max">Max</string>
+    <string name="send_amount_max">Maximum</string>
     <string name="send_fee_pill_title">Netzwerkgebühr</string>
     <string name="send_fee_sheet_title">Netzwerkgebühr</string>
     <string name="send_fee_speed_slow">Langsam</string>
-    <string name="send_fee_speed_normal">Normal</string>
+    <string name="send_fee_speed_normal">Standard</string>
     <string name="send_fee_speed_fast">Schnell</string>
     <string name="send_review_action">Rezension</string>
     <string name="send_review_screen_title">Rezension</string>
@@ -573,7 +577,7 @@
     <string name="send_receipt_footer">Gesendet mit satra — der Hueter dessen, was wahr ist · satra.app</string>
     <string name="send_receipt_footer_brand">satra</string>
     <string name="send_receipt_hash">Transaktion</string>
-    <string name="send_receipt_status">Status</string>
+    <string name="send_receipt_status">Zustand</string>
     <string name="send_receipt_saved">Zeit</string>
     <string name="send_receipt_share">Screenshot teilen</string>
     <string name="send_receipt_explorer">Im Explorer ansehen</string>
@@ -626,8 +630,8 @@
     <string name="settings_screen_title">Einstellungen</string>
     <string name="settings_screen_body">Verwalten Sie Wallets, Einstellungen, Sicherheit, Benachrichtigungen und App-Daten von einem Ort aus.</string>
     <string name="settings_section_wallet_management">Wallet-Verwaltung</string>
-    <string name="settings_section_wallet">Wallet</string>
-    <string name="settings_section_app">App</string>
+    <string name="settings_section_wallet">Geldbörse</string>
+    <string name="settings_section_app">Anwendung</string>
     <string name="settings_section_info">Infos</string>
     <string name="settings_section_danger">Gefahrenzone</string>
     <string name="settings_wallet_management_title">Wallet-Verwaltung</string>
@@ -679,7 +683,7 @@
     <string name="settings_wallet_management_type_watch_only">Wallet watch-only</string>
     <string name="settings_wallet_management_type_recovery_phrase">Wallet mit Wiederherstellungsphrase</string>
     <string name="settings_wallet_management_type_private_key">Private-Key-Wallet</string>
-    <string name="settings_wallet_management_type_wallet">Wallet</string>
+    <string name="settings_wallet_management_type_wallet">Geldbörse</string>
     <string name="settings_wallet_management_wallet_active_subtitle">Aktiv · %1$s</string>
     <string name="settings_wallet_management_wallet_inactive_subtitle">Inaktiv · %1$s</string>
     <string name="settings_address_book_title">Adressbuch</string>
@@ -988,7 +992,7 @@
     <string name="settings_notifications_transactions">Transaktionen</string>
     <string name="settings_notifications_transactions_body">Gesendete, empfangene, ausstehende, fehlgeschlagene und bestätigte Transaktionsaktualisierungen.</string>
     <string name="settings_about_source">Quellcode</string>
-    <string name="settings_legal_title">Legal</string>
+    <string name="settings_legal_title">Rechtliches</string>
     <string name="settings_legal_body">Datenschutzrichtlinie, Nutzungsbedingungen und Links zu öffentlichen Quellen.</string>
     <string name="settings_privacy_policy">Datenschutzrichtlinie</string>
     <string name="settings_terms_of_use">Nutzungsbedingungen</string>

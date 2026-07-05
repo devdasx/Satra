@@ -27,6 +27,10 @@
     <string name="settings_haptics_title">हॅप्टिक अभिप्राय</string>
     <string name="settings_haptics_body">महत्त्वाच्या टॅपसाठी डिव्हाइस कंपन वापरा.</string>
     <string name="settings_language_title">भाषा</string>
+    <string name="settings_language_search_placeholder">भाषा शोधा</string>
+    <string name="settings_language_search_clear">भाषा शोध साफ करा</string>
+    <string name="settings_language_no_search_results_title">जुळणाऱ्या भाषा नाहीत</string>
+    <string name="settings_language_no_search_results_body">भाषेचे नाव किंवा देश वापरून शोधून पाहा.</string>
     <string name="settings_help_title">मदत आणि समर्थन</string>
     <string name="settings_help_body">दस्तऐवजीकरण, स्रोत, बग, वैशिष्ट्ये आणि संपर्क.</string>
     <string name="settings_about_title">Satra बद्दल</string>
@@ -211,9 +215,9 @@
     <string name="wallet_setup_watch_address_placeholder">निवडलेल्या साखळीसाठी पत्ता पेस्ट करा...</string>
     <string name="wallet_setup_watch_address_note">या पत्त्याचे परीक्षण केले जाऊ शकते, परंतु ते या डिव्हाइसवरून साइन इन किंवा खर्च करू शकत नाही.</string>
     <string name="wallet_setup_selected_network">नेटवर्क</string>
-    <string name="wallet_setup_network_family_utxo">Bitcoin-family network</string>
-    <string name="wallet_setup_network_family_evm">EVM network</string>
-    <string name="wallet_setup_network_family_non_evm">Non-EVM network</string>
+    <string name="wallet_setup_network_family_utxo">बिटकॉइन-फॅमिली नेटवर्क</string>
+    <string name="wallet_setup_network_family_evm">ईव्हीएम नेटवर्क</string>
+    <string name="wallet_setup_network_family_non_evm">ईव्हीएम नसलेले नेटवर्क</string>
     <string name="wallet_setup_network_bitcoin">Bitcoin</string>
     <string name="wallet_setup_network_bitcoin_cash">Bitcoin Cash</string>
     <string name="wallet_setup_network_dogecoin">Dogecoin</string>
@@ -313,7 +317,7 @@
     <string name="home_balance_hidden_delta">••</string>
     <string name="home_balance_currency_usd">USD</string>
     <string name="home_balance_placeholder">$0.00</string>
-    <string name="home_balance_change_placeholder">$0.00 today</string>
+    <string name="home_balance_change_placeholder">आज $0.00</string>
     <string name="home_action_move">पाठवा</string>
     <string name="home_action_receive">प्राप्त करा</string>
     <string name="home_chart_title">शिल्लक चार्ट</string>

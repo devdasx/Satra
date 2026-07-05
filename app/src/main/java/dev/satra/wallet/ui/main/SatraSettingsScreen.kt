@@ -1163,29 +1163,59 @@ internal fun SatraLanguageScreen(
     onLanguageTagChange: (String) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
+    var languageSearchQuery by rememberSaveable { mutableStateOf("") }
+    val localizedLanguages = supportedSettingLanguages.map { language ->
+        SettingsLanguageLabel(
+            language = language,
+            label = stringResource(language.labelRes),
+            country = stringResource(language.countryRes),
+        )
+    }
+    val visibleLanguages = remember(localizedLanguages, languageSearchQuery) {
+        localizedLanguages.filter { language -> language.matches(languageSearchQuery) }
+    }
+
     SettingsScaffold(
         titleRes = R.string.settings_language_title,
         onBack = onBack,
     ) {
         item {
-            SettingsListCard {
-                supportedSettingLanguages.forEachIndexed { index, language ->
-                    SelectableSettingsRow(
-                        title = stringResource(language.labelRes),
-                        body = stringResource(language.countryRes),
-                        selected = settings.languageTag == language.tag,
-                        leading = { SettingsFlagGlyph(language.flag) },
-                        onClick = {
-                            onLanguageTagChange(language.tag)
-                            scope.launch {
-                                walletRepository.updateAppSettings(
-                                    AppSettingsUpdate(languageTag = language.tag),
-                                )
-                            }
-                        },
-                    )
-                    if (index != supportedSettingLanguages.lastIndex) {
-                        SettingsDivider()
+            WalletManagementSearchField(
+                query = languageSearchQuery,
+                onQueryChange = { query -> languageSearchQuery = query },
+                placeholderRes = R.string.settings_language_search_placeholder,
+                clearContentDescriptionRes = R.string.settings_language_search_clear,
+            )
+        }
+        if (visibleLanguages.isEmpty()) {
+            item {
+                SettingsEmptyCard(
+                    titleRes = R.string.settings_language_no_search_results_title,
+                    bodyRes = R.string.settings_language_no_search_results_body,
+                )
+            }
+        } else {
+            item {
+                SettingsListCard {
+                    visibleLanguages.forEachIndexed { index, languageLabel ->
+                        val language = languageLabel.language
+                        SelectableSettingsRow(
+                            title = languageLabel.label,
+                            body = languageLabel.country,
+                            selected = settings.languageTag == language.tag,
+                            leading = { SettingsFlagGlyph(language.flag) },
+                            onClick = {
+                                onLanguageTagChange(language.tag)
+                                scope.launch {
+                                    walletRepository.updateAppSettings(
+                                        AppSettingsUpdate(languageTag = language.tag),
+                                    )
+                                }
+                            },
+                        )
+                        if (index != visibleLanguages.lastIndex) {
+                            SettingsDivider()
+                        }
                     }
                 }
             }
@@ -2268,6 +2298,21 @@ private data class SettingsLanguage(
     @StringRes val countryRes: Int,
     val flag: String,
 )
+
+private data class SettingsLanguageLabel(
+    val language: SettingsLanguage,
+    val label: String,
+    val country: String,
+) {
+    fun matches(query: String): Boolean {
+        val normalizedQuery = query.trim()
+        return normalizedQuery.isBlank() ||
+            label.contains(normalizedQuery, ignoreCase = true) ||
+            country.contains(normalizedQuery, ignoreCase = true) ||
+            language.tag.contains(normalizedQuery, ignoreCase = true) ||
+            language.flag.contains(normalizedQuery, ignoreCase = true)
+    }
+}
 
 private data class CurrencyOption(
     val code: String,

@@ -27,6 +27,10 @@
     <string name="settings_haptics_title">ہیپٹک فیڈ بیک</string>
     <string name="settings_haptics_body">اہم نلکے لئی ڈیوائس کمپن دا استعمال کرو۔</string>
     <string name="settings_language_title">بولی</string>
+    <string name="settings_language_search_placeholder">بولیاں لبھو</string>
+    <string name="settings_language_search_clear">بولی تلاش صاف کرو</string>
+    <string name="settings_language_no_search_results_title">کوئی ملدی بولی نہیں</string>
+    <string name="settings_language_no_search_results_body">بولی دے ناں یا ملک نال تلاش کر کے ویکھو۔</string>
     <string name="settings_help_title">مدد تے سپورٹ</string>
     <string name="settings_help_body">دستاویزات، ذریعہ، کیڑے، خصوصیات، تے رابطہ۔</string>
     <string name="settings_about_title">Satra دے بارے چ</string>
@@ -211,9 +215,9 @@
     <string name="wallet_setup_watch_address_placeholder">منتخب کردہ چین دا پتہ پیسٹ کرو...</string>
     <string name="wallet_setup_watch_address_note">اس پتے دی نگرانی کیتی جا سکدی اے، لیکن ایہ اس آلے توں دستخط یا خرچ نئیں کر سکدا۔</string>
     <string name="wallet_setup_selected_network">نیٹ ورک</string>
-    <string name="wallet_setup_network_family_utxo">Bitcoin-family network</string>
-    <string name="wallet_setup_network_family_evm">EVM network</string>
-    <string name="wallet_setup_network_family_non_evm">Non-EVM network</string>
+    <string name="wallet_setup_network_family_utxo">ਬਿਟਕੋਇਨ-ਪਰਿਵਾਰਕ ਨੈੱਟਵਰਕ</string>
+    <string name="wallet_setup_network_family_evm">EVM ਨੈੱਟਵਰਕ</string>
+    <string name="wallet_setup_network_family_non_evm">ਗੈਰ-EVM ਨੈੱਟਵਰਕ</string>
     <string name="wallet_setup_network_bitcoin">Bitcoin</string>
     <string name="wallet_setup_network_bitcoin_cash">Bitcoin Cash</string>
     <string name="wallet_setup_network_dogecoin">Dogecoin</string>

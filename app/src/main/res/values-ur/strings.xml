@@ -27,6 +27,10 @@
     <string name="settings_haptics_title">ہیپٹک فیڈ بیک</string>
     <string name="settings_haptics_body">اہم نلکوں کے لیے آلہ وائبریشن استعمال کریں۔</string>
     <string name="settings_language_title">زبان</string>
+    <string name="settings_language_search_placeholder">زبانیں تلاش کریں</string>
+    <string name="settings_language_search_clear">زبان تلاش صاف کریں</string>
+    <string name="settings_language_no_search_results_title">کوئی مماثل زبان نہیں</string>
+    <string name="settings_language_no_search_results_body">زبان کے نام یا ملک سے تلاش کرنے کی کوشش کریں۔</string>
     <string name="settings_help_title">مدد اور تعاون</string>
     <string name="settings_help_body">دستاویزات، ذریعہ، کیڑے، خصوصیات، اور رابطہ۔</string>
     <string name="settings_about_title">Satra کے بارے میں</string>
@@ -211,9 +215,9 @@
     <string name="wallet_setup_watch_address_placeholder">منتخب کردہ سلسلہ کا پتہ چسپاں کریں…</string>
     <string name="wallet_setup_watch_address_note">اس پتے کی نگرانی کی جا سکتی ہے، لیکن یہ اس ڈیوائس سے دستخط یا خرچ نہیں کر سکتا۔</string>
     <string name="wallet_setup_selected_network">نیٹ ورک</string>
-    <string name="wallet_setup_network_family_utxo">Bitcoin-family network</string>
-    <string name="wallet_setup_network_family_evm">EVM network</string>
-    <string name="wallet_setup_network_family_non_evm">Non-EVM network</string>
+    <string name="wallet_setup_network_family_utxo">بٹ کوائن فیملی نیٹ ورک</string>
+    <string name="wallet_setup_network_family_evm">ای وی ایم نیٹ ورک</string>
+    <string name="wallet_setup_network_family_non_evm">غیر ای وی ایم نیٹ ورک</string>
     <string name="wallet_setup_network_bitcoin">Bitcoin</string>
     <string name="wallet_setup_network_bitcoin_cash">Bitcoin Cash</string>
     <string name="wallet_setup_network_dogecoin">Dogecoin</string>

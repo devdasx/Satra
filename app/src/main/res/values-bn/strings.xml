@@ -27,6 +27,10 @@
     <string name="settings_haptics_title">হ্যাপটিক প্রতিক্রিয়া</string>
     <string name="settings_haptics_body">গুরুত্বপূর্ণ ট্যাপের জন্য ডিভাইস ভাইব্রেশন ব্যবহার করুন।</string>
     <string name="settings_language_title">ভাষা</string>
+    <string name="settings_language_search_placeholder">ভাষা খুঁজুন</string>
+    <string name="settings_language_search_clear">ভাষা অনুসন্ধান মুছুন</string>
+    <string name="settings_language_no_search_results_title">মিল থাকা কোনো ভাষা নেই</string>
+    <string name="settings_language_no_search_results_body">ভাষার নাম বা দেশ দিয়ে অনুসন্ধান করে দেখুন।</string>
     <string name="settings_help_title">সাহায্য এবং সমর্থন</string>
     <string name="settings_help_body">ডকুমেন্টেশন, উৎস, বাগ, বৈশিষ্ট্য, এবং যোগাযোগ.</string>
     <string name="settings_about_title">Satra সম্পর্কে</string>
@@ -211,9 +215,9 @@
     <string name="wallet_setup_watch_address_placeholder">নির্বাচিত চেইনের ঠিকানা পেস্ট করুন...</string>
     <string name="wallet_setup_watch_address_note">এই ঠিকানা নিরীক্ষণ করা যেতে পারে, কিন্তু এটি সাইন ইন বা এই ডিভাইস থেকে খরচ করতে পারবেন না.</string>
     <string name="wallet_setup_selected_network">নেটওয়ার্ক</string>
-    <string name="wallet_setup_network_family_utxo">Bitcoin-family network</string>
-    <string name="wallet_setup_network_family_evm">EVM network</string>
-    <string name="wallet_setup_network_family_non_evm">Non-EVM network</string>
+    <string name="wallet_setup_network_family_utxo">বিটকয়েন-পারিবারিক নেটওয়ার্ক</string>
+    <string name="wallet_setup_network_family_evm">ইভিএম নেটওয়ার্ক</string>
+    <string name="wallet_setup_network_family_non_evm">নন-ইভিএম নেটওয়ার্ক</string>
     <string name="wallet_setup_network_bitcoin">Bitcoin</string>
     <string name="wallet_setup_network_bitcoin_cash">Bitcoin Cash</string>
     <string name="wallet_setup_network_dogecoin">Dogecoin</string>

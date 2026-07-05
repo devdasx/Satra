@@ -27,6 +27,10 @@
     <string name="settings_haptics_title">Ra\'ayin Haptic</string>
     <string name="settings_haptics_body">Yi amfani da girgizar na\'urar don mahimman famfo.</string>
     <string name="settings_language_title">Harshe</string>
+    <string name="settings_language_search_placeholder">Nemo harsuna</string>
+    <string name="settings_language_search_clear">Share binciken harshe</string>
+    <string name="settings_language_no_search_results_title">Babu harshe da ya dace</string>
+    <string name="settings_language_no_search_results_body">Gwada nema da sunan harshe ko ƙasa.</string>
     <string name="settings_help_title">Taimako &amp; tallafi</string>
     <string name="settings_help_body">Takaddun bayanai, tushen, kwari, fasali, da lamba.</string>
     <string name="settings_about_title">Bayanin Satra</string>
@@ -167,7 +171,7 @@
     <string name="wallet_setup_success_body">Saitin ya cika. Kuna iya sake duba zaɓin tsaro da kadarori masu tallafi daga saitunan walat daga baya.</string>
     <string name="wallet_setup_success_create_body">Satra ya ƙirƙiri wannan wallet akan na\'urar ku. Maidowa, sa hannu, da saitunan keɓanta suna shirye don amfani.</string>
     <string name="wallet_setup_success_import_body">Satra ya shigo da wannan wallet akan na\'urarka. Yanzu zaku iya duba asusu, kadarori, da saitunan tsaro.</string>
-    <string name="wallet_setup_success_wallet">Wallet</string>
+    <string name="wallet_setup_success_wallet">Jaka</string>
     <string name="wallet_setup_success_wallet_created">Ƙirƙiri</string>
     <string name="wallet_setup_success_wallet_imported">Shigo da shi</string>
     <string name="wallet_setup_success_security">Tsaro</string>
@@ -300,7 +304,7 @@
     <string name="home_wallet_status_syncing">Ana daidaitawa</string>
     <string name="home_wallet_label">Babban walat</string>
     <string name="home_wallet_menu_content_description">Buɗe mai sauya walat</string>
-    <string name="home_wallet_switcher_title">Wallets</string>
+    <string name="home_wallet_switcher_title">Jakunkuna</string>
     <string name="home_wallet_switcher_body">Zaɓi walat ɗin Satra akan wannan na\'urar.</string>
     <string name="home_wallet_switcher_active">Mai aiki</string>
     <string name="home_wallet_switcher_manage">Sarrafa wallet</string>
@@ -313,11 +317,11 @@
     <string name="home_balance_hidden_delta">••</string>
     <string name="home_balance_currency_usd">USD</string>
     <string name="home_balance_placeholder">$0.00</string>
-    <string name="home_balance_change_placeholder">$0.00 today</string>
+    <string name="home_balance_change_placeholder">$0.00 yau</string>
     <string name="home_action_move">Aika</string>
     <string name="home_action_receive">Karba</string>
     <string name="home_chart_title">Ma\'auni ginshiƙi</string>
-    <string name="home_chart_range">7-day view</string>
+    <string name="home_chart_range">Duba kwanaki 7</string>
     <string name="home_chart_range_1d">1D</string>
     <string name="home_chart_range_1w">1W</string>
     <string name="home_chart_range_1m">1M</string>
@@ -403,12 +407,12 @@
     <string name="activity_detail_fee">Kudin</string>
     <string name="activity_detail_from">Daga</string>
     <string name="activity_detail_to">Zuwa</string>
-    <string name="activity_detail_hash">Hash</string>
+    <string name="activity_detail_hash">Hashi</string>
     <string name="activity_detail_block_height">Toshe tsayi</string>
     <string name="activity_detail_block_hash">Toshe zanta</string>
     <string name="activity_detail_confirmations">Tabbatarwa</string>
     <string name="activity_detail_nonce">Babu komai</string>
-    <string name="activity_detail_memo">Memo</string>
+    <string name="activity_detail_memo">Bayanan kula</string>
     <string name="activity_detail_time">Lokaci</string>
     <string name="activity_detail_first_seen">An fara gani</string>
     <string name="activity_detail_updated">An sabunta</string>
@@ -529,7 +533,7 @@
     <string name="send_amount_header_body">Zaɓi adadin da kuɗin hanyar sadarwa kafin dubawa.</string>
     <string name="send_amount_available">Akwai %1$s</string>
     <string name="send_amount_available_on">Akwai: %1$s a kan %2$s</string>
-    <string name="send_amount_max">Max</string>
+    <string name="send_amount_max">Mafi yawa</string>
     <string name="send_fee_pill_title">Kudin hanyar sadarwa</string>
     <string name="send_fee_sheet_title">Kudin hanyar sadarwa</string>
     <string name="send_fee_speed_slow">Sannu a hankali</string>
@@ -626,8 +630,8 @@
     <string name="settings_screen_title">Saituna</string>
     <string name="settings_screen_body">Sarrafa wallet, abubuwan zaɓi, tsaro, sanarwa, da bayanan ƙa\'idar daga wuri ɗaya.</string>
     <string name="settings_section_wallet_management">Gudanar da Wallets</string>
-    <string name="settings_section_wallet">Wallet</string>
-    <string name="settings_section_app">App</string>
+    <string name="settings_section_wallet">Jaka</string>
+    <string name="settings_section_app">Aikace-aikace</string>
     <string name="settings_section_info">Bayani</string>
     <string name="settings_section_danger">Yankin haɗari</string>
     <string name="settings_wallet_management_title">Gudanar da Wallets</string>
@@ -679,7 +683,7 @@
     <string name="settings_wallet_management_type_watch_only">Wallet-kawai</string>
     <string name="settings_wallet_management_type_recovery_phrase">Wallet ɗin jumlar maidowa</string>
     <string name="settings_wallet_management_type_private_key">Wallet mai maɓalli mai zaman kansa</string>
-    <string name="settings_wallet_management_type_wallet">Wallet</string>
+    <string name="settings_wallet_management_type_wallet">Jaka</string>
     <string name="settings_wallet_management_wallet_active_subtitle">Mai aiki · %1$s</string>
     <string name="settings_wallet_management_wallet_inactive_subtitle">Mara aiki · %1$s</string>
     <string name="settings_address_book_title">Littafin adireshi</string>

@@ -27,6 +27,10 @@
     <string name="settings_haptics_title">हैप्टिक राय</string>
     <string name="settings_haptics_body">महत्वपूर्ण नलों के लिए डिवाइस कंपन का उपयोग करें।</string>
     <string name="settings_language_title">भाषा</string>
+    <string name="settings_language_search_placeholder">भाषाएं खोजें</string>
+    <string name="settings_language_search_clear">भाषा खोज साफ़ करें</string>
+    <string name="settings_language_no_search_results_title">कोई मिलती भाषा नहीं</string>
+    <string name="settings_language_no_search_results_body">भाषा के नाम या देश से खोजने की कोशिश करें।</string>
     <string name="settings_help_title">सहायता एवं समर्थन</string>
     <string name="settings_help_body">दस्तावेज़ीकरण, स्रोत, बग, सुविधाएँ और संपर्क।</string>
     <string name="settings_about_title">Satra के बारे में</string>
@@ -123,7 +127,7 @@
     <string name="wallet_setup_recovery_phrase_copy">पुनर्प्राप्ति वाक्यांश कॉपी करें</string>
     <string name="wallet_setup_recovery_phrase_copied">पुनर्प्राप्ति वाक्यांश की प्रतिलिपि बनाई गई.</string>
     <string name="wallet_setup_recovery_phrase_clip_label">Satra पुनर्प्राप्ति वाक्यांश</string>
-    <string name="wallet_setup_recovery_phrase_options">Recovery Phrase Options</string>
+    <string name="wallet_setup_recovery_phrase_options">पुनर्प्राप्ति वाक्यांश विकल्प</string>
     <string name="wallet_setup_recovery_phrase_options_sheet_title">पुनर्प्राप्ति वाक्यांश विकल्प</string>
     <string name="wallet_setup_recovery_phrase_use_12">12 शब्दों वाले वाक्यांश का प्रयोग करें</string>
     <string name="wallet_setup_recovery_phrase_use_12_body">अधिकांश वॉलेट के लिए मानक पुनर्प्राप्ति वाक्यांश लंबाई।</string>
@@ -147,7 +151,7 @@
     <string name="wallet_setup_passcode_create_title">अपने नए बटुए को सुरक्षित रखें.</string>
     <string name="wallet_setup_passcode_import_title">इस आयातित बटुए को सुरक्षित रखें.</string>
     <string name="wallet_setup_passcode_body">इस डिवाइस के लिए वैकल्पिक चार या छह अंकों का पासकोड जोड़ें, या इसे छोड़ें और बाद में सक्षम करें।</string>
-    <string name="wallet_setup_passcode_options">Passcode Options</string>
+    <string name="wallet_setup_passcode_options">पासकोड विकल्प</string>
     <string name="wallet_setup_passcode_options_sheet_title">पासकोड विकल्प</string>
     <string name="wallet_setup_passcode_use_four">4-अंकीय पासकोड का उपयोग करें</string>
     <string name="wallet_setup_passcode_use_four_body">त्वरित स्थानीय अनलॉक के लिए एक छोटा पासकोड।</string>
@@ -211,9 +215,9 @@
     <string name="wallet_setup_watch_address_placeholder">चयनित श्रृंखला का पता चिपकाएँ...</string>
     <string name="wallet_setup_watch_address_note">इस पते की निगरानी की जा सकती है, लेकिन इस डिवाइस से इस पर हस्ताक्षर या खर्च नहीं किया जा सकता है।</string>
     <string name="wallet_setup_selected_network">नेटवर्क</string>
-    <string name="wallet_setup_network_family_utxo">Bitcoin-family network</string>
-    <string name="wallet_setup_network_family_evm">EVM network</string>
-    <string name="wallet_setup_network_family_non_evm">Non-EVM network</string>
+    <string name="wallet_setup_network_family_utxo">बिटकॉइन-परिवार नेटवर्क</string>
+    <string name="wallet_setup_network_family_evm">ईवीएम नेटवर्क</string>
+    <string name="wallet_setup_network_family_non_evm">गैर-ईवीएम नेटवर्क</string>
     <string name="wallet_setup_network_bitcoin">Bitcoin</string>
     <string name="wallet_setup_network_bitcoin_cash">Bitcoin Cash</string>
     <string name="wallet_setup_network_dogecoin">Dogecoin</string>
@@ -313,7 +317,7 @@
     <string name="home_balance_hidden_delta">••</string>
     <string name="home_balance_currency_usd">USD</string>
     <string name="home_balance_placeholder">$0.00</string>
-    <string name="home_balance_change_placeholder">$0.00 today</string>
+    <string name="home_balance_change_placeholder">आज $0.00</string>
     <string name="home_action_move">भेजना</string>
     <string name="home_action_receive">प्राप्त करें</string>
     <string name="home_chart_title">बैलेंस चार्ट</string>
@@ -340,7 +344,7 @@
     <string name="home_assets_filter_only_balance">केवल संतुलन के साथ</string>
     <string name="home_assets_filter_only_balance_body">शून्य-शेष सिक्के और टोकन छिपाएँ।</string>
     <string name="home_assets_filter_sort_by">इसके अनुसार क्रमबद्ध करें</string>
-    <string name="home_assets_sort_value">Value</string>
+    <string name="home_assets_sort_value">कीमत</string>
     <string name="home_assets_sort_amount">राशि t</string>
     <string name="home_assets_sort_name">नाम</string>
     <string name="home_assets_filter_chain">जंजीर</string>
@@ -399,11 +403,11 @@
     <string name="activity_detail_status">स्थिति</string>
     <string name="activity_detail_direction">दिशा</string>
     <string name="activity_detail_amount">राशि t</string>
-    <string name="activity_detail_value">Value</string>
-    <string name="activity_detail_fee">Fee</string>
-    <string name="activity_detail_from">From</string>
-    <string name="activity_detail_to">To</string>
-    <string name="activity_detail_hash">Hash</string>
+    <string name="activity_detail_value">कीमत</string>
+    <string name="activity_detail_fee">शुल्क</string>
+    <string name="activity_detail_from">से</string>
+    <string name="activity_detail_to">को</string>
+    <string name="activity_detail_hash">हैश</string>
     <string name="activity_detail_block_height">Block ऊँचाई</string>
     <string name="activity_detail_block_hash">ब्लॉक हैश</string>
     <string name="activity_detail_confirmations">पुष्टि</string>
@@ -472,7 +476,7 @@
     <string name="send_review_title">समीक्षा</string>
     <string name="send_review_asset">संपत्ति</string>
     <string name="send_review_amount">राशि t</string>
-    <string name="send_review_to">To</string>
+    <string name="send_review_to">को</string>
     <string name="send_review_fee">नेटवर्क शुल्क</string>
     <string name="send_review_pending">सेट नहीं</string>
     <string name="send_fee_pending">हस्ताक्षर करने से पहले अनुमानित</string>
@@ -512,7 +516,7 @@
     <string name="send_recipient_address_placeholder">%1$s पता</string>
     <string name="send_recipient_paste">पेस्ट करें</string>
     <string name="send_recipient_scan">स्कैन</string>
-    <string name="send_recipient_book">Book</string>
+    <string name="send_recipient_book">किताब</string>
     <string name="send_recipient_known_title">पता सहेजा गया</string>
     <string name="send_recipient_never_sent_title">नया प्राप्तकर्ता</string>
     <string name="send_recipient_never_sent_body">यह पता आपके स्थानीय वॉलेट इतिहास में दिखाई नहीं दिया है.</string>
@@ -540,7 +544,7 @@
     <string name="send_review_header_title">भेजने की समीक्षा करें.</string>
     <string name="send_review_header_body">Satra इस हस्तांतरण पर हस्ताक्षर करने और प्रसारित करने से पहले हर विवरण की जांच करें.</string>
     <string name="send_review_network">नेटवर्क</string>
-    <string name="send_review_source">From</string>
+    <string name="send_review_source">से</string>
     <string name="send_review_total">कुल</string>
     <string name="send_review_total_plus_fee">%1$s + शुल्क</string>
     <string name="send_final_warning_title">स्थानांतरण अंतिम हैं</string>

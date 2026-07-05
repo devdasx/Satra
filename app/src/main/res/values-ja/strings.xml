@@ -27,6 +27,10 @@
     <string name="settings_haptics_title">触覚フィードバック</string>
     <string name="settings_haptics_body">重要なタップにはデバイスの振動を使用します。</string>
     <string name="settings_language_title">言語</string>
+    <string name="settings_language_search_placeholder">言語を検索</string>
+    <string name="settings_language_search_clear">言語検索をクリア</string>
+    <string name="settings_language_no_search_results_title">一致する言語がありません</string>
+    <string name="settings_language_no_search_results_body">言語名または国名で検索してみてください。</string>
     <string name="settings_help_title">ヘルプとサポート</string>
     <string name="settings_help_body">ドキュメント、ソース、バグ、機能、および連絡先。</string>
     <string name="settings_about_title">Satraについて</string>
@@ -211,9 +215,9 @@
     <string name="wallet_setup_watch_address_placeholder">選択したチェーンのアドレスを貼り付けます…</string>
     <string name="wallet_setup_watch_address_note">このアドレスは監視できますが、このデバイスから署名したり使用したりすることはできません。</string>
     <string name="wallet_setup_selected_network">ネットワーク</string>
-    <string name="wallet_setup_network_family_utxo">Bitcoin-family network</string>
-    <string name="wallet_setup_network_family_evm">EVM network</string>
-    <string name="wallet_setup_network_family_non_evm">Non-EVM network</string>
+    <string name="wallet_setup_network_family_utxo">ビットコインファミリーのネットワーク</string>
+    <string name="wallet_setup_network_family_evm">EVMネットワーク</string>
+    <string name="wallet_setup_network_family_non_evm">非EVMネットワーク</string>
     <string name="wallet_setup_network_bitcoin">Bitcoin</string>
     <string name="wallet_setup_network_bitcoin_cash">Bitcoin Cash</string>
     <string name="wallet_setup_network_dogecoin">Dogecoin</string>
@@ -313,7 +317,7 @@
     <string name="home_balance_hidden_delta">••</string>
     <string name="home_balance_currency_usd">USD</string>
     <string name="home_balance_placeholder">$0.00</string>
-    <string name="home_balance_change_placeholder">$0.00 today</string>
+    <string name="home_balance_change_placeholder">今日は $0.00</string>
     <string name="home_action_move">送信</string>
     <string name="home_action_receive">受信</string>
     <string name="home_chart_title">バランスチャート</string>

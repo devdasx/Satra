@@ -27,6 +27,10 @@
     <string name="settings_haptics_title">Тактильная обратная связь</string>
     <string name="settings_haptics_body">Используйте вибрацию устройства для важных нажатий.</string>
     <string name="settings_language_title">Язык</string>
+    <string name="settings_language_search_placeholder">Поиск языков</string>
+    <string name="settings_language_search_clear">Очистить поиск языка</string>
+    <string name="settings_language_no_search_results_title">Нет подходящих языков</string>
+    <string name="settings_language_no_search_results_body">Попробуйте искать по названию языка или стране.</string>
     <string name="settings_help_title">Помощь и поддержка</string>
     <string name="settings_help_body">Документация, источник, ошибки, функции и контакты.</string>
     <string name="settings_about_title">О Satra</string>
@@ -211,9 +215,9 @@
     <string name="wallet_setup_watch_address_placeholder">Вставьте адрес выбранной цепочки…</string>
     <string name="wallet_setup_watch_address_note">Этот адрес можно отслеживать, но он не может подписывать или тратить деньги с этого устройства.</string>
     <string name="wallet_setup_selected_network">Сеть</string>
-    <string name="wallet_setup_network_family_utxo">Bitcoin-family network</string>
-    <string name="wallet_setup_network_family_evm">EVM network</string>
-    <string name="wallet_setup_network_family_non_evm">Non-EVM network</string>
+    <string name="wallet_setup_network_family_utxo">Биткойн-семейная сеть</string>
+    <string name="wallet_setup_network_family_evm">Сеть ЭВМ</string>
+    <string name="wallet_setup_network_family_non_evm">Сеть без EVM</string>
     <string name="wallet_setup_network_bitcoin">Bitcoin</string>
     <string name="wallet_setup_network_bitcoin_cash">Bitcoin Cash</string>
     <string name="wallet_setup_network_dogecoin">Dogecoin</string>

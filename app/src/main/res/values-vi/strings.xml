@@ -27,6 +27,10 @@
     <string name="settings_haptics_title">Phản hồi xúc giác</string>
     <string name="settings_haptics_body">Sử dụng chế độ rung của thiết bị cho những lần nhấn quan trọng.</string>
     <string name="settings_language_title">Ngôn ngữ</string>
+    <string name="settings_language_search_placeholder">Tìm ngôn ngữ</string>
+    <string name="settings_language_search_clear">Xóa tìm kiếm ngôn ngữ</string>
+    <string name="settings_language_no_search_results_title">Không có ngôn ngữ phù hợp</string>
+    <string name="settings_language_no_search_results_body">Thử tìm theo tên ngôn ngữ hoặc quốc gia.</string>
     <string name="settings_help_title">Trợ giúp &amp; hỗ trợ</string>
     <string name="settings_help_body">Tài liệu, nguồn, lỗi, tính năng và liên hệ.</string>
     <string name="settings_about_title">Giới thiệu về Satra</string>
@@ -313,7 +317,7 @@
     <string name="home_balance_hidden_delta">••</string>
     <string name="home_balance_currency_usd">USD</string>
     <string name="home_balance_placeholder">$0.00</string>
-    <string name="home_balance_change_placeholder">$0.00 today</string>
+    <string name="home_balance_change_placeholder">0,00 USD hôm nay</string>
     <string name="home_action_move">Gửi</string>
     <string name="home_action_receive">Nhận được</string>
     <string name="home_chart_title">Biểu đồ cân bằng</string>
@@ -407,7 +411,7 @@
     <string name="activity_detail_block_height">Chiều cao khối</string>
     <string name="activity_detail_block_hash">Khối băm</string>
     <string name="activity_detail_confirmations">Xác nhận</string>
-    <string name="activity_detail_nonce">Nonce</string>
+    <string name="activity_detail_nonce">Mã nonce</string>
     <string name="activity_detail_memo">Bản ghi nhớ</string>
     <string name="activity_detail_time">Thời gian</string>
     <string name="activity_detail_first_seen">Lần đầu nhìn thấy</string>

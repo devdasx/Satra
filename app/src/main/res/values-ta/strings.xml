@@ -27,6 +27,10 @@
     <string name="settings_haptics_title">ஹாப்டிக் பின்னூட்டம்</string>
     <string name="settings_haptics_body">முக்கியமான தட்டுகளுக்கு சாதன அதிர்வுகளைப் பயன்படுத்தவும்.</string>
     <string name="settings_language_title">மொழி</string>
+    <string name="settings_language_search_placeholder">மொழிகளைத் தேடவும்</string>
+    <string name="settings_language_search_clear">மொழித் தேடலை அழிக்கவும்</string>
+    <string name="settings_language_no_search_results_title">பொருந்தும் மொழிகள் இல்லை</string>
+    <string name="settings_language_no_search_results_body">மொழிப் பெயர் அல்லது நாடு மூலம் தேட முயற்சிக்கவும்.</string>
     <string name="settings_help_title">உதவி &amp; ஆதரவு</string>
     <string name="settings_help_body">ஆவணம், ஆதாரம், பிழைகள், அம்சங்கள் மற்றும் தொடர்பு.</string>
     <string name="settings_about_title">Satra பற்றி</string>
@@ -211,9 +215,9 @@
     <string name="wallet_setup_watch_address_placeholder">தேர்ந்தெடுக்கப்பட்ட சங்கிலிக்கான முகவரியை ஒட்டவும்...</string>
     <string name="wallet_setup_watch_address_note">இந்த முகவரியைக் கண்காணிக்க முடியும், ஆனால் இந்தச் சாதனத்தில் கையொப்பமிடவோ செலவழிக்கவோ முடியாது.</string>
     <string name="wallet_setup_selected_network">நெட்வொர்க்</string>
-    <string name="wallet_setup_network_family_utxo">Bitcoin-family network</string>
-    <string name="wallet_setup_network_family_evm">EVM network</string>
-    <string name="wallet_setup_network_family_non_evm">Non-EVM network</string>
+    <string name="wallet_setup_network_family_utxo">பிட்காயின்-குடும்ப நெட்வொர்க்</string>
+    <string name="wallet_setup_network_family_evm">EVM நெட்வொர்க்</string>
+    <string name="wallet_setup_network_family_non_evm">EVM அல்லாத நெட்வொர்க்</string>
     <string name="wallet_setup_network_bitcoin">Bitcoin</string>
     <string name="wallet_setup_network_bitcoin_cash">Bitcoin Cash</string>
     <string name="wallet_setup_network_dogecoin">Dogecoin</string>

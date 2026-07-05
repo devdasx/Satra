@@ -27,6 +27,10 @@
     <string name="settings_haptics_title">Umpan balik haptik</string>
     <string name="settings_haptics_body">Gunakan getaran perangkat untuk ketukan penting.</string>
     <string name="settings_language_title">Bahasa</string>
+    <string name="settings_language_search_placeholder">Cari bahasa</string>
+    <string name="settings_language_search_clear">Hapus pencarian bahasa</string>
+    <string name="settings_language_no_search_results_title">Tidak ada bahasa yang cocok</string>
+    <string name="settings_language_no_search_results_body">Coba cari berdasarkan nama bahasa atau negara.</string>
     <string name="settings_help_title">Bantuan &amp; dukungan</string>
     <string name="settings_help_body">Dokumentasi, sumber, bug, fitur, dan kontak.</string>
     <string name="settings_about_title">Tentang Satra</string>
@@ -211,9 +215,9 @@
     <string name="wallet_setup_watch_address_placeholder">Tempel alamat untuk rantai yang dipilih…</string>
     <string name="wallet_setup_watch_address_note">Alamat ini dapat dipantau, namun tidak dapat ditandatangani atau dikeluarkan dari perangkat ini.</string>
     <string name="wallet_setup_selected_network">Jaringan</string>
-    <string name="wallet_setup_network_family_utxo">Bitcoin-family network</string>
-    <string name="wallet_setup_network_family_evm">EVM network</string>
-    <string name="wallet_setup_network_family_non_evm">Non-EVM network</string>
+    <string name="wallet_setup_network_family_utxo">Jaringan keluarga Bitcoin</string>
+    <string name="wallet_setup_network_family_evm">jaringan EVM</string>
+    <string name="wallet_setup_network_family_non_evm">Jaringan non-EVM</string>
     <string name="wallet_setup_network_bitcoin">Bitcoin</string>
     <string name="wallet_setup_network_bitcoin_cash">Bitcoin Cash</string>
     <string name="wallet_setup_network_dogecoin">Dogecoin</string>
@@ -396,7 +400,7 @@
     <string name="activity_detail_transaction_id">ID Transaksi</string>
     <string name="activity_detail_asset">Aset</string>
     <string name="activity_detail_network">Jaringan</string>
-    <string name="activity_detail_status">Status</string>
+    <string name="activity_detail_status">Keadaan</string>
     <string name="activity_detail_direction">Arah</string>
     <string name="activity_detail_amount">Jumlah</string>
     <string name="activity_detail_value">Nilai</string>
@@ -408,7 +412,7 @@
     <string name="activity_detail_block_hash">Blokir hash</string>
     <string name="activity_detail_confirmations">Konfirmasi</string>
     <string name="activity_detail_nonce">Tidak sekali pun</string>
-    <string name="activity_detail_memo">Memo</string>
+    <string name="activity_detail_memo">Catatan</string>
     <string name="activity_detail_time">Waktu</string>
     <string name="activity_detail_first_seen">Pertama kali terlihat</string>
     <string name="activity_detail_updated">Diperbarui</string>
@@ -573,7 +577,7 @@
     <string name="send_receipt_footer">Dikirim dengan satra — penjaga yang benar · satra.app</string>
     <string name="send_receipt_footer_brand">satra</string>
     <string name="send_receipt_hash">Transaksi</string>
-    <string name="send_receipt_status">Status</string>
+    <string name="send_receipt_status">Keadaan</string>
     <string name="send_receipt_saved">Waktu</string>
     <string name="send_receipt_share">Bagikan tangkapan layar</string>
     <string name="send_receipt_explorer">Lihat di explorer</string>
@@ -688,7 +692,7 @@
     <string name="settings_address_book_edit">Sunting alamat</string>
     <string name="settings_address_book_empty_title">Belum ada alamat yang disimpan.</string>
     <string name="settings_address_book_empty_body">Tambahkan penerima yang Anda percayai agar mereka lebih mudah ditinjau sebelum dikirim.</string>
-    <string name="settings_address_book_label">Label</string>
+    <string name="settings_address_book_label">Nama label</string>
     <string name="settings_address_book_address">Alamat</string>
     <string name="settings_address_book_notes">Catatan</string>
     <string name="settings_address_book_network">Jaringan</string>

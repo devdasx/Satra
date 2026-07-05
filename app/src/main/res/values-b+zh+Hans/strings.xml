@@ -27,6 +27,10 @@
     <string name="settings_haptics_title">触觉反馈</string>
     <string name="settings_haptics_body">对重要的点击使用设备振动。</string>
     <string name="settings_language_title">语言</string>
+    <string name="settings_language_search_placeholder">搜索语言</string>
+    <string name="settings_language_search_clear">清除语言搜索</string>
+    <string name="settings_language_no_search_results_title">没有匹配的语言</string>
+    <string name="settings_language_no_search_results_body">请尝试按语言名称或国家/地区搜索。</string>
     <string name="settings_help_title">帮助与支持</string>
     <string name="settings_help_body">文档、来源、错误、功能和联系方式。</string>
     <string name="settings_about_title">关于Satra</string>
@@ -211,9 +215,9 @@
     <string name="wallet_setup_watch_address_placeholder">粘贴所选链的地址...</string>
     <string name="wallet_setup_watch_address_note">该地址可以被监控，但不能从该设备签名或花费。</string>
     <string name="wallet_setup_selected_network">网络</string>
-    <string name="wallet_setup_network_family_utxo">Bitcoin-family network</string>
-    <string name="wallet_setup_network_family_evm">EVM network</string>
-    <string name="wallet_setup_network_family_non_evm">Non-EVM network</string>
+    <string name="wallet_setup_network_family_utxo">比特币家庭网络</string>
+    <string name="wallet_setup_network_family_evm">EVM网络</string>
+    <string name="wallet_setup_network_family_non_evm">非EVM网络</string>
     <string name="wallet_setup_network_bitcoin">Bitcoin</string>
     <string name="wallet_setup_network_bitcoin_cash">Bitcoin Cash</string>
     <string name="wallet_setup_network_dogecoin">Dogecoin</string>
@@ -313,7 +317,7 @@
     <string name="home_balance_hidden_delta">••</string>
     <string name="home_balance_currency_usd">USD</string>
     <string name="home_balance_placeholder">$0.00</string>
-    <string name="home_balance_change_placeholder">$0.00 today</string>
+    <string name="home_balance_change_placeholder">今天 0.00 美元</string>
     <string name="home_action_move">发送</string>
     <string name="home_action_receive">收到</string>
     <string name="home_chart_title">余额图</string>
@@ -965,7 +969,7 @@
     <string name="settings_security_erase_wallet_sheet_title">擦除钱包保护</string>
     <string name="settings_security_erase_wallet_sheet_body">选择 Satra 在重复尝试错误密码后是否应删除本地钱包和密钥。</string>
     <string name="settings_security_erase_wallet_enabled_value">%1$d 尝试失败</string>
-    <string name="settings_security_erase_wallet_disabled_value">Off</string>
+    <string name="settings_security_erase_wallet_disabled_value">离开</string>
     <string name="settings_security_erase_attempts_title">尝试限制</string>
     <string name="settings_security_erase_attempt_limit">%1$d 尝试</string>
     <string name="settings_security_erase_attempt_limit_body">多次输入错误密码后擦除本地钱包数据。</string>

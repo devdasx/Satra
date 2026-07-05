@@ -27,6 +27,10 @@
     <string name="settings_haptics_title">హాప్టిక్ ఫీడ్‌బ్యాక్</string>
     <string name="settings_haptics_body">ముఖ్యమైన ట్యాప్‌ల కోసం పరికరం వైబ్రేషన్‌ని ఉపయోగించండి.</string>
     <string name="settings_language_title">భాష</string>
+    <string name="settings_language_search_placeholder">భాషలను వెతకండి</string>
+    <string name="settings_language_search_clear">భాష శోధనను క్లియర్ చేయండి</string>
+    <string name="settings_language_no_search_results_title">సరిపోలే భాషలు లేవు</string>
+    <string name="settings_language_no_search_results_body">భాష పేరు లేదా దేశం ద్వారా వెతకండి.</string>
     <string name="settings_help_title">సహాయం &amp; మద్దతు</string>
     <string name="settings_help_body">డాక్యుమెంటేషన్, మూలం, బగ్‌లు, ఫీచర్‌లు మరియు పరిచయం.</string>
     <string name="settings_about_title">Satra గురించి</string>
@@ -313,7 +317,7 @@
     <string name="home_balance_hidden_delta">••</string>
     <string name="home_balance_currency_usd">USD</string>
     <string name="home_balance_placeholder">$0.00</string>
-    <string name="home_balance_change_placeholder">$0.00 today</string>
+    <string name="home_balance_change_placeholder">ఈ రోజు $0.00</string>
     <string name="home_action_move">పంపండి</string>
     <string name="home_action_receive">స్వీకరించండి</string>
     <string name="home_chart_title">బ్యాలెన్స్ చార్ట్</string>

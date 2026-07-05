@@ -27,6 +27,10 @@
     <string name="settings_haptics_title">觸覺反饋</string>
     <string name="settings_haptics_body">用裝置震動嚟撳重要嘅水龍頭。</string>
     <string name="settings_language_title">語言</string>
+    <string name="settings_language_search_placeholder">搜尋語言</string>
+    <string name="settings_language_search_clear">清除語言搜尋</string>
+    <string name="settings_language_no_search_results_title">冇相符語言</string>
+    <string name="settings_language_no_search_results_body">請試下用語言名或者國家搜尋。</string>
     <string name="settings_help_title">幫手同支持</string>
     <string name="settings_help_body">文件、來源、錯誤、功能同聯絡人。</string>
     <string name="settings_about_title">關於 Satra</string>
@@ -211,9 +215,9 @@
     <string name="wallet_setup_watch_address_placeholder">貼上所選鏈嘅地址...</string>
     <string name="wallet_setup_watch_address_note">呢個地址可以被監控，但係佢唔可以喺呢部裝置度簽署或者消費。</string>
     <string name="wallet_setup_selected_network">網絡</string>
-    <string name="wallet_setup_network_family_utxo">Bitcoin-family network</string>
-    <string name="wallet_setup_network_family_evm">EVM network</string>
-    <string name="wallet_setup_network_family_non_evm">Non-EVM network</string>
+    <string name="wallet_setup_network_family_utxo">比特幣家庭網絡</string>
+    <string name="wallet_setup_network_family_evm">EVM網路</string>
+    <string name="wallet_setup_network_family_non_evm">非EVM網絡</string>
     <string name="wallet_setup_network_bitcoin">Bitcoin</string>
     <string name="wallet_setup_network_bitcoin_cash">Bitcoin Cash</string>
     <string name="wallet_setup_network_dogecoin">Dogecoin</string>

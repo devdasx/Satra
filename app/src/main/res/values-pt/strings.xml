@@ -27,6 +27,10 @@
     <string name="settings_haptics_title">Feedback tátil</string>
     <string name="settings_haptics_body">Use a vibração do dispositivo para toques importantes.</string>
     <string name="settings_language_title">Idioma</string>
+    <string name="settings_language_search_placeholder">Pesquisar idiomas</string>
+    <string name="settings_language_search_clear">Limpar pesquisa de idioma</string>
+    <string name="settings_language_no_search_results_title">Nenhum idioma correspondente</string>
+    <string name="settings_language_no_search_results_body">Tente pesquisar por nome do idioma ou país.</string>
     <string name="settings_help_title">Ajuda e suporte</string>
     <string name="settings_help_body">Documentação, fonte, bugs, recursos e contato.</string>
     <string name="settings_about_title">Sobre Satra</string>
@@ -211,9 +215,9 @@
     <string name="wallet_setup_watch_address_placeholder">Cole o endereço da rede selecionada…</string>
     <string name="wallet_setup_watch_address_note">Este endereço pode ser monitorado, mas não pode assinar ou gastar neste dispositivo.</string>
     <string name="wallet_setup_selected_network">Rede</string>
-    <string name="wallet_setup_network_family_utxo">Bitcoin-family network</string>
-    <string name="wallet_setup_network_family_evm">EVM network</string>
-    <string name="wallet_setup_network_family_non_evm">Non-EVM network</string>
+    <string name="wallet_setup_network_family_utxo">Rede da família Bitcoin</string>
+    <string name="wallet_setup_network_family_evm">Rede EVM</string>
+    <string name="wallet_setup_network_family_non_evm">Rede não EVM</string>
     <string name="wallet_setup_network_bitcoin">Bitcoin</string>
     <string name="wallet_setup_network_bitcoin_cash">Bitcoin Cash</string>
     <string name="wallet_setup_network_dogecoin">Dogecoin</string>
@@ -403,11 +407,11 @@
     <string name="activity_detail_fee">Taxa</string>
     <string name="activity_detail_from">De</string>
     <string name="activity_detail_to">Para</string>
-    <string name="activity_detail_hash">Hash</string>
+    <string name="activity_detail_hash">Identificador hash</string>
     <string name="activity_detail_block_height">Altura do bloco</string>
     <string name="activity_detail_block_hash">Bloquear hash</string>
     <string name="activity_detail_confirmations">Confirmações</string>
-    <string name="activity_detail_nonce">Nonce</string>
+    <string name="activity_detail_nonce">Número único</string>
     <string name="activity_detail_memo">Memorando</string>
     <string name="activity_detail_time">Hora</string>
     <string name="activity_detail_first_seen">Visto pela primeira vez</string>
@@ -541,7 +545,7 @@
     <string name="send_review_header_body">Verifique todos os detalhes antes que Satra assine e transmita esta transferência.</string>
     <string name="send_review_network">Rede</string>
     <string name="send_review_source">De</string>
-    <string name="send_review_total">Total</string>
+    <string name="send_review_total">Valor total</string>
     <string name="send_review_total_plus_fee">%1$s + taxa</string>
     <string name="send_final_warning_title">As transferências são definitivas</string>
     <string name="send_final_warning_body">As transferências são finais. Confira os primeiros e últimos caracteres do endereço e se %1$s é a rede esperada pelo destinatário.</string>
@@ -573,7 +577,7 @@
     <string name="send_receipt_footer">Enviado com satra — guardiã do que é verdadeiro · satra.app</string>
     <string name="send_receipt_footer_brand">satra</string>
     <string name="send_receipt_hash">Transação</string>
-    <string name="send_receipt_status">Status</string>
+    <string name="send_receipt_status">Estado</string>
     <string name="send_receipt_saved">Hora</string>
     <string name="send_receipt_share">Compartilhar captura</string>
     <string name="send_receipt_explorer">Ver no explorador</string>
