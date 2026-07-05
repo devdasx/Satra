@@ -11,6 +11,7 @@ import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
@@ -53,7 +54,6 @@ import dev.satra.wallet.ui.setup.ImportMethodScreen
 import dev.satra.wallet.ui.setup.ImportPrivateKeyScreen
 import dev.satra.wallet.ui.setup.ImportRecoveryPhraseScreen
 import dev.satra.wallet.ui.setup.ImportWatchOnlyAddressScreen
-import dev.satra.wallet.ui.setup.SetupBiometricsScreen
 import dev.satra.wallet.ui.setup.SetupConfirmPasscodeScreen
 import dev.satra.wallet.ui.setup.SetupPasscodeScreen
 import dev.satra.wallet.ui.setup.WalletImportMethod
@@ -120,6 +120,7 @@ class MainActivity : FragmentActivity() {
             var appUnlocked by rememberSaveable { mutableStateOf(false) }
             var appLockError by rememberSaveable { mutableStateOf(false) }
             var appLockResetNonce by rememberSaveable { mutableStateOf(0) }
+            val setupBiometricsAvailable = remember { isBiometricUnlockAvailable() }
 
             fun markAppUnlockedAndOpenMain() {
                 appUnlocked = true
@@ -722,11 +723,14 @@ class MainActivity : FragmentActivity() {
                             flow = flow,
                             expectedPasscode = pendingSetupPasscode,
                             settings = settings,
+                            showBiometricsOption = setupBiometricsAvailable,
                             onBack = {
                                 navController.popBackStack()
                             },
-                            onConfirmed = {
-                                navController.navigate(SatraRoute.setupBiometrics(flow))
+                            onConfirmed = { biometricsEnabled ->
+                                if (persistPendingWalletSetup(flow, biometricsEnabled)) {
+                                    finishWalletSetup(flow)
+                                }
                             },
                             onMismatch = {
                                 pendingSetupPasscode = ""
@@ -735,37 +739,6 @@ class MainActivity : FragmentActivity() {
                                         inclusive = true
                                     }
                                     launchSingleTop = true
-                                }
-                            },
-                        )
-                    }
-
-                    composable(
-                        route = SatraRoute.SETUP_BIOMETRICS,
-                        arguments = listOf(
-                            navArgument(SatraRoute.ARG_FLOW) {
-                                type = NavType.StringType
-                            },
-                        ),
-                    ) { backStackEntry ->
-                        val flow = WalletSetupFlow.fromRoute(
-                            backStackEntry.arguments?.getString(SatraRoute.ARG_FLOW),
-                        )
-
-                        SetupBiometricsScreen(
-                            flow = flow,
-                            settings = settings,
-                            onBack = {
-                                navController.popBackStack()
-                            },
-                            onContinue = { biometricsEnabled ->
-                                if (persistPendingWalletSetup(flow, biometricsEnabled)) {
-                                    finishWalletSetup(flow)
-                                }
-                            },
-                            onSkip = {
-                                if (persistPendingWalletSetup(flow, biometricsEnabled = false)) {
-                                    finishWalletSetup(flow)
                                 }
                             },
                         )
@@ -919,6 +892,13 @@ class MainActivity : FragmentActivity() {
         prompt.authenticate(promptInfo)
     }
 
+    private fun isBiometricUnlockAvailable(): Boolean {
+        val authenticators = BiometricManager.Authenticators.BIOMETRIC_STRONG or
+            BiometricManager.Authenticators.BIOMETRIC_WEAK
+        return BiometricManager.from(this).canAuthenticate(authenticators) ==
+            BiometricManager.BIOMETRIC_SUCCESS
+    }
+
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     private fun registerScreenshotDetection() {
         if (screenCaptureCallback != null) {
@@ -988,7 +968,6 @@ private object SatraRoute {
     const val SCANNER = "scanner/{$ARG_SCAN_PURPOSE}"
     const val SETUP_PASSCODE = "setup/{$ARG_FLOW}/passcode"
     const val SETUP_CONFIRM_PASSCODE = "setup/{$ARG_FLOW}/confirm-passcode"
-    const val SETUP_BIOMETRICS = "setup/{$ARG_FLOW}/biometrics"
 
     fun main(flow: WalletSetupFlow? = null): String =
         flow?.let { "$MAIN_BASE?$ARG_SETUP_RESULT=${it.routeSegment}" } ?: MAIN_BASE
@@ -1009,9 +988,6 @@ private object SatraRoute {
 
     fun setupConfirmPasscode(flow: WalletSetupFlow): String =
         "setup/${flow.routeSegment}/confirm-passcode"
-
-    fun setupBiometrics(flow: WalletSetupFlow): String =
-        "setup/${flow.routeSegment}/biometrics"
 }
 
 private fun readThemePreference(settingsStore: SharedPreferences): SatraThemePreference {

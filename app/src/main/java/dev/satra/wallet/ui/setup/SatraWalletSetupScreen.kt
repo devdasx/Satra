@@ -169,7 +169,6 @@ enum class WalletSetupFlow(val routeSegment: String) {
 private enum class SecuritySetupPage {
     Passcode,
     ConfirmPasscode,
-    Biometrics,
     Success,
 }
 
@@ -609,11 +608,15 @@ fun SetupConfirmPasscodeScreen(
     flow: WalletSetupFlow,
     expectedPasscode: String,
     settings: SatraSettings = SatraSettings(),
+    showBiometricsOption: Boolean = false,
     onBack: () -> Unit = {},
-    onConfirmed: () -> Unit = {},
+    onConfirmed: (Boolean) -> Unit = {},
     onMismatch: () -> Unit = {},
 ) {
     var confirmation by rememberSaveable(expectedPasscode) { mutableStateOf("") }
+    var biometricsEnabled by rememberSaveable(showBiometricsOption, expectedPasscode) {
+        mutableStateOf(showBiometricsOption)
+    }
     var pendingResult by remember { mutableStateOf<PasscodeConfirmationResult?>(null) }
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -628,7 +631,7 @@ fun SetupConfirmPasscodeScreen(
         keyboardController?.hide()
         delay(PASSCODE_KEYBOARD_HIDE_DELAY_MILLIS)
         when (result) {
-            PasscodeConfirmationResult.Confirmed -> onConfirmed()
+            PasscodeConfirmationResult.Confirmed -> onConfirmed(showBiometricsOption && biometricsEnabled)
             PasscodeConfirmationResult.Mismatch -> onMismatch()
         }
         pendingResult = null
@@ -667,39 +670,15 @@ fun SetupConfirmPasscodeScreen(
             },
             isError = isComplete && !matches,
         )
-    }
-}
-
-@Composable
-fun SetupBiometricsScreen(
-    flow: WalletSetupFlow,
-    settings: SatraSettings = SatraSettings(),
-    onBack: () -> Unit = {},
-    onContinue: (Boolean) -> Unit = {},
-    onSkip: () -> Unit = {},
-) {
-    var biometricsEnabled by rememberSaveable { mutableStateOf(true) }
-
-    WalletSetupRouteScreen(
-        titleRes = R.string.wallet_setup_screen_biometrics,
-        page = securitySetupPage(
-            flow = flow,
-            page = SecuritySetupPage.Biometrics,
-        ),
-        settings = settings,
-        primaryTextRes = R.string.wallet_setup_action_continue,
-        secondaryTextRes = R.string.wallet_setup_action_skip_for_now,
-        onBack = onBack,
-        onPrimaryClick = { onContinue(biometricsEnabled) },
-        onSecondaryClick = onSkip,
-    ) { performHaptic ->
-        BiometricChoicePanel(
-            biometricsEnabled = biometricsEnabled,
-            onBiometricsEnabledChange = { enabled ->
-                performHaptic()
-                biometricsEnabled = enabled
-            },
-        )
+        if (showBiometricsOption) {
+            BiometricChoicePanel(
+                biometricsEnabled = biometricsEnabled,
+                onBiometricsEnabledChange = { enabled ->
+                    performHaptic()
+                    biometricsEnabled = enabled
+                },
+            )
+        }
     }
 }
 
@@ -2352,12 +2331,6 @@ private fun securitySetupPage(
         titleRes = R.string.wallet_setup_confirm_passcode_title,
         bodyRes = R.string.wallet_setup_confirm_passcode_body,
         iconRes = R.drawable.ic_brand_security,
-    )
-
-    SecuritySetupPage.Biometrics -> SetupPageContent(
-        titleRes = R.string.wallet_setup_biometrics_title,
-        bodyRes = R.string.wallet_setup_biometrics_body,
-        iconRes = R.drawable.ic_brand_scan,
     )
 
     SecuritySetupPage.Success -> SetupPageContent(

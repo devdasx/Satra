@@ -101,7 +101,6 @@
     <string name="wallet_setup_screen_import_watch_only">Watch-only address</string>
     <string name="wallet_setup_screen_create_passcode">Create passcode</string>
     <string name="wallet_setup_screen_confirm_passcode">Confirm passcode</string>
-    <string name="wallet_setup_screen_biometrics">Biometrics</string>
     <string name="wallet_setup_screen_success">Success</string>
     <string name="wallet_setup_save_failed">Wallet setup could not be saved. Please try again.</string>
     <string name="wallet_setup_complete_created_title">Wallet created</string>
@@ -157,8 +156,6 @@
     <string name="wallet_setup_confirm_passcode_title">Enter it one more time.</string>
     <string name="wallet_setup_confirm_passcode_body">Confirm the passcode before Satra uses it to protect local access.</string>
     <string name="wallet_setup_confirm_passcode_note">Use the same digits from the previous screen.</string>
-    <string name="wallet_setup_biometrics_title">Use biometrics if you want.</string>
-    <string name="wallet_setup_biometrics_body">Face or fingerprint unlock is optional and can be changed later in settings.</string>
     <string name="wallet_setup_biometrics_toggle">Enable biometric unlock</string>
     <string name="wallet_setup_biometrics_toggle_body">Use the device biometric prompt when opening Satra.</string>
     <string name="wallet_setup_biometrics_note">Satra will still keep recovery and signing local to this device.</string>
