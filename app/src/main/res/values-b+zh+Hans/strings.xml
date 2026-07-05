@@ -496,7 +496,8 @@
     <string name="send_asset_empty_search">没有与此搜索匹配的资产。</string>
     <string name="send_asset_empty_search_title">没有匹配的资产</string>
     <string name="send_asset_empty_search_body">没有匹配项 — Satra 只列出其已发布列表中的资产。</string>
-    <string name="send_network_context">%1$s 存在于%2$d 网络上。选择此交易应从何处发送。</string>
+    <string name="send_network_context">%1$s 位于 %2$d 个网络 — 网络决定资产到达哪里。同一符号、不同网络 = 不同资产。</string>
+    <string name="send_network_empty_value">—</string>
     <string name="send_recipient_title">收件人</string>
     <string name="send_recipient_header_title">输入收件人。</string>
     <string name="send_recipient_header_body">发送 %1$s，网络为 %2$s。请使用此网络的准确地址。</string>

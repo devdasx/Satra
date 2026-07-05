@@ -277,6 +277,102 @@ internal fun ChooseAssetEmptySearchNote() {
 }
 
 @Composable
+internal fun ChooseNetworkContextLine(
+    symbol: String,
+    networkCount: Int,
+    @DrawableRes iconRes: Int,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .widthIn(max = ChooseAssetContentMaxWidth)
+            .padding(start = 2.dp, end = 2.dp, bottom = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        SatraCryptoIcon(
+            iconRes = iconRes,
+            modifier = Modifier.size(42.dp),
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = stringResource(R.string.send_network_context, symbol, networkCount),
+            style = MaterialTheme.typography.labelMedium.copy(fontSize = 12.5.sp, lineHeight = 18.sp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.Medium,
+        )
+    }
+}
+
+@Composable
+internal fun ChooseNetworkRow(
+    networkName: String,
+    standard: String,
+    primaryAmount: String,
+    secondaryAmount: String,
+    @DrawableRes iconRes: Int,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .widthIn(max = ChooseAssetContentMaxWidth)
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        SatraCryptoIcon(
+            iconRes = iconRes,
+            modifier = Modifier.size(42.dp),
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = networkName,
+                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.5.sp),
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = standard,
+                modifier = Modifier.padding(top = 3.dp),
+                style = MaterialTheme.typography.labelMedium.copy(fontSize = 12.sp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(
+            modifier = Modifier.widthIn(min = 92.dp, max = 132.dp),
+            horizontalAlignment = Alignment.End,
+        ) {
+            Text(
+                text = primaryAmount,
+                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.End,
+            )
+            Text(
+                text = secondaryAmount,
+                modifier = Modifier.padding(top = 3.dp),
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.5.sp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.End,
+            )
+        }
+    }
+}
+
+@Composable
 private fun NetworkCountPill(networkCount: Int) {
     Box(
         modifier = Modifier

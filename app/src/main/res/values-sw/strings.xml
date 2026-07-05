@@ -496,7 +496,8 @@
     <string name="send_asset_empty_search">Hakuna vipengee vinavyolingana na utafutaji huu.</string>
     <string name="send_asset_empty_search_title">Hakuna mali zinazolingana</string>
     <string name="send_asset_empty_search_body">Hakuna kinacholingana — Satra huorodhesha tu mali zilizo kwenye orodha yake iliyochapishwa.</string>
-    <string name="send_network_context">%1$s inaishi kwenye mitandao ya %2$d. Chagua mahali ambapo muamala huu unapaswa kutumwa kutoka.</string>
+    <string name="send_network_context">%1$s ipo kwenye mitandao %2$d — mtandao huamua inapofika. Alama ileile, mtandao tofauti = mali tofauti.</string>
+    <string name="send_network_empty_value">—</string>
     <string name="send_recipient_title">Mpokeaji</string>
     <string name="send_recipient_header_title">Ingiza mpokeaji.</string>
     <string name="send_recipient_header_body">Tuma %1$s kwa %2$s. Tumia anwani halisi ya mtandao huu.</string>

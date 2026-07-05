@@ -496,7 +496,8 @@
     <string name="send_asset_empty_search">Tidak ada aset yang cocok dengan penelusuran ini.</string>
     <string name="send_asset_empty_search_title">Tidak ada aset yang cocok</string>
     <string name="send_asset_empty_search_body">Tidak ada yang cocok — Satra hanya menampilkan aset dari daftar yang dipublikasikan.</string>
-    <string name="send_network_context">%1$s ada di jaringan %2$d. Pilih dari mana transaksi ini harus dikirim.</string>
+    <string name="send_network_context">%1$s ada di %2$d jaringan — jaringan menentukan ke mana aset tiba. Simbol sama, jaringan berbeda = aset berbeda.</string>
+    <string name="send_network_empty_value">—</string>
     <string name="send_recipient_title">Penerima</string>
     <string name="send_recipient_header_title">Masukkan penerima.</string>
     <string name="send_recipient_header_body">Kirim %1$s di %2$s. Gunakan alamat yang tepat untuk jaringan ini.</string>

@@ -504,7 +504,8 @@
     <string name="send_asset_empty_search">No assets match this search.</string>
     <string name="send_asset_empty_search_title">No matching assets</string>
     <string name="send_asset_empty_search_body">Nothing matches — Satra only lists assets from its published list.</string>
-    <string name="send_network_context">%1$s lives on %2$d networks. Choose where this transaction should be sent from.</string>
+    <string name="send_network_context">%1$s lives on %2$d networks — the network decides where it arrives. Same symbol, different network = different asset.</string>
+    <string name="send_network_empty_value">—</string>
     <string name="send_recipient_title">Recipient</string>
     <string name="send_recipient_header_title">Enter recipient.</string>
     <string name="send_recipient_header_body">Send %1$s on %2$s. Use the exact address for this network.</string>

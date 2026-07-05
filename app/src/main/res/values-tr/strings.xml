@@ -496,7 +496,8 @@
     <string name="send_asset_empty_search">Bu aramayla eşleşen öğe yok.</string>
     <string name="send_asset_empty_search_title">Eşleşen öğe yok</string>
     <string name="send_asset_empty_search_body">Eşleşme yok — Satra yalnızca yayımlanan listesindeki varlıkları gösterir.</string>
-    <string name="send_network_context">%1$s, %2$d ağlarında yaşar. Bu işlemin nereden gönderilmesi gerektiğini seçin.</string>
+    <string name="send_network_context">%1$s %2$d ağda bulunur — nereye ulaşacağını ağ belirler. Aynı sembol, farklı ağ = farklı varlık.</string>
+    <string name="send_network_empty_value">—</string>
     <string name="send_recipient_title">Alıcı</string>
     <string name="send_recipient_header_title">Alıcıyı girin.</string>
     <string name="send_recipient_header_body">%2$s\'ya %1$s gönderin. Bu ağın tam adresini kullanın.</string>

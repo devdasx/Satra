@@ -496,7 +496,8 @@
     <string name="send_asset_empty_search">Không có nội dung nào khớp với tìm kiếm này.</string>
     <string name="send_asset_empty_search_title">Không có nội dung phù hợp</string>
     <string name="send_asset_empty_search_body">Không có kết quả phù hợp — Satra chỉ liệt kê tài sản từ danh sách đã công bố.</string>
-    <string name="send_network_context">%1$s tồn tại trên mạng %2$d. Chọn nơi giao dịch này sẽ được gửi từ đó.</string>
+    <string name="send_network_context">%1$s có trên %2$d mạng — mạng quyết định tài sản sẽ đến đâu. Cùng ký hiệu, khác mạng = tài sản khác.</string>
+    <string name="send_network_empty_value">—</string>
     <string name="send_recipient_title">Người nhận</string>
     <string name="send_recipient_header_title">Nhập người nhận.</string>
     <string name="send_recipient_header_body">Gửi %1$s trên %2$s. Sử dụng địa chỉ chính xác cho mạng này.</string>

@@ -496,7 +496,8 @@
     <string name="send_asset_empty_search">ఈ శోధనకు సరిపోలే ఆస్తులు ఏవీ లేవు.</string>
     <string name="send_asset_empty_search_title">సరిపోలే ఆస్తులు లేవు</string>
     <string name="send_asset_empty_search_body">ఏదీ సరిపోలలేదు — Satra ప్రచురించిన జాబితాలోని ఆస్తులనే చూపుతుంది.</string>
-    <string name="send_network_context">%1$s %2$d నెట్‌వర్క్‌లలో నివసిస్తుంది. ఈ లావాదేవీని ఎక్కడ నుండి పంపాలో ఎంచుకోండి.</string>
+    <string name="send_network_context">%1$s %2$d నెట్‌వర్క్‌లలో ఉంది — అది ఎక్కడికి చేరుతుందో నెట్‌వర్క్ నిర్ణయిస్తుంది. అదే చిహ్నం, వేరే నెట్‌వర్క్ = వేరే ఆస్తి.</string>
+    <string name="send_network_empty_value">—</string>
     <string name="send_recipient_title">గ్రహీత</string>
     <string name="send_recipient_header_title">గ్రహీతను నమోదు చేయండి.</string>
     <string name="send_recipient_header_body">%2$sలో %1$sని పంపండి. ఈ నెట్‌వర్క్ కోసం ఖచ్చితమైన చిరునామాను ఉపయోగించండి.</string>

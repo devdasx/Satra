@@ -496,7 +496,8 @@
     <string name="send_asset_empty_search">Нет объектов, соответствующих этому запросу.</string>
     <string name="send_asset_empty_search_title">Нет подходящих объектов</string>
     <string name="send_asset_empty_search_body">Совпадений нет — Satra показывает только активы из опубликованного списка.</string>
-    <string name="send_network_context">%1$s живет в сетях %2$d. Выберите, откуда должна быть отправлена ​​эта транзакция.</string>
+    <string name="send_network_context">%1$s доступен в %2$d сетях — сеть определяет, куда он поступит. Один символ, другая сеть = другой актив.</string>
+    <string name="send_network_empty_value">—</string>
     <string name="send_recipient_title">Получатель</string>
     <string name="send_recipient_header_title">Введите получателя.</string>
     <string name="send_recipient_header_body">Отправьте %1$s на %2$s. Используйте точный адрес этой сети.</string>

@@ -496,7 +496,8 @@
     <string name="send_asset_empty_search">இந்தத் தேடலுடன் பொருந்தக்கூடிய சொத்துகள் எதுவும் இல்லை.</string>
     <string name="send_asset_empty_search_title">பொருந்தக்கூடிய சொத்துக்கள் இல்லை</string>
     <string name="send_asset_empty_search_body">எதுவும் பொருந்தவில்லை — Satra வெளியிட்ட பட்டியலில் உள்ள சொத்துகளை மட்டும் காட்டுகிறது.</string>
-    <string name="send_network_context">%1$s %2$d நெட்வொர்க்குகளில் வாழ்கிறது. இந்தப் பரிவர்த்தனை எங்கிருந்து அனுப்பப்பட வேண்டும் என்பதைத் தேர்வுசெய்யவும்.</string>
+    <string name="send_network_context">%1$s %2$d நெட்வொர்க்குகளில் உள்ளது — அது எங்கு சேரும் என்பதை நெட்வொர்க் தீர்மானிக்கிறது. அதே குறியீடு, வேறு நெட்வொர்க் = வேறு சொத்து.</string>
+    <string name="send_network_empty_value">—</string>
     <string name="send_recipient_title">பெறுபவர்</string>
     <string name="send_recipient_header_title">பெறுநரை உள்ளிடவும்.</string>
     <string name="send_recipient_header_body">%2$s இல் %1$s ஐ அனுப்பவும். இந்த நெட்வொர்க்கிற்கான சரியான முகவரியைப் பயன்படுத்தவும்.</string>

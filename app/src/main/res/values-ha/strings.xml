@@ -496,7 +496,8 @@
     <string name="send_asset_empty_search">Babu wata kadara da ta dace da wannan binciken.</string>
     <string name="send_asset_empty_search_title">Babu kadarorin da suka dace</string>
     <string name="send_asset_empty_search_body">Babu da ya dace — Satra yana nuna kadarori ne kawai daga jerin da aka wallafa.</string>
-    <string name="send_network_context">%1$s yana rayuwa akan cibiyoyin sadarwar %2$d. Zaɓi inda ya kamata a aika wannan ciniki daga.</string>
+    <string name="send_network_context">%1$s yana kan cibiyoyi %2$d — cibiyar sadarwa ce ke ƙayyade inda zai isa. Alama ɗaya, wata cibiyar daban = wani kadari daban.</string>
+    <string name="send_network_empty_value">—</string>
     <string name="send_recipient_title">Mai karɓa</string>
     <string name="send_recipient_header_title">Shigar da mai karɓa.</string>
     <string name="send_recipient_header_body">Aika %1$s akan %2$s. Yi amfani da ainihin adireshin wannan hanyar sadarwa.</string>

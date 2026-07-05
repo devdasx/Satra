@@ -468,30 +468,34 @@ private fun SendNetworkSelectionContent(
     onNetworkSelected: (String) -> Unit,
 ) {
     val haptic = LocalHapticFeedback.current
-    SendScaffold(
+    SatraChooseAssetScaffold(
         title = stringResource(R.string.send_choose_network_title),
         onBack = onBack,
     ) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            item {
-                SendNetworkPickerHeader(
-                    symbol = state.symbol,
-                    iconRes = assetIconRes(state.symbol),
-                )
-            }
-            items(state.assets, key = { row -> row.asset.assetId }) { row ->
-                SendNetworkRow(
-                    row = row,
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        onNetworkSelected(row.asset.assetId)
-                    },
-                )
-            }
-            item { Spacer(modifier = Modifier.height(26.dp)) }
+        item {
+            ChooseNetworkContextLine(
+                symbol = state.symbol,
+                networkCount = state.assets.size,
+                iconRes = assetIconRes(state.symbol),
+            )
+        }
+        items(state.assets, key = { row -> row.asset.assetId }) { row ->
+            ChooseNetworkRow(
+                networkName = row.network.displayName,
+                standard = row.networkStandardLabel(),
+                primaryAmount = formatCryptoAmount(row.balanceDecimal),
+                secondaryAmount = if (row.fiatAmount > BigDecimal.ZERO) {
+                    row.fiatFormatted
+                } else {
+                    stringResource(R.string.send_network_empty_value)
+                },
+                iconRes = networkIconRes(row.network.networkId),
+                enabled = row.hasSigningKey,
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onNetworkSelected(row.asset.assetId)
+                },
+            )
         }
     }
 }
@@ -1213,45 +1217,6 @@ private fun SendHero(
 }
 
 @Composable
-private fun SendNetworkPickerHeader(
-    symbol: String,
-    @DrawableRes iconRes: Int,
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .widthIn(max = SendContentMaxWidth)
-            .padding(horizontal = 20.dp, vertical = 18.dp),
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(
-                text = stringResource(R.string.send_network_header_title_prefix, symbol),
-                style = MaterialTheme.typography.displaySmall,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            SatraCryptoIcon(
-                iconRes = iconRes,
-                modifier = Modifier.size(34.dp),
-            )
-            Text(
-                text = stringResource(R.string.send_network_header_title_suffix),
-                style = MaterialTheme.typography.displaySmall,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-            )
-        }
-        Spacer(modifier = Modifier.height(20.dp))
-    }
-}
-
-@Composable
 private fun SendContentColumn(content: @Composable ColumnScope.() -> Unit) {
     Column(
         modifier = Modifier
@@ -1279,88 +1244,6 @@ private fun SendAssetGroupRow(
         enabled = group.canSend,
         onClick = onClick,
     )
-}
-
-@Composable
-private fun SendNetworkRow(
-    row: SendAssetRow,
-    onClick: () -> Unit,
-) {
-    SendSelectableRow(
-        title = "${row.network.displayName} - ${row.asset.symbol}",
-        subtitle = row.network.family.uppercase(Locale.US),
-        trailingPrimary = row.fiatFormatted,
-        trailingSecondary = row.balanceFormatted,
-        enabled = row.hasSigningKey,
-        onClick = onClick,
-        leadingIcon = {
-            SatraBadgedIcon(
-                primaryIconRes = networkIconRes(row.network.networkId),
-                badgeIconRes = row.iconRes,
-            )
-        },
-    )
-}
-
-@Composable
-private fun SendSelectableRow(
-    title: String,
-    subtitle: String,
-    trailingPrimary: String,
-    trailingSecondary: String,
-    enabled: Boolean,
-    onClick: () -> Unit,
-    leadingIcon: @Composable () -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .widthIn(max = SendContentMaxWidth)
-            .height(76.dp)
-            .padding(horizontal = 20.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surface)
-            .clickable(enabled = enabled, onClick = onClick)
-            .padding(horizontal = 2.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        leadingIcon()
-        Spacer(modifier = Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        Spacer(modifier = Modifier.width(12.dp))
-        Column(horizontalAlignment = Alignment.End) {
-            Text(
-                text = trailingPrimary,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-            )
-            Text(
-                text = trailingSecondary,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-    }
 }
 
 @Composable
@@ -1941,7 +1824,10 @@ private fun SendSnapshot.toNetworkSelectionState(symbol: String): SendNetworkScr
             if (rows.isEmpty()) {
                 SendNetworkScreenState.Empty
             } else {
-                SendNetworkScreenState.Content(symbol = symbol.uppercase(Locale.US), assets = rows)
+                SendNetworkScreenState.Content(
+                    symbol = symbol.uppercase(Locale.US),
+                    assets = rows.sortedByNetworkValue(),
+                )
             }
         }
     }
@@ -2024,6 +1910,18 @@ private fun List<SendAssetGroup>.filterByQuery(query: String): List<SendAssetGro
             group.symbol.lowercase(Locale.US).contains(normalized)
     }
 }
+
+private fun List<SendAssetRow>.sortedByNetworkValue(): List<SendAssetRow> =
+    sortedWith(
+        compareByDescending<SendAssetRow> { row -> row.fiatAmount }
+            .thenByDescending { row -> row.balanceDecimal }
+            .thenBy { row -> row.network.displayName.lowercase(Locale.US) },
+    )
+
+private fun SendAssetRow.networkStandardLabel(): String =
+    asset.tokenStandard
+        ?: network.tokenStandard
+        ?: if (asset.assetType == "NATIVE") "Native" else network.family.uppercase(Locale.US)
 
 private fun List<WalletTransactionRecord>.toRecentRecipients(networkId: String): List<SendRecentRecipient> =
     asSequence()

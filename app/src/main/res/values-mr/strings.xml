@@ -496,7 +496,8 @@
     <string name="send_asset_empty_search">या शोधाशी कोणतीही मालमत्ता जुळत नाही.</string>
     <string name="send_asset_empty_search_title">कोणतीही जुळणारी मालमत्ता नाही</string>
     <string name="send_asset_empty_search_body">काहीही जुळत नाही — Satra फक्त प्रकाशित यादीतील मालमत्ता दाखवते.</string>
-    <string name="send_network_context">%1$s %2$d नेटवर्कवर राहतात. हा व्यवहार कुठून पाठवायचा ते निवडा.</string>
+    <string name="send_network_context">%1$s %2$d नेटवर्कवर आहे — ते कुठे पोहोचेल हे नेटवर्क ठरवते. तेच चिन्ह, वेगळे नेटवर्क = वेगळी मालमत्ता.</string>
+    <string name="send_network_empty_value">—</string>
     <string name="send_recipient_title">प्राप्तकर्ता</string>
     <string name="send_recipient_header_title">प्राप्तकर्ता प्रविष्ट करा.</string>
     <string name="send_recipient_header_body">%2$s वर %1$s पाठवा. या नेटवर्कसाठी अचूक पत्ता वापरा.</string>

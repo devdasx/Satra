@@ -496,7 +496,8 @@
     <string name="send_asset_empty_search">কোনো সম্পদ এই অনুসন্ধানের সাথে মেলে না।</string>
     <string name="send_asset_empty_search_title">কোনো মিলে যাওয়া সম্পদ নেই</string>
     <string name="send_asset_empty_search_body">কিছুই মেলেনি — Satra শুধু প্রকাশিত তালিকার সম্পদ দেখায়।</string>
-    <string name="send_network_context">%1$s %2$d নেটওয়ার্কে বাস করে। এই লেনদেনটি কোথা থেকে পাঠানো হবে তা বেছে নিন।</string>
+    <string name="send_network_context">%1$s %2$dটি নেটওয়ার্কে আছে — নেটওয়ার্ক ঠিক করে এটি কোথায় পৌঁছাবে। একই প্রতীক, ভিন্ন নেটওয়ার্ক = ভিন্ন সম্পদ।</string>
+    <string name="send_network_empty_value">—</string>
     <string name="send_recipient_title">প্রাপক</string>
     <string name="send_recipient_header_title">প্রাপক লিখুন।</string>
     <string name="send_recipient_header_body">%2$s-এ %1$s পাঠান। এই নেটওয়ার্কের জন্য সঠিক ঠিকানা ব্যবহার করুন।</string>

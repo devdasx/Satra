@@ -496,7 +496,8 @@
     <string name="send_asset_empty_search">冇資產同呢個搜尋相符。</string>
     <string name="send_asset_empty_search_title">冇匹配嘅資產</string>
     <string name="send_asset_empty_search_body">冇相符項目 — Satra 只會列出已發布清單入面嘅資產。</string>
-    <string name="send_network_context">%1$s 係喺 %2$d 網絡上面生存。揀呢個交易應該由邊度發送。</string>
+    <string name="send_network_context">%1$s 喺 %2$d 個網絡上 — 網絡決定資產會到邊度。同一符號、唔同網絡 = 唔同資產。</string>
+    <string name="send_network_empty_value">—</string>
     <string name="send_recipient_title">收件人</string>
     <string name="send_recipient_header_title">輸入收件人。</string>
     <string name="send_recipient_header_body">喺 %2$s 上面發送 %1$s 。用呢個網絡嘅確切地址。</string>

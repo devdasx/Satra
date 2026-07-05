@@ -496,7 +496,8 @@
     <string name="send_asset_empty_search">لا توجد أصول تطابق هذا البحث.</string>
     <string name="send_asset_empty_search_title">لا توجد أصول مطابقة</string>
     <string name="send_asset_empty_search_body">مفيش تطابق — Satra بتعرض بس الأصول من قايمتها المنشورة.</string>
-    <string name="send_network_context">%1$s يعيش على شبكات %2$d. اختر المكان الذي يجب إرسال هذه المعاملة منه.</string>
+    <string name="send_network_context">%1$s موجود على %2$d شبكات — الشبكة بتحدد هيوصل فين. نفس الرمز مع شبكة مختلفة يعني أصل مختلف.</string>
+    <string name="send_network_empty_value">—</string>
     <string name="send_recipient_title">المستلم</string>
     <string name="send_recipient_header_title">أدخل المستلم.</string>
     <string name="send_recipient_header_body">أرسل %1$s على %2$s. استخدم العنوان الدقيق لهذه الشبكة.</string>

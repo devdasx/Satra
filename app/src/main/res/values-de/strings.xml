@@ -496,7 +496,8 @@
     <string name="send_asset_empty_search">Zu dieser Suche passen keine Assets.</string>
     <string name="send_asset_empty_search_title">Keine passenden Vermögenswerte</string>
     <string name="send_asset_empty_search_body">Keine Übereinstimmung — Satra listet nur Assets aus der veröffentlichten Liste.</string>
-    <string name="send_network_context">%1$s lebt in %2$d Netzwerken. Wählen Sie aus, von wo aus diese Transaktion gesendet werden soll.</string>
+    <string name="send_network_context">%1$s ist auf %2$d Netzwerken verfügbar — das Netzwerk bestimmt, wo es ankommt. Gleiches Symbol, anderes Netzwerk = anderer Vermögenswert.</string>
+    <string name="send_network_empty_value">—</string>
     <string name="send_recipient_title">Empfänger</string>
     <string name="send_recipient_header_title">Geben Sie den Empfänger ein.</string>
     <string name="send_recipient_header_body">Senden Sie %1$s an %2$s. Verwenden Sie die genaue Adresse für dieses Netzwerk.</string>

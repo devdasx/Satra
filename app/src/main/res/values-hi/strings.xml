@@ -496,7 +496,8 @@
     <string name="send_asset_empty_search">कोई संपत्ति इस खोज से मेल नहीं खाती।</string>
     <string name="send_asset_empty_search_title">कोई मेल खाती संपत्ति नहीं</string>
     <string name="send_asset_empty_search_body">कुछ भी मेल नहीं खाता — Satra केवल अपनी प्रकाशित सूची की संपत्तियाँ दिखाता है।</string>
-    <string name="send_network_context">%1$s%2$d नेटवर्क पर रहता है। चुनें कि यह लेनदेन कहां से भेजा जाना चाहिए।</string>
+    <string name="send_network_context">%1$s %2$d नेटवर्क पर है — नेटवर्क तय करता है कि यह कहाँ पहुँचेगा। वही प्रतीक, अलग नेटवर्क = अलग संपत्ति।</string>
+    <string name="send_network_empty_value">—</string>
     <string name="send_recipient_title">प्राप्तकर्ता</string>
     <string name="send_recipient_header_title">प्राप्तकर्ता दर्ज करें।</string>
     <string name="send_recipient_header_body">%1$s को %2$s पर भेजें। इस नेटवर्क के लिए सटीक पते का उपयोग करें।</string>

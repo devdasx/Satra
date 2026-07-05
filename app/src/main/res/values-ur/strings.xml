@@ -496,7 +496,8 @@
     <string name="send_asset_empty_search">کوئی اثاثہ اس تلاش سے مماثل نہیں ہے۔</string>
     <string name="send_asset_empty_search_title">کوئی مماثل اثاثے نہیں ہیں۔</string>
     <string name="send_asset_empty_search_body">کوئی مماثلت نہیں — Satra صرف اپنی شائع شدہ فہرست کے اثاثے دکھاتا ہے۔</string>
-    <string name="send_network_context">%1$s %2$d نیٹ ورکس پر رہتا ہے۔ منتخب کریں کہ یہ لین دین کہاں سے بھیجا جانا چاہیے۔</string>
+    <string name="send_network_context">%1$s %2$d نیٹ ورکس پر ہے — نیٹ ورک طے کرتا ہے کہ یہ کہاں پہنچے گا۔ ایک ہی علامت، مختلف نیٹ ورک = مختلف اثاثہ۔</string>
+    <string name="send_network_empty_value">—</string>
     <string name="send_recipient_title">وصول کنندہ</string>
     <string name="send_recipient_header_title">وصول کنندہ درج کریں۔</string>
     <string name="send_recipient_header_body">%2$s پر %1$s بھیجیں۔ اس نیٹ ورک کے لیے درست پتہ استعمال کریں۔</string>

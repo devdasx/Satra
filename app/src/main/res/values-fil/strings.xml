@@ -496,7 +496,8 @@
     <string name="send_asset_empty_search">Walang asset na tumutugma sa paghahanap na ito.</string>
     <string name="send_asset_empty_search_title">Walang tumutugmang asset</string>
     <string name="send_asset_empty_search_body">Walang tumutugma — inililista lang ng Satra ang mga asset mula sa inilathalang listahan nito.</string>
-    <string name="send_network_context">Nakatira ang %1$s sa mga network ng %2$d. Piliin kung saan dapat ipadala ang transaksyong ito.</string>
+    <string name="send_network_context">Nasa %2$d network ang %1$s — ang network ang nagtatakda kung saan ito darating. Parehong simbolo, ibang network = ibang asset.</string>
+    <string name="send_network_empty_value">—</string>
     <string name="send_recipient_title">tatanggap</string>
     <string name="send_recipient_header_title">Ipasok ang tatanggap.</string>
     <string name="send_recipient_header_body">Ipadala ang %1$s sa %2$s. Gamitin ang eksaktong address para sa network na ito.</string>

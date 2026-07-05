@@ -496,7 +496,8 @@
     <string name="send_asset_empty_search">لا توجد أصول تطابق هذا البحث.</string>
     <string name="send_asset_empty_search_title">لا توجد أصول مطابقة</string>
     <string name="send_asset_empty_search_body">لا يوجد تطابق — تعرض Satra فقط الأصول من قائمتها المنشورة.</string>
-    <string name="send_network_context">%1$s موجود على شبكات%2$d. اختر المكان الذي يجب إرسال هذه المعاملة منه.</string>
+    <string name="send_network_context">يوجد %1$s على %2$d شبكات — تحدد الشبكة أين تصل الأموال. نفس الرمز مع شبكة مختلفة يعني أصلًا مختلفًا.</string>
+    <string name="send_network_empty_value">—</string>
     <string name="send_recipient_title">Recipient</string>
     <string name="send_recipient_header_title">أدخل المستلم.</string>
     <string name="send_recipient_header_body">أرسل%1$s على%2$s. استخدم العنوان الدقيق لهذه الشبكة.</string>

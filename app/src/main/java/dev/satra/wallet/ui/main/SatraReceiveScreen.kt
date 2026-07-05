@@ -316,39 +316,37 @@ private fun ReceiveNetworkSelectionContent(
     onNetworkSelected: (String) -> Unit,
 ) {
     val haptic = LocalHapticFeedback.current
-    ReceiveScaffold(
+    SatraChooseAssetScaffold(
         title = stringResource(R.string.receive_choose_network_title),
         onBack = onBack,
     ) {
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surface),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            item {
-                ReceiveHeader(
-                    title = stringResource(R.string.receive_network_header_title, state.symbol),
-                    body = stringResource(R.string.receive_network_header_body),
-                )
-            }
-            items(
-                items = state.rows,
-                key = { row -> row.asset.assetId },
-            ) { row ->
-                ReceiveNetworkRow(
-                    row = row,
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        onNetworkSelected(row.asset.assetId)
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .widthIn(max = ReceiveContentMaxWidth)
-                        .padding(horizontal = 20.dp),
-                )
-            }
-            item { Spacer(modifier = Modifier.height(22.dp)) }
+        item {
+            ChooseNetworkContextLine(
+                symbol = state.symbol,
+                networkCount = state.rows.size,
+                iconRes = assetIconRes(state.symbol),
+            )
+        }
+        items(
+            items = state.rows,
+            key = { row -> row.asset.assetId },
+        ) { row ->
+            ChooseNetworkRow(
+                networkName = row.network.displayName,
+                standard = row.networkStandardLabel(),
+                primaryAmount = formatReceiveCryptoAmount(row.balanceAmount),
+                secondaryAmount = if (row.fiatAmount > BigDecimal.ZERO) {
+                    row.fiatFormatted
+                } else {
+                    stringResource(R.string.send_network_empty_value)
+                },
+                iconRes = networkIconRes(row.network.networkId),
+                enabled = true,
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onNetworkSelected(row.asset.assetId)
+                },
+            )
         }
     }
 }
@@ -529,95 +527,6 @@ private fun ReceiveAssetGroupRow(
         onClick = onClick,
         enabled = true,
     )
-}
-
-@Composable
-private fun ReceiveNetworkRow(
-    row: ReceiveAssetRow,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    ReceiveSelectableRow(
-        iconRes = row.iconRes,
-        title = "${row.network.displayName} - ${row.asset.symbol}",
-        subtitle = row.network.family.uppercase(Locale.US),
-        trailingPrimary = row.fiatFormatted,
-        trailingSecondary = row.balanceFormatted,
-        onClick = onClick,
-        modifier = modifier,
-        leadingIcon = {
-            SatraBadgedIcon(
-                primaryIconRes = networkIconRes(row.network.networkId),
-                badgeIconRes = row.iconRes,
-            )
-        },
-    )
-}
-
-@Composable
-private fun ReceiveSelectableRow(
-    @DrawableRes iconRes: Int,
-    title: String,
-    subtitle: String,
-    trailingPrimary: String,
-    trailingSecondary: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    leadingIcon: (@Composable () -> Unit)? = null,
-) {
-    Row(
-        modifier = modifier
-            .height(76.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surface)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 2.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (leadingIcon != null) {
-            leadingIcon()
-        } else {
-            SatraCryptoIcon(
-                iconRes = iconRes,
-                modifier = Modifier.size(42.dp),
-            )
-        }
-        Spacer(modifier = Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        Spacer(modifier = Modifier.width(12.dp))
-        Column(horizontalAlignment = Alignment.End) {
-            Text(
-                text = trailingPrimary,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-            )
-            Text(
-                text = trailingSecondary,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-    }
 }
 
 @Composable
@@ -870,7 +779,7 @@ private fun ReceiveSnapshot.toNetworkSelectionState(symbol: String): ReceiveNetw
             } else {
                 ReceiveNetworkScreenState.Content(
                     symbol = symbol.uppercase(Locale.US),
-                    rows = rows,
+                    rows = rows.sortedByNetworkValue(),
                 )
             }
         }
@@ -961,6 +870,18 @@ private fun List<ReceiveAssetGroup>.filterByQuery(query: String): List<ReceiveAs
             group.symbol.lowercase(Locale.US).contains(normalized)
     }
 }
+
+private fun List<ReceiveAssetRow>.sortedByNetworkValue(): List<ReceiveAssetRow> =
+    sortedWith(
+        compareByDescending<ReceiveAssetRow> { row -> row.fiatAmount }
+            .thenByDescending { row -> row.balanceAmount }
+            .thenBy { row -> row.network.displayName.lowercase(Locale.US) },
+    )
+
+private fun ReceiveAssetRow.networkStandardLabel(): String =
+    asset.tokenStandard
+        ?: network.tokenStandard
+        ?: if (asset.assetType == "NATIVE") "Native" else network.family.uppercase(Locale.US)
 
 private fun String.toBigDecimalOrZero(): BigDecimal =
     runCatching { BigDecimal(this) }.getOrDefault(BigDecimal.ZERO)
