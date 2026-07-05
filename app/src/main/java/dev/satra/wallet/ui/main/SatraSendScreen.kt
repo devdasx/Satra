@@ -114,6 +114,7 @@ fun SatraSendAssetScreen(
 
         SendAssetScreenState.Empty -> SendEmptyScreen(
             title = stringResource(R.string.send_choose_asset_title),
+            emptyTitle = stringResource(R.string.send_empty_title),
             body = stringResource(R.string.send_empty_body),
             onBack = onBack,
         )
@@ -148,6 +149,7 @@ fun SatraSendNetworkScreen(
 
         SendNetworkScreenState.Empty -> SendEmptyScreen(
             title = stringResource(R.string.send_choose_network_title),
+            emptyTitle = stringResource(R.string.send_network_empty_title),
             body = stringResource(R.string.send_network_empty_body),
             onBack = onBack,
         )
@@ -184,6 +186,7 @@ fun SatraSendRecipientScreen(
 
         SendDetailsState.Empty -> SendEmptyScreen(
             title = stringResource(R.string.send_recipient_title),
+            emptyTitle = stringResource(R.string.send_asset_empty_title),
             body = stringResource(R.string.send_asset_empty_body),
             onBack = onBack,
         )
@@ -222,6 +225,7 @@ fun SatraSendAmountScreen(
 
         SendDetailsState.Empty -> SendEmptyScreen(
             title = stringResource(R.string.send_amount_title),
+            emptyTitle = stringResource(R.string.send_asset_empty_title),
             body = stringResource(R.string.send_asset_empty_body),
             onBack = onBack,
         )
@@ -260,6 +264,7 @@ fun SatraSendReviewScreen(
 
         SendDetailsState.Empty -> SendEmptyScreen(
             title = stringResource(R.string.send_review_screen_title),
+            emptyTitle = stringResource(R.string.send_asset_empty_title),
             body = stringResource(R.string.send_asset_empty_body),
             onBack = onBack,
         )
@@ -297,6 +302,7 @@ fun SatraSendSentScreen(
 
         SendReceiptState.Empty -> SendEmptyScreen(
             title = stringResource(R.string.send_sent_title),
+            emptyTitle = stringResource(R.string.send_receipt_empty_title),
             body = stringResource(R.string.send_receipt_empty_body),
             onBack = onDone,
         )
@@ -352,7 +358,8 @@ private fun SendAssetSelectionContent(
             if (filteredGroups.isEmpty()) {
                 item {
                     SendEmptyInline(
-                        text = stringResource(R.string.send_asset_empty_search),
+                        title = stringResource(R.string.send_asset_empty_search_title),
+                        body = stringResource(R.string.send_asset_empty_search_body),
                         modifier = Modifier
                             .fillMaxWidth()
                             .widthIn(max = SendContentMaxWidth)
@@ -1102,6 +1109,7 @@ private fun SendLoadingScreen(
 @Composable
 private fun SendEmptyScreen(
     title: String,
+    emptyTitle: String,
     body: String,
     onBack: () -> Unit,
 ) {
@@ -1112,12 +1120,10 @@ private fun SendEmptyScreen(
                 .padding(24.dp),
             contentAlignment = Alignment.Center,
         ) {
-            Text(
-                text = body,
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
+            SatraEmptyState(
+                title = emptyTitle,
+                body = body,
+                modifier = Modifier.fillMaxWidth(),
             )
         }
     }
@@ -1503,10 +1509,10 @@ private fun SendAddressBookSheet(
                 fontWeight = FontWeight.Bold,
             )
             if (entries.isEmpty() && recentRecipients.isEmpty()) {
-                Text(
-                    text = stringResource(R.string.send_address_book_empty),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                SatraEmptyState(
+                    title = stringResource(R.string.send_address_book_empty_title),
+                    body = stringResource(R.string.send_address_book_empty_body),
+                    modifier = Modifier.fillMaxWidth(),
                 )
             } else {
                 entries.forEach { entry ->
@@ -1787,23 +1793,15 @@ private fun SendPrimaryButton(
 
 @Composable
 private fun SendEmptyInline(
-    text: String,
+    title: String,
+    body: String,
     modifier: Modifier = Modifier,
 ) {
-    Card(
+    SatraEmptyState(
+        title = title,
+        body = body,
         modifier = modifier,
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-    ) {
-        Text(
-            text = text,
-            modifier = Modifier.padding(20.dp),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center,
-        )
-    }
+    )
 }
 
 private suspend fun SatraWalletRepository.loadSendSnapshot(): SendSnapshot =

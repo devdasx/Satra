@@ -100,6 +100,7 @@ fun SatraReceiveAssetScreen(
 
         ReceiveAssetScreenState.Empty -> ReceiveEmptyScreen(
             title = stringResource(R.string.receive_choose_asset_title),
+            emptyTitle = stringResource(R.string.receive_empty_title),
             body = stringResource(R.string.receive_empty_body),
             onBack = onBack,
         )
@@ -134,6 +135,7 @@ fun SatraReceiveNetworkScreen(
 
         ReceiveNetworkScreenState.Empty -> ReceiveEmptyScreen(
             title = stringResource(R.string.receive_choose_network_title),
+            emptyTitle = stringResource(R.string.receive_network_empty_title),
             body = stringResource(R.string.receive_network_empty_body),
             onBack = onBack,
         )
@@ -166,6 +168,7 @@ fun SatraReceiveQrScreen(
 
         ReceiveQrScreenState.Empty -> ReceiveEmptyScreen(
             title = stringResource(R.string.receive_qr_title),
+            emptyTitle = stringResource(R.string.receive_asset_empty_title),
             body = stringResource(R.string.receive_asset_empty_body),
             onBack = onBack,
         )
@@ -345,6 +348,7 @@ private fun ReceiveLoadingScreen(
 @Composable
 private fun ReceiveEmptyScreen(
     title: String,
+    emptyTitle: String,
     body: String,
     onBack: () -> Unit,
 ) {
@@ -355,22 +359,11 @@ private fun ReceiveEmptyScreen(
                 .padding(24.dp),
             contentAlignment = Alignment.Center,
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = stringResource(R.string.receive_empty_title),
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-                Text(
-                    text = body,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                )
-            }
+            SatraEmptyState(
+                title = emptyTitle,
+                body = body,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
     }
 }

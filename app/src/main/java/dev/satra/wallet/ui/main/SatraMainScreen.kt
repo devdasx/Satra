@@ -851,19 +851,44 @@ private fun SatraHomeDashboard(
                         )
                     }
                 }
-                items(
-                    items = visibleAssets,
-                    key = { asset -> asset.assetId },
-                ) { asset ->
-                    HomeAssetListRow(
-                        asset = asset,
-                        balancesHidden = balancesHidden,
-                        onClick = { onAssetClick(asset.symbol) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .widthIn(max = HomeContentMaxWidth)
-                            .padding(horizontal = 20.dp),
-                    )
+                if (visibleAssets.isEmpty()) {
+                    item {
+                        SatraEmptyState(
+                            title = stringResource(
+                                if (assetFilterState.onlyWithBalance) {
+                                    R.string.home_assets_empty_balances_title
+                                } else {
+                                    R.string.home_assets_empty_title
+                                },
+                            ),
+                            body = stringResource(
+                                if (assetFilterState.onlyWithBalance) {
+                                    R.string.home_assets_empty_balances_body
+                                } else {
+                                    R.string.home_assets_empty_body
+                                },
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .widthIn(max = HomeContentMaxWidth)
+                                .padding(horizontal = 20.dp, vertical = 18.dp),
+                        )
+                    }
+                } else {
+                    items(
+                        items = visibleAssets,
+                        key = { asset -> asset.assetId },
+                    ) { asset ->
+                        HomeAssetListRow(
+                            asset = asset,
+                            balancesHidden = balancesHidden,
+                            onClick = { onAssetClick(asset.symbol) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .widthIn(max = HomeContentMaxWidth)
+                                .padding(horizontal = 20.dp),
+                        )
+                    }
                 }
                 item {
                     Spacer(modifier = Modifier.height(20.dp))
@@ -1449,18 +1474,31 @@ private fun SatraMarketsScreen(
                     MarketsListHeader(assetCount = visibleRows.size)
                 }
             }
-            items(
-                items = visibleRows,
-                key = { row -> row.symbol },
-            ) { row ->
-                MarketsAssetRow(
-                    row = row,
-                    onClick = { onAssetClick(row.symbol) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .widthIn(max = HomeContentMaxWidth)
-                        .padding(horizontal = 20.dp),
-                )
+            if (visibleRows.isEmpty()) {
+                item {
+                    SatraEmptyState(
+                        title = stringResource(R.string.markets_empty_title),
+                        body = stringResource(R.string.markets_empty_body),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .widthIn(max = HomeContentMaxWidth)
+                            .padding(horizontal = 20.dp, vertical = 18.dp),
+                    )
+                }
+            } else {
+                items(
+                    items = visibleRows,
+                    key = { row -> row.symbol },
+                ) { row ->
+                    MarketsAssetRow(
+                        row = row,
+                        onClick = { onAssetClick(row.symbol) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .widthIn(max = HomeContentMaxWidth)
+                            .padding(horizontal = 20.dp),
+                    )
+                }
             }
             item {
                 Spacer(modifier = Modifier.height(20.dp))
@@ -2228,18 +2266,31 @@ private fun SatraTokenDetailScreen(
                     )
                 }
             }
-            items(
-                items = content.networkBalances,
-                key = { row -> row.assetId },
-            ) { row ->
-                TokenNetworkBalanceListRow(
-                    row = row,
-                    balancesHidden = balancesHidden,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .widthIn(max = HomeContentMaxWidth)
-                        .padding(horizontal = 20.dp),
-                )
+            if (content.networkBalances.isEmpty()) {
+                item {
+                    SatraEmptyState(
+                        title = stringResource(R.string.asset_detail_networks_empty_title),
+                        body = stringResource(R.string.asset_detail_networks_empty_body),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .widthIn(max = HomeContentMaxWidth)
+                            .padding(horizontal = 20.dp, vertical = 8.dp),
+                    )
+                }
+            } else {
+                items(
+                    items = content.networkBalances,
+                    key = { row -> row.assetId },
+                ) { row ->
+                    TokenNetworkBalanceListRow(
+                        row = row,
+                        balancesHidden = balancesHidden,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .widthIn(max = HomeContentMaxWidth)
+                            .padding(horizontal = 20.dp),
+                    )
+                }
             }
             item {
                 Column(
@@ -2412,24 +2463,11 @@ private fun TokenNetworkBalanceListRow(
 private fun TokenDetailEmptyActivity(
     modifier: Modifier = Modifier,
 ) {
-    Card(
+    SatraEmptyState(
+        title = stringResource(R.string.asset_detail_activity_empty_title),
+        body = stringResource(R.string.asset_detail_activity_empty_body),
         modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-    ) {
-        Text(
-            text = stringResource(R.string.asset_detail_activity_empty),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(18.dp),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
-    }
+    )
 }
 
 @Composable
@@ -2588,62 +2626,24 @@ private fun ActivityEmptyState(
     isSyncing: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(22.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
+    SatraEmptyState(
+        title = stringResource(
             if (isSyncing) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
+                R.string.activity_syncing_title
             } else {
-                Icon(
-                    painter = painterResource(R.drawable.ic_brand_history),
-                    contentDescription = null,
-                    modifier = Modifier.size(30.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Text(
-                text = stringResource(
-                    if (isSyncing) {
-                        R.string.activity_syncing_title
-                    } else {
-                        R.string.activity_empty_title
-                    },
-                ),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-            )
-            Text(
-                text = stringResource(
-                    if (isSyncing) {
-                        R.string.activity_syncing_body
-                    } else {
-                        R.string.activity_empty_body
-                    },
-                ),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-            )
-        }
-    }
+                R.string.activity_empty_title
+            },
+        ),
+        body = stringResource(
+            if (isSyncing) {
+                R.string.activity_syncing_body
+            } else {
+                R.string.activity_empty_body
+            },
+        ),
+        modifier = modifier,
+        showProgress = isSyncing,
+    )
 }
 
 @Composable
@@ -3043,29 +3043,11 @@ private fun WalletSwitcherSheet(
             )
             Spacer(modifier = Modifier.height(18.dp))
             if (wallets.isEmpty()) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                        .padding(18.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(
-                        text = stringResource(R.string.home_wallet_switcher_empty_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center,
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = stringResource(R.string.home_wallet_switcher_empty_body),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center,
-                    )
-                }
+                SatraEmptyState(
+                    title = stringResource(R.string.home_wallet_switcher_empty_title),
+                    body = stringResource(R.string.home_wallet_switcher_empty_body),
+                    modifier = Modifier.fillMaxWidth(),
+                )
             } else {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     wallets.forEach { wallet ->

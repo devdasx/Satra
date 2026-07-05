@@ -1532,23 +1532,11 @@ private fun SettingsEmptyCard(
     @StringRes titleRes: Int,
     @StringRes bodyRes: Int,
 ) {
-    SettingsCard {
-        Text(
-            text = stringResource(titleRes),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Text(
-            text = stringResource(bodyRes),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth(),
-        )
-    }
+    SatraEmptyState(
+        title = stringResource(titleRes),
+        body = stringResource(bodyRes),
+        modifier = Modifier.fillMaxWidth(),
+    )
 }
 
 private val SatraThemePreference.titleRes: Int
