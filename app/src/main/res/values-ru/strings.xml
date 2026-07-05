@@ -501,6 +501,10 @@
     <string name="send_recipient_title">Получатель</string>
     <string name="send_recipient_header_title">Введите получателя.</string>
     <string name="send_recipient_header_body">Отправьте %1$s на %2$s. Используйте точный адрес этой сети.</string>
+    <string name="send_recipient_context_sending">Отправка %1$s</string>
+    <string name="send_recipient_context_on">в сети %1$s</string>
+    <string name="send_recipient_context_standard">· %1$s</string>
+    <string name="send_recipient_address_placeholder">Адрес %1$s</string>
     <string name="send_recipient_paste">Вставить</string>
     <string name="send_recipient_scan">Сканировать</string>
     <string name="send_recipient_book">Забронировать</string>

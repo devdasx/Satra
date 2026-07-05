@@ -501,6 +501,10 @@
     <string name="send_recipient_title">Mpokeaji</string>
     <string name="send_recipient_header_title">Ingiza mpokeaji.</string>
     <string name="send_recipient_header_body">Tuma %1$s kwa %2$s. Tumia anwani halisi ya mtandao huu.</string>
+    <string name="send_recipient_context_sending">Inatuma %1$s</string>
+    <string name="send_recipient_context_on">kwenye %1$s</string>
+    <string name="send_recipient_context_standard">· %1$s</string>
+    <string name="send_recipient_address_placeholder">Anwani ya %1$s</string>
     <string name="send_recipient_paste">Bandika</string>
     <string name="send_recipient_scan">Changanua</string>
     <string name="send_recipient_book">Kitabu</string>

@@ -501,6 +501,10 @@
     <string name="send_recipient_title">收件人</string>
     <string name="send_recipient_header_title">输入收件人。</string>
     <string name="send_recipient_header_body">发送 %1$s，网络为 %2$s。请使用此网络的准确地址。</string>
+    <string name="send_recipient_context_sending">发送 %1$s</string>
+    <string name="send_recipient_context_on">在 %1$s 上</string>
+    <string name="send_recipient_context_standard">· %1$s</string>
+    <string name="send_recipient_address_placeholder">%1$s 地址</string>
     <string name="send_recipient_paste">粘贴</string>
     <string name="send_recipient_scan">扫描</string>
     <string name="send_recipient_book">预订</string>

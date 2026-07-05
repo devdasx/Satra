@@ -501,6 +501,10 @@
     <string name="send_recipient_title">المستلم</string>
     <string name="send_recipient_header_title">أدخل المستلم.</string>
     <string name="send_recipient_header_body">أرسل %1$s على %2$s. استخدم العنوان الدقيق لهذه الشبكة.</string>
+    <string name="send_recipient_context_sending">إرسال %1$s</string>
+    <string name="send_recipient_context_on">على %1$s</string>
+    <string name="send_recipient_context_standard">· %1$s</string>
+    <string name="send_recipient_address_placeholder">عنوان %1$s</string>
     <string name="send_recipient_paste">لصق</string>
     <string name="send_recipient_scan">مسح</string>
     <string name="send_recipient_book">كتاب</string>

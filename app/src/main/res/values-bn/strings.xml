@@ -501,6 +501,10 @@
     <string name="send_recipient_title">প্রাপক</string>
     <string name="send_recipient_header_title">প্রাপক লিখুন।</string>
     <string name="send_recipient_header_body">%2$s-এ %1$s পাঠান। এই নেটওয়ার্কের জন্য সঠিক ঠিকানা ব্যবহার করুন।</string>
+    <string name="send_recipient_context_sending">%1$s পাঠানো হচ্ছে</string>
+    <string name="send_recipient_context_on">%1$s-এ</string>
+    <string name="send_recipient_context_standard">· %1$s</string>
+    <string name="send_recipient_address_placeholder">%1$s ঠিকানা</string>
     <string name="send_recipient_paste">পেস্ট করুন</string>
     <string name="send_recipient_scan">স্ক্যান করুন</string>
     <string name="send_recipient_book">বই</string>

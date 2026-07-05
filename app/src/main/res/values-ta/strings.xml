@@ -501,6 +501,10 @@
     <string name="send_recipient_title">பெறுபவர்</string>
     <string name="send_recipient_header_title">பெறுநரை உள்ளிடவும்.</string>
     <string name="send_recipient_header_body">%2$s இல் %1$s ஐ அனுப்பவும். இந்த நெட்வொர்க்கிற்கான சரியான முகவரியைப் பயன்படுத்தவும்.</string>
+    <string name="send_recipient_context_sending">%1$s அனுப்புகிறது</string>
+    <string name="send_recipient_context_on">%1$s இல்</string>
+    <string name="send_recipient_context_standard">· %1$s</string>
+    <string name="send_recipient_address_placeholder">%1$s முகவரி</string>
     <string name="send_recipient_paste">ஒட்டவும்</string>
     <string name="send_recipient_scan">ஸ்கேன் செய்யவும்</string>
     <string name="send_recipient_book">புத்தகம்</string>

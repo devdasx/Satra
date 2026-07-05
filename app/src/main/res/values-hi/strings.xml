@@ -501,6 +501,10 @@
     <string name="send_recipient_title">प्राप्तकर्ता</string>
     <string name="send_recipient_header_title">प्राप्तकर्ता दर्ज करें।</string>
     <string name="send_recipient_header_body">%1$s को %2$s पर भेजें। इस नेटवर्क के लिए सटीक पते का उपयोग करें।</string>
+    <string name="send_recipient_context_sending">%1$s भेज रहे हैं</string>
+    <string name="send_recipient_context_on">%1$s पर</string>
+    <string name="send_recipient_context_standard">· %1$s</string>
+    <string name="send_recipient_address_placeholder">%1$s पता</string>
     <string name="send_recipient_paste">पेस्ट करें</string>
     <string name="send_recipient_scan">स्कैन</string>
     <string name="send_recipient_book">Book</string>

@@ -4,8 +4,8 @@ import android.content.Intent
 import android.net.Uri
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -23,7 +24,9 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -36,7 +39,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -59,6 +61,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import dev.satra.wallet.R
 import dev.satra.wallet.data.assets.SupportedAsset
 import dev.satra.wallet.data.assets.SupportedAssetCatalog
@@ -517,7 +520,7 @@ private fun SendRecipientContent(
         (state.addressBookEntries.map { it.address } + state.recentRecipients.map { it.address }).distinct()
     }
     val isValid = isLikelyAddressForNetwork(recipient, state.row.network)
-    val showError = recipient.isNotBlank() && !isValid
+    val showError = recipient.length >= RECIPIENT_ERROR_MIN_LENGTH && !isValid
     val isKnown = knownAddresses.any { it.equals(recipient.trim(), ignoreCase = true) }
     val warnPoison = recipient.isNotBlank() && isPoisonLike(recipient, knownAddresses)
     val canContinue = state.canSign && isValid
@@ -541,7 +544,7 @@ private fun SendRecipientContent(
         )
     }
 
-    SendScaffold(
+    SendStepScaffold(
         title = stringResource(R.string.send_recipient_title),
         onBack = onBack,
     ) {
@@ -549,18 +552,16 @@ private fun SendRecipientContent(
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .verticalScroll(rememberScrollState()),
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                SendHero(
-                    title = stringResource(R.string.send_recipient_header_title),
-                    body = stringResource(
-                        R.string.send_recipient_header_body,
-                        state.row.asset.symbol,
-                        state.row.network.displayName,
-                    ),
-                )
-                SendContentColumn {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .widthIn(max = ChooseAssetContentMaxWidth),
+                ) {
+                    SendRecipientContextLine(row = state.row)
                     if (!state.canSign) {
                         SendWarningCard(
                             title = stringResource(R.string.send_cannot_sign_title),
@@ -572,96 +573,66 @@ private fun SendRecipientContent(
                         )
                         Spacer(modifier = Modifier.height(14.dp))
                     }
-                    SendInputCard {
-                        OutlinedTextField(
-                            value = recipient,
-                            onValueChange = { recipient = it.trim() },
-                            modifier = Modifier.fillMaxWidth(),
-                            minLines = 3,
-                            label = { Text(stringResource(R.string.send_recipient_label)) },
-                            supportingText = {
-                                Text(
-                                    text = if (showError) {
-                                        stringResource(R.string.send_recipient_error)
-                                    } else {
-                                        stringResource(R.string.send_recipient_helper, state.row.network.displayName)
-                                    },
-                                )
-                            },
-                            isError = showError,
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            SendToolButton(
-                                text = stringResource(R.string.send_recipient_paste),
-                                onClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    clipboard.getText()?.text?.takeIf(String::isNotBlank)?.let { recipient = it.trim() }
-                                },
-                                modifier = Modifier.weight(1f),
-                            )
-                            SendToolButton(
-                                text = stringResource(R.string.send_recipient_scan),
-                                onClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    onScanClick()
-                                },
-                                modifier = Modifier.weight(1f),
-                            )
-                            SendToolButton(
-                                text = stringResource(R.string.send_recipient_book),
-                                onClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    bookVisible = true
-                                },
-                                modifier = Modifier.weight(1f),
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(14.dp))
+                    SendRecipientAddressBox(
+                        value = recipient,
+                        networkName = state.row.network.displayName,
+                        showError = showError,
+                        onValueChange = { recipient = it.trim() },
+                        onPasteClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            clipboard.getText()?.text?.takeIf(String::isNotBlank)?.let { recipient = it.trim() }
+                        },
+                        onScanClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            onScanClick()
+                        },
+                        onBookClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            bookVisible = true
+                        },
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
                     when {
-                        warnPoison -> SendWarningCard(
-                            title = stringResource(R.string.send_recipient_poison_title),
-                            body = stringResource(R.string.send_recipient_poison_body),
+                        showError -> SendRecipientInlineMessage(
+                            text = stringResource(R.string.send_recipient_error),
+                            isError = true,
                         )
-                        isKnown && isValid -> SendNoticeCard(
-                            title = stringResource(R.string.send_recipient_known_title),
-                            body = recipient.shortAddress(),
+                        warnPoison -> SendRecipientInlineMessage(
+                            text = stringResource(R.string.send_recipient_poison_body),
+                            isError = true,
+                            strong = true,
                         )
-                        recipient.isNotBlank() && isValid -> SendNoticeCard(
-                            title = stringResource(R.string.send_recipient_never_sent_title),
-                            body = stringResource(R.string.send_recipient_never_sent_body),
+                        !isKnown && recipient.isNotBlank() && isValid -> SendRecipientInlineMessage(
+                            text = stringResource(R.string.send_recipient_never_sent_body),
                         )
                     }
                     if (state.recentRecipients.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(18.dp))
+                        Spacer(modifier = Modifier.height(24.dp))
                         Text(
                             text = stringResource(R.string.send_recent_recipients_title),
-                            style = MaterialTheme.typography.titleLarge,
+                            style = MaterialTheme.typography.headlineSmall,
                             color = MaterialTheme.colorScheme.onSurface,
                             fontWeight = FontWeight.Bold,
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(10.dp))
                         state.recentRecipients.take(3).forEach { recent ->
-                            SendCompactAddressRow(
+                            SendRecentRecipientRow(
                                 title = recent.label,
                                 body = recent.address.shortAddress(),
                                 onClick = { recipient = recent.address },
                             )
                         }
                     }
+                    Spacer(modifier = Modifier.height(18.dp))
                 }
             }
-            SendBottomActionBar {
-                SendPrimaryButton(
-                    text = stringResource(R.string.send_continue_action),
-                    enabled = canContinue,
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onContinue(state.row.asset.assetId, recipient.trim(), warnPoison)
-                    },
-                )
-            }
+            SendRecipientBottomAction(
+                enabled = canContinue,
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onContinue(state.row.asset.assetId, recipient.trim(), warnPoison)
+                },
+            )
         }
     }
 }
@@ -1152,6 +1123,55 @@ private fun SendScaffold(
 }
 
 @Composable
+private fun SendStepScaffold(
+    title: String,
+    onBack: () -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .widthIn(max = ChooseAssetContentMaxWidth)
+                .padding(start = 20.dp, top = 18.dp, end = 20.dp, bottom = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(
+                onClick = onBack,
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceContainer),
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = null,
+                    modifier = Modifier.size(17.dp),
+                    tint = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+            Text(
+                text = title,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.titleMedium.copy(fontSize = 16.sp),
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(modifier = Modifier.width(40.dp))
+        }
+        content()
+    }
+}
+
+@Composable
 private fun SendLoadingScreen(
     title: String,
     onBack: () -> Unit,
@@ -1247,6 +1267,244 @@ private fun SendAssetGroupRow(
 }
 
 @Composable
+private fun SendRecipientContextLine(row: SendAssetRow) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 2.dp, end = 2.dp, bottom = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = stringResource(R.string.send_recipient_context_sending, row.asset.symbol),
+            style = MaterialTheme.typography.labelMedium.copy(fontSize = 12.5.sp, lineHeight = 18.sp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        SatraCryptoIcon(
+            iconRes = row.iconRes,
+            modifier = Modifier.size(15.dp),
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = stringResource(R.string.send_recipient_context_on, row.network.displayName),
+            style = MaterialTheme.typography.labelMedium.copy(fontSize = 12.5.sp, lineHeight = 18.sp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        SatraCryptoIcon(
+            iconRes = networkIconRes(row.network.networkId),
+            modifier = Modifier.size(15.dp),
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = stringResource(R.string.send_recipient_context_standard, row.networkStandardLabel()),
+            style = MaterialTheme.typography.labelMedium.copy(fontSize = 12.5.sp, lineHeight = 18.sp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun SendRecipientAddressBox(
+    value: String,
+    networkName: String,
+    showError: Boolean,
+    onValueChange: (String) -> Unit,
+    onPasteClick: () -> Unit,
+    onScanClick: () -> Unit,
+    onBookClick: () -> Unit,
+) {
+    val shape = RoundedCornerShape(16.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(
+                width = 1.5.dp,
+                color = if (showError) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.outlineVariant
+                },
+                shape = shape,
+            )
+            .padding(14.dp),
+    ) {
+        BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 44.dp),
+            textStyle = MaterialTheme.typography.bodyMedium.copy(
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = 14.sp,
+                lineHeight = 21.sp,
+                fontWeight = FontWeight.Medium,
+            ),
+            minLines = 2,
+            maxLines = 5,
+            decorationBox = { innerTextField ->
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    if (value.isBlank()) {
+                        Text(
+                            text = stringResource(R.string.send_recipient_address_placeholder, networkName),
+                            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    innerTextField()
+                }
+            },
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            SendRecipientToolChip(
+                text = stringResource(R.string.send_recipient_paste),
+                iconRes = R.drawable.ic_send_paste,
+                onClick = onPasteClick,
+                modifier = Modifier.weight(1f),
+            )
+            SendRecipientToolChip(
+                text = stringResource(R.string.send_recipient_scan),
+                iconRes = R.drawable.ic_brand_scan,
+                onClick = onScanClick,
+                modifier = Modifier.weight(1f),
+            )
+            SendRecipientToolChip(
+                text = stringResource(R.string.send_recipient_book),
+                iconRes = R.drawable.ic_send_book,
+                onClick = onBookClick,
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun SendRecipientToolChip(
+    text: String,
+    @DrawableRes iconRes: Int,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(99.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 13.dp, vertical = 9.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            painter = painterResource(iconRes),
+            contentDescription = null,
+            modifier = Modifier.size(15.dp),
+            tint = MaterialTheme.colorScheme.onSurface,
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium.copy(fontSize = 12.sp),
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun SendRecipientInlineMessage(
+    text: String,
+    isError: Boolean = false,
+    strong: Boolean = false,
+) {
+    Text(
+        text = text,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(
+                if (isError) {
+                    MaterialTheme.colorScheme.error.copy(alpha = 0.10f)
+                } else {
+                    MaterialTheme.colorScheme.surfaceContainer
+                },
+            )
+            .padding(horizontal = 12.dp, vertical = 9.dp),
+        style = MaterialTheme.typography.labelMedium.copy(fontSize = 12.sp, lineHeight = 18.sp),
+        color = if (isError) {
+            MaterialTheme.colorScheme.error
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        },
+        fontWeight = if (strong) FontWeight.Medium else FontWeight.Normal,
+    )
+}
+
+@Composable
+private fun SendRecentRecipientRow(
+    title: String,
+    body: String,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick)
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(42.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceContainer),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_send_clock),
+                contentDescription = null,
+                modifier = Modifier.size(15.dp),
+                tint = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.5.sp),
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = body,
+                modifier = Modifier.padding(top = 3.dp),
+                style = MaterialTheme.typography.labelMedium.copy(fontSize = 12.sp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+@Composable
 private fun SendInputCard(content: @Composable ColumnScope.() -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -1336,39 +1594,11 @@ private fun SendCompactAddressRow(
     body: String,
     onClick: () -> Unit,
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(60.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Image(
-            painter = painterResource(R.drawable.ic_brand_receive),
-            contentDescription = null,
-            modifier = Modifier.size(34.dp),
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = body,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-    }
+    SendRecentRecipientRow(
+        title = title,
+        body = body,
+        onClick = onClick,
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -1648,6 +1878,31 @@ private fun SendPrimaryButton(
             .fillMaxWidth(),
         height = 58.dp,
     )
+}
+
+@Composable
+private fun SendRecipientBottomAction(
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(horizontal = 20.dp)
+            .padding(top = 10.dp, bottom = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        SatraButton(
+            text = stringResource(R.string.send_continue_action),
+            onClick = onClick,
+            enabled = enabled,
+            modifier = Modifier
+                .fillMaxWidth()
+                .widthIn(max = ChooseAssetContentMaxWidth),
+            height = 50.dp,
+        )
+    }
 }
 
 @Composable
@@ -2206,3 +2461,4 @@ private enum class SendFeeSpeed(val labelRes: Int) {
 
 private val SendContentMaxWidth = 720.dp
 private const val CRYPTO_DISPLAY_DECIMALS = 8
+private const val RECIPIENT_ERROR_MIN_LENGTH = 8

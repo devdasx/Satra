@@ -501,6 +501,10 @@
     <string name="send_recipient_title">Destinataire</string>
     <string name="send_recipient_header_title">Entrez le destinataire.</string>
     <string name="send_recipient_header_body">Envoyez%1$s sur%2$s. Utilisez l\'adresse exacte de ce réseau.</string>
+    <string name="send_recipient_context_sending">Envoi de %1$s</string>
+    <string name="send_recipient_context_on">sur %1$s</string>
+    <string name="send_recipient_context_standard">· %1$s</string>
+    <string name="send_recipient_address_placeholder">Adresse %1$s</string>
     <string name="send_recipient_paste">Coller</string>
     <string name="send_recipient_scan">Scan</string>
     <string name="send_recipient_book">Livre</string>

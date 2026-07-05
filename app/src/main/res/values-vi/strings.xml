@@ -501,6 +501,10 @@
     <string name="send_recipient_title">Người nhận</string>
     <string name="send_recipient_header_title">Nhập người nhận.</string>
     <string name="send_recipient_header_body">Gửi %1$s trên %2$s. Sử dụng địa chỉ chính xác cho mạng này.</string>
+    <string name="send_recipient_context_sending">Đang gửi %1$s</string>
+    <string name="send_recipient_context_on">trên %1$s</string>
+    <string name="send_recipient_context_standard">· %1$s</string>
+    <string name="send_recipient_address_placeholder">Địa chỉ %1$s</string>
     <string name="send_recipient_paste">Dán</string>
     <string name="send_recipient_scan">Quét</string>
     <string name="send_recipient_book">Sách</string>

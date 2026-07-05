@@ -501,6 +501,10 @@
     <string name="send_recipient_title">Mai karɓa</string>
     <string name="send_recipient_header_title">Shigar da mai karɓa.</string>
     <string name="send_recipient_header_body">Aika %1$s akan %2$s. Yi amfani da ainihin adireshin wannan hanyar sadarwa.</string>
+    <string name="send_recipient_context_sending">Ana aika %1$s</string>
+    <string name="send_recipient_context_on">a kan %1$s</string>
+    <string name="send_recipient_context_standard">· %1$s</string>
+    <string name="send_recipient_address_placeholder">Adireshin %1$s</string>
     <string name="send_recipient_paste">Manna</string>
     <string name="send_recipient_scan">Duba</string>
     <string name="send_recipient_book">Littafi</string>
