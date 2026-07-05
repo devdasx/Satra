@@ -349,12 +349,6 @@
     <string name="home_assets_empty_balances_body">This wallet has no balances yet. Receive funds or clear this filter to see all assets.</string>
     <string name="home_ready_body">Your Satra wallet is ready. Asset, account, and transaction screens will be connected as wallet core work begins.</string>
     <string name="activity_title">Activity</string>
-    <string name="activity_body">Balances and transaction history sync from public providers configured for supported networks.</string>
-    <string name="activity_summary_networks">Synced networks</string>
-    <string name="activity_summary_networks_value">%1$d of %2$d synced</string>
-    <string name="activity_summary_transactions">Transactions</string>
-    <string name="activity_summary_transactions_value">%1$d stored</string>
-    <string name="activity_summary_partial">Some public providers returned partial history. Satra keeps the sync state visible and will retry on the next refresh.</string>
     <string name="activity_search_placeholder">Search transactions</string>
     <string name="activity_search_clear">Clear activity search</string>
     <string name="activity_search_empty_title">No matching transactions</string>

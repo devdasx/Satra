@@ -1128,18 +1128,7 @@ private fun SatraActivityScreen(
                         .widthIn(max = HomeContentMaxWidth)
                         .padding(horizontal = 20.dp, vertical = 20.dp),
                 ) {
-                    SatraActivityHeader(
-                        walletName = content.walletName.ifBlank {
-                            stringResource(R.string.home_wallet_label)
-                        },
-                        status = content.status,
-                    )
-                    Spacer(modifier = Modifier.height(18.dp))
-                    ActivitySummaryCard(
-                        transactionCount = content.transactions.size,
-                        syncedNetworkCount = content.syncedNetworkCount,
-                        error = content.error,
-                    )
+                    SatraActivityHeader(status = content.status)
                     Spacer(modifier = Modifier.height(18.dp))
                     ActivitySearchField(
                         query = activitySearchQuery,
@@ -2573,7 +2562,6 @@ private fun TokenDetailEmptyActivity(
 
 @Composable
 private fun SatraActivityHeader(
-    walletName: String,
     status: HomeSyncStatus,
 ) {
     Row(
@@ -2587,18 +2575,6 @@ private fun SatraActivityHeader(
                 style = MaterialTheme.typography.headlineLarge,
                 color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold,
-            )
-            Text(
-                text = walletName,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = FontWeight.Bold,
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            Text(
-                text = stringResource(R.string.activity_body),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         Spacer(modifier = Modifier.width(12.dp))
@@ -2631,72 +2607,6 @@ private fun SatraActivityHeader(
                 fontWeight = FontWeight.Bold,
             )
         }
-    }
-}
-
-@Composable
-private fun ActivitySummaryCard(
-    transactionCount: Int,
-    syncedNetworkCount: Int,
-    error: String?,
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-    ) {
-        Column(
-            modifier = Modifier.padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            ActivitySummaryRow(
-                label = stringResource(R.string.activity_summary_networks),
-                value = stringResource(
-                    R.string.activity_summary_networks_value,
-                    syncedNetworkCount,
-                    SupportedAssetCatalog.networks.size,
-                ),
-            )
-            ActivitySummaryRow(
-                label = stringResource(R.string.activity_summary_transactions),
-                value = stringResource(R.string.activity_summary_transactions_value, transactionCount),
-            )
-            if (!error.isNullOrBlank()) {
-                Text(
-                    text = stringResource(R.string.activity_summary_partial),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun ActivitySummaryRow(
-    label: String,
-    value: String,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.End,
-        )
     }
 }
 
