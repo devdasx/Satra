@@ -2973,7 +2973,7 @@ private fun HomeBalanceCard(
                     HomeWalletPill(
                         walletName = walletName.orEmpty(),
                         onClick = onWalletClick,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f, fill = false),
                         contentColor = contentColor,
                         containerColor = contentColor.copy(alpha = 0.1f),
                     )
