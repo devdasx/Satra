@@ -1,17 +1,27 @@
 package dev.satra.wallet.ui.main
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Intent
 import android.net.Uri
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -30,6 +40,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -50,8 +61,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -85,6 +99,7 @@ import dev.satra.wallet.ui.components.SatraButtonDefaults
 import dev.satra.wallet.ui.components.SatraButtonVariant
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -377,22 +392,22 @@ fun SatraSendSentScreen(
     }
 
     LaunchedEffect(walletRepository, transactionId, initialWalletSnapshot?.walletId) {
-        state = walletRepository.loadSendReceipt(Uri.decode(transactionId))
-        onWalletSnapshotLoaded(walletRepository.loadMainWalletSnapshot())
+        while (true) {
+            val receipt = walletRepository.loadSendReceipt(Uri.decode(transactionId))
+            state = receipt
+            onWalletSnapshotLoaded(walletRepository.loadMainWalletSnapshot())
+            val isPending = (receipt as? SendReceiptState.Content)
+                ?.transaction
+                ?.status == WalletTransactionStatus.Pending.value
+            if (!isPending) break
+            delay(SEND_RECEIPT_POLL_INTERVAL_MS)
+        }
     }
 
     when (val current = state) {
-        SendReceiptState.Loading -> SendLoadingScreen(
-            title = stringResource(R.string.send_sent_title),
-            onBack = onDone,
-        )
+        SendReceiptState.Loading -> SendReceiptLoadingScreen()
 
-        SendReceiptState.Empty -> SendEmptyScreen(
-            title = stringResource(R.string.send_sent_title),
-            emptyTitle = stringResource(R.string.send_receipt_empty_title),
-            body = stringResource(R.string.send_receipt_empty_body),
-            onBack = onDone,
-        )
+        SendReceiptState.Empty -> SendReceiptEmptyScreen(onDone = onDone)
 
         is SendReceiptState.Content -> SendReceiptContent(
             state = current,
@@ -914,142 +929,142 @@ private fun SendReceiptContent(
 ) {
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
+    val clipboardManager = context.getSystemService(ClipboardManager::class.java)
+    val transactionClipboardLabel = stringResource(R.string.send_receipt_hash)
     val transactionHash = state.transaction.transactionHash?.takeIf(String::isNotBlank)
-    val hasBlockchainHash = transactionHash != null
-    val statusLabel = when (state.transaction.status) {
-        WalletTransactionStatus.Pending.value -> stringResource(R.string.send_status_pending)
-        WalletTransactionStatus.Success.value -> stringResource(R.string.send_status_success)
-        WalletTransactionStatus.Failed.value -> stringResource(R.string.send_status_failed)
-        WalletTransactionStatus.Canceled.value -> stringResource(R.string.send_status_canceled)
-        else -> state.transaction.status.replaceFirstChar { it.uppercase(Locale.US) }
+    var copiedTransaction by remember(transactionHash) { mutableStateOf(false) }
+    LaunchedEffect(copiedTransaction) {
+        if (copiedTransaction) {
+            delay(SEND_RECEIPT_COPY_RESET_MS)
+            copiedTransaction = false
+        }
     }
-    val savedTime = formatSendDateTime(state.transaction.firstSeenAt)
+
+    val status = rememberReceiptStatus(
+        status = state.transaction.status,
+        networkName = state.network.displayName,
+    )
+    val savedTime = formatSendDateTime(state.transaction.timestamp)
         .takeIf(String::isNotBlank)
         ?: stringResource(R.string.send_review_pending)
-    SendScaffold(
-        title = stringResource(R.string.send_sent_title),
-        onBack = onDone,
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            SendContentColumn {
-                Spacer(modifier = Modifier.height(24.dp))
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    SatraAssetNetworkIcon(
-                        assetSymbol = state.asset.symbol,
-                        networkId = state.network.networkId,
-                        modifier = Modifier.size(78.dp),
-                    )
-                }
-                Spacer(modifier = Modifier.height(20.dp))
-                Text(
-                    text = stringResource(
-                        if (hasBlockchainHash) {
-                            R.string.send_sent_broadcast_title
-                        } else {
-                            R.string.send_sent_not_broadcast_title
-                        },
-                    ),
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.displaySmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Bold,
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = stringResource(
-                        if (hasBlockchainHash) {
-                            R.string.send_sent_broadcast_body
-                        } else {
-                            R.string.send_sent_not_broadcast_body
-                        },
-                    ),
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(modifier = Modifier.height(24.dp))
-                SendInputCard {
-                    SendReviewLine(
-                        label = stringResource(R.string.send_receipt_status),
-                        value = statusLabel,
-                    )
-                    SendReviewLine(
-                        label = stringResource(R.string.send_review_amount),
-                        value = state.amountFormatted,
-                    )
-                    SendReviewLine(
-                        label = stringResource(R.string.send_review_network),
-                        value = state.network.displayName,
-                    )
-                    SendReviewLine(
-                        label = stringResource(R.string.send_review_to),
-                        value = state.transaction.toAddress?.shortAddress()
-                            ?: stringResource(R.string.send_review_pending),
-                    )
-                    transactionHash?.let { hash ->
-                        SendReviewLine(
-                            label = stringResource(R.string.send_receipt_hash),
-                            value = hash.shortHash(),
+    val amountWithFiat = stringResource(
+        R.string.send_receipt_amount_with_fiat,
+        state.amountFormatted,
+        state.fiatFormatted,
+    )
+    val networkWithStandard = "${state.network.displayName} · ${state.networkStandardLabel}"
+    val transactionValue = if (copiedTransaction) {
+        stringResource(R.string.send_receipt_copied)
+    } else {
+        transactionHash?.shortHash() ?: stringResource(R.string.send_review_pending)
+    }
+
+    SendReceiptScaffold {
+        SendReceiptStatusBlock(status = status)
+        SendReceiptFactCard {
+            SendReceiptFactRow(
+                label = stringResource(R.string.send_review_amount),
+                value = amountWithFiat,
+            )
+            SendReceiptFactRow(
+                label = stringResource(R.string.send_review_to),
+                value = state.transaction.toAddress?.shortAddress()
+                    ?: stringResource(R.string.send_review_pending),
+            )
+            SendReceiptNetworkFactRow(
+                label = stringResource(R.string.send_review_network),
+                value = networkWithStandard,
+                networkId = state.network.networkId,
+            )
+            SendReceiptFactRow(
+                label = stringResource(R.string.send_review_fee),
+                value = "~${state.networkFeeFormatted}",
+            )
+            SendReceiptFactRow(
+                label = stringResource(R.string.send_receipt_hash),
+                value = transactionValue,
+                showDivider = true,
+                onClick = transactionHash?.let { hash ->
+                    {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        clipboardManager?.setPrimaryClip(
+                            ClipData.newPlainText(
+                                transactionClipboardLabel,
+                                hash,
+                            ),
                         )
+                        copiedTransaction = true
                     }
-                    SendReviewLine(
-                        label = stringResource(R.string.send_receipt_saved),
-                        value = savedTime,
-                    )
-                }
-                Spacer(modifier = Modifier.height(14.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SatraButton(
-                        text = stringResource(R.string.send_receipt_share),
-                        onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            shareReceipt(context, state)
-                        },
-                        modifier = Modifier.weight(1f),
-                        variant = SatraButtonVariant.Secondary,
-                        height = SatraButtonDefaults.CompactHeight,
-                    )
-                    SatraButton(
-                        text = stringResource(R.string.send_receipt_explorer),
-                        onClick = {
-                            state.explorerUrl?.let { url ->
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-                            }
-                        },
-                        enabled = state.explorerUrl != null,
-                        modifier = Modifier.weight(1f),
-                        variant = SatraButtonVariant.Secondary,
-                        height = SatraButtonDefaults.CompactHeight,
-                    )
-                }
-                Spacer(modifier = Modifier.height(26.dp))
-                SendPrimaryButton(
-                    text = stringResource(R.string.send_receipt_done),
-                    onClick = onDone,
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-                SatraButton(
-                    text = stringResource(R.string.send_receipt_send_another),
-                    onClick = onSendAnother,
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    variant = SatraButtonVariant.Secondary,
-                    height = SatraButtonDefaults.CompactHeight,
-                )
-                Spacer(modifier = Modifier.height(24.dp))
-            }
+                },
+            )
+            SendReceiptFactRow(
+                label = stringResource(R.string.send_receipt_saved),
+                value = savedTime,
+                showDivider = false,
+            )
         }
+        Spacer(modifier = Modifier.height(18.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            SendReceiptGhostButton(
+                text = stringResource(R.string.send_receipt_share),
+                iconRes = R.drawable.ic_send_share,
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    shareReceipt(context, state)
+                },
+                modifier = Modifier.weight(1f),
+            )
+            SendReceiptGhostButton(
+                text = stringResource(R.string.send_receipt_explorer),
+                iconRes = R.drawable.ic_send_external,
+                enabled = state.explorerUrl != null,
+                onClick = {
+                    state.explorerUrl?.let { url ->
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                    }
+                },
+                modifier = Modifier.weight(1f),
+            )
+        }
+        if (state.transaction.status == WalletTransactionStatus.Failed.value) {
+            Spacer(modifier = Modifier.height(10.dp))
+            SendReceiptGhostButton(
+                text = stringResource(R.string.send_receipt_contact_support),
+                iconRes = R.drawable.ic_send_mail,
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    contactSupportForReceipt(
+                        context = context,
+                        state = state,
+                        transactionId = transactionHash.orEmpty(),
+                        time = savedTime,
+                    )
+                },
+                modifier = Modifier.fillMaxWidth(),
+                contentColor = status.tint,
+                borderColor = status.tint,
+            )
+        }
+        Spacer(modifier = Modifier.height(14.dp))
+        SatraButton(
+            text = stringResource(R.string.send_receipt_done),
+            onClick = onDone,
+            modifier = Modifier.fillMaxWidth(),
+            height = 50.dp,
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+        SatraButton(
+            text = stringResource(R.string.send_receipt_send_another),
+            onClick = onSendAnother,
+            modifier = Modifier.fillMaxWidth(),
+            variant = SatraButtonVariant.Secondary,
+            height = 50.dp,
+        )
+        SendReceiptFooter()
     }
 }
 
@@ -1177,6 +1192,397 @@ private fun SendEmptyScreen(
             )
         }
     }
+}
+
+@Composable
+private fun SendReceiptLoadingScreen() {
+    SendReceiptScaffold {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(360.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.onSurface)
+        }
+    }
+}
+
+@Composable
+private fun SendReceiptEmptyScreen(onDone: () -> Unit) {
+    SendReceiptScaffold {
+        Spacer(modifier = Modifier.height(80.dp))
+        SatraEmptyState(
+            title = stringResource(R.string.send_receipt_empty_title),
+            body = stringResource(R.string.send_receipt_empty_body),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+        SatraButton(
+            text = stringResource(R.string.send_receipt_done),
+            onClick = onDone,
+            modifier = Modifier.fillMaxWidth(),
+            height = 50.dp,
+        )
+    }
+}
+
+@Composable
+private fun SendReceiptScaffold(content: @Composable ColumnScope.() -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Image(
+            painter = painterResource(R.drawable.satra_lockup_horizontal),
+            contentDescription = null,
+            modifier = Modifier
+                .padding(top = 20.dp, bottom = 6.dp)
+                .width(86.dp)
+                .height(31.dp),
+            contentScale = ContentScale.Fit,
+        )
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = ChooseAssetContentMaxWidth),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                content = content,
+            )
+        }
+    }
+}
+
+@Composable
+private fun rememberReceiptStatus(
+    status: String,
+    networkName: String,
+): SendReceiptVisuals {
+    val isDark = isSystemInDarkTheme()
+    val gain = if (isDark) Color(0xFF7FC9A6) else Color(0xFF2E7D5A)
+    val loss = if (isDark) Color(0xFFE08A76) else Color(0xFFB3452E)
+    val muted = MaterialTheme.colorScheme.onSurfaceVariant
+    val chipStrong = MaterialTheme.colorScheme.surfaceContainerHighest
+    val lossContainer = MaterialTheme.colorScheme.errorContainer
+    return when (status) {
+        WalletTransactionStatus.Success.value -> SendReceiptVisuals(
+            title = stringResource(R.string.send_sent_status_success_title),
+            chip = stringResource(R.string.send_status_success),
+            body = stringResource(R.string.send_sent_status_success_body, networkName),
+            chipContainer = gain.copy(alpha = 0.14f),
+            tint = gain,
+            discContainer = MaterialTheme.colorScheme.inverseSurface,
+            discContent = MaterialTheme.colorScheme.inverseOnSurface,
+            isPending = false,
+            isFailed = false,
+        )
+        WalletTransactionStatus.Failed.value -> SendReceiptVisuals(
+            title = stringResource(R.string.send_sent_status_failed_title),
+            chip = stringResource(R.string.send_status_failed),
+            body = stringResource(R.string.send_sent_status_failed_body),
+            chipContainer = lossContainer,
+            tint = loss,
+            discContainer = lossContainer,
+            discContent = loss,
+            isPending = false,
+            isFailed = true,
+        )
+        WalletTransactionStatus.Canceled.value -> SendReceiptVisuals(
+            title = stringResource(R.string.send_sent_status_canceled_title),
+            chip = stringResource(R.string.send_status_canceled),
+            body = stringResource(R.string.send_sent_status_canceled_body),
+            chipContainer = chipStrong,
+            tint = muted,
+            discContainer = MaterialTheme.colorScheme.inverseSurface,
+            discContent = MaterialTheme.colorScheme.inverseOnSurface,
+            isPending = false,
+            isFailed = false,
+        )
+        else -> SendReceiptVisuals(
+            title = stringResource(R.string.send_sent_status_pending_title),
+            chip = stringResource(R.string.send_status_pending),
+            body = stringResource(R.string.send_sent_status_pending_body),
+            chipContainer = chipStrong,
+            tint = muted,
+            discContainer = MaterialTheme.colorScheme.inverseSurface,
+            discContent = MaterialTheme.colorScheme.inverseOnSurface,
+            isPending = true,
+            isFailed = false,
+        )
+    }
+}
+
+@Composable
+private fun SendReceiptStatusBlock(status: SendReceiptVisuals) {
+    Column(
+        modifier = Modifier.padding(top = 10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(84.dp)
+                .clip(CircleShape)
+                .background(status.discContainer),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (status.isFailed) {
+                Icon(
+                    imageVector = Icons.Filled.Close,
+                    contentDescription = null,
+                    modifier = Modifier.size(34.dp),
+                    tint = status.discContent,
+                )
+            } else {
+                Icon(
+                    painter = painterResource(R.drawable.ic_brand_move),
+                    contentDescription = null,
+                    modifier = Modifier.size(42.dp),
+                    tint = status.discContent,
+                )
+            }
+        }
+        Text(
+            text = status.title,
+            modifier = Modifier.padding(top = 14.dp),
+            style = MaterialTheme.typography.headlineMedium.copy(fontSize = 26.sp),
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        SendReceiptStatusChip(status = status)
+        Text(
+            text = status.body,
+            modifier = Modifier
+                .padding(top = 12.dp)
+                .widthIn(max = 280.dp),
+            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.5.sp, lineHeight = 21.sp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+    }
+}
+
+@Composable
+private fun SendReceiptStatusChip(status: SendReceiptVisuals) {
+    val transition = rememberInfiniteTransition(label = "receiptStatusChip")
+    val pulseAlpha by transition.animateFloat(
+        initialValue = 0.25f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1100),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "receiptStatusDotAlpha",
+    )
+    Row(
+        modifier = Modifier
+            .padding(top = 10.dp)
+            .clip(RoundedCornerShape(99.dp))
+            .background(status.chipContainer)
+            .padding(horizontal = 13.dp, vertical = 7.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(7.dp)
+                .alpha(if (status.isPending) pulseAlpha else 1f)
+                .clip(CircleShape)
+                .background(status.tint),
+        )
+        Spacer(modifier = Modifier.width(7.dp))
+        Text(
+            text = status.chip,
+            style = MaterialTheme.typography.labelMedium.copy(fontSize = 12.5.sp),
+            color = status.tint,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+        )
+    }
+}
+
+@Composable
+private fun SendReceiptFactCard(content: @Composable ColumnScope.() -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 20.dp),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+    ) {
+        Column(content = content)
+    }
+}
+
+@Composable
+private fun SendReceiptFactRow(
+    label: String,
+    value: String,
+    showDivider: Boolean = true,
+    onClick: (() -> Unit)? = null,
+) {
+    SendReceiptFactRowBase(
+        label = label,
+        onClick = onClick,
+        showDivider = showDivider,
+    ) {
+        Text(
+            text = value,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.labelMedium.copy(fontSize = 13.5.sp),
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.End,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun SendReceiptNetworkFactRow(
+    label: String,
+    value: String,
+    networkId: String,
+    showDivider: Boolean = true,
+) {
+    SendReceiptFactRowBase(
+        label = label,
+        showDivider = showDivider,
+    ) {
+        Text(
+            text = value,
+            modifier = Modifier.weight(1f, fill = false),
+            style = MaterialTheme.typography.labelMedium.copy(fontSize = 13.5.sp),
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.End,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(modifier = Modifier.width(5.dp))
+        SatraCryptoIcon(
+            iconRes = networkIconRes(networkId),
+            modifier = Modifier.size(15.dp),
+        )
+    }
+}
+
+@Composable
+private fun SendReceiptFactRowBase(
+    label: String,
+    onClick: (() -> Unit)? = null,
+    showDivider: Boolean = true,
+    valueContent: @Composable RowScope.() -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (onClick == null) {
+                    Modifier
+                } else {
+                    Modifier.clickable(onClick = onClick)
+                },
+            )
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium.copy(fontSize = 13.sp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Row(
+            modifier = Modifier.weight(1f),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically,
+            content = valueContent,
+        )
+    }
+    if (showDivider) {
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+    }
+}
+
+@Composable
+private fun SendReceiptGhostButton(
+    text: String,
+    @DrawableRes iconRes: Int,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    contentColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    borderColor: Color = MaterialTheme.colorScheme.outlineVariant,
+) {
+    SatraButton(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = modifier,
+        variant = SatraButtonVariant.Secondary,
+        height = 50.dp,
+        contentColor = contentColor,
+        borderColor = borderColor,
+    ) {
+        Icon(
+            painter = painterResource(iconRes),
+            contentDescription = null,
+            modifier = Modifier.size(15.dp),
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.titleSmall.copy(fontSize = 15.sp),
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun SendReceiptFooter() {
+    val footer = stringResource(R.string.send_receipt_footer)
+    val brand = stringResource(R.string.send_receipt_footer_brand)
+    val textColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val brandColor = MaterialTheme.colorScheme.onSurface
+    val footerText = remember(footer, brand, textColor, brandColor) {
+        val start = footer.indexOf(brand)
+        if (start < 0) {
+            buildAnnotatedString { append(footer) }
+        } else {
+            buildAnnotatedString {
+                append(footer.take(start))
+                withStyle(SpanStyle(color = brandColor, fontWeight = FontWeight.Bold)) {
+                    append(brand)
+                }
+                append(footer.drop(start + brand.length))
+            }
+        }
+    }
+    Text(
+        text = footerText,
+        modifier = Modifier.padding(top = 14.dp),
+        style = MaterialTheme.typography.labelMedium.copy(fontSize = 11.5.sp, lineHeight = 18.sp),
+        color = textColor,
+        textAlign = TextAlign.Center,
+    )
 }
 
 @Composable
@@ -2269,7 +2675,10 @@ private fun SatraMainWalletSnapshot.toSendReceiptState(transactionId: String): S
                 transaction = transaction,
                 asset = asset,
                 network = network,
-                amountFormatted = "${formatCryptoAmount(transaction.amountDecimal.toBigDecimalOrZero())} ${asset.symbol}",
+                amountFormatted = transaction.receiptAmountFormatted(asset),
+                fiatFormatted = transaction.receiptFiatFormatted(),
+                networkFeeFormatted = transaction.receiptFeeFormatted(network),
+                networkStandardLabel = networkStandardLabelFor(asset, network),
                 explorerUrl = transaction.transactionHash?.let { hash -> explorerUrlFor(network.networkId, hash) },
             )
         }
@@ -2335,7 +2744,10 @@ private suspend fun SatraWalletRepository.loadSendReceipt(transactionId: String)
             transaction = transaction,
             asset = asset,
             network = network,
-            amountFormatted = "${formatCryptoAmount(transaction.amountDecimal.toBigDecimalOrZero())} ${asset.symbol}",
+            amountFormatted = transaction.receiptAmountFormatted(asset),
+            fiatFormatted = transaction.receiptFiatFormatted(),
+            networkFeeFormatted = transaction.receiptFeeFormatted(network),
+            networkStandardLabel = networkStandardLabelFor(asset, network),
             explorerUrl = transaction.transactionHash?.let { hash -> explorerUrlFor(network.networkId, hash) },
         )
     }
@@ -2457,6 +2869,12 @@ private fun List<SendAssetRow>.sortedByNetworkValue(): List<SendAssetRow> =
     )
 
 private fun SendAssetRow.networkStandardLabel(): String =
+    networkStandardLabelFor(asset, network)
+
+private fun networkStandardLabelFor(
+    asset: SupportedAsset,
+    network: SupportedNetwork,
+): String =
     asset.tokenStandard
         ?: network.tokenStandard
         ?: if (asset.assetType == "NATIVE") "Native" else network.family.uppercase(Locale.US)
@@ -2525,8 +2943,17 @@ private fun SendAssetRow.fiatValueForAmount(amount: BigDecimal): BigDecimal {
 private fun estimatedFeeFor(
     row: SendAssetRow,
     speed: SendFeeSpeed,
+): SendFeeQuote =
+    estimatedFeeFor(
+        network = row.network,
+        speed = speed,
+    )
+
+private fun estimatedFeeFor(
+    network: SupportedNetwork,
+    speed: SendFeeSpeed,
 ): SendFeeQuote {
-    val base = when (row.network.family) {
+    val base = when (network.family) {
         "utxo" -> BigDecimal("0.00005000")
         "evm" -> BigDecimal("0.00030000")
         "solana" -> BigDecimal("0.00000500")
@@ -2543,9 +2970,35 @@ private fun estimatedFeeFor(
     return SendFeeQuote(
         speed = speed,
         amount = amount,
-        symbol = row.network.nativeSymbol,
-        displayText = "${formatCryptoAmount(amount)} ${row.network.nativeSymbol}",
+        symbol = network.nativeSymbol,
+        displayText = "${formatCryptoAmount(amount)} ${network.nativeSymbol}",
     )
+}
+
+private fun WalletTransactionRecord.receiptAmountFormatted(asset: SupportedAsset): String {
+    val amount = amountDecimal.toBigDecimalOrZero().abs()
+    return "${formatCryptoAmount(amount)} ${asset.symbol}"
+}
+
+private fun WalletTransactionRecord.receiptFiatFormatted(): String =
+    formatFiat(
+        value = fiatValue?.takeIf(String::isNotBlank) ?: "0",
+        currencyCode = localCurrencyCode,
+    )
+
+private fun WalletTransactionRecord.receiptFeeFormatted(network: SupportedNetwork): String {
+    val feeAmount = feeDecimal
+        ?.toBigDecimalOrZero()
+        ?.abs()
+        ?.takeIf { amount -> amount > BigDecimal.ZERO }
+    if (feeAmount != null) {
+        val feeSymbol = feeAssetId
+            ?.let { assetId -> SupportedAssetCatalog.assets.firstOrNull { asset -> asset.assetId == assetId } }
+            ?.symbol
+            ?: network.nativeSymbol
+        return "${formatCryptoAmount(feeAmount)} $feeSymbol"
+    }
+    return estimatedFeeFor(network, SendFeeSpeed.Normal).displayText
 }
 
 private fun String.applyAmountKey(key: String): String =
@@ -2628,14 +3081,27 @@ private fun explorerUrlFor(networkId: String, hash: String): String? =
         "arbitrum" -> "https://arbiscan.io/tx/$hash"
         "base" -> "https://basescan.org/tx/$hash"
         "optimism" -> "https://optimistic.etherscan.io/tx/$hash"
+        "scroll" -> "https://scrollscan.com/tx/$hash"
+        "zkSync" -> "https://explorer.zksync.io/tx/$hash"
         "polygon" -> "https://polygonscan.com/tx/$hash"
         "bnbChain" -> "https://bscscan.com/tx/$hash"
+        "opBNB" -> "https://opbnb.bscscan.com/tx/$hash"
         "avalanche" -> "https://snowtrace.io/tx/$hash"
+        "celo" -> "https://celoscan.io/tx/$hash"
+        "kavaEvm" -> "https://kavascan.com/tx/$hash"
+        "kava" -> "https://www.mintscan.io/kava/txs/$hash"
+        "aptos" -> "https://explorer.aptoslabs.com/txn/$hash"
+        "near" -> "https://nearblocks.io/txns/$hash"
+        "polkadot" -> "https://assethub-polkadot.subscan.io/extrinsic/$hash"
+        "ripple" -> "https://xrpscan.com/tx/$hash"
         "bitcoin" -> "https://mempool.space/tx/$hash"
         "bitcoinCash" -> "https://blockchair.com/bitcoin-cash/transaction/$hash"
         "dogecoin" -> "https://blockchair.com/dogecoin/transaction/$hash"
         "litecoin" -> "https://blockchair.com/litecoin/transaction/$hash"
         "solana" -> "https://solscan.io/tx/$hash"
+        "stellar" -> "https://stellarchain.io/transactions/$hash"
+        "sui" -> "https://suivision.xyz/txblock/$hash"
+        "ton" -> "https://tonviewer.com/transaction/$hash"
         "tron" -> "https://tronscan.org/#/transaction/$hash"
         else -> null
     }
@@ -2648,7 +3114,6 @@ private fun shareReceipt(
         R.string.send_receipt_share_text,
         state.amountFormatted,
         state.network.displayName,
-        state.transaction.toAddress?.shortAddress().orEmpty(),
     )
     val intent = Intent(Intent.ACTION_SEND).apply {
         type = "text/plain"
@@ -2660,6 +3125,30 @@ private fun shareReceipt(
             context.getString(R.string.send_share_chooser_title),
         ),
     )
+}
+
+private fun contactSupportForReceipt(
+    context: android.content.Context,
+    state: SendReceiptState.Content,
+    transactionId: String,
+    time: String,
+) {
+    val subject = context.getString(
+        R.string.send_receipt_support_subject,
+        transactionId.shortHash(),
+    )
+    val body = context.getString(
+        R.string.send_receipt_support_body,
+        transactionId,
+        state.network.displayName,
+        state.amountFormatted,
+        time,
+    )
+    val uri = Uri.parse("mailto:care@satra.app").buildUpon()
+        .appendQueryParameter("subject", subject)
+        .appendQueryParameter("body", body)
+        .build()
+    context.startActivity(Intent(Intent.ACTION_SENDTO, uri))
 }
 
 private sealed interface SendSnapshot {
@@ -2708,6 +3197,9 @@ private sealed interface SendReceiptState {
         val asset: SupportedAsset,
         val network: SupportedNetwork,
         val amountFormatted: String,
+        val fiatFormatted: String,
+        val networkFeeFormatted: String,
+        val networkStandardLabel: String,
         val explorerUrl: String?,
     ) : SendReceiptState
 }
@@ -2749,6 +3241,18 @@ private data class SendFeeQuote(
     val displayText: String,
 )
 
+private data class SendReceiptVisuals(
+    val title: String,
+    val chip: String,
+    val body: String,
+    val chipContainer: Color,
+    val tint: Color,
+    val discContainer: Color,
+    val discContent: Color,
+    val isPending: Boolean,
+    val isFailed: Boolean,
+)
+
 private enum class SendFeeSpeed(val labelRes: Int) {
     Slow(R.string.send_fee_speed_slow),
     Normal(R.string.send_fee_speed_normal),
@@ -2758,3 +3262,5 @@ private enum class SendFeeSpeed(val labelRes: Int) {
 private val SendContentMaxWidth = 720.dp
 private const val CRYPTO_DISPLAY_DECIMALS = 8
 private const val RECIPIENT_ERROR_MIN_LENGTH = 8
+private const val SEND_RECEIPT_POLL_INTERVAL_MS = 6_000L
+private const val SEND_RECEIPT_COPY_RESET_MS = 900L
