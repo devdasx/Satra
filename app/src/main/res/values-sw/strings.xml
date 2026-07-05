@@ -523,6 +523,7 @@
     <string name="send_amount_header_title">Weka kiasi.</string>
     <string name="send_amount_header_body">Chagua kiasi na ada ya mtandao kabla ya ukaguzi.</string>
     <string name="send_amount_available">Inapatikana %1$s</string>
+    <string name="send_amount_available_on">Inapatikana: %1$s kwenye %2$s</string>
     <string name="send_amount_max">Max</string>
     <string name="send_fee_pill_title">Ada ya mtandao</string>
     <string name="send_fee_sheet_title">Ada ya mtandao</string>

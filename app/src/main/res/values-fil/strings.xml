@@ -523,6 +523,7 @@
     <string name="send_amount_header_title">Maglagay ng halaga.</string>
     <string name="send_amount_header_body">Piliin ang halaga at bayad sa network bago suriin.</string>
     <string name="send_amount_available">Magagamit na %1$s</string>
+    <string name="send_amount_available_on">Available: %1$s sa %2$s</string>
     <string name="send_amount_max">Max</string>
     <string name="send_fee_pill_title">Bayad sa network</string>
     <string name="send_fee_sheet_title">Bayad sa network</string>

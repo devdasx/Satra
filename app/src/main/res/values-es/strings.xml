@@ -523,6 +523,7 @@
     <string name="send_amount_header_title">Ingrese el monto.</string>
     <string name="send_amount_header_body">Elija el monto y la tarifa de la red antes de revisar.</string>
     <string name="send_amount_available">Disponible%1$s</string>
+    <string name="send_amount_available_on">Disponible: %1$s en %2$s</string>
     <string name="send_amount_max">Max</string>
     <string name="send_fee_pill_title">Tarifa de red</string>
     <string name="send_fee_sheet_title">Tarifa de red</string>

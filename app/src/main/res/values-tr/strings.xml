@@ -523,6 +523,7 @@
     <string name="send_amount_header_title">Tutarı girin.</string>
     <string name="send_amount_header_body">İncelemeden önce tutarı ve ağ ücretini seçin.</string>
     <string name="send_amount_available">Mevcut %1$s</string>
+    <string name="send_amount_available_on">Kullanılabilir: %2$s üzerinde %1$s</string>
     <string name="send_amount_max">Maksimum</string>
     <string name="send_fee_pill_title">Ağ ücreti</string>
     <string name="send_fee_sheet_title">Ağ ücreti</string>

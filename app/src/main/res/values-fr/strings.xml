@@ -523,6 +523,7 @@
     <string name="send_amount_header_title">Entrez le montant.</string>
     <string name="send_amount_header_body">Choisissez le montant et les frais de réseau avant de les examiner.</string>
     <string name="send_amount_available">Disponible%1$s</string>
+    <string name="send_amount_available_on">Disponible : %1$s sur %2$s</string>
     <string name="send_amount_max">Max</string>
     <string name="send_fee_pill_title">Frais de réseau</string>
     <string name="send_fee_sheet_title">Frais de réseau</string>

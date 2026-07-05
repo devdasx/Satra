@@ -523,6 +523,7 @@
     <string name="send_amount_header_title">输入金额。</string>
     <string name="send_amount_header_body">审核前选择金额和网络费用。</string>
     <string name="send_amount_available">可用%1$s</string>
+    <string name="send_amount_available_on">可用：%1$s，网络为 %2$s</string>
     <string name="send_amount_max">最大</string>
     <string name="send_fee_pill_title">网络费用</string>
     <string name="send_fee_sheet_title">网络费用</string>

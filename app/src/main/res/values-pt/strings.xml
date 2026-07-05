@@ -523,6 +523,7 @@
     <string name="send_amount_header_title">Insira o valor.</string>
     <string name="send_amount_header_body">Escolha o valor e a taxa de rede antes da revisão.</string>
     <string name="send_amount_available">Disponível %1$s</string>
+    <string name="send_amount_available_on">Disponível: %1$s em %2$s</string>
     <string name="send_amount_max">Máx.</string>
     <string name="send_fee_pill_title">Taxa de rede</string>
     <string name="send_fee_sheet_title">Taxa de rede</string>

@@ -652,9 +652,11 @@ private fun SendAmountContent(
     val amount = amountText.toBigDecimalOrNullSafe()
     val feeQuote = remember(state.row, feeSpeed) { estimatedFeeFor(state.row, feeSpeed) }
     val maxAmount = remember(state.row, feeQuote) { state.row.maxSendAmount(feeQuote) }
-    val amountError = amountText.isNotBlank() &&
-        (amount == null || amount <= BigDecimal.ZERO || amount > maxAmount)
+    val amountOverBalance = amount != null && amount > maxAmount
     val canReview = amount != null && amount > BigDecimal.ZERO && amount <= maxAmount && state.canSign
+    val fiatPreview = remember(amount, state.row) {
+        state.row.fiatValueForAmount(amount ?: BigDecimal.ZERO)
+    }
 
     if (feeSheetVisible) {
         SendFeeSheet(
@@ -668,100 +670,64 @@ private fun SendAmountContent(
         )
     }
 
-    SendScaffold(
+    SendStepScaffold(
         title = stringResource(R.string.send_amount_title),
         onBack = onBack,
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .verticalScroll(rememberScrollState()),
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                SendHero(
-                    title = stringResource(R.string.send_amount_header_title),
-                    body = stringResource(R.string.send_amount_header_body),
-                )
-                SendContentColumn {
-                SendInputCard {
-                    Text(
-                        text = amountText.takeIf(String::isNotBlank) ?: "0",
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.displaySmall,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .widthIn(max = ChooseAssetContentMaxWidth),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    SendAmountDisplay(
+                        amountText = amountText,
+                        symbol = state.row.asset.symbol,
+                        fiatPreview = formatFiat(fiatPreview.toPlainString(), state.wallet.localCurrencyCode),
+                        isOverBalance = amountOverBalance,
                     )
-                    Text(
-                        text = state.row.asset.symbol,
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Spacer(modifier = Modifier.height(18.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = stringResource(R.string.send_amount_available, state.row.balanceFormatted),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontWeight = FontWeight.Bold,
-                        )
-                    SatraButton(
-                        onClick = {
+                    SendAmountAvailableRow(
+                        balance = state.row.balanceFormatted,
+                        networkName = state.row.network.displayName,
+                        onMaxClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             amountText = formatCryptoAmount(maxAmount)
                         },
-                        variant = SatraButtonVariant.Text,
-                        height = 40.dp,
-                    ) {
-                        Text(
-                            text = stringResource(R.string.send_amount_max),
-                                fontWeight = FontWeight.Bold,
-                            )
-                        }
-                    }
-                    SendFeePill(
-                        quote = feeQuote,
-                        onClick = { feeSheetVisible = true },
                     )
-                    if (amountError) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = stringResource(R.string.send_amount_error),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.error,
-                            fontWeight = FontWeight.Bold,
-                        )
-                    }
                 }
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.weight(1f))
                 SendKeypad(
                     onKey = { key ->
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         amountText = amountText.applyAmountKey(key)
                     },
                 )
-                }
-            }
-            SendBottomActionBar {
-                SendPrimaryButton(
-                    text = stringResource(R.string.send_review_action),
-                    enabled = canReview,
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onReview(state.row.asset.assetId, recipient, amountText, warnPoison)
-                    },
+                Spacer(modifier = Modifier.height(14.dp))
+                SendFeePill(
+                    quote = feeQuote,
+                    onClick = { feeSheetVisible = true },
                 )
+                Spacer(modifier = Modifier.height(12.dp))
             }
+            SendStepBottomAction(
+                text = stringResource(R.string.send_review_action),
+                enabled = canReview,
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onReview(state.row.asset.assetId, recipient, amountText, warnPoison)
+                },
+            )
         }
     }
 }
@@ -1505,6 +1471,91 @@ private fun SendRecentRecipientRow(
 }
 
 @Composable
+private fun SendAmountDisplay(
+    amountText: String,
+    symbol: String,
+    fiatPreview: String,
+    isOverBalance: Boolean,
+) {
+    Column(
+        modifier = Modifier.padding(top = 22.dp, bottom = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text(
+                text = amountText.takeIf(String::isNotBlank) ?: "0",
+                style = MaterialTheme.typography.displayLarge.copy(fontSize = 44.sp, lineHeight = 44.sp),
+                color = if (isOverBalance) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                },
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = symbol,
+                modifier = Modifier.padding(bottom = 3.dp),
+                style = MaterialTheme.typography.titleLarge.copy(fontSize = 20.sp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+            )
+        }
+        Text(
+            text = fiatPreview,
+            modifier = Modifier.padding(top = 10.dp),
+            style = MaterialTheme.typography.labelMedium.copy(fontSize = 14.sp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun SendAmountAvailableRow(
+    balance: String,
+    networkName: String,
+    onMaxClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 16.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = stringResource(R.string.send_amount_available_on, balance, networkName),
+            modifier = Modifier.weight(1f, fill = false),
+            style = MaterialTheme.typography.labelMedium.copy(fontSize = 12.5.sp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = stringResource(R.string.send_amount_max),
+            modifier = Modifier
+                .clip(RoundedCornerShape(99.dp))
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                .clickable(onClick = onMaxClick)
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+            style = MaterialTheme.typography.labelMedium.copy(fontSize = 11.5.sp),
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+        )
+    }
+}
+
+@Composable
 private fun SendInputCard(content: @Composable ColumnScope.() -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -1732,25 +1783,31 @@ private fun SendFeePill(
 ) {
     Row(
         modifier = Modifier
-            .fillMaxWidth()
-            .height(48.dp)
             .clip(RoundedCornerShape(100.dp))
             .background(MaterialTheme.colorScheme.surfaceContainer)
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
+            .padding(horizontal = 14.dp, vertical = 9.dp),
+        horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_brand_settings),
+            contentDescription = null,
+            modifier = Modifier.size(14.dp),
+            tint = MaterialTheme.colorScheme.onSurface,
+        )
+        Spacer(modifier = Modifier.width(7.dp))
         Text(
             text = stringResource(R.string.send_fee_pill_title),
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.labelMedium.copy(fontSize = 12.sp),
             color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.Bold,
         )
+        Spacer(modifier = Modifier.width(4.dp))
         Text(
-            text = quote.displayText,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            text = "~${quote.displayText}",
+            style = MaterialTheme.typography.labelMedium.copy(fontSize = 12.sp),
+            color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.Bold,
         )
     }
@@ -1764,22 +1821,41 @@ private fun SendKeypad(onKey: (String) -> Unit) {
         listOf("7", "8", "9"),
         listOf(".", "0", "⌫"),
     )
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .widthIn(max = ChooseAssetContentMaxWidth),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
         keys.forEach { row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
                 row.forEach { key ->
-                    SatraButton(
-                        onClick = { onKey(key) },
+                    Box(
                         modifier = Modifier
-                            .weight(1f),
-                        variant = SatraButtonVariant.Neutral,
-                        height = 54.dp,
+                            .weight(1f)
+                            .height(56.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .clickable { onKey(key) },
+                        contentAlignment = Alignment.Center,
                     ) {
-                        Text(
-                            text = key,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                        )
+                        if (key == "⌫") {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_satra_backspace),
+                                contentDescription = null,
+                                modifier = Modifier.size(26.dp),
+                                tint = MaterialTheme.colorScheme.onSurface,
+                            )
+                        } else {
+                            Text(
+                                text = key,
+                                style = MaterialTheme.typography.headlineSmall.copy(fontSize = 22.sp),
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontWeight = FontWeight.Medium,
+                            )
+                        }
                     }
                 }
             }
@@ -1885,6 +1961,19 @@ private fun SendRecipientBottomAction(
     enabled: Boolean,
     onClick: () -> Unit,
 ) {
+    SendStepBottomAction(
+        text = stringResource(R.string.send_continue_action),
+        enabled = enabled,
+        onClick = onClick,
+    )
+}
+
+@Composable
+private fun SendStepBottomAction(
+    text: String,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -1894,7 +1983,7 @@ private fun SendRecipientBottomAction(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         SatraButton(
-            text = stringResource(R.string.send_continue_action),
+            text = text,
             onClick = onClick,
             enabled = enabled,
             modifier = Modifier
@@ -2231,6 +2320,14 @@ private fun SendAssetRow.maxSendAmount(feeQuote: SendFeeQuote): BigDecimal =
         balanceDecimal
     }
 
+private fun SendAssetRow.fiatValueForAmount(amount: BigDecimal): BigDecimal {
+    if (amount <= BigDecimal.ZERO || balanceDecimal <= BigDecimal.ZERO || fiatAmount <= BigDecimal.ZERO) {
+        return BigDecimal.ZERO
+    }
+    val unitFiat = fiatAmount.divide(balanceDecimal, 18, RoundingMode.HALF_UP)
+    return amount.multiply(unitFiat)
+}
+
 private fun estimatedFeeFor(
     row: SendAssetRow,
     speed: SendFeeSpeed,
@@ -2270,9 +2367,14 @@ private fun String.applyAmountKey(key: String): String =
 private fun String.filterAmountInput(): String {
     val builder = StringBuilder()
     var hasDecimal = false
+    var fractionDigits = 0
     forEach { character ->
         when {
-            character.isDigit() -> builder.append(character)
+            character.isDigit() && !hasDecimal -> builder.append(character)
+            character.isDigit() && fractionDigits < CRYPTO_DISPLAY_DECIMALS -> {
+                fractionDigits += 1
+                builder.append(character)
+            }
             character == '.' && !hasDecimal -> {
                 hasDecimal = true
                 builder.append(character)

@@ -523,6 +523,7 @@
     <string name="send_amount_header_title">輸入金額。</string>
     <string name="send_amount_header_body">喺審查之前揀金額同網絡費用。</string>
     <string name="send_amount_available">可用 %1$s</string>
+    <string name="send_amount_available_on">可用：%1$s 喺 %2$s</string>
     <string name="send_amount_max">最大</string>
     <string name="send_fee_pill_title">網絡費用</string>
     <string name="send_fee_sheet_title">網絡費用</string>

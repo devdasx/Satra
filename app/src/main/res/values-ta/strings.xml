@@ -523,6 +523,7 @@
     <string name="send_amount_header_title">தொகையை உள்ளிடவும்.</string>
     <string name="send_amount_header_body">மதிப்பாய்வுக்கு முன் தொகை மற்றும் நெட்வொர்க் கட்டணத்தைத் தேர்வு செய்யவும்.</string>
     <string name="send_amount_available">%1$s கிடைக்கிறது</string>
+    <string name="send_amount_available_on">கிடைக்கிறது: %2$s இல் %1$s</string>
     <string name="send_amount_max">அதிகபட்சம்</string>
     <string name="send_fee_pill_title">நெட்வொர்க் கட்டணம்</string>
     <string name="send_fee_sheet_title">நெட்வொர்க் கட்டணம்</string>

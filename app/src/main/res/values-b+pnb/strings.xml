@@ -523,6 +523,7 @@
     <string name="send_amount_header_title">رقم درج کرو۔</string>
     <string name="send_amount_header_body">جائزہ لین توں پہلاں رقم تے نیٹ ورک فیس دا انتخاب کرو۔</string>
     <string name="send_amount_available">دستیاب اے %1$s</string>
+    <string name="send_amount_available_on">دستیاب: %2$s تے %1$s</string>
     <string name="send_amount_max">زیادہ توں زیادہ</string>
     <string name="send_fee_pill_title">نیٹ ورک فیس</string>
     <string name="send_fee_sheet_title">نیٹ ورک فیس</string>

@@ -523,6 +523,7 @@
     <string name="send_amount_header_title">Betrag eingeben.</string>
     <string name="send_amount_header_body">Wählen Sie vor der Überprüfung den Betrag und die Netzwerkgebühr aus.</string>
     <string name="send_amount_available">Verfügbar %1$s</string>
+    <string name="send_amount_available_on">Verfügbar: %1$s auf %2$s</string>
     <string name="send_amount_max">Max</string>
     <string name="send_fee_pill_title">Netzwerkgebühr</string>
     <string name="send_fee_sheet_title">Netzwerkgebühr</string>

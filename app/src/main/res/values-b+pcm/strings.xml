@@ -523,6 +523,7 @@
     <string name="send_amount_header_title">Put amount.</string>
     <string name="send_amount_header_body">Choose di amount and network fee before review.</string>
     <string name="send_amount_available">Available %1$s</string>
+    <string name="send_amount_available_on">Available: %1$s on %2$s</string>
     <string name="send_amount_max">Max</string>
     <string name="send_fee_pill_title">Network fee</string>
     <string name="send_fee_sheet_title">Network fee</string>

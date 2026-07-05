@@ -523,6 +523,7 @@
     <string name="send_amount_header_title">أدخل المبلغ.</string>
     <string name="send_amount_header_body">اختر المبلغ ورسوم الشبكة قبل المراجعة.</string>
     <string name="send_amount_available">متاح %1$s</string>
+    <string name="send_amount_available_on">متاح: %1$s على %2$s</string>
     <string name="send_amount_max">ماكس</string>
     <string name="send_fee_pill_title">رسوم الشبكة</string>
     <string name="send_fee_sheet_title">رسوم الشبكة</string>

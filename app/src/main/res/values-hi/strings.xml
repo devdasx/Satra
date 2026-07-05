@@ -523,6 +523,7 @@
     <string name="send_amount_header_title">राशि डालें।</string>
     <string name="send_amount_header_body">समीक्षा से पहले राशि और नेटवर्क शुल्क चुनें।</string>
     <string name="send_amount_available">उपलब्ध%1$s</string>
+    <string name="send_amount_available_on">उपलब्ध: %2$s पर %1$s</string>
     <string name="send_amount_max">अधिकतम</string>
     <string name="send_fee_pill_title">नेटवर्क शुल्क</string>
     <string name="send_fee_sheet_title">नेटवर्क शुल्क</string>

@@ -523,6 +523,7 @@
     <string name="send_amount_header_title">金額を入力してください。</string>
     <string name="send_amount_header_body">確認する前に金額とネットワーク料金を選択してください。</string>
     <string name="send_amount_available">利用可能 %1$s</string>
+    <string name="send_amount_available_on">利用可能: %2$s の %1$s</string>
     <string name="send_amount_max">マックス</string>
     <string name="send_fee_pill_title">ネットワーク料金</string>
     <string name="send_fee_sheet_title">ネットワーク料金</string>

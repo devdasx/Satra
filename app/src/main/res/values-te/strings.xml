@@ -523,6 +523,7 @@
     <string name="send_amount_header_title">మొత్తాన్ని నమోదు చేయండి.</string>
     <string name="send_amount_header_body">సమీక్షకు ముందు మొత్తం మరియు నెట్‌వర్క్ రుసుమును ఎంచుకోండి.</string>
     <string name="send_amount_available">అందుబాటులో %1$s</string>
+    <string name="send_amount_available_on">అందుబాటులో ఉంది: %2$sలో %1$s</string>
     <string name="send_amount_max">గరిష్టంగా</string>
     <string name="send_fee_pill_title">నెట్‌వర్క్ రుసుము</string>
     <string name="send_fee_sheet_title">నెట్‌వర్క్ రుసుము</string>

@@ -523,6 +523,7 @@
     <string name="send_amount_header_title">Введите сумму.</string>
     <string name="send_amount_header_body">Перед просмотром выберите сумму и комиссию сети.</string>
     <string name="send_amount_available">В наличии %1$s</string>
+    <string name="send_amount_available_on">Доступно: %1$s в сети %2$s</string>
     <string name="send_amount_max">Макс</string>
     <string name="send_fee_pill_title">Сетевая плата</string>
     <string name="send_fee_sheet_title">Сетевая плата</string>

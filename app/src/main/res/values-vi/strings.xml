@@ -523,6 +523,7 @@
     <string name="send_amount_header_title">Nhập số tiền.</string>
     <string name="send_amount_header_body">Chọn số tiền và phí mạng trước khi xem xét.</string>
     <string name="send_amount_available">Có sẵn %1$s</string>
+    <string name="send_amount_available_on">Có sẵn: %1$s trên %2$s</string>
     <string name="send_amount_max">Tối đa</string>
     <string name="send_fee_pill_title">Phí mạng</string>
     <string name="send_fee_sheet_title">Phí mạng</string>

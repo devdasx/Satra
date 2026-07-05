@@ -523,6 +523,7 @@
     <string name="send_amount_header_title">रक्कम प्रविष्ट करा.</string>
     <string name="send_amount_header_body">पुनरावलोकन करण्यापूर्वी रक्कम आणि नेटवर्क फी निवडा.</string>
     <string name="send_amount_available">उपलब्ध %1$s</string>
+    <string name="send_amount_available_on">उपलब्ध: %2$s वर %1$s</string>
     <string name="send_amount_max">कमाल</string>
     <string name="send_fee_pill_title">नेटवर्क फी</string>
     <string name="send_fee_sheet_title">नेटवर्क फी</string>

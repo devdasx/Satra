@@ -523,6 +523,7 @@
     <string name="send_amount_header_title">Masukkan jumlah.</string>
     <string name="send_amount_header_body">Pilih jumlah dan biaya jaringan sebelum meninjau.</string>
     <string name="send_amount_available">Tersedia %1$s</string>
+    <string name="send_amount_available_on">Tersedia: %1$s di %2$s</string>
     <string name="send_amount_max">Maks</string>
     <string name="send_fee_pill_title">Biaya jaringan</string>
     <string name="send_fee_sheet_title">Biaya jaringan</string>

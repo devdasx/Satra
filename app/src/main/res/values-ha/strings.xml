@@ -523,6 +523,7 @@
     <string name="send_amount_header_title">Shigar da adadin.</string>
     <string name="send_amount_header_body">Zaɓi adadin da kuɗin hanyar sadarwa kafin dubawa.</string>
     <string name="send_amount_available">Akwai %1$s</string>
+    <string name="send_amount_available_on">Akwai: %1$s a kan %2$s</string>
     <string name="send_amount_max">Max</string>
     <string name="send_fee_pill_title">Kudin hanyar sadarwa</string>
     <string name="send_fee_sheet_title">Kudin hanyar sadarwa</string>
