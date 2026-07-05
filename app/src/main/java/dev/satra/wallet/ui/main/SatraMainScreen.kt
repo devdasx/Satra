@@ -159,6 +159,10 @@ fun SatraMainScreen(
                 .getBoolean(BALANCE_CARD_HIDDEN_KEY, false),
         )
     }
+    var activeCurrencyCode by remember { mutableStateOf(DEFAULT_LOCAL_CURRENCY_CODE) }
+    LaunchedEffect(walletRepository) {
+        activeCurrencyCode = walletRepository.getAppSettings().localCurrencyCode
+    }
     val onBalancesHiddenChange: (Boolean) -> Unit = { hidden ->
         balancesHidden = hidden
         context.getSharedPreferences(BALANCE_CARD_PREFS_NAME, Context.MODE_PRIVATE)
@@ -196,6 +200,7 @@ fun SatraMainScreen(
             composable(SatraMainTab.Home.route) {
                 SatraHomeDashboard(
                     walletRepository = walletRepository,
+                    localCurrencyCode = activeCurrencyCode,
                     balancesHidden = balancesHidden,
                     hapticsEnabled = settings.hapticsEnabled,
                     onBalancesHiddenChange = onBalancesHiddenChange,
@@ -211,6 +216,7 @@ fun SatraMainScreen(
             composable(SatraMainTab.Activity.route) {
                 SatraActivityScreen(
                     walletRepository = walletRepository,
+                    localCurrencyCode = activeCurrencyCode,
                     balancesHidden = balancesHidden,
                     onTransactionClick = { transactionId ->
                         tabNavController.navigate(SatraMainRoute.transactionDetail(transactionId))
@@ -220,6 +226,7 @@ fun SatraMainScreen(
             composable(SatraMainTab.Markets.route) {
                 SatraMarketsScreen(
                     walletRepository = walletRepository,
+                    localCurrencyCode = activeCurrencyCode,
                     onAssetClick = { symbol ->
                         tabNavController.navigate(SatraMainRoute.marketDetail(symbol))
                     },
@@ -228,6 +235,7 @@ fun SatraMainScreen(
             composable(SatraMainTab.Settings.route) {
                 SatraSettingsRootScreen(
                     walletRepository = walletRepository,
+                    localCurrencyCode = activeCurrencyCode,
                     onNavigate = tabNavController::navigate,
                 )
             }
@@ -241,6 +249,7 @@ fun SatraMainScreen(
                 SatraPreferencesScreen(
                     walletRepository = walletRepository,
                     settings = settings,
+                    localCurrencyCode = activeCurrencyCode,
                     onBack = { tabNavController.popBackStack() },
                     onNavigate = tabNavController::navigate,
                     onHapticsEnabledChange = onHapticsEnabledChange,
@@ -249,6 +258,10 @@ fun SatraMainScreen(
             composable(SatraMainRoute.Currency) {
                 SatraCurrencyScreen(
                     walletRepository = walletRepository,
+                    selectedCurrencyCode = activeCurrencyCode,
+                    onCurrencyChanged = { currencyCode ->
+                        activeCurrencyCode = currencyCode
+                    },
                     onBack = { tabNavController.popBackStack() },
                 )
             }
@@ -342,6 +355,7 @@ fun SatraMainScreen(
                 SatraTokenDetailScreen(
                     walletRepository = walletRepository,
                     symbol = symbol,
+                    localCurrencyCode = activeCurrencyCode,
                     balancesHidden = balancesHidden,
                     onBalancesHiddenChange = onBalancesHiddenChange,
                     onBack = { tabNavController.popBackStack() },
@@ -367,6 +381,7 @@ fun SatraMainScreen(
                 SatraTransactionDetailScreen(
                     walletRepository = walletRepository,
                     transactionId = transactionId,
+                    localCurrencyCode = activeCurrencyCode,
                     balancesHidden = balancesHidden,
                     onBack = { tabNavController.popBackStack() },
                 )
@@ -376,6 +391,7 @@ fun SatraMainScreen(
                 SatraMarketDetailScreen(
                     walletRepository = walletRepository,
                     symbol = symbol,
+                    localCurrencyCode = activeCurrencyCode,
                     onBack = { tabNavController.popBackStack() },
                 )
             }
@@ -615,6 +631,7 @@ private fun SetupCompletionBottomSheet(
 @Composable
 private fun SatraHomeDashboard(
     walletRepository: SatraWalletRepository,
+    localCurrencyCode: String,
     balancesHidden: Boolean,
     hapticsEnabled: Boolean,
     onBalancesHiddenChange: (Boolean) -> Unit,
@@ -641,7 +658,7 @@ private fun SatraHomeDashboard(
         }
     }
 
-    LaunchedEffect(walletRepository, refreshRequest) {
+    LaunchedEffect(walletRepository, localCurrencyCode, refreshRequest) {
         try {
             val wallet = walletRepository.getPrimaryWallet()
             if (wallet == null) {
@@ -649,9 +666,9 @@ private fun SatraHomeDashboard(
                     walletId = "",
                     walletName = "",
                     status = HomeSyncStatus.Ready,
-                    totalBalance = formatFiat("0", DEFAULT_LOCAL_CURRENCY_CODE),
+                    totalBalance = formatFiat("0", localCurrencyCode),
                     totalBalanceAmount = BigDecimal.ZERO,
-                    currencyCode = DEFAULT_LOCAL_CURRENCY_CODE,
+                    currencyCode = localCurrencyCode,
                     assets = emptyList(),
                     chartTransactions = emptyList(),
                     chartData = buildHomeBalanceChartData(
@@ -674,7 +691,7 @@ private fun SatraHomeDashboard(
                         transactionsDeferred.await(),
                     )
                 }
-                homeState = latestWallet.toHomeDashboardState(
+                homeState = latestWallet.copy(localCurrencyCode = localCurrencyCode).toHomeDashboardState(
                     walletAssets = walletAssets,
                     walletTransactions = walletTransactions,
                     status = status,
@@ -705,9 +722,9 @@ private fun SatraHomeDashboard(
             walletId = "",
             walletName = "",
             status = HomeSyncStatus.Syncing,
-            totalBalance = formatFiat("0", DEFAULT_LOCAL_CURRENCY_CODE),
+            totalBalance = formatFiat("0", localCurrencyCode),
             totalBalanceAmount = BigDecimal.ZERO,
-            currencyCode = DEFAULT_LOCAL_CURRENCY_CODE,
+            currencyCode = localCurrencyCode,
             assets = emptyList(),
             chartTransactions = emptyList(),
             chartData = buildHomeBalanceChartData(
@@ -872,6 +889,7 @@ private fun SatraHomeDashboard(
 @Composable
 private fun SatraActivityScreen(
     walletRepository: SatraWalletRepository,
+    localCurrencyCode: String,
     balancesHidden: Boolean,
     onTransactionClick: (String) -> Unit,
 ) {
@@ -882,7 +900,7 @@ private fun SatraActivityScreen(
     var refreshRequest by remember { mutableStateOf(0) }
     var isRefreshing by remember { mutableStateOf(false) }
 
-    LaunchedEffect(walletRepository, refreshRequest) {
+    LaunchedEffect(walletRepository, localCurrencyCode, refreshRequest) {
         try {
             val wallet = walletRepository.getPrimaryWallet()
             if (wallet == null) {
@@ -908,7 +926,7 @@ private fun SatraActivityScreen(
                     )
                 }
                 val transactions = walletTransactions.toActivityRows(
-                    localCurrencyCode = latestWallet.localCurrencyCode,
+                    localCurrencyCode = localCurrencyCode,
                     walletAssets = walletAssets,
                     resources = resources,
                 )
@@ -1056,6 +1074,7 @@ private fun SatraActivityScreen(
 private fun SatraTransactionDetailScreen(
     walletRepository: SatraWalletRepository,
     transactionId: String,
+    localCurrencyCode: String,
     balancesHidden: Boolean,
     onBack: () -> Unit,
 ) {
@@ -1064,7 +1083,7 @@ private fun SatraTransactionDetailScreen(
         mutableStateOf<TransactionDetailState>(TransactionDetailState.Loading)
     }
 
-    LaunchedEffect(walletRepository, transactionId) {
+    LaunchedEffect(walletRepository, transactionId, localCurrencyCode) {
         val wallet = walletRepository.getPrimaryWallet()
         if (wallet == null || transactionId.isBlank()) {
             state = TransactionDetailState.NotFound
@@ -1080,7 +1099,7 @@ private fun SatraTransactionDetailScreen(
         }
         state = transaction
             ?.toTransactionDetailContent(
-                localCurrencyCode = wallet.localCurrencyCode,
+                localCurrencyCode = localCurrencyCode,
                 walletAssets = walletAssets,
                 resources = resources,
             )
@@ -1348,6 +1367,7 @@ private fun TransactionDetailRowItem(
 @Composable
 private fun SatraMarketsScreen(
     walletRepository: SatraWalletRepository,
+    localCurrencyCode: String,
     onAssetClick: (String) -> Unit,
 ) {
     var state by remember {
@@ -1357,25 +1377,22 @@ private fun SatraMarketsScreen(
     var refreshRequest by remember { mutableStateOf(0) }
     var isRefreshing by remember { mutableStateOf(false) }
 
-    LaunchedEffect(walletRepository, refreshRequest) {
+    LaunchedEffect(walletRepository, localCurrencyCode, refreshRequest) {
         try {
-            val appSettings = walletRepository.getAppSettings()
-            val currencyCode = appSettings.localCurrencyCode
-
             suspend fun loadMarketData() {
                 val marketData = walletRepository.getAllAssetMarketData()
                 state = MarketsScreenState.Content(
-                    currencyCode = currencyCode,
+                    currencyCode = localCurrencyCode,
                     rows = SupportedAssetCatalog.assets.toMarketRows(
                         marketData = marketData,
-                        localCurrencyCode = currencyCode,
+                        localCurrencyCode = localCurrencyCode,
                     ),
                 )
             }
 
             loadMarketData()
             walletRepository.syncMarketData(
-                localCurrencyCode = currencyCode,
+                localCurrencyCode = localCurrencyCode,
                 onProgress = {
                     withContext(Dispatchers.Main) {
                         loadMarketData()
@@ -1390,7 +1407,7 @@ private fun SatraMarketsScreen(
 
     val content = when (val current = state) {
         MarketsScreenState.Loading -> MarketsScreenState.Content(
-            currencyCode = DEFAULT_LOCAL_CURRENCY_CODE,
+            currencyCode = localCurrencyCode,
             rows = emptyList(),
         )
         is MarketsScreenState.Content -> current
@@ -1661,6 +1678,7 @@ private fun MarketsAssetRow(
 private fun SatraMarketDetailScreen(
     walletRepository: SatraWalletRepository,
     symbol: String,
+    localCurrencyCode: String,
     onBack: () -> Unit,
 ) {
     val resources = LocalContext.current.resources
@@ -1671,22 +1689,21 @@ private fun SatraMarketDetailScreen(
     var refreshRequest by remember { mutableStateOf(0) }
     var isRefreshing by remember { mutableStateOf(false) }
 
-    LaunchedEffect(walletRepository, normalizedSymbol, refreshRequest) {
+    LaunchedEffect(walletRepository, normalizedSymbol, localCurrencyCode, refreshRequest) {
         try {
-            val currencyCode = walletRepository.getAppSettings().localCurrencyCode
             walletRepository.getAssetMarketData(normalizedSymbol)?.let { cached ->
                 state = cached.toMarketDetailState(
-                    localCurrencyCode = currencyCode,
+                    localCurrencyCode = localCurrencyCode,
                     resources = resources,
                 )
             }
             val refreshed = walletRepository.syncAssetMarketDetail(
                 symbol = normalizedSymbol,
-                localCurrencyCode = currencyCode,
+                localCurrencyCode = localCurrencyCode,
             )
             state = (refreshed ?: walletRepository.getAssetMarketData(normalizedSymbol))
                 ?.toMarketDetailState(
-                    localCurrencyCode = currencyCode,
+                    localCurrencyCode = localCurrencyCode,
                     resources = resources,
                 )
                 ?: MarketDetailState.NotFound(normalizedSymbol)
@@ -2052,6 +2069,7 @@ private fun MarketDetailDescriptionCard(
 private fun SatraTokenDetailScreen(
     walletRepository: SatraWalletRepository,
     symbol: String,
+    localCurrencyCode: String,
     balancesHidden: Boolean,
     onBalancesHiddenChange: (Boolean) -> Unit,
     onBack: () -> Unit,
@@ -2069,7 +2087,7 @@ private fun SatraTokenDetailScreen(
     var refreshRequest by remember { mutableStateOf(0) }
     var isRefreshing by remember { mutableStateOf(false) }
 
-    LaunchedEffect(walletRepository, normalizedSymbol, refreshRequest) {
+    LaunchedEffect(walletRepository, normalizedSymbol, localCurrencyCode, refreshRequest) {
         try {
             val wallet = walletRepository.getPrimaryWallet()
             if (wallet == null) {
@@ -2077,8 +2095,8 @@ private fun SatraTokenDetailScreen(
                     symbol = normalizedSymbol,
                     name = normalizedSymbol,
                     iconRes = assetIconRes(normalizedSymbol),
-                    currencyCode = DEFAULT_LOCAL_CURRENCY_CODE,
-                    totalBalance = formatFiat("0", DEFAULT_LOCAL_CURRENCY_CODE),
+                    currencyCode = localCurrencyCode,
+                    totalBalance = formatFiat("0", localCurrencyCode),
                     networkBalances = emptyList(),
                     transactions = emptyList(),
                     chartTransactions = emptyList(),
@@ -2099,7 +2117,7 @@ private fun SatraTokenDetailScreen(
                     val transactionsDeferred = async { walletRepository.getWalletTransactions(wallet.walletId) }
                     assetsDeferred.await() to transactionsDeferred.await()
                 }
-                state = wallet.toTokenDetailState(
+                state = wallet.copy(localCurrencyCode = localCurrencyCode).toTokenDetailState(
                     symbol = normalizedSymbol,
                     walletAssets = walletAssets,
                     walletTransactions = walletTransactions,
@@ -2133,8 +2151,8 @@ private fun SatraTokenDetailScreen(
             symbol = normalizedSymbol,
             name = normalizedSymbol,
             iconRes = assetIconRes(normalizedSymbol),
-            currencyCode = DEFAULT_LOCAL_CURRENCY_CODE,
-            totalBalance = formatFiat("0", DEFAULT_LOCAL_CURRENCY_CODE),
+            currencyCode = localCurrencyCode,
+            totalBalance = formatFiat("0", localCurrencyCode),
             networkBalances = emptyList(),
             transactions = emptyList(),
             chartTransactions = emptyList(),
@@ -4140,7 +4158,7 @@ private fun WalletRecord.toHomeDashboardState(
     nowMillis: Long,
 ): HomeDashboardState.Content {
     val totalFiat = walletAssets.fold(BigDecimal.ZERO) { total, asset ->
-        total + asset.balanceFiatValue.toBigDecimalOrZero()
+        total + asset.balanceFiatAmountFor(localCurrencyCode)
     }
     return HomeDashboardState.Content(
         walletId = walletId,
@@ -4165,7 +4183,7 @@ private suspend fun SatraWalletRepository.loadWalletSwitcherRows(): List<WalletS
             .map { wallet ->
                 async {
                     val totalFiat = getWalletAssets(wallet.walletId).fold(BigDecimal.ZERO) { total, asset ->
-                        total + asset.balanceFiatValue.toBigDecimalOrZero()
+                        total + asset.balanceFiatAmountFor(wallet.localCurrencyCode)
                     }
                     WalletSwitcherRow(
                         walletId = wallet.walletId,
@@ -4200,10 +4218,10 @@ private fun WalletRecord.toTokenDetailState(
         transaction.assetId in matchingAssetIds
     }
     val totalFiat = matchingAssets.fold(BigDecimal.ZERO) { total, asset ->
-        total + asset.balanceFiatValue.toBigDecimalOrZero()
+        total + asset.balanceFiatAmountFor(localCurrencyCode)
     }
     val primaryAsset = matchingAssets
-        .maxByOrNull { asset -> asset.balanceFiatValue.toBigDecimalOrZero() }
+        .maxByOrNull { asset -> asset.balanceFiatAmountFor(localCurrencyCode) }
         ?.let { asset -> catalogAssetsById[asset.assetId] }
         ?: SupportedAssetCatalog.assets.firstOrNull { asset -> asset.symbol.equals(symbol, ignoreCase = true) }
     val sendCandidates = matchingAssets
@@ -4330,7 +4348,7 @@ private fun List<WalletAssetRecord>.toTokenNetworkBalanceRows(localCurrencyCode:
         val asset = catalogAssetsById[walletAsset.assetId] ?: return@mapNotNull null
         val network = networksById[walletAsset.networkId] ?: return@mapNotNull null
         val balance = walletAsset.balanceDecimal.toBigDecimalOrZero()
-        val fiatValue = walletAsset.balanceFiatValue.toBigDecimalOrZero()
+        val fiatValue = walletAsset.balanceFiatAmountFor(localCurrencyCode)
         TokenNetworkBalanceRow(
             assetId = walletAsset.assetId,
             networkId = walletAsset.networkId,
@@ -4339,7 +4357,7 @@ private fun List<WalletAssetRecord>.toTokenNetworkBalanceRows(localCurrencyCode:
             networkIconRes = networkIconRes(network.networkId),
             assetIconRes = assetIconRes(asset.symbol),
             amount = "${formatCryptoAmount(walletAsset.balanceDecimal)} ${asset.symbol}",
-            fiatValue = formatFiat(walletAsset.balanceFiatValue, localCurrencyCode),
+            fiatValue = formatFiat(fiatValue.toPlainString(), localCurrencyCode),
             fiatValueAmount = fiatValue,
             hasBalance = balance > BigDecimal.ZERO,
         )
@@ -4359,7 +4377,7 @@ private fun List<WalletTransactionRecord>.toActivityRows(
     val networksById = SupportedAssetCatalog.networks.associateBy { it.networkId }
     val supportedNetworkIds = networksById.keys
     val localPricesByAssetId = walletAssets.associate { asset ->
-        asset.assetId to asset.priceFiatValue.toBigDecimalOrZero()
+        asset.assetId to asset.priceFiatAmountFor(localCurrencyCode)
     }
     return filter { transaction -> transaction.networkId in supportedNetworkIds }
         .mapNotNull { transaction ->
@@ -4421,8 +4439,7 @@ private fun WalletTransactionRecord.toTransactionDetailContent(
         localCurrencyCode = localCurrencyCode,
         localPrice = walletAssets
             .firstOrNull { walletAsset -> walletAsset.assetId == assetId }
-            ?.priceFiatValue
-            ?.toBigDecimalOrZero(),
+            ?.priceFiatAmountFor(localCurrencyCode),
     )
     val feeAsset = feeAssetId?.let(catalogAssetsById::get)
     val displayFee = feeDecimal?.takeIf(String::isNotBlank)?.let { fee ->
@@ -4478,7 +4495,7 @@ private fun List<WalletAssetRecord>.toHomeAssetRows(localCurrencyCode: String): 
         val asset = catalogAssetsById[walletAsset.assetId] ?: return@mapNotNull null
         val network = networksById[walletAsset.networkId] ?: return@mapNotNull null
         val balance = walletAsset.balanceDecimal.toBigDecimalOrZero()
-        val fiatValue = walletAsset.balanceFiatValue.toBigDecimalOrZero()
+        val fiatValue = walletAsset.balanceFiatAmountFor(localCurrencyCode)
         RawHomeAssetRow(
             assetId = asset.assetId,
             networkId = walletAsset.networkId,
@@ -4762,12 +4779,28 @@ private fun formatTransactionListTime(
         else -> resources.getString(R.string.activity_detail_unavailable)
     }
 
+private fun WalletAssetRecord.balanceFiatAmountFor(localCurrencyCode: String): BigDecimal =
+    if (this.localCurrencyCode.equals(localCurrencyCode, ignoreCase = true)) {
+        balanceFiatValue.toBigDecimalOrZero()
+    } else {
+        BigDecimal.ZERO
+    }
+
+private fun WalletAssetRecord.priceFiatAmountFor(localCurrencyCode: String): BigDecimal? =
+    priceFiatValue
+        .toBigDecimalOrZero()
+        .takeIf { price ->
+            price > BigDecimal.ZERO &&
+                this.localCurrencyCode.equals(localCurrencyCode, ignoreCase = true)
+        }
+
 private fun WalletTransactionRecord.displayFiatValue(
     localCurrencyCode: String,
     localPrice: BigDecimal?,
 ): String {
     val transactionFiat = fiatValue
         ?.takeIf(String::isNotBlank)
+        ?.takeIf { this.localCurrencyCode.equals(localCurrencyCode, ignoreCase = true) }
         ?.toBigDecimalOrZero()
         ?.takeIf { it > BigDecimal.ZERO }
         ?: localPrice

@@ -83,10 +83,11 @@ import java.util.Locale
 @Composable
 internal fun SatraSettingsRootScreen(
     walletRepository: SatraWalletRepository,
+    localCurrencyCode: String,
     onNavigate: (String) -> Unit,
 ) {
     var appSettings by remember { mutableStateOf<AppSettingsRecord?>(null) }
-    LaunchedEffect(walletRepository) {
+    LaunchedEffect(walletRepository, localCurrencyCode) {
         appSettings = walletRepository.getAppSettings()
     }
 
@@ -264,13 +265,14 @@ internal fun SatraAddressBookScreen(
 internal fun SatraPreferencesScreen(
     walletRepository: SatraWalletRepository,
     settings: SatraSettings,
+    localCurrencyCode: String,
     onBack: () -> Unit,
     onNavigate: (String) -> Unit,
     onHapticsEnabledChange: (Boolean) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
     var appSettings by remember { mutableStateOf<AppSettingsRecord?>(null) }
-    LaunchedEffect(walletRepository) {
+    LaunchedEffect(walletRepository, localCurrencyCode) {
         appSettings = walletRepository.getAppSettings()
     }
 
@@ -333,12 +335,13 @@ internal fun SatraPreferencesScreen(
 @Composable
 internal fun SatraCurrencyScreen(
     walletRepository: SatraWalletRepository,
+    selectedCurrencyCode: String,
+    onCurrencyChanged: (String) -> Unit,
     onBack: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
-    var selectedCode by remember { mutableStateOf(DEFAULT_LOCAL_CURRENCY_CODE) }
-    LaunchedEffect(walletRepository) {
-        selectedCode = walletRepository.getAppSettings().localCurrencyCode
+    var selectedCode by remember(selectedCurrencyCode) {
+        mutableStateOf(selectedCurrencyCode.ifBlank { DEFAULT_LOCAL_CURRENCY_CODE })
     }
 
     SettingsScaffold(
@@ -367,7 +370,9 @@ internal fun SatraCurrencyScreen(
                         onClick = {
                             selectedCode = currency.code
                             scope.launch {
-                                walletRepository.changeLocalCurrency(currency.code)
+                                val updatedSettings = walletRepository.changeLocalCurrency(currency.code)
+                                selectedCode = updatedSettings.localCurrencyCode
+                                onCurrencyChanged(updatedSettings.localCurrencyCode)
                             }
                         },
                     )
