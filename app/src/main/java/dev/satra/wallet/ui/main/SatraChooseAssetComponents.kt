@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -54,39 +53,10 @@ internal fun SatraChooseAssetScaffold(
             .background(MaterialTheme.colorScheme.surface),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .widthIn(max = ChooseAssetContentMaxWidth)
-                .padding(start = 20.dp, top = 18.dp, end = 20.dp, bottom = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(
-                onClick = onBack,
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceContainer),
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = null,
-                    modifier = Modifier.size(17.dp),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                )
-            }
-            Text(
-                text = title,
-                modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.titleMedium.copy(fontSize = 16.sp),
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Spacer(modifier = Modifier.width(40.dp))
-        }
+        SatraFlowTopBar(
+            title = title,
+            onBack = onBack,
+        )
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -96,6 +66,40 @@ internal fun SatraChooseAssetScaffold(
             content()
             item { Spacer(modifier = Modifier.height(20.dp)) }
         }
+    }
+}
+
+@Composable
+internal fun SatraFlowTopBar(
+    title: String,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .widthIn(max = ChooseAssetContentMaxWidth)
+            .padding(start = 20.dp, top = 18.dp, end = 20.dp, bottom = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(onClick = onBack) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = stringResource(R.string.wallet_setup_back_content_description),
+                modifier = Modifier.size(22.dp),
+                tint = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = title,
+            modifier = Modifier.weight(1f, fill = false),
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 

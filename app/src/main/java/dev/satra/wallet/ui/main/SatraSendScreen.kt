@@ -39,7 +39,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -47,7 +46,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
@@ -1079,30 +1077,10 @@ private fun SendScaffold(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface),
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(92.dp)
-                .padding(horizontal = 20.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurface,
-                )
-            }
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = title,
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
+        SatraFlowTopBar(
+            title = title,
+            onBack = onBack,
+        )
         content()
     }
 }
@@ -1119,39 +1097,10 @@ private fun SendStepScaffold(
             .background(MaterialTheme.colorScheme.surface),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .widthIn(max = ChooseAssetContentMaxWidth)
-                .padding(start = 20.dp, top = 18.dp, end = 20.dp, bottom = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(
-                onClick = onBack,
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceContainer),
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = null,
-                    modifier = Modifier.size(17.dp),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                )
-            }
-            Text(
-                text = title,
-                modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.titleMedium.copy(fontSize = 16.sp),
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Spacer(modifier = Modifier.width(40.dp))
-        }
+        SatraFlowTopBar(
+            title = title,
+            onBack = onBack,
+        )
         content()
     }
 }
