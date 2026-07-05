@@ -86,6 +86,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.satra.wallet.R
 import dev.satra.wallet.settings.SatraSettings
+import dev.satra.wallet.ui.main.SatraCryptoIcon
 import dev.satra.wallet.ui.theme.SatraButtonSecondaryBorder
 import dev.satra.wallet.ui.theme.SatraTheme
 import dev.satra.wallet.wallet.bip39.Bip39MnemonicValidation
@@ -2163,9 +2164,8 @@ private fun NetworkRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Image(
-            painter = painterResource(network.logoRes),
-            contentDescription = null,
+        SatraCryptoIcon(
+            iconRes = network.logoRes,
             modifier = Modifier
                 .size(34.dp),
         )
@@ -2202,9 +2202,8 @@ private fun SelectedNetworkPill(selectedNetwork: WalletImportNetwork) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Image(
-            painter = painterResource(selectedNetwork.logoRes),
-            contentDescription = null,
+        SatraCryptoIcon(
+            iconRes = selectedNetwork.logoRes,
             modifier = Modifier.size(20.dp),
         )
         Text(

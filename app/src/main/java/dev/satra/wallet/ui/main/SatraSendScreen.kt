@@ -747,6 +747,7 @@ private fun SendAmountContent(
         ) {
             SendHero(
                 iconRes = state.row.iconRes,
+                cryptoIcon = true,
                 title = stringResource(R.string.send_amount_header_title),
                 body = stringResource(R.string.send_amount_header_body),
             )
@@ -1219,6 +1220,7 @@ private fun SendEmptyScreen(
 @Composable
 private fun SendHero(
     @DrawableRes iconRes: Int,
+    cryptoIcon: Boolean = false,
     title: String,
     body: String,
 ) {
@@ -1228,11 +1230,18 @@ private fun SendHero(
             .widthIn(max = SendContentMaxWidth)
             .padding(horizontal = 20.dp, vertical = 18.dp),
     ) {
-        Image(
-            painter = painterResource(iconRes),
-            contentDescription = null,
-            modifier = Modifier.size(48.dp),
-        )
+        if (cryptoIcon) {
+            SatraCryptoIcon(
+                iconRes = iconRes,
+                modifier = Modifier.size(48.dp),
+            )
+        } else {
+            Image(
+                painter = painterResource(iconRes),
+                contentDescription = null,
+                modifier = Modifier.size(48.dp),
+            )
+        }
         Spacer(modifier = Modifier.height(22.dp))
         Text(
             text = title,
@@ -1291,9 +1300,8 @@ private fun SendNetworkPickerHeader(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            Image(
-                painter = painterResource(iconRes),
-                contentDescription = null,
+            SatraCryptoIcon(
+                iconRes = iconRes,
                 modifier = Modifier.size(34.dp),
             )
             Text(
@@ -1414,9 +1422,8 @@ private fun SendAssetGroupRow(
         enabled = group.canSend,
         onClick = onClick,
         leadingIcon = {
-            Image(
-                painter = painterResource(group.iconRes),
-                contentDescription = null,
+            SatraCryptoIcon(
+                iconRes = group.iconRes,
                 modifier = Modifier.size(42.dp),
             )
         },

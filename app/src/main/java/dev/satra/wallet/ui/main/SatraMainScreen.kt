@@ -1808,9 +1808,8 @@ private fun MarketsAssetRow(
             .padding(horizontal = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Image(
-            painter = painterResource(row.iconRes),
-            contentDescription = null,
+        SatraCryptoIcon(
+            iconRes = row.iconRes,
             modifier = Modifier.size(40.dp),
         )
         Spacer(modifier = Modifier.width(12.dp))
@@ -2546,9 +2545,8 @@ private fun TokenDetailHeader(
             )
         }
         Spacer(modifier = Modifier.width(8.dp))
-        Image(
-            painter = painterResource(iconRes),
-            contentDescription = null,
+        SatraCryptoIcon(
+            iconRes = iconRes,
             modifier = Modifier.size(44.dp),
         )
         Spacer(modifier = Modifier.width(12.dp))
@@ -4044,9 +4042,8 @@ private fun HomeAssetListRow(
             .padding(horizontal = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Image(
-            painter = painterResource(asset.iconRes),
-            contentDescription = null,
+        SatraCryptoIcon(
+            iconRes = asset.iconRes,
             modifier = Modifier.size(40.dp),
         )
         Spacer(modifier = Modifier.width(12.dp))

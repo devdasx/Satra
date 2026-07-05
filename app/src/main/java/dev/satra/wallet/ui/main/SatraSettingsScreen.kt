@@ -1959,7 +1959,10 @@ private fun AddressBookEntryRow(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            SettingsIcon(iconRes = networkIconRes(entry.networkId))
+            SatraCryptoIcon(
+                iconRes = networkIconRes(entry.networkId),
+                modifier = Modifier.size(44.dp),
+            )
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(

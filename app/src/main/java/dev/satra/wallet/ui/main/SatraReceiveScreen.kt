@@ -563,9 +563,8 @@ private fun ReceiveSelectableRow(
         if (leadingIcon != null) {
             leadingIcon()
         } else {
-            Image(
-                painter = painterResource(iconRes),
-                contentDescription = null,
+            SatraCryptoIcon(
+                iconRes = iconRes,
                 modifier = Modifier.size(42.dp),
             )
         }
@@ -632,9 +631,8 @@ private fun ReceiveAddressCard(
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Image(
-                    painter = painterResource(row.iconRes),
-                    contentDescription = null,
+                SatraCryptoIcon(
+                    iconRes = row.iconRes,
                     modifier = Modifier.size(58.dp),
                 )
                 Spacer(modifier = Modifier.width(14.dp))
@@ -783,10 +781,10 @@ private fun ReceiveNetworkPill(network: SupportedNetwork) {
             .padding(horizontal = 10.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Image(
-            painter = painterResource(networkIconRes(network.networkId)),
-            contentDescription = null,
+        SatraCryptoIcon(
+            iconRes = networkIconRes(network.networkId),
             modifier = Modifier.size(18.dp),
+            backgroundColor = MaterialTheme.colorScheme.surfaceContainerHighest,
         )
         Spacer(modifier = Modifier.width(6.dp))
         Text(
