@@ -249,7 +249,7 @@ fun CreateWalletPhraseScreen(
             )
         },
     ) { performHaptic ->
-        HiddenPhrasePanel(
+        RecoveryPhrasePanel(
             mnemonic = mnemonic,
             onCopyClick = {
                 performHaptic()
@@ -1030,63 +1030,37 @@ private fun SetupPageBody(
 }
 
 @Composable
-private fun HiddenPhrasePanel(
+private fun RecoveryPhrasePanel(
     mnemonic: String,
     onCopyClick: () -> Unit,
 ) {
-    var revealed by rememberSaveable(mnemonic) { mutableStateOf(false) }
     val words = remember(mnemonic) {
         mnemonic.split(Regex("\\s+")).filter(String::isNotBlank)
     }
 
     FramedTool {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            if (revealed) {
-                words.chunked(3).forEachIndexed { rowIndex, rowWords ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        rowWords.forEachIndexed { columnIndex, word ->
-                            val wordNumber = rowIndex * 3 + columnIndex + 1
-                            RecoveryWordChip(
-                                number = wordNumber,
-                                text = word,
-                                modifier = Modifier.weight(1f),
-                            )
-                        }
-                        repeat(3 - rowWords.size) {
-                            Spacer(modifier = Modifier.weight(1f))
-                        }
+            words.chunked(3).forEachIndexed { rowIndex, rowWords ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    rowWords.forEachIndexed { columnIndex, word ->
+                        val wordNumber = rowIndex * 3 + columnIndex + 1
+                        RecoveryWordChip(
+                            number = wordNumber,
+                            text = word,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    repeat(3 - rowWords.size) {
+                        Spacer(modifier = Modifier.weight(1f))
                     }
                 }
-            } else {
-                Text(
-                    text = stringResource(R.string.wallet_setup_recovery_phrase_hidden),
-                    modifier = Modifier.fillMaxWidth(),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                )
             }
-            SatraButton(
-                text = stringResource(
-                    if (revealed) {
-                        R.string.wallet_setup_recovery_phrase_hide
-                    } else {
-                        R.string.wallet_setup_recovery_phrase_reveal
-                    },
-                ),
-                onClick = { revealed = !revealed },
-                modifier = Modifier.fillMaxWidth(),
-                variant = SatraButtonVariant.Secondary,
-                height = SatraButtonDefaults.CompactHeight,
-            )
             SatraButton(
                 text = stringResource(R.string.wallet_setup_recovery_phrase_copy),
                 onClick = onCopyClick,
-                enabled = revealed,
                 modifier = Modifier.fillMaxWidth(),
                 variant = SatraButtonVariant.Secondary,
                 height = SatraButtonDefaults.CompactHeight,

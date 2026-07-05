@@ -131,9 +131,6 @@
     <string name="wallet_setup_recovery_phrase_copy">Copy recovery phrase</string>
     <string name="wallet_setup_recovery_phrase_copied">Recovery phrase copied.</string>
     <string name="wallet_setup_recovery_phrase_clip_label">Satra recovery phrase</string>
-    <string name="wallet_setup_recovery_phrase_hidden">Recovery phrase hidden until you reveal it.</string>
-    <string name="wallet_setup_recovery_phrase_reveal">Reveal recovery phrase</string>
-    <string name="wallet_setup_recovery_phrase_hide">Hide recovery phrase</string>
     <string name="wallet_setup_recovery_phrase_options">Recovery Phrase Options</string>
     <string name="wallet_setup_recovery_phrase_options_sheet_title">Recovery phrase options</string>
     <string name="wallet_setup_recovery_phrase_use_12">Use 12-word phrase</string>
