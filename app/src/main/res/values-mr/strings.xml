@@ -610,6 +610,11 @@
     <string name="settings_wallet_management_loading_body">Satra या डिव्हाइसवरून स्थानिक वॉलेट रेकॉर्ड वाचत आहे.</string>
     <string name="settings_wallet_management_empty_title">पाकीट सापडले नाही.</string>
     <string name="settings_wallet_management_empty_body">बॅकअप व्यवस्थापित करण्यापूर्वी वॉलेट तयार करा किंवा आयात करा.</string>
+    <string name="settings_wallet_management_search_placeholder">वॉलेट शोधा</string>
+    <string name="settings_wallet_management_search_clear">वॉलेट शोध साफ करा</string>
+    <string name="settings_wallet_management_actions_content_description">वॉलेट क्रिया</string>
+    <string name="settings_wallet_management_no_search_results_title">जुळणारे वॉलेट नाही.</string>
+    <string name="settings_wallet_management_no_search_results_body">दुसरे वॉलेट नाव किंवा प्रकार वापरून पहा.</string>
     <string name="settings_wallet_management_wallet_missing">पाकीट सापडले नाही.</string>
     <string name="settings_wallet_management_wallet_missing_name">हे पाकीट</string>
     <string name="settings_wallet_management_backup_failed">बॅकअप डेटा उघडता आला नाही.</string>

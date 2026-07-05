@@ -610,6 +610,11 @@
     <string name="settings_wallet_management_loading_body">Satra इस डिवाइस से स्थानीय वॉलेट रिकॉर्ड पढ़ रहा है।</string>
     <string name="settings_wallet_management_empty_title">कोई बटुआ नहीं मिला.</string>
     <string name="settings_wallet_management_empty_body">बैकअप प्रबंधित करने से पहले एक वॉलेट बनाएं या आयात करें।</string>
+    <string name="settings_wallet_management_search_placeholder">वॉलेट खोजें</string>
+    <string name="settings_wallet_management_search_clear">वॉलेट खोज साफ़ करें</string>
+    <string name="settings_wallet_management_actions_content_description">वॉलेट कार्रवाइयाँ</string>
+    <string name="settings_wallet_management_no_search_results_title">कोई मेल खाता वॉलेट नहीं।</string>
+    <string name="settings_wallet_management_no_search_results_body">कोई दूसरा वॉलेट नाम या प्रकार आज़माएँ।</string>
     <string name="settings_wallet_management_wallet_missing">बटुआ नहीं मिला.</string>
     <string name="settings_wallet_management_wallet_missing_name">यह बटुआ</string>
     <string name="settings_wallet_management_backup_failed">बैकअप डेटा खोला नहीं जा सका.</string>

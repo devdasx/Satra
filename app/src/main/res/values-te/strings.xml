@@ -610,6 +610,11 @@
     <string name="settings_wallet_management_loading_body">Satra ఈ పరికరం నుండి స్థానిక వాలెట్ రికార్డ్‌లను చదువుతోంది.</string>
     <string name="settings_wallet_management_empty_title">వాలెట్లు ఏవీ కనుగొనబడలేదు.</string>
     <string name="settings_wallet_management_empty_body">బ్యాకప్‌లను నిర్వహించడానికి ముందు వాలెట్‌ను సృష్టించండి లేదా దిగుమతి చేయండి.</string>
+    <string name="settings_wallet_management_search_placeholder">వాలెట్లను వెతకండి</string>
+    <string name="settings_wallet_management_search_clear">వాలెట్ శోధనను క్లియర్ చేయండి</string>
+    <string name="settings_wallet_management_actions_content_description">వాలెట్ చర్యలు</string>
+    <string name="settings_wallet_management_no_search_results_title">సరిపోలే వాలెట్లు లేవు.</string>
+    <string name="settings_wallet_management_no_search_results_body">మరో వాలెట్ పేరు లేదా రకాన్ని ప్రయత్నించండి.</string>
     <string name="settings_wallet_management_wallet_missing">వాలెట్ కనుగొనబడలేదు.</string>
     <string name="settings_wallet_management_wallet_missing_name">ఈ వాలెట్</string>
     <string name="settings_wallet_management_backup_failed">బ్యాకప్ డేటా తెరవడం సాధ్యపడలేదు.</string>

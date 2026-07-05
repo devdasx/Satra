@@ -610,6 +610,11 @@
     <string name="settings_wallet_management_loading_body">Satra đang đọc bản ghi ví cục bộ từ thiết bị này.</string>
     <string name="settings_wallet_management_empty_title">Không tìm thấy ví nào.</string>
     <string name="settings_wallet_management_empty_body">Tạo hoặc nhập ví trước khi quản lý bản sao lưu.</string>
+    <string name="settings_wallet_management_search_placeholder">Tìm kiếm ví</string>
+    <string name="settings_wallet_management_search_clear">Xóa tìm kiếm ví</string>
+    <string name="settings_wallet_management_actions_content_description">Tác vụ ví</string>
+    <string name="settings_wallet_management_no_search_results_title">Không có ví phù hợp.</string>
+    <string name="settings_wallet_management_no_search_results_body">Thử tên hoặc loại ví khác.</string>
     <string name="settings_wallet_management_wallet_missing">Không tìm thấy ví.</string>
     <string name="settings_wallet_management_wallet_missing_name">ví này</string>
     <string name="settings_wallet_management_backup_failed">Dữ liệu sao lưu không thể mở được.</string>

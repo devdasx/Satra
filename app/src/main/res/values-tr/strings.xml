@@ -610,6 +610,11 @@
     <string name="settings_wallet_management_loading_body">Satra bu cihazdan yerel cüzdan kayıtlarını okuyor.</string>
     <string name="settings_wallet_management_empty_title">Cüzdan bulunamadı.</string>
     <string name="settings_wallet_management_empty_body">Yedeklemeleri yönetmeden önce bir cüzdan oluşturun veya içe aktarın.</string>
+    <string name="settings_wallet_management_search_placeholder">Cüzdan ara</string>
+    <string name="settings_wallet_management_search_clear">Cüzdan aramasını temizle</string>
+    <string name="settings_wallet_management_actions_content_description">Cüzdan işlemleri</string>
+    <string name="settings_wallet_management_no_search_results_title">Eşleşen cüzdan yok.</string>
+    <string name="settings_wallet_management_no_search_results_body">Başka bir cüzdan adı veya türü deneyin.</string>
     <string name="settings_wallet_management_wallet_missing">Cüzdan bulunamadı.</string>
     <string name="settings_wallet_management_wallet_missing_name">bu cüzdan</string>
     <string name="settings_wallet_management_backup_failed">Yedekleme verileri açılamadı.</string>

@@ -610,6 +610,11 @@
     <string name="settings_wallet_management_loading_body">Satra এই ডিভাইস থেকে স্থানীয় ওয়ালেট রেকর্ড পড়ছে৷</string>
     <string name="settings_wallet_management_empty_title">কোনো মানিব্যাগ পাওয়া যায়নি।</string>
     <string name="settings_wallet_management_empty_body">ব্যাকআপ পরিচালনা করার আগে একটি ওয়ালেট তৈরি করুন বা আমদানি করুন৷</string>
+    <string name="settings_wallet_management_search_placeholder">ওয়ালেট খুঁজুন</string>
+    <string name="settings_wallet_management_search_clear">ওয়ালেট অনুসন্ধান সাফ করুন</string>
+    <string name="settings_wallet_management_actions_content_description">ওয়ালেটের কাজ</string>
+    <string name="settings_wallet_management_no_search_results_title">মিল থাকা কোনো ওয়ালেট নেই।</string>
+    <string name="settings_wallet_management_no_search_results_body">অন্য ওয়ালেটের নাম বা ধরন চেষ্টা করুন।</string>
     <string name="settings_wallet_management_wallet_missing">ওয়ালেট পাওয়া যায়নি।</string>
     <string name="settings_wallet_management_wallet_missing_name">এই মানিব্যাগ</string>
     <string name="settings_wallet_management_backup_failed">ব্যাকআপ ডেটা খোলা যায়নি।</string>

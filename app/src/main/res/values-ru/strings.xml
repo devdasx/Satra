@@ -610,6 +610,11 @@
     <string name="settings_wallet_management_loading_body">Satra читает записи локального кошелька с этого устройства.</string>
     <string name="settings_wallet_management_empty_title">Кошельки не найдены.</string>
     <string name="settings_wallet_management_empty_body">Создайте или импортируйте кошелек, прежде чем управлять резервными копиями.</string>
+    <string name="settings_wallet_management_search_placeholder">Поиск кошельков</string>
+    <string name="settings_wallet_management_search_clear">Очистить поиск кошельков</string>
+    <string name="settings_wallet_management_actions_content_description">Действия кошелька</string>
+    <string name="settings_wallet_management_no_search_results_title">Подходящие кошельки не найдены.</string>
+    <string name="settings_wallet_management_no_search_results_body">Попробуйте другое имя или тип кошелька.</string>
     <string name="settings_wallet_management_wallet_missing">Кошелек не найден.</string>
     <string name="settings_wallet_management_wallet_missing_name">этот кошелек</string>
     <string name="settings_wallet_management_backup_failed">Резервные данные не удалось открыть.</string>

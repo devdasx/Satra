@@ -610,6 +610,11 @@
     <string name="settings_wallet_management_loading_body">Satra liest lokale Wallet-Datensätze von diesem Gerät.</string>
     <string name="settings_wallet_management_empty_title">Keine Wallets gefunden.</string>
     <string name="settings_wallet_management_empty_body">Erstellen oder importieren Sie eine Wallet, bevor Sie Backups verwalten.</string>
+    <string name="settings_wallet_management_search_placeholder">Wallets suchen</string>
+    <string name="settings_wallet_management_search_clear">Wallet-Suche löschen</string>
+    <string name="settings_wallet_management_actions_content_description">Wallet-Aktionen</string>
+    <string name="settings_wallet_management_no_search_results_title">Keine passenden Wallets.</string>
+    <string name="settings_wallet_management_no_search_results_body">Versuche einen anderen Wallet-Namen oder Typ.</string>
     <string name="settings_wallet_management_wallet_missing">Wallet nicht gefunden.</string>
     <string name="settings_wallet_management_wallet_missing_name">dieses Portemonnaie</string>
     <string name="settings_wallet_management_backup_failed">Sicherungsdaten konnten nicht geöffnet werden.</string>

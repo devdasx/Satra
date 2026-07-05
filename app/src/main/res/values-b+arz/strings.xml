@@ -610,6 +610,11 @@
     <string name="settings_wallet_management_loading_body">يقوم Satra بقراءة سجلات المحفظة المحلية من هذا الجهاز.</string>
     <string name="settings_wallet_management_empty_title">لم يتم العثور على محافظ.</string>
     <string name="settings_wallet_management_empty_body">قم بإنشاء محفظة أو استيرادها قبل إدارة النسخ الاحتياطية.</string>
+    <string name="settings_wallet_management_search_placeholder">دوّر في المحافظ</string>
+    <string name="settings_wallet_management_search_clear">امسح بحث المحافظ</string>
+    <string name="settings_wallet_management_actions_content_description">إجراءات المحفظة</string>
+    <string name="settings_wallet_management_no_search_results_title">مفيش محافظ مطابقة.</string>
+    <string name="settings_wallet_management_no_search_results_body">جرّب اسم محفظة أو نوع تاني.</string>
     <string name="settings_wallet_management_wallet_missing">لم يتم العثور على المحفظة.</string>
     <string name="settings_wallet_management_wallet_missing_name">هذه المحفظة</string>
     <string name="settings_wallet_management_backup_failed">لا يمكن فتح بيانات النسخ الاحتياطي.</string>

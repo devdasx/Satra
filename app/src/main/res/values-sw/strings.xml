@@ -610,6 +610,11 @@
     <string name="settings_wallet_management_loading_body">Satra inasoma rekodi za pochi za ndani kutoka kwa kifaa hiki.</string>
     <string name="settings_wallet_management_empty_title">Hakuna pochi zilizopatikana.</string>
     <string name="settings_wallet_management_empty_body">Unda au uingize mkoba kabla ya kudhibiti hifadhi rudufu.</string>
+    <string name="settings_wallet_management_search_placeholder">Tafuta pochi</string>
+    <string name="settings_wallet_management_search_clear">Futa utafutaji wa pochi</string>
+    <string name="settings_wallet_management_actions_content_description">Vitendo vya pochi</string>
+    <string name="settings_wallet_management_no_search_results_title">Hakuna pochi zinazolingana.</string>
+    <string name="settings_wallet_management_no_search_results_body">Jaribu jina au aina nyingine ya pochi.</string>
     <string name="settings_wallet_management_wallet_missing">Wallet haikupatikana.</string>
     <string name="settings_wallet_management_wallet_missing_name">pochi hii</string>
     <string name="settings_wallet_management_backup_failed">Data ya hifadhi rudufu haikuweza kufunguliwa.</string>

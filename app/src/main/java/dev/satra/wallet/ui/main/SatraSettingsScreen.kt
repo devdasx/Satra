@@ -36,8 +36,13 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -48,16 +53,20 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -194,8 +203,13 @@ internal fun SatraWalletManagementScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var wallets by remember { mutableStateOf<List<WalletRecord>?>(null) }
+    var walletSearchQuery by rememberSaveable { mutableStateOf("") }
     var backupRecord by remember { mutableStateOf<WalletBackupRecord?>(null) }
     var backupMode by remember { mutableStateOf<WalletBackupMode?>(null) }
+    val loadedWallets = wallets.orEmpty()
+    val visibleWallets = remember(loadedWallets, walletSearchQuery) {
+        loadedWallets.filter { wallet -> wallet.matchesWalletSearch(walletSearchQuery) }
+    }
 
     fun reloadWallets() {
         scope.launch {
@@ -255,7 +269,7 @@ internal fun SatraWalletManagementScreen(
                 }
             }
 
-            wallets.orEmpty().isEmpty() -> {
+            loadedWallets.isEmpty() -> {
                 item {
                     SettingsEmptyCard(
                         titleRes = R.string.settings_wallet_management_empty_title,
@@ -265,37 +279,116 @@ internal fun SatraWalletManagementScreen(
             }
 
             else -> {
-                val currentWallets = wallets.orEmpty()
-                items(currentWallets, key = { wallet -> wallet.walletId }) { wallet ->
-                    SettingsCard {
-                        WalletManagementCard(
-                            wallet = wallet,
-                            onSetActive = {
-                                scope.launch {
-                                    walletRepository.setActiveWallet(wallet.walletId)
-                                    reloadWallets()
-                                    Toast.makeText(
-                                        context,
-                                        R.string.settings_wallet_management_active_toast,
-                                        Toast.LENGTH_SHORT,
-                                    ).show()
-                                }
-                            },
-                            onExportRecoveryPhrase = {
-                                loadBackup(wallet.walletId, WalletBackupMode.RecoveryPhrase)
-                            },
-                            onBackupPrivateKeys = {
-                                loadBackup(wallet.walletId, WalletBackupMode.PrivateKeys)
-                            },
-                            onRemoveWallet = {
-                                onRemoveWallet(wallet.walletId)
-                            },
+                item {
+                    WalletManagementSearchField(
+                        query = walletSearchQuery,
+                        onQueryChange = { query -> walletSearchQuery = query },
+                    )
+                }
+                if (visibleWallets.isEmpty()) {
+                    item {
+                        SettingsEmptyCard(
+                            titleRes = R.string.settings_wallet_management_no_search_results_title,
+                            bodyRes = R.string.settings_wallet_management_no_search_results_body,
                         )
+                    }
+                } else {
+                    items(visibleWallets, key = { wallet -> wallet.walletId }) { wallet ->
+                        SettingsCard {
+                            WalletManagementCard(
+                                wallet = wallet,
+                                onSetActive = {
+                                    scope.launch {
+                                        walletRepository.setActiveWallet(wallet.walletId)
+                                        reloadWallets()
+                                        Toast.makeText(
+                                            context,
+                                            R.string.settings_wallet_management_active_toast,
+                                            Toast.LENGTH_SHORT,
+                                        ).show()
+                                    }
+                                },
+                                onExportRecoveryPhrase = {
+                                    loadBackup(wallet.walletId, WalletBackupMode.RecoveryPhrase)
+                                },
+                                onBackupPrivateKeys = {
+                                    loadBackup(wallet.walletId, WalletBackupMode.PrivateKeys)
+                                },
+                                onRemoveWallet = {
+                                    onRemoveWallet(wallet.walletId)
+                                },
+                            )
+                        }
                     }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun WalletManagementSearchField(
+    query: String,
+    onQueryChange: (String) -> Unit,
+) {
+    TextField(
+        value = query,
+        onValueChange = onQueryChange,
+        modifier = Modifier
+            .fillMaxWidth()
+            .widthIn(max = SettingsContentMaxWidth)
+            .height(56.dp),
+        textStyle = MaterialTheme.typography.bodyLarge.copy(
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Medium,
+        ),
+        placeholder = {
+            Text(
+                text = stringResource(R.string.settings_wallet_management_search_placeholder),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
+        leadingIcon = {
+            Icon(
+                imageVector = Icons.Filled.Search,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        },
+        trailingIcon = if (query.isNotBlank()) {
+            {
+                IconButton(
+                    onClick = { onQueryChange("") },
+                    modifier = Modifier.size(44.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Close,
+                        contentDescription = stringResource(R.string.settings_wallet_management_search_clear),
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        } else {
+            null
+        },
+        singleLine = true,
+        shape = RoundedCornerShape(100.dp),
+        colors = TextFieldDefaults.colors(
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+            disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+            disabledIndicatorColor = Color.Transparent,
+            cursorColor = MaterialTheme.colorScheme.primary,
+        ),
+    )
 }
 
 @Composable
@@ -306,62 +399,112 @@ private fun WalletManagementCard(
     onBackupPrivateKeys: () -> Unit,
     onRemoveWallet: () -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            SettingsIcon(iconRes = if (wallet.isWatchOnly) R.drawable.ic_brand_scan else R.drawable.ic_brand_wallet)
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = wallet.walletName,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = walletManagementSubtitle(wallet),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        SettingsIcon(iconRes = if (wallet.isWatchOnly) R.drawable.ic_brand_scan else R.drawable.ic_brand_wallet)
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = wallet.walletName,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = walletManagementSubtitle(wallet),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        WalletManagementActionsMenu(
+            wallet = wallet,
+            onSetActive = onSetActive,
+            onExportRecoveryPhrase = onExportRecoveryPhrase,
+            onBackupPrivateKeys = onBackupPrivateKeys,
+            onRemoveWallet = onRemoveWallet,
+        )
+    }
+}
+
+@Composable
+private fun WalletManagementActionsMenu(
+    wallet: WalletRecord,
+    onSetActive: () -> Unit,
+    onExportRecoveryPhrase: () -> Unit,
+    onBackupPrivateKeys: () -> Unit,
+    onRemoveWallet: () -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        Card(
+            modifier = Modifier.size(44.dp),
+            shape = CircleShape,
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        ) {
+            IconButton(
+                onClick = { expanded = true },
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.MoreVert,
+                    contentDescription = stringResource(R.string.settings_wallet_management_actions_content_description),
+                    modifier = Modifier.size(22.dp),
+                    tint = MaterialTheme.colorScheme.onSurface,
                 )
             }
         }
-        if (!wallet.isActive) {
-            SatraButton(
-                text = stringResource(R.string.settings_wallet_management_make_active),
-                onClick = onSetActive,
-                modifier = Modifier.fillMaxWidth(),
-                variant = SatraButtonVariant.Secondary,
-                height = SatraButtonDefaults.CompactHeight,
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            if (!wallet.isActive) {
+                DropdownMenuItem(
+                    text = { Text(text = stringResource(R.string.settings_wallet_management_make_active)) },
+                    onClick = {
+                        expanded = false
+                        onSetActive()
+                    },
+                )
+            }
+            if (wallet.walletKeyType == WalletKeyType.Mnemonic.value) {
+                DropdownMenuItem(
+                    text = { Text(text = stringResource(R.string.settings_wallet_management_export_phrase)) },
+                    onClick = {
+                        expanded = false
+                        onExportRecoveryPhrase()
+                    },
+                )
+            }
+            if (!wallet.isWatchOnly) {
+                DropdownMenuItem(
+                    text = { Text(text = stringResource(R.string.settings_wallet_management_backup_private_keys)) },
+                    onClick = {
+                        expanded = false
+                        onBackupPrivateKeys()
+                    },
+                )
+            }
+            DropdownMenuItem(
+                text = {
+                    Text(
+                        text = stringResource(R.string.settings_wallet_management_remove_wallet),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                },
+                onClick = {
+                    expanded = false
+                    onRemoveWallet()
+                },
             )
         }
-        if (wallet.walletKeyType == WalletKeyType.Mnemonic.value) {
-            SatraButton(
-                text = stringResource(R.string.settings_wallet_management_export_phrase),
-                onClick = onExportRecoveryPhrase,
-                modifier = Modifier.fillMaxWidth(),
-                variant = SatraButtonVariant.Secondary,
-                height = SatraButtonDefaults.CompactHeight,
-            )
-        }
-        if (!wallet.isWatchOnly) {
-            SatraButton(
-                text = stringResource(R.string.settings_wallet_management_backup_private_keys),
-                onClick = onBackupPrivateKeys,
-                modifier = Modifier.fillMaxWidth(),
-                variant = SatraButtonVariant.Secondary,
-                height = SatraButtonDefaults.CompactHeight,
-            )
-        }
-        SatraButton(
-            text = stringResource(R.string.settings_wallet_management_remove_wallet),
-            onClick = onRemoveWallet,
-            modifier = Modifier.fillMaxWidth(),
-            variant = SatraButtonVariant.Danger,
-            height = SatraButtonDefaults.CompactHeight,
-        )
     }
 }
 
@@ -2275,6 +2418,31 @@ private val autoLockOptions = listOf(
 
 private fun String.shortSettingsValue(): String =
     if (length <= 18) this else "${take(8)}...${takeLast(6)}"
+
+private fun WalletRecord.matchesWalletSearch(query: String): Boolean {
+    val normalizedQuery = query.trim().lowercase(Locale.US)
+    if (normalizedQuery.isBlank()) return true
+
+    val walletKeyLabel = when {
+        isWatchOnly -> "watch only watch-only"
+        walletKeyType == WalletKeyType.Mnemonic.value -> "recovery phrase mnemonic seed"
+        walletKeyType == WalletKeyType.PrivateKey.value -> "private key"
+        else -> "wallet"
+    }
+    val statusLabel = if (isActive) "active" else "inactive"
+    return listOf(
+        walletName,
+        walletId,
+        walletType,
+        walletKeyType,
+        walletKeyFingerprint.orEmpty(),
+        walletKeyDerivationPath.orEmpty(),
+        walletKeyLabel,
+        statusLabel,
+    ).any { value ->
+        value.lowercase(Locale.US).contains(normalizedQuery)
+    }
+}
 
 @Composable
 private fun walletManagementSubtitle(wallet: WalletRecord): String {

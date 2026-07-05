@@ -610,6 +610,11 @@
     <string name="settings_wallet_management_loading_body">Satra está leyendo registros de billetera local desde este dispositivo.</string>
     <string name="settings_wallet_management_empty_title">No se encontraron billeteras.</string>
     <string name="settings_wallet_management_empty_body">Cree o importe una billetera antes de administrar las copias de seguridad.</string>
+    <string name="settings_wallet_management_search_placeholder">Buscar billeteras</string>
+    <string name="settings_wallet_management_search_clear">Borrar búsqueda de billeteras</string>
+    <string name="settings_wallet_management_actions_content_description">Acciones de billetera</string>
+    <string name="settings_wallet_management_no_search_results_title">No hay billeteras coincidentes.</string>
+    <string name="settings_wallet_management_no_search_results_body">Prueba con otro nombre o tipo de billetera.</string>
     <string name="settings_wallet_management_wallet_missing">Cartera no encontrada.</string>
     <string name="settings_wallet_management_wallet_missing_name">this billetera</string>
     <string name="settings_wallet_management_backup_failed">No se pudieron abrir los datos de respaldo.</string>

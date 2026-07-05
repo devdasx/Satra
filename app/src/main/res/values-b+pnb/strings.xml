@@ -610,6 +610,11 @@
     <string name="settings_wallet_management_loading_body">Satra اس آلے توں مقامی بٹوے دے ریکارڈ پڑھ رہیا اے۔</string>
     <string name="settings_wallet_management_empty_title">کوئی بٹوے نئیں لبے۔</string>
     <string name="settings_wallet_management_empty_body">بیک اپ دا انتظام کرن توں پہلے اک پرس بناؤ یا درآمد کرو۔</string>
+    <string name="settings_wallet_management_search_placeholder">بٹویاں وچ لبھو</string>
+    <string name="settings_wallet_management_search_clear">بٹوے دی تلاش صاف کرو</string>
+    <string name="settings_wallet_management_actions_content_description">بٹوے دیاں کارروائیاں</string>
+    <string name="settings_wallet_management_no_search_results_title">کوئی ملدا جلدا بٹوہ نہیں۔</string>
+    <string name="settings_wallet_management_no_search_results_body">کوئی ہور بٹوے دا ناں یا قسم آزماؤ۔</string>
     <string name="settings_wallet_management_wallet_missing">بٹوہ نئیں لبیا۔</string>
     <string name="settings_wallet_management_wallet_missing_name">ایہہ پرس</string>
     <string name="settings_wallet_management_backup_failed">بیک اپ ڈیٹا نئیں کھولیا جا سکیا۔</string>

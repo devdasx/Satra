@@ -610,6 +610,11 @@
     <string name="settings_wallet_management_loading_body">Ang Satra ay nagbabasa ng mga lokal na tala ng wallet mula sa device na ito.</string>
     <string name="settings_wallet_management_empty_title">Walang nakitang wallet.</string>
     <string name="settings_wallet_management_empty_body">Gumawa o mag-import ng wallet bago pamahalaan ang mga backup.</string>
+    <string name="settings_wallet_management_search_placeholder">Maghanap ng wallets</string>
+    <string name="settings_wallet_management_search_clear">I-clear ang paghahanap ng wallet</string>
+    <string name="settings_wallet_management_actions_content_description">Mga aksyon sa wallet</string>
+    <string name="settings_wallet_management_no_search_results_title">Walang tumutugmang wallet.</string>
+    <string name="settings_wallet_management_no_search_results_body">Subukan ang ibang pangalan o uri ng wallet.</string>
     <string name="settings_wallet_management_wallet_missing">Hindi nahanap ang wallet.</string>
     <string name="settings_wallet_management_wallet_missing_name">wallet na ito</string>
     <string name="settings_wallet_management_backup_failed">Hindi mabuksan ang backup na data.</string>

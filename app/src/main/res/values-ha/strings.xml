@@ -610,6 +610,11 @@
     <string name="settings_wallet_management_loading_body">Satra yana karanta bayanan jakar gida daga wannan na\'urar.</string>
     <string name="settings_wallet_management_empty_title">Ba a sami wallet</string>
     <string name="settings_wallet_management_empty_body">Ƙirƙiri ko shigo da walat kafin sarrafa madadin.</string>
+    <string name="settings_wallet_management_search_placeholder">Nemo wallet</string>
+    <string name="settings_wallet_management_search_clear">Share binciken wallet</string>
+    <string name="settings_wallet_management_actions_content_description">Ayyukan wallet</string>
+    <string name="settings_wallet_management_no_search_results_title">Babu wallet da ya dace.</string>
+    <string name="settings_wallet_management_no_search_results_body">Gwada wani suna ko irin wallet.</string>
     <string name="settings_wallet_management_wallet_missing">Ba a sami walat ba.</string>
     <string name="settings_wallet_management_wallet_missing_name">wannan walat</string>
     <string name="settings_wallet_management_backup_failed">An kasa buɗe bayanan ajiya.</string>

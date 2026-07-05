@@ -610,6 +610,11 @@
     <string name="settings_wallet_management_loading_body">Satra 正在从此设备读取本地钱包记录。</string>
     <string name="settings_wallet_management_empty_title">未找到钱包。</string>
     <string name="settings_wallet_management_empty_body">在管理备份之前创建或导入钱包。</string>
+    <string name="settings_wallet_management_search_placeholder">搜索钱包</string>
+    <string name="settings_wallet_management_search_clear">清除钱包搜索</string>
+    <string name="settings_wallet_management_actions_content_description">钱包操作</string>
+    <string name="settings_wallet_management_no_search_results_title">没有匹配的钱包。</string>
+    <string name="settings_wallet_management_no_search_results_body">试试其他钱包名称或类型。</string>
     <string name="settings_wallet_management_wallet_missing">未找到钱包。</string>
     <string name="settings_wallet_management_wallet_missing_name">此钱包</string>
     <string name="settings_wallet_management_backup_failed">备份数据无法打开。</string>

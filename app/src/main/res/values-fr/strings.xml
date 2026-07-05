@@ -610,6 +610,11 @@
     <string name="settings_wallet_management_loading_body">Satra lit les enregistrements de portefeuille local à partir de cet appareil.</string>
     <string name="settings_wallet_management_empty_title">Aucun portefeuille trouvé.</string>
     <string name="settings_wallet_management_empty_body">Créez ou importez un portefeuille avant de gérer les sauvegardes.</string>
+    <string name="settings_wallet_management_search_placeholder">Rechercher des portefeuilles</string>
+    <string name="settings_wallet_management_search_clear">Effacer la recherche de portefeuille</string>
+    <string name="settings_wallet_management_actions_content_description">Actions du portefeuille</string>
+    <string name="settings_wallet_management_no_search_results_title">Aucun portefeuille correspondant.</string>
+    <string name="settings_wallet_management_no_search_results_body">Essayez un autre nom ou type de portefeuille.</string>
     <string name="settings_wallet_management_wallet_missing">Portefeuille introuvable.</string>
     <string name="settings_wallet_management_wallet_missing_name">this wallet</string>
     <string name="settings_wallet_management_backup_failed">Les données de sauvegarde n\'ont pas pu être ouvertes.</string>

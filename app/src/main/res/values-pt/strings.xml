@@ -610,6 +610,11 @@
     <string name="settings_wallet_management_loading_body">Satra está lendo registros de carteira locais deste dispositivo.</string>
     <string name="settings_wallet_management_empty_title">Nenhuma carteira encontrada.</string>
     <string name="settings_wallet_management_empty_body">Crie ou importe uma carteira antes de gerenciar backups.</string>
+    <string name="settings_wallet_management_search_placeholder">Buscar carteiras</string>
+    <string name="settings_wallet_management_search_clear">Limpar pesquisa de carteiras</string>
+    <string name="settings_wallet_management_actions_content_description">Ações da carteira</string>
+    <string name="settings_wallet_management_no_search_results_title">Nenhuma carteira correspondente.</string>
+    <string name="settings_wallet_management_no_search_results_body">Tente outro nome ou tipo de carteira.</string>
     <string name="settings_wallet_management_wallet_missing">Carteira não encontrada.</string>
     <string name="settings_wallet_management_wallet_missing_name">esta carteira</string>
     <string name="settings_wallet_management_backup_failed">Os dados de backup não puderam ser abertos.</string>

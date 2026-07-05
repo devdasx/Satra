@@ -610,6 +610,11 @@
     <string name="settings_wallet_management_loading_body">Satra اس ڈیوائس سے مقامی بٹوے کے ریکارڈ پڑھ رہا ہے۔</string>
     <string name="settings_wallet_management_empty_title">کوئی پرس نہیں ملا۔</string>
     <string name="settings_wallet_management_empty_body">بیک اپ کا انتظام کرنے سے پہلے ایک پرس بنائیں یا درآمد کریں۔</string>
+    <string name="settings_wallet_management_search_placeholder">بٹوے تلاش کریں</string>
+    <string name="settings_wallet_management_search_clear">بٹوے کی تلاش صاف کریں</string>
+    <string name="settings_wallet_management_actions_content_description">بٹوے کی کارروائیاں</string>
+    <string name="settings_wallet_management_no_search_results_title">کوئی مماثل بٹوہ نہیں ملا۔</string>
+    <string name="settings_wallet_management_no_search_results_body">کوئی دوسرا بٹوے کا نام یا قسم آزمائیں۔</string>
     <string name="settings_wallet_management_wallet_missing">پرس نہیں ملا۔</string>
     <string name="settings_wallet_management_wallet_missing_name">یہ پرس</string>
     <string name="settings_wallet_management_backup_failed">بیک اپ ڈیٹا نہیں کھولا جا سکا۔</string>

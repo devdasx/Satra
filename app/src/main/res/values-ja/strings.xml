@@ -610,6 +610,11 @@
     <string name="settings_wallet_management_loading_body">Satra はこのデバイスからローカル ウォレット レコードを読み取っています。</string>
     <string name="settings_wallet_management_empty_title">ウォレットが見つかりませんでした。</string>
     <string name="settings_wallet_management_empty_body">バックアップを管理する前に、ウォレットを作成またはインポートします。</string>
+    <string name="settings_wallet_management_search_placeholder">ウォレットを検索</string>
+    <string name="settings_wallet_management_search_clear">ウォレット検索をクリア</string>
+    <string name="settings_wallet_management_actions_content_description">ウォレット操作</string>
+    <string name="settings_wallet_management_no_search_results_title">一致するウォレットがありません。</string>
+    <string name="settings_wallet_management_no_search_results_body">別のウォレット名または種類を試してください。</string>
     <string name="settings_wallet_management_wallet_missing">ウォレットが見つかりません。</string>
     <string name="settings_wallet_management_wallet_missing_name">このウォレット</string>
     <string name="settings_wallet_management_backup_failed">バックアップデータを開けませんでした。</string>

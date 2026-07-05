@@ -610,6 +610,11 @@
     <string name="settings_wallet_management_loading_body">Satra sedang membaca catatan dompet lokal dari perangkat ini.</string>
     <string name="settings_wallet_management_empty_title">Tidak ada dompet yang ditemukan.</string>
     <string name="settings_wallet_management_empty_body">Buat atau impor dompet sebelum mengelola cadangan.</string>
+    <string name="settings_wallet_management_search_placeholder">Cari dompet</string>
+    <string name="settings_wallet_management_search_clear">Hapus pencarian dompet</string>
+    <string name="settings_wallet_management_actions_content_description">Tindakan dompet</string>
+    <string name="settings_wallet_management_no_search_results_title">Tidak ada dompet yang cocok.</string>
+    <string name="settings_wallet_management_no_search_results_body">Coba nama atau jenis dompet lain.</string>
     <string name="settings_wallet_management_wallet_missing">Dompet tidak ditemukan.</string>
     <string name="settings_wallet_management_wallet_missing_name">dompet ini</string>
     <string name="settings_wallet_management_backup_failed">Data cadangan tidak dapat dibuka.</string>
