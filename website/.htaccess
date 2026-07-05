@@ -1,5 +1,9 @@
 Options -Indexes
 
+<FilesMatch "\.(zip|tar|gz|7z|rar)$">
+  Require all denied
+</FilesMatch>
+
 RewriteEngine On
 RewriteRule ^privacy/?$ privacy.html [L]
 RewriteRule ^terms/?$ terms.html [L]
