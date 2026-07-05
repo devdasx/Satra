@@ -491,11 +491,11 @@
     <string name="send_broadcast_insufficient_balance_body">இந்த வாலட்டில் தொகை மற்றும் நெட்வொர்க் கட்டணத்தை ஈடுகட்ட போதுமான இருப்பு இல்லை.</string>
     <string name="send_search_asset_placeholder">நாணயம் அல்லது டோக்கனைத் தேடுங்கள்</string>
     <string name="send_section_your_assets">உங்கள் சொத்துக்கள்</string>
-    <string name="send_section_all_assets">அனைத்து சொத்துக்கள்</string>
+    <string name="send_section_all_assets">ஆதரிக்கப்படும் அனைத்தும்</string>
     <string name="send_assets_shown">%1$d காட்டப்பட்டுள்ளது</string>
     <string name="send_asset_empty_search">இந்தத் தேடலுடன் பொருந்தக்கூடிய சொத்துகள் எதுவும் இல்லை.</string>
     <string name="send_asset_empty_search_title">பொருந்தக்கூடிய சொத்துக்கள் இல்லை</string>
-    <string name="send_asset_empty_search_body">மற்றொரு நாணயம், டோக்கன் அல்லது சின்னத்தை முயற்சிக்கவும்.</string>
+    <string name="send_asset_empty_search_body">எதுவும் பொருந்தவில்லை — Satra வெளியிட்ட பட்டியலில் உள்ள சொத்துகளை மட்டும் காட்டுகிறது.</string>
     <string name="send_network_context">%1$s %2$d நெட்வொர்க்குகளில் வாழ்கிறது. இந்தப் பரிவர்த்தனை எங்கிருந்து அனுப்பப்பட வேண்டும் என்பதைத் தேர்வுசெய்யவும்.</string>
     <string name="send_recipient_title">பெறுபவர்</string>
     <string name="send_recipient_header_title">பெறுநரை உள்ளிடவும்.</string>

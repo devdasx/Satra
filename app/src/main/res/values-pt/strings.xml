@@ -491,11 +491,11 @@
     <string name="send_broadcast_insufficient_balance_body">Esta carteira não tem saldo suficiente para cobrir o valor e a taxa de rede.</string>
     <string name="send_search_asset_placeholder">Pesquisar moeda ou token</string>
     <string name="send_section_your_assets">Seus ativos</string>
-    <string name="send_section_all_assets">Todos os ativos</string>
+    <string name="send_section_all_assets">Todos os compatíveis</string>
     <string name="send_assets_shown">%1$d mostrado</string>
     <string name="send_asset_empty_search">Nenhum recurso corresponde a esta pesquisa.</string>
     <string name="send_asset_empty_search_title">Nenhum recurso correspondente</string>
-    <string name="send_asset_empty_search_body">Experimente outra moeda, ficha ou símbolo.</string>
+    <string name="send_asset_empty_search_body">Nada corresponde — a Satra só lista ativos da sua lista publicada.</string>
     <string name="send_network_context">%1$s reside em redes %2$d. Escolha de onde esta transação deve ser enviada.</string>
     <string name="send_recipient_title">Destinatário</string>
     <string name="send_recipient_header_title">Insira o destinatário.</string>

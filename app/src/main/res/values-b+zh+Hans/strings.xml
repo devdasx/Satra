@@ -491,11 +491,11 @@
     <string name="send_broadcast_insufficient_balance_body">该钱包没有足够的余额来支付金额和网络费用。</string>
     <string name="send_search_asset_placeholder">搜索硬币或代币</string>
     <string name="send_section_your_assets">您的资产</string>
-    <string name="send_section_all_assets">显示所有资产</string>
+    <string name="send_section_all_assets">全部支持</string>
     <string name="send_assets_shown">%1$d</string>
     <string name="send_asset_empty_search">没有与此搜索匹配的资产。</string>
     <string name="send_asset_empty_search_title">没有匹配的资产</string>
-    <string name="send_asset_empty_search_body">尝试其他硬币、代币或符号。</string>
+    <string name="send_asset_empty_search_body">没有匹配项 — Satra 只列出其已发布列表中的资产。</string>
     <string name="send_network_context">%1$s 存在于%2$d 网络上。选择此交易应从何处发送。</string>
     <string name="send_recipient_title">收件人</string>
     <string name="send_recipient_header_title">输入收件人。</string>

@@ -491,11 +491,11 @@
     <string name="send_broadcast_insufficient_balance_body">Ang wallet na ito ay walang sapat na balanse upang masakop ang halaga at bayad sa network.</string>
     <string name="send_search_asset_placeholder">Maghanap ng barya o token</string>
     <string name="send_section_your_assets">Ang iyong mga ari-arian</string>
-    <string name="send_section_all_assets">Lahat ng asset</string>
+    <string name="send_section_all_assets">Lahat ng suportado</string>
     <string name="send_assets_shown">%1$d ipinapakita</string>
     <string name="send_asset_empty_search">Walang asset na tumutugma sa paghahanap na ito.</string>
     <string name="send_asset_empty_search_title">Walang tumutugmang asset</string>
-    <string name="send_asset_empty_search_body">Subukan ang isa pang barya, token, o simbolo.</string>
+    <string name="send_asset_empty_search_body">Walang tumutugma — inililista lang ng Satra ang mga asset mula sa inilathalang listahan nito.</string>
     <string name="send_network_context">Nakatira ang %1$s sa mga network ng %2$d. Piliin kung saan dapat ipadala ang transaksyong ito.</string>
     <string name="send_recipient_title">tatanggap</string>
     <string name="send_recipient_header_title">Ipasok ang tatanggap.</string>

@@ -491,11 +491,11 @@
     <string name="send_broadcast_insufficient_balance_body">इस वॉलेट में राशि और नेटवर्क शुल्क को कवर करने के लिए पर्याप्त शेष नहीं है।</string>
     <string name="send_search_asset_placeholder">सिक्का या टोकन खोजें</string>
     <string name="send_section_your_assets">आपकी संपत्ति</string>
-    <string name="send_section_all_assets">सभी संपत्ति</string>
+    <string name="send_section_all_assets">सभी समर्थित</string>
     <string name="send_assets_shown">%1$d दिखाया गया</string>
     <string name="send_asset_empty_search">कोई संपत्ति इस खोज से मेल नहीं खाती।</string>
     <string name="send_asset_empty_search_title">कोई मेल खाती संपत्ति नहीं</string>
-    <string name="send_asset_empty_search_body">कोई अन्य सिक्का, टोकन या प्रतीक आज़माएं।</string>
+    <string name="send_asset_empty_search_body">कुछ भी मेल नहीं खाता — Satra केवल अपनी प्रकाशित सूची की संपत्तियाँ दिखाता है।</string>
     <string name="send_network_context">%1$s%2$d नेटवर्क पर रहता है। चुनें कि यह लेनदेन कहां से भेजा जाना चाहिए।</string>
     <string name="send_recipient_title">प्राप्तकर्ता</string>
     <string name="send_recipient_header_title">प्राप्तकर्ता दर्ज करें।</string>

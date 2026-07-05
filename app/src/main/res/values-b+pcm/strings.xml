@@ -491,11 +491,11 @@
     <string name="send_broadcast_insufficient_balance_body">This wallet no dey have enough balance to cover di amount and network fee.</string>
     <string name="send_search_asset_placeholder">Search coin or token</string>
     <string name="send_section_your_assets">Your assets</string>
-    <string name="send_section_all_assets">All assets</string>
+    <string name="send_section_all_assets">All supported</string>
     <string name="send_assets_shown">%1$d shown</string>
     <string name="send_asset_empty_search">No assets match this search.</string>
     <string name="send_asset_empty_search_title">No matching assets</string>
-    <string name="send_asset_empty_search_body">Try another coin, token, or symbol.</string>
+    <string name="send_asset_empty_search_body">Nothing matches — Satra only lists assets from its published list.</string>
     <string name="send_network_context">%1$s lives on %2$d networks. Choose where this transaction suppose be sent from.</string>
     <string name="send_recipient_title">Recipient</string>
     <string name="send_recipient_header_title">Put recipient.</string>

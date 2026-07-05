@@ -491,11 +491,11 @@
     <string name="send_broadcast_insufficient_balance_body">このウォレットには、金額とネットワーク料金をカバーするのに十分な残高がありません。</string>
     <string name="send_search_asset_placeholder">コインまたはトークンを検索する</string>
     <string name="send_section_your_assets">あなたの資産</string>
-    <string name="send_section_all_assets">すべての資産</string>
+    <string name="send_section_all_assets">対応済みすべて</string>
     <string name="send_assets_shown">%1$dを表示</string>
     <string name="send_asset_empty_search">この検索に一致するアセットはありません。</string>
     <string name="send_asset_empty_search_title">一致するアセットがありません</string>
-    <string name="send_asset_empty_search_body">別のコイン、トークン、またはシンボルを試してください。</string>
+    <string name="send_asset_empty_search_body">一致するものがありません — Satra は公開リスト内の資産だけを表示します。</string>
     <string name="send_network_context">%1$s は %2$d ネットワーク上に存在します。このトランザクションの送信元を選択します。</string>
     <string name="send_recipient_title">受信者</string>
     <string name="send_recipient_header_title">受信者を入力してください。</string>

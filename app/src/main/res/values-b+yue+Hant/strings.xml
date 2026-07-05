@@ -491,11 +491,11 @@
     <string name="send_broadcast_insufficient_balance_body">呢個錢包冇足夠餘額去支付金額同網絡費用。</string>
     <string name="send_search_asset_placeholder">搜尋硬幣或者代幣</string>
     <string name="send_section_your_assets">你嘅資產</string>
-    <string name="send_section_all_assets">所有資產</string>
+    <string name="send_section_all_assets">全部支援</string>
     <string name="send_assets_shown">顯示咗 %1$d</string>
     <string name="send_asset_empty_search">冇資產同呢個搜尋相符。</string>
     <string name="send_asset_empty_search_title">冇匹配嘅資產</string>
-    <string name="send_asset_empty_search_body">試下另一個硬幣、代幣或者符號。</string>
+    <string name="send_asset_empty_search_body">冇相符項目 — Satra 只會列出已發布清單入面嘅資產。</string>
     <string name="send_network_context">%1$s 係喺 %2$d 網絡上面生存。揀呢個交易應該由邊度發送。</string>
     <string name="send_recipient_title">收件人</string>
     <string name="send_recipient_header_title">輸入收件人。</string>

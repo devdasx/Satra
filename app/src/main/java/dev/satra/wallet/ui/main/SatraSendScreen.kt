@@ -27,8 +27,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -40,8 +38,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -413,83 +409,53 @@ private fun SendAssetSelectionContent(
     val fundedGroups = filteredGroups.filter { group -> group.totalFiat > BigDecimal.ZERO || group.totalBalance > BigDecimal.ZERO }
     val unfundedGroups = filteredGroups.filterNot { group -> group in fundedGroups }
 
-    SendScaffold(
+    SatraChooseAssetScaffold(
         title = stringResource(R.string.send_choose_asset_title),
         onBack = onBack,
     ) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            item {
-                SendPickerHeader(title = stringResource(R.string.send_asset_header_title))
-                SendSearchBar(
-                    query = query,
-                    onQueryChange = { query = it },
-                    placeholder = stringResource(R.string.send_search_asset_placeholder),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .widthIn(max = SendContentMaxWidth)
-                        .padding(horizontal = 20.dp),
-                )
-                Spacer(modifier = Modifier.height(20.dp))
-            }
-            if (filteredGroups.isEmpty()) {
-                item {
-                    SendEmptyInline(
-                        title = stringResource(R.string.send_asset_empty_search_title),
-                        body = stringResource(R.string.send_asset_empty_search_body),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .widthIn(max = SendContentMaxWidth)
-                            .padding(horizontal = 20.dp),
+        item {
+            ChooseAssetSearchBar(
+                query = query,
+                onQueryChange = { query = it },
+                placeholder = stringResource(R.string.send_search_asset_placeholder),
+            )
+        }
+        if (filteredGroups.isEmpty()) {
+            item { ChooseAssetEmptySearchNote() }
+        } else {
+            if (fundedGroups.isNotEmpty()) {
+                item { ChooseAssetSectionHeader(title = stringResource(R.string.send_section_your_assets)) }
+                items(fundedGroups, key = { group -> "funded-${group.symbol}" }) { group ->
+                    SendAssetGroupRow(
+                        group = group,
+                        showSecondaryAmount = true,
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            if (group.assets.size > 1) {
+                                onNetworkRequired(group.symbol)
+                            } else {
+                                onAssetSelected(group.assets.first().asset.assetId)
+                            }
+                        },
                     )
                 }
-            } else {
-                if (fundedGroups.isNotEmpty()) {
-                    item {
-                        SendSectionHeader(
-                            title = stringResource(R.string.send_section_your_assets),
-                            trailing = stringResource(R.string.send_assets_shown, fundedGroups.size),
-                        )
-                    }
-                    items(fundedGroups, key = { group -> "funded-${group.symbol}" }) { group ->
-                        SendAssetGroupRow(
-                            group = group,
-                            onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                if (group.assets.size > 1) {
-                                    onNetworkRequired(group.symbol)
-                                } else {
-                                    onAssetSelected(group.assets.first().asset.assetId)
-                                }
-                            },
-                        )
-                    }
+            }
+            if (unfundedGroups.isNotEmpty()) {
+                item { ChooseAssetSectionHeader(title = stringResource(R.string.send_section_all_assets)) }
+                items(unfundedGroups, key = { group -> "all-${group.symbol}" }) { group ->
+                    SendAssetGroupRow(
+                        group = group,
+                        showSecondaryAmount = false,
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            if (group.assets.size > 1) {
+                                onNetworkRequired(group.symbol)
+                            } else {
+                                onAssetSelected(group.assets.first().asset.assetId)
+                            }
+                        },
+                    )
                 }
-                if (unfundedGroups.isNotEmpty()) {
-                    item {
-                        Spacer(modifier = Modifier.height(10.dp))
-                        SendSectionHeader(
-                            title = stringResource(R.string.send_section_all_assets),
-                            trailing = stringResource(R.string.send_assets_shown, unfundedGroups.size),
-                        )
-                    }
-                    items(unfundedGroups, key = { group -> "all-${group.symbol}" }) { group ->
-                        SendAssetGroupRow(
-                            group = group,
-                            onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                if (group.assets.size > 1) {
-                                    onNetworkRequired(group.symbol)
-                                } else {
-                                    onAssetSelected(group.assets.first().asset.assetId)
-                                }
-                            },
-                        )
-                    }
-                }
-                item { Spacer(modifier = Modifier.height(26.dp)) }
             }
         }
     }
@@ -1247,24 +1213,6 @@ private fun SendHero(
 }
 
 @Composable
-private fun SendPickerHeader(title: String) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .widthIn(max = SendContentMaxWidth)
-            .padding(horizontal = 20.dp, vertical = 18.dp),
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.displaySmall,
-            color = MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.Bold,
-        )
-        Spacer(modifier = Modifier.height(20.dp))
-    }
-}
-
-@Composable
 private fun SendNetworkPickerHeader(
     symbol: String,
     @DrawableRes iconRes: Int,
@@ -1315,105 +1263,21 @@ private fun SendContentColumn(content: @Composable ColumnScope.() -> Unit) {
 }
 
 @Composable
-private fun SendSectionHeader(
-    title: String,
-    trailing: String,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .widthIn(max = SendContentMaxWidth)
-            .padding(horizontal = 20.dp, vertical = 10.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.Bold,
-        )
-        Text(
-            text = trailing,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontWeight = FontWeight.Bold,
-        )
-    }
-}
-
-@Composable
-private fun SendSearchBar(
-    query: String,
-    onQueryChange: (String) -> Unit,
-    placeholder: String,
-    modifier: Modifier = Modifier,
-) {
-    TextField(
-        value = query,
-        onValueChange = onQueryChange,
-        modifier = modifier
-            .height(64.dp)
-            .clip(RoundedCornerShape(100.dp)),
-        leadingIcon = {
-            Icon(
-                imageVector = Icons.Filled.Search,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        },
-        trailingIcon = {
-            if (query.isNotBlank()) {
-                IconButton(onClick = { onQueryChange("") }) {
-                    Icon(
-                        imageVector = Icons.Filled.Close,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-        },
-        placeholder = {
-            Text(
-                text = placeholder,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-            )
-        },
-        singleLine = true,
-        textStyle = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-        colors = TextFieldDefaults.colors(
-            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-            disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-            focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-            unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-        ),
-    )
-}
-
-@Composable
 private fun SendAssetGroupRow(
     group: SendAssetGroup,
+    showSecondaryAmount: Boolean,
     onClick: () -> Unit,
 ) {
-    SendSelectableRow(
-        title = "${group.name} - ${group.symbol}",
-        subtitle = if (group.assets.size > 1) {
-            stringResource(R.string.send_asset_network_count, group.assets.size)
-        } else {
-            group.assets.first().network.displayName
-        },
-        trailingPrimary = group.totalFiatFormatted,
-        trailingSecondary = group.totalBalanceFormatted,
+    ChooseAssetRow(
+        symbol = group.symbol,
+        name = group.name,
+        networkCount = group.assets.size,
+        primaryAmount = group.totalBalanceValueFormatted,
+        secondaryAmount = group.totalFiatFormatted,
+        showSecondaryAmount = showSecondaryAmount,
+        iconRes = group.iconRes,
         enabled = group.canSend,
         onClick = onClick,
-        leadingIcon = {
-            SatraCryptoIcon(
-                iconRes = group.iconRes,
-                modifier = Modifier.size(42.dp),
-            )
-        },
     )
 }
 
@@ -2141,7 +2005,7 @@ private fun List<SendAssetRow>.groupForAssetSelection(localCurrencyCode: String)
                 totalFiat = totalFiat,
                 totalBalance = totalBalance,
                 totalFiatFormatted = formatFiat(totalFiat.toPlainString(), localCurrencyCode),
-                totalBalanceFormatted = "${formatCryptoAmount(totalBalance)} $symbol",
+                totalBalanceValueFormatted = formatCryptoAmount(totalBalance),
                 iconRes = primary.iconRes,
                 canSend = rows.any { row -> row.hasSigningKey },
             )
@@ -2157,11 +2021,7 @@ private fun List<SendAssetGroup>.filterByQuery(query: String): List<SendAssetGro
     if (normalized.isBlank()) return this
     return filter { group ->
         group.name.lowercase(Locale.US).contains(normalized) ||
-            group.symbol.lowercase(Locale.US).contains(normalized) ||
-            group.assets.any { row ->
-                row.network.displayName.lowercase(Locale.US).contains(normalized) ||
-                    row.network.networkId.lowercase(Locale.US).contains(normalized)
-            }
+            group.symbol.lowercase(Locale.US).contains(normalized)
     }
 }
 
@@ -2410,7 +2270,7 @@ private data class SendAssetGroup(
     val totalFiat: BigDecimal,
     val totalBalance: BigDecimal,
     val totalFiatFormatted: String,
-    val totalBalanceFormatted: String,
+    val totalBalanceValueFormatted: String,
     @DrawableRes val iconRes: Int,
     val canSend: Boolean,
 )

@@ -491,11 +491,11 @@
     <string name="send_broadcast_insufficient_balance_body">Esta billetera no tiene saldo suficiente para cubrir el monto y la tarifa de la red.</string>
     <string name="send_search_asset_placeholder">Buscar moneda o token</string>
     <string name="send_section_your_assets">Sus activos</string>
-    <string name="send_section_all_assets">Todos los activos</string>
+    <string name="send_section_all_assets">Todos los compatibles</string>
     <string name="send_assets_shown">%1$d mostrados</string>
     <string name="send_asset_empty_search">Ningún activo coincide con esta búsqueda.</string>
     <string name="send_asset_empty_search_title">No hay activos coincidentes</string>
-    <string name="send_asset_empty_search_body">Pruebe con otra moneda, token o símbolo.</string>
+    <string name="send_asset_empty_search_body">Nada coincide — Satra solo muestra activos de su lista publicada.</string>
     <string name="send_network_context">%1$s vive en las redes%2$d. Elija desde dónde se debe enviar esta transacción.</string>
     <string name="send_recipient_title">Destinatario</string>
     <string name="send_recipient_header_title">Ingrese el destinatario.</string>

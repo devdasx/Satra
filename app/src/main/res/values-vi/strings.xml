@@ -491,11 +491,11 @@
     <string name="send_broadcast_insufficient_balance_body">Ví này không có đủ số dư để trang trải số tiền và phí mạng.</string>
     <string name="send_search_asset_placeholder">Tìm kiếm tiền xu hoặc mã thông báo</string>
     <string name="send_section_your_assets">Tài sản của bạn</string>
-    <string name="send_section_all_assets">Tất cả tài sản</string>
+    <string name="send_section_all_assets">Tất cả được hỗ trợ</string>
     <string name="send_assets_shown">%1$d hiển thị</string>
     <string name="send_asset_empty_search">Không có nội dung nào khớp với tìm kiếm này.</string>
     <string name="send_asset_empty_search_title">Không có nội dung phù hợp</string>
-    <string name="send_asset_empty_search_body">Hãy thử một đồng xu, mã thông báo hoặc biểu tượng khác.</string>
+    <string name="send_asset_empty_search_body">Không có kết quả phù hợp — Satra chỉ liệt kê tài sản từ danh sách đã công bố.</string>
     <string name="send_network_context">%1$s tồn tại trên mạng %2$d. Chọn nơi giao dịch này sẽ được gửi từ đó.</string>
     <string name="send_recipient_title">Người nhận</string>
     <string name="send_recipient_header_title">Nhập người nhận.</string>

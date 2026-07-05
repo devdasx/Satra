@@ -491,11 +491,11 @@
     <string name="send_broadcast_insufficient_balance_body">Ce portefeuille n\'a pas suffisamment de solde pour couvrir le montant et les frais de réseau.</string>
     <string name="send_search_asset_placeholder">Rechercher une pièce ou un jeton</string>
     <string name="send_section_your_assets">Vos actifs</string>
-    <string name="send_section_all_assets">Tous les actifs</string>
+    <string name="send_section_all_assets">Tous les actifs pris en charge</string>
     <string name="send_assets_shown">%1$d affichés</string>
     <string name="send_asset_empty_search">Aucun actif ne correspond à cette recherche.</string>
     <string name="send_asset_empty_search_title">Aucun actif correspondant</string>
-    <string name="send_asset_empty_search_body">Essayez une autre pièce, jeton ou symbole.</string>
+    <string name="send_asset_empty_search_body">Aucune correspondance — Satra liste uniquement les actifs de sa liste publiée.</string>
     <string name="send_network_context">%1$s vit sur les réseaux%2$d. Choisissez d\'où cette transaction doit être envoyée.</string>
     <string name="send_recipient_title">Destinataire</string>
     <string name="send_recipient_header_title">Entrez le destinataire.</string>

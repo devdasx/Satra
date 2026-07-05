@@ -491,11 +491,11 @@
     <string name="send_broadcast_insufficient_balance_body">اس پرس چ رقم تے نیٹ ورک فیس دا احاطہ کرن لئی اینا بیلنس نئیں اے۔</string>
     <string name="send_search_asset_placeholder">سکہ یا ٹوکن لبھو</string>
     <string name="send_section_your_assets">تہاڈے اثاثے</string>
-    <string name="send_section_all_assets">سارے اثاثے</string>
+    <string name="send_section_all_assets">سارے سپورٹڈ</string>
     <string name="send_assets_shown">%1$d وکھایا گیا</string>
     <string name="send_asset_empty_search">کوئی وی اثاثہ ایس کھوج نال میل نئیں کھاندا۔</string>
     <string name="send_asset_empty_search_title">کوئی مماثل اثاثے نئیں</string>
-    <string name="send_asset_empty_search_body">کوئی ہور سکہ، ٹوکن، یا علامت آزماؤ۔</string>
+    <string name="send_asset_empty_search_body">کجھ وی میل نہیں کھاندا — Satra صرف اپنی شائع شدہ فہرست دے اثاثے دکھاندا اے۔</string>
     <string name="send_network_context">%1$s %2$d نیٹ ورکس تے رہندا اے۔ چنو کہ ایہ لین دین کتھوں گھلیا جانا چاہیدا اے۔</string>
     <string name="send_recipient_title">وصول کرن آلا</string>
     <string name="send_recipient_header_title">وصول کنندہ درج کرو۔</string>

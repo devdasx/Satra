@@ -491,11 +491,11 @@
     <string name="send_broadcast_insufficient_balance_body">Dieses Wallet verfügt nicht über genügend Guthaben, um den Betrag und die Netzwerkgebühr zu decken.</string>
     <string name="send_search_asset_placeholder">Suchen Sie nach Münze oder Wertmarke</string>
     <string name="send_section_your_assets">Ihr Vermögen</string>
-    <string name="send_section_all_assets">Alle Vermögenswerte</string>
+    <string name="send_section_all_assets">Alle unterstützten</string>
     <string name="send_assets_shown">%1$d angezeigt</string>
     <string name="send_asset_empty_search">Zu dieser Suche passen keine Assets.</string>
     <string name="send_asset_empty_search_title">Keine passenden Vermögenswerte</string>
-    <string name="send_asset_empty_search_body">Versuchen Sie es mit einer anderen Münze, einem anderen Token oder einem anderen Symbol.</string>
+    <string name="send_asset_empty_search_body">Keine Übereinstimmung — Satra listet nur Assets aus der veröffentlichten Liste.</string>
     <string name="send_network_context">%1$s lebt in %2$d Netzwerken. Wählen Sie aus, von wo aus diese Transaktion gesendet werden soll.</string>
     <string name="send_recipient_title">Empfänger</string>
     <string name="send_recipient_header_title">Geben Sie den Empfänger ein.</string>

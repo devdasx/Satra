@@ -491,11 +491,11 @@
     <string name="send_broadcast_insufficient_balance_body">لا تحتوي هذه المحفظة على رصيد كافٍ لتغطية المبلغ ورسوم الشبكة.</string>
     <string name="send_search_asset_placeholder">بحث عن عملة أو رمز مميز</string>
     <string name="send_section_your_assets">أصولك</string>
-    <string name="send_section_all_assets">جميع الأصول</string>
+    <string name="send_section_all_assets">كل المدعوم</string>
     <string name="send_assets_shown">%1$d المعروضة</string>
     <string name="send_asset_empty_search">لا توجد أصول تطابق هذا البحث.</string>
     <string name="send_asset_empty_search_title">لا توجد أصول مطابقة</string>
-    <string name="send_asset_empty_search_body">جرب عملة معدنية أو رمزًا مميزًا أو رمزًا آخر.</string>
+    <string name="send_asset_empty_search_body">لا يوجد تطابق — تعرض Satra فقط الأصول من قائمتها المنشورة.</string>
     <string name="send_network_context">%1$s موجود على شبكات%2$d. اختر المكان الذي يجب إرسال هذه المعاملة منه.</string>
     <string name="send_recipient_title">Recipient</string>
     <string name="send_recipient_header_title">أدخل المستلم.</string>

@@ -491,11 +491,11 @@
     <string name="send_broadcast_insufficient_balance_body">या वॉलेटमध्ये रक्कम आणि नेटवर्क फी भरण्यासाठी पुरेशी शिल्लक नाही.</string>
     <string name="send_search_asset_placeholder">नाणे किंवा टोकन शोधा</string>
     <string name="send_section_your_assets">तुमची मालमत्ता</string>
-    <string name="send_section_all_assets">सर्व मालमत्ता</string>
+    <string name="send_section_all_assets">सर्व समर्थित</string>
     <string name="send_assets_shown">%1$d दर्शविले</string>
     <string name="send_asset_empty_search">या शोधाशी कोणतीही मालमत्ता जुळत नाही.</string>
     <string name="send_asset_empty_search_title">कोणतीही जुळणारी मालमत्ता नाही</string>
-    <string name="send_asset_empty_search_body">दुसरे नाणे, टोकन किंवा चिन्ह वापरून पहा.</string>
+    <string name="send_asset_empty_search_body">काहीही जुळत नाही — Satra फक्त प्रकाशित यादीतील मालमत्ता दाखवते.</string>
     <string name="send_network_context">%1$s %2$d नेटवर्कवर राहतात. हा व्यवहार कुठून पाठवायचा ते निवडा.</string>
     <string name="send_recipient_title">प्राप्तकर्ता</string>
     <string name="send_recipient_header_title">प्राप्तकर्ता प्रविष्ट करा.</string>

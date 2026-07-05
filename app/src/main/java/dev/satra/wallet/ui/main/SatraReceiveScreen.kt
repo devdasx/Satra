@@ -41,6 +41,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -243,43 +244,67 @@ private fun ReceiveAssetSelectionContent(
     onNetworkRequired: (String) -> Unit,
 ) {
     val haptic = LocalHapticFeedback.current
-    ReceiveScaffold(
+    var query by rememberSaveable { mutableStateOf("") }
+    val filteredGroups = remember(state.groups, query) {
+        state.groups.filterByQuery(query)
+    }
+    val fundedGroups = filteredGroups.filter { group -> group.totalFiat > BigDecimal.ZERO || group.totalBalance > BigDecimal.ZERO }
+    val unfundedGroups = filteredGroups.filterNot { group -> group in fundedGroups }
+
+    SatraChooseAssetScaffold(
         title = stringResource(R.string.receive_choose_asset_title),
         onBack = onBack,
     ) {
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surface),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            item {
-                ReceiveHeader(
-                    title = stringResource(R.string.receive_asset_header_title),
-                    body = stringResource(R.string.receive_asset_header_body),
-                )
+        item {
+            ChooseAssetSearchBar(
+                query = query,
+                onQueryChange = { query = it },
+                placeholder = stringResource(R.string.send_search_asset_placeholder),
+            )
+        }
+        if (filteredGroups.isEmpty()) {
+            item { ChooseAssetEmptySearchNote() }
+        } else {
+            if (fundedGroups.isNotEmpty()) {
+                item { ChooseAssetSectionHeader(title = stringResource(R.string.send_section_your_assets)) }
+                items(
+                    items = fundedGroups,
+                    key = { group -> "funded-${group.symbol}" },
+                ) { group ->
+                    ReceiveAssetGroupRow(
+                        group = group,
+                        showSecondaryAmount = true,
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            if (group.rows.size > 1) {
+                                onNetworkRequired(group.symbol)
+                            } else {
+                                onAssetSelected(group.rows.first().asset.assetId)
+                            }
+                        },
+                    )
+                }
             }
-            items(
-                items = state.groups,
-                key = { group -> group.symbol },
-            ) { group ->
-                ReceiveAssetGroupRow(
-                    group = group,
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        if (group.rows.size > 1) {
-                            onNetworkRequired(group.symbol)
-                        } else {
-                            onAssetSelected(group.rows.first().asset.assetId)
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .widthIn(max = ReceiveContentMaxWidth)
-                        .padding(horizontal = 20.dp),
-                )
+            if (unfundedGroups.isNotEmpty()) {
+                item { ChooseAssetSectionHeader(title = stringResource(R.string.send_section_all_assets)) }
+                items(
+                    items = unfundedGroups,
+                    key = { group -> "all-${group.symbol}" },
+                ) { group ->
+                    ReceiveAssetGroupRow(
+                        group = group,
+                        showSecondaryAmount = false,
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            if (group.rows.size > 1) {
+                                onNetworkRequired(group.symbol)
+                            } else {
+                                onAssetSelected(group.rows.first().asset.assetId)
+                            }
+                        },
+                    )
+                }
             }
-            item { Spacer(modifier = Modifier.height(22.dp)) }
         }
     }
 }
@@ -490,21 +515,19 @@ private fun ReceiveHeader(
 @Composable
 private fun ReceiveAssetGroupRow(
     group: ReceiveAssetGroup,
+    showSecondaryAmount: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier,
 ) {
-    ReceiveSelectableRow(
+    ChooseAssetRow(
+        symbol = group.symbol,
+        name = group.name,
+        networkCount = group.rows.size,
+        primaryAmount = group.totalBalanceValueFormatted,
+        secondaryAmount = group.totalFiatFormatted,
+        showSecondaryAmount = showSecondaryAmount,
         iconRes = group.iconRes,
-        title = "${group.name} - ${group.symbol}",
-        subtitle = if (group.rows.size > 1) {
-            stringResource(R.string.receive_asset_network_count, group.rows.size)
-        } else {
-            group.rows.first().network.displayName
-        },
-        trailingPrimary = group.totalFiatFormatted,
-        trailingSecondary = group.totalBalanceFormatted,
         onClick = onClick,
-        modifier = modifier,
+        enabled = true,
     )
 }
 
@@ -896,7 +919,9 @@ private fun ReceiveSnapshot.Content.toReceiveAssetRows(): List<ReceiveAssetRow> 
             iconRes = assetIconRes(asset.symbol),
         )
     }.sortedWith(
-        compareBy<ReceiveAssetRow> { it.asset.name.lowercase(Locale.US) }
+        compareByDescending<ReceiveAssetRow> { it.fiatAmount }
+            .thenByDescending { it.balanceAmount }
+            .thenBy { it.asset.name.lowercase(Locale.US) }
             .thenBy { it.network.displayName.lowercase(Locale.US) },
     )
 }
@@ -904,7 +929,10 @@ private fun ReceiveSnapshot.Content.toReceiveAssetRows(): List<ReceiveAssetRow> 
 private fun List<ReceiveAssetRow>.groupForAssetSelection(): List<ReceiveAssetGroup> =
     groupBy { row -> row.asset.symbol.uppercase(Locale.US) }
         .map { (symbol, rows) ->
-            val primary = rows.first()
+            val primary = rows.maxWith(
+                compareBy<ReceiveAssetRow> { row -> row.fiatAmount }
+                    .thenBy { row -> row.balanceAmount },
+            )
             val totalFiat = rows.fold(BigDecimal.ZERO) { total, row -> total + row.fiatAmount }
             val totalBalance = rows.fold(BigDecimal.ZERO) { total, row -> total + row.balanceAmount }
             val localCurrencyCode = rows.firstOrNull()?.localCurrencyCode ?: DEFAULT_LOCAL_CURRENCY_CODE
@@ -912,12 +940,27 @@ private fun List<ReceiveAssetRow>.groupForAssetSelection(): List<ReceiveAssetGro
                 symbol = symbol,
                 name = primary.asset.name,
                 rows = rows,
+                totalFiat = totalFiat,
+                totalBalance = totalBalance,
                 totalFiatFormatted = formatReceiveFiat(totalFiat.toPlainString(), localCurrencyCode),
-                totalBalanceFormatted = "${formatReceiveCryptoAmount(totalBalance)} $symbol",
+                totalBalanceValueFormatted = formatReceiveCryptoAmount(totalBalance),
                 iconRes = primary.iconRes,
             )
         }
-        .sortedBy { group -> group.name.lowercase(Locale.US) }
+        .sortedWith(
+            compareByDescending<ReceiveAssetGroup> { group -> group.totalFiat }
+                .thenByDescending { group -> group.totalBalance }
+                .thenBy { group -> group.name.lowercase(Locale.US) },
+        )
+
+private fun List<ReceiveAssetGroup>.filterByQuery(query: String): List<ReceiveAssetGroup> {
+    val normalized = query.trim().lowercase(Locale.US)
+    if (normalized.isBlank()) return this
+    return filter { group ->
+        group.name.lowercase(Locale.US).contains(normalized) ||
+            group.symbol.lowercase(Locale.US).contains(normalized)
+    }
+}
 
 private fun String.toBigDecimalOrZero(): BigDecimal =
     runCatching { BigDecimal(this) }.getOrDefault(BigDecimal.ZERO)
@@ -991,8 +1034,10 @@ private data class ReceiveAssetGroup(
     val symbol: String,
     val name: String,
     val rows: List<ReceiveAssetRow>,
+    val totalFiat: BigDecimal,
+    val totalBalance: BigDecimal,
     val totalFiatFormatted: String,
-    val totalBalanceFormatted: String,
+    val totalBalanceValueFormatted: String,
     @DrawableRes val iconRes: Int,
 )
 

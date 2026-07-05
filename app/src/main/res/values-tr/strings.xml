@@ -491,11 +491,11 @@
     <string name="send_broadcast_insufficient_balance_body">Bu cüzdanda tutarı ve ağ ücretini karşılayacak yeterli bakiye yok.</string>
     <string name="send_search_asset_placeholder">Madeni para veya jeton arayın</string>
     <string name="send_section_your_assets">Varlıklarınız</string>
-    <string name="send_section_all_assets">Tüm varlıklar</string>
+    <string name="send_section_all_assets">Tüm desteklenenler</string>
     <string name="send_assets_shown">%1$d gösteriliyor</string>
     <string name="send_asset_empty_search">Bu aramayla eşleşen öğe yok.</string>
     <string name="send_asset_empty_search_title">Eşleşen öğe yok</string>
-    <string name="send_asset_empty_search_body">Başka bir madeni para, jeton veya sembol deneyin.</string>
+    <string name="send_asset_empty_search_body">Eşleşme yok — Satra yalnızca yayımlanan listesindeki varlıkları gösterir.</string>
     <string name="send_network_context">%1$s, %2$d ağlarında yaşar. Bu işlemin nereden gönderilmesi gerektiğini seçin.</string>
     <string name="send_recipient_title">Alıcı</string>
     <string name="send_recipient_header_title">Alıcıyı girin.</string>
