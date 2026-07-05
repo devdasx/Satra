@@ -100,13 +100,6 @@ internal fun SatraSettingsRootScreen(
     }
 
     SettingsScaffold(titleRes = R.string.settings_screen_title) {
-        item {
-            SettingsHeroCard(
-                titleRes = R.string.settings_screen_title,
-                bodyRes = R.string.settings_screen_body,
-                iconRes = R.drawable.ic_brand_settings,
-            )
-        }
         item { SettingsSectionTitle(R.string.settings_section_wallet_management) }
         item {
             SettingsCard {
@@ -252,13 +245,6 @@ internal fun SatraWalletManagementScreen(
         titleRes = R.string.settings_wallet_management_title,
         onBack = onBack,
     ) {
-        item {
-            SettingsHeroCard(
-                titleRes = R.string.settings_wallet_management_title,
-                bodyRes = R.string.settings_wallet_management_screen_body,
-                iconRes = R.drawable.ic_brand_wallet,
-            )
-        }
         when {
             wallets == null -> {
                 item {
@@ -566,14 +552,6 @@ internal fun SatraWalletRemoveWarningScreen(
         onBack = onBack,
     ) {
         item {
-            SettingsHeroCard(
-                titleRes = R.string.settings_wallet_management_remove_wallet,
-                bodyRes = R.string.settings_wallet_management_remove_warning_body,
-                iconRes = R.drawable.ic_brand_empty,
-                isDanger = true,
-            )
-        }
-        item {
             SettingsCard {
                 Text(
                     text = stringResource(
@@ -628,14 +606,6 @@ internal fun SatraWalletRemovePasscodeScreen(
         titleRes = R.string.settings_wallet_management_verify_passcode,
         onBack = onBack,
     ) {
-        item {
-            SettingsHeroCard(
-                titleRes = R.string.settings_wallet_management_verify_passcode,
-                bodyRes = R.string.settings_wallet_management_verify_passcode_body,
-                iconRes = R.drawable.ic_brand_security,
-                isDanger = true,
-            )
-        }
         item {
             UnifiedPasscodeActionCard(
                 appSettings = appSettings,
@@ -752,13 +722,6 @@ internal fun SatraAddressBookScreen(
         onBack = onBack,
     ) {
         item {
-            SettingsHeroCard(
-                titleRes = R.string.settings_address_book_title,
-                bodyRes = R.string.settings_address_book_body,
-                iconRes = R.drawable.ic_brand_receive,
-            )
-        }
-        item {
             SatraButton(
                 text = stringResource(R.string.settings_address_book_add),
                 onClick = {
@@ -833,13 +796,6 @@ internal fun SatraPreferencesScreen(
         onBack = onBack,
     ) {
         item {
-            SettingsHeroCard(
-                titleRes = R.string.settings_preferences_title,
-                bodyRes = R.string.settings_preferences_body,
-                iconRes = R.drawable.ic_brand_settings,
-            )
-        }
-        item {
             SettingsCard {
                 SettingsRow(
                     iconRes = R.drawable.ic_brand_assets,
@@ -901,13 +857,6 @@ internal fun SatraCurrencyScreen(
         onBack = onBack,
     ) {
         item {
-            SettingsHeroCard(
-                titleRes = R.string.settings_currency_title,
-                bodyRes = R.string.settings_currency_body,
-                iconRes = R.drawable.ic_brand_assets,
-            )
-        }
-        item {
             SettingsListCard {
                 allCurrencyOptions.forEachIndexed { index, currency ->
                     SelectableSettingsRow(
@@ -950,13 +899,6 @@ internal fun SatraLanguageScreen(
         onBack = onBack,
     ) {
         item {
-            SettingsHeroCard(
-                titleRes = R.string.settings_language_title,
-                bodyRes = R.string.settings_language_body,
-                iconRes = R.drawable.ic_brand_list,
-            )
-        }
-        item {
             SettingsListCard {
                 supportedSettingLanguages.forEachIndexed { index, language ->
                     SelectableSettingsRow(
@@ -994,13 +936,6 @@ internal fun SatraAppearanceScreen(
         titleRes = R.string.settings_appearance_title,
         onBack = onBack,
     ) {
-        item {
-            SettingsHeroCard(
-                titleRes = R.string.settings_appearance_title,
-                bodyRes = R.string.settings_appearance_body,
-                iconRes = R.drawable.ic_brand_settings,
-            )
-        }
         item {
             SettingsListCard {
                 SatraThemePreference.entries.forEachIndexed { index, preference ->
@@ -1086,13 +1021,6 @@ internal fun SatraSecurityScreen(
         titleRes = R.string.settings_security_title,
         onBack = onBack,
     ) {
-        item {
-            SettingsHeroCard(
-                titleRes = R.string.settings_security_title,
-                bodyRes = R.string.settings_security_body,
-                iconRes = R.drawable.ic_brand_security,
-            )
-        }
         item {
             SettingsCard {
                 val settings = appSettings
@@ -1200,13 +1128,6 @@ internal fun SatraSecurityTurnOffPasscodeScreen(
         onBack = onBack,
     ) {
         item {
-            SettingsHeroCard(
-                titleRes = R.string.settings_security_turn_off_passcode,
-                bodyRes = R.string.settings_security_turn_off_passcode_screen_body,
-                iconRes = R.drawable.ic_brand_security,
-            )
-        }
-        item {
             SettingsCard {
                 OutlinedTextField(
                     value = passcode,
@@ -1253,13 +1174,6 @@ internal fun SatraNotificationsScreen(
         titleRes = R.string.settings_notifications_title,
         onBack = onBack,
     ) {
-        item {
-            SettingsHeroCard(
-                titleRes = R.string.settings_notifications_title,
-                bodyRes = R.string.settings_notifications_body,
-                iconRes = R.drawable.ic_brand_history,
-            )
-        }
         item {
             SettingsCard {
                 NotificationSwitch(
@@ -1315,13 +1229,6 @@ internal fun SatraAboutScreen(
         onBack = onBack,
     ) {
         item {
-            SettingsHeroCard(
-                titleRes = R.string.settings_about_title,
-                bodyRes = R.string.settings_about_body,
-                iconRes = R.drawable.ic_brand_wallet,
-            )
-        }
-        item {
             SettingsCard {
                 StaticSettingsRow(
                     title = stringResource(R.string.settings_about_version),
@@ -1348,13 +1255,6 @@ internal fun SatraLegalScreen(onBack: () -> Unit) {
         titleRes = R.string.settings_legal_title,
         onBack = onBack,
     ) {
-        item {
-            SettingsHeroCard(
-                titleRes = R.string.settings_legal_title,
-                bodyRes = R.string.settings_legal_body,
-                iconRes = R.drawable.ic_brand_list,
-            )
-        }
         item {
             SettingsCard {
                 SettingsRow(
@@ -1393,14 +1293,6 @@ internal fun SatraDangerZoneScreen(
         titleRes = R.string.settings_danger_title,
         onBack = onBack,
     ) {
-        item {
-            SettingsHeroCard(
-                titleRes = R.string.settings_danger_title,
-                bodyRes = R.string.settings_danger_reset_body,
-                iconRes = R.drawable.ic_brand_empty,
-                isDanger = true,
-            )
-        }
         item {
             SettingsCard {
                 Text(
@@ -1460,14 +1352,6 @@ internal fun SatraDangerZonePasscodeScreen(
         titleRes = R.string.settings_danger_verify_passcode,
         onBack = onBack,
     ) {
-        item {
-            SettingsHeroCard(
-                titleRes = R.string.settings_danger_verify_passcode,
-                bodyRes = R.string.settings_danger_verify_passcode_body,
-                iconRes = R.drawable.ic_brand_security,
-                isDanger = true,
-            )
-        }
         item {
             UnifiedPasscodeActionCard(
                 appSettings = appSettings,
@@ -1540,28 +1424,6 @@ private fun SettingsScaffold(
         }
         content()
         item { Spacer(modifier = Modifier.height(18.dp)) }
-    }
-}
-
-@Composable
-private fun SettingsHeroCard(
-    @StringRes titleRes: Int,
-    @StringRes bodyRes: Int,
-    @DrawableRes iconRes: Int,
-    isDanger: Boolean = false,
-) {
-    SettingsCard {
-        Text(
-            text = stringResource(titleRes),
-            style = MaterialTheme.typography.titleLarge,
-            color = if (isDanger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.Bold,
-        )
-        Text(
-            text = stringResource(bodyRes),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 
