@@ -130,10 +130,17 @@ class SatraWalletDatabaseTest {
             ),
             nowMillis = TEST_TIME,
         )
-        val repository = SatraWalletRepository(
+        val priceRepository = SatraWalletRepository(
             walletDao = dao,
             priceSyncService = SatraPriceSyncService(
                 marketDataClient = SatraMarketDataClient(PriceSyncTestTransport()),
+            ),
+        )
+        priceRepository.syncWalletPrices(walletId)
+        val repository = SatraWalletRepository(
+            walletDao = dao,
+            priceSyncService = SatraPriceSyncService(
+                marketDataClient = SatraMarketDataClient(FxOnlyPriceTransport("EUR", "0.9")),
             ),
         )
 
@@ -146,6 +153,7 @@ class SatraWalletDatabaseTest {
         assertTrue(dao.getWalletAssets(walletId).all { it.localCurrencyCode == "EUR" })
         assertEquals("90.0", btcAsset.priceFiatValue)
         assertEquals("180.0", btcAsset.balanceFiatValue)
+        assertTrue(btcAsset.metadataJson.contains("\"usdPrice\":\"100\""))
         assertEquals("EUR", transaction.localCurrencyCode)
         assertEquals("45", transaction.fiatValue)
     }
@@ -718,6 +726,20 @@ private class PriceSyncTestTransport : SatraHttpTransport {
             }
 
             else -> error("Unexpected price sync URL: $url")
+        }
+}
+
+private class FxOnlyPriceTransport(
+    private val currencyCode: String,
+    private val rate: String,
+) : SatraHttpTransport {
+    override fun get(url: String): String =
+        when (url) {
+            "https://api.coinbase.com/v2/exchange-rates?currency=USD" -> """
+                {"data":{"currency":"USD","rates":{"$currencyCode":"$rate"}}}
+            """.trimIndent()
+
+            else -> error("Currency changes should only request FX rates: $url")
         }
 }
 

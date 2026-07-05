@@ -4469,6 +4469,12 @@ private fun AssetMarketDataRecord.toMarketDetailState(
     val displayCurrency = localCurrencyCode.ifBlank { DEFAULT_LOCAL_CURRENCY_CODE }
     val unavailable = resources.getString(R.string.market_detail_unavailable)
     val change = priceChange24hPercent?.toBigDecimalOrZero() ?: BigDecimal.ZERO
+    val chartValueMultiplier = priceLocal.toBigDecimalOrZero()
+        .divide(
+            priceUsd.toBigDecimalOrZero().takeIf { it > BigDecimal.ZERO } ?: BigDecimal.ONE,
+            18,
+            RoundingMode.HALF_UP,
+        )
     return MarketDetailState.Content(
         symbol = symbol,
         name = name,
@@ -4501,6 +4507,7 @@ private fun AssetMarketDataRecord.toMarketDetailState(
             chart7dJson = chart7dJson,
             fallbackPrice = priceLocal.toBigDecimalOrZero(),
             nowMillis = System.currentTimeMillis(),
+            valueMultiplier = chartValueMultiplier,
         ),
     )
 }
@@ -4777,6 +4784,7 @@ private fun buildMarketPriceChartData(
     chart7dJson: String,
     fallbackPrice: BigDecimal,
     nowMillis: Long,
+    valueMultiplier: BigDecimal = BigDecimal.ONE,
 ): HomeBalanceChartData {
     val prices = runCatching {
         val json = org.json.JSONArray(chart7dJson)
@@ -4786,6 +4794,7 @@ private fun buildMarketPriceChartData(
                     ?.takeUnless { it == JSONObject.NULL }
                     ?.toString()
                     ?.toBigDecimalOrNull()
+                    ?.multiply(valueMultiplier)
                     ?.let(::add)
             }
         }

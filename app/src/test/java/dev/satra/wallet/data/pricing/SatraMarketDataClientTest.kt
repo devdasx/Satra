@@ -63,6 +63,23 @@ class SatraMarketDataClientTest {
     }
 
     @Test
+    fun coinbaseFxRateParsesUsdBaseRate() {
+        val transport = RecordingTransport(
+            "https://api.coinbase.com/v2/exchange-rates?currency=USD" to """
+                {"data":{"currency":"USD","rates":{"AED":"3.6725"}}}
+            """.trimIndent(),
+        )
+        val client = SatraMarketDataClient(transport)
+
+        val quote = client.getUsdFxRate("aed")
+
+        assertEquals("USD", quote.baseCurrency)
+        assertEquals("AED", quote.quoteCurrency)
+        assertEquals(BigDecimal("3.6725"), quote.rate)
+        assertEquals(SatraMarketDataClient.COINBASE_FX_PROVIDER, quote.provider)
+    }
+
+    @Test
     fun fxRateFallsBackToOpenExchangeRateApi() {
         val transport = RecordingTransport(
             "https://open.er-api.com/v6/latest/USD" to """
@@ -79,6 +96,7 @@ class SatraMarketDataClientTest {
         assertEquals(SatraMarketDataClient.EXCHANGE_RATE_API_OPEN_PROVIDER, quote.provider)
         assertEquals(
             listOf(
+                "https://api.coinbase.com/v2/exchange-rates?currency=USD",
                 "https://api.frankfurter.dev/v1/latest?base=USD&symbols=VND",
                 "https://open.er-api.com/v6/latest/USD",
             ),

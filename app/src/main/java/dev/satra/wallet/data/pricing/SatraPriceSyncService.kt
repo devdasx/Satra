@@ -207,6 +207,16 @@ class SatraPriceSyncService(
             }.getOrNull()
         }
 
+    suspend fun syncUsdFxRateOrNull(
+        localCurrencyCode: String,
+    ): FxRateQuote? =
+        withContext(dispatcher) {
+            val normalizedCurrency = localCurrencyCode.uppercase()
+            runCatching {
+                marketDataClient.getUsdFxRate(normalizedCurrency)
+            }.getOrNull()
+        }
+
     suspend fun syncAssetMarketDetailOrNull(
         symbol: String,
         localCurrencyCode: String,

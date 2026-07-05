@@ -2,10 +2,12 @@ package dev.satra.wallet.data.db
 
 import android.content.Context
 import dev.satra.wallet.data.assets.SupportedAssetCatalog
+import dev.satra.wallet.data.pricing.FxRateQuote
 import dev.satra.wallet.data.pricing.SatraAssetPrice
 import dev.satra.wallet.data.pricing.SatraAssetMarketData
 import dev.satra.wallet.data.pricing.SatraPriceSyncResult
 import dev.satra.wallet.data.pricing.SatraPriceSyncService
+import dev.satra.wallet.data.pricing.priceSymbol
 import dev.satra.wallet.data.security.SatraSecretCipher
 import dev.satra.wallet.data.security.SatraSecretVault
 import dev.satra.wallet.data.send.SatraSendException
@@ -288,43 +290,40 @@ class SatraWalletRepository(
     suspend fun changeLocalCurrency(localCurrencyCode: String): AppSettingsRecord =
         withContext(Dispatchers.IO) {
             val normalizedCurrency = localCurrencyCode.uppercase()
-            coroutineScope {
-                val priceResultDeferred = async {
-                    priceSyncService.syncSupportedAssetPricesOrNull(
+            val currentSettings = walletDao.getAppSettings()
+            val fxQuote = currentSettings.metadataJson.cachedUsdFxRate(normalizedCurrency)
+                ?: cachedMarketUsdFxRate(normalizedCurrency)
+                ?: priceSyncService.syncUsdFxRateOrNull(normalizedCurrency)
+            val settingsMetadata = fxQuote
+                ?.let { quote -> currentSettings.metadataJson.withUsdFxRate(quote) }
+                ?: currentSettings.metadataJson
+            val settings = walletDao.updateAppSettings(
+                AppSettingsUpdate(
+                    localCurrencyCode = normalizedCurrency,
+                    metadataJson = settingsMetadata,
+                ),
+            )
+            syncPersistenceMutex.withLock {
+                val nowMillis = System.currentTimeMillis()
+                if (fxQuote != null) {
+                    repriceMarketDataFromUsd(
                         localCurrencyCode = normalizedCurrency,
-                        onPartialResult = { partialResult ->
-                            syncPersistenceMutex.withLock {
-                                walletDao.getWallets().forEach { wallet ->
-                                    persistWalletPrices(
-                                        wallet = wallet.copy(localCurrencyCode = normalizedCurrency),
-                                        result = partialResult,
-                                        clearMissingPrices = false,
-                                    )
-                                }
-                            }
-                        },
+                        fxQuote = fxQuote,
+                        nowMillis = nowMillis,
+                    )
+                    repriceWalletDataFromUsd(
+                        localCurrencyCode = normalizedCurrency,
+                        fxQuote = fxQuote,
+                        nowMillis = nowMillis,
+                    )
+                } else {
+                    walletDao.updateLocalCurrencyForWalletData(
+                        localCurrencyCode = normalizedCurrency,
+                        nowMillis = nowMillis,
                     )
                 }
-                val settingsDeferred = async {
-                    walletDao.updateAppSettings(AppSettingsUpdate(localCurrencyCode = normalizedCurrency))
-                }
-
-                val wallets = walletDao.getWallets()
-                val priceResult = priceResultDeferred.await()
-                val settings = settingsDeferred.await()
-
-                if (wallets.isEmpty()) {
-                    persistMarketData(priceResult?.marketData.orEmpty())
-                } else {
-                    wallets.forEach { wallet ->
-                        persistWalletPrices(
-                            wallet = wallet.copy(localCurrencyCode = normalizedCurrency),
-                            result = priceResult,
-                        )
-                    }
-                }
-                settings
             }
+            settings
         }
 
     suspend fun setAppPasscode(passcode: String): AppSettingsRecord =
@@ -1557,6 +1556,159 @@ class SatraWalletRepository(
         }
     }
 
+    private fun cachedMarketUsdFxRate(localCurrencyCode: String): FxRateQuote? {
+        val normalizedCurrency = localCurrencyCode.uppercase()
+        if (normalizedCurrency == DEFAULT_LOCAL_CURRENCY_CODE) {
+            return FxRateQuote(
+                baseCurrency = DEFAULT_LOCAL_CURRENCY_CODE,
+                quoteCurrency = DEFAULT_LOCAL_CURRENCY_CODE,
+                rate = BigDecimal.ONE,
+                provider = "local-fx-cache",
+            )
+        }
+        return walletDao.getAllAssetMarketData()
+            .asSequence()
+            .filter { market -> market.localCurrencyCode.equals(normalizedCurrency, ignoreCase = true) }
+            .mapNotNull { market ->
+                val usdPrice = market.priceUsd.toPositiveBigDecimalOrNull() ?: return@mapNotNull null
+                val localPrice = market.priceLocal.toPositiveBigDecimalOrNull() ?: return@mapNotNull null
+                localPrice.divide(usdPrice, 18, RoundingMode.HALF_UP)
+            }
+            .firstOrNull { rate -> rate > BigDecimal.ZERO }
+            ?.let { rate ->
+                FxRateQuote(
+                    baseCurrency = DEFAULT_LOCAL_CURRENCY_CODE,
+                    quoteCurrency = normalizedCurrency,
+                    rate = rate,
+                    provider = "local-market-fx-cache",
+                )
+            }
+    }
+
+    private fun repriceMarketDataFromUsd(
+        localCurrencyCode: String,
+        fxQuote: FxRateQuote,
+        nowMillis: Long,
+    ) {
+        walletDao.getAllAssetMarketData().forEach { market ->
+            val usdPrice = market.priceUsd.toPositiveBigDecimalOrNull() ?: return@forEach
+            walletDao.upsertAssetMarketData(
+                NewAssetMarketDataRecord(
+                    symbol = market.symbol,
+                    name = market.name,
+                    coinGeckoId = market.coinGeckoId,
+                    localCurrencyCode = localCurrencyCode,
+                    priceUsd = usdPrice.toPlainString(),
+                    priceLocal = usdPrice.multiply(fxQuote.rate).toPlainString(),
+                    marketCapUsd = market.marketCapUsd,
+                    marketCapLocal = market.marketCapUsd.localFromUsd(fxQuote.rate),
+                    volume24hUsd = market.volume24hUsd,
+                    volume24hLocal = market.volume24hUsd.localFromUsd(fxQuote.rate),
+                    high24hUsd = market.high24hUsd,
+                    low24hUsd = market.low24hUsd,
+                    priceChange24hPercent = market.priceChange24hPercent,
+                    description = market.description,
+                    homepageUrl = market.homepageUrl,
+                    provider = market.provider,
+                    chart7dJson = market.chart7dJson,
+                    updatedAt = nowMillis,
+                    metadataJson = market.metadataJson.withLocalCurrencyReprice(fxQuote, nowMillis),
+                ),
+            )
+        }
+    }
+
+    private fun repriceWalletDataFromUsd(
+        localCurrencyCode: String,
+        fxQuote: FxRateQuote,
+        nowMillis: Long,
+    ) {
+        val assetsById = SupportedAssetCatalog.assets.associateBy { asset -> asset.assetId }
+        val marketDataBySymbol = walletDao.getAllAssetMarketData()
+            .associateBy { market -> market.symbol.uppercase() }
+        val settingsMetadataJson = walletDao.getAppSettings().metadataJson
+
+        walletDao.getWallets().forEach { wallet ->
+            val localPricesByAssetId = mutableMapOf<String, BigDecimal>()
+            var totalFiat = BigDecimal.ZERO
+            walletDao.getWalletAssets(wallet.walletId).forEach { walletAsset ->
+                val asset = assetsById[walletAsset.assetId] ?: return@forEach
+                val usdPrice = walletAsset.cachedUsdPrice(
+                    priceSymbol = asset.priceSymbol,
+                    marketDataBySymbol = marketDataBySymbol,
+                    settingsMetadataJson = settingsMetadataJson,
+                )
+                if (usdPrice == null) {
+                    walletDao.updateWalletAssetPrice(
+                        walletId = wallet.walletId,
+                        assetId = walletAsset.assetId,
+                        priceFiatValue = "0",
+                        balanceFiatValue = "0",
+                        localCurrencyCode = localCurrencyCode,
+                        metadataJson = walletAsset.metadataJson.withPriceSync(
+                            price = null,
+                            cached = false,
+                            localCurrencyCode = localCurrencyCode,
+                            failed = false,
+                            nowMillis = nowMillis,
+                        ),
+                        nowMillis = nowMillis,
+                    )
+                    return@forEach
+                }
+                val localPrice = usdPrice.multiply(fxQuote.rate)
+                val balanceFiat = walletAsset.balanceDecimal
+                    .toBigDecimalOrZero()
+                    .multiply(localPrice)
+                localPricesByAssetId[walletAsset.assetId] = localPrice
+                totalFiat += balanceFiat
+                walletDao.updateWalletAssetPrice(
+                    walletId = wallet.walletId,
+                    assetId = walletAsset.assetId,
+                    priceFiatValue = localPrice.toPlainString(),
+                    balanceFiatValue = balanceFiat.toPlainString(),
+                    localCurrencyCode = localCurrencyCode,
+                    metadataJson = walletAsset.metadataJson.withCachedUsdReprice(
+                        usdPrice = usdPrice,
+                        localCurrencyCode = localCurrencyCode,
+                        fxProvider = fxQuote.provider,
+                        nowMillis = nowMillis,
+                    ),
+                    nowMillis = nowMillis,
+                )
+            }
+
+            val fiatValuesByTransactionId = walletDao
+                .getWalletTransactions(wallet.walletId)
+                .associate { transaction ->
+                    val fiatValue = localPricesByAssetId[transaction.assetId]
+                        ?.let { localPrice ->
+                            transaction.amountDecimal
+                                .toBigDecimalOrZero()
+                                .abs()
+                                .multiply(localPrice)
+                                .stripTrailingZeros()
+                                .toPlainString()
+                        }
+                    transaction.transactionId to fiatValue
+                }
+            if (fiatValuesByTransactionId.isNotEmpty()) {
+                walletDao.updateWalletTransactionFiatValues(
+                    walletId = wallet.walletId,
+                    localCurrencyCode = localCurrencyCode,
+                    fiatValuesByTransactionId = fiatValuesByTransactionId,
+                    nowMillis = nowMillis,
+                )
+            }
+            walletDao.updateWalletFiatBalance(
+                walletId = wallet.walletId,
+                balanceFiatValue = totalFiat.toPlainString(),
+                localCurrencyCode = localCurrencyCode,
+                nowMillis = nowMillis,
+            )
+        }
+    }
+
     private fun persistWalletPrices(
         wallet: WalletRecord,
         result: SatraPriceSyncResult?,
@@ -2132,6 +2284,10 @@ private fun String.withPriceSync(
     nowMillis: Long,
 ): String {
     val root = runCatching { JSONObject(this) }.getOrElse { JSONObject() }
+    val previousUsdPrice = root.optJSONObject("priceSync")
+        ?.optString("usdPrice")
+        ?.takeUnless { value -> value.isBlank() || value == "null" }
+    val usdPrice = price?.usdPrice?.toPlainString() ?: previousUsdPrice
     root.put(
         "priceSync",
         JSONObject()
@@ -2146,8 +2302,94 @@ private fun String.withPriceSync(
             )
             .put("provider", price?.provider ?: "local-database")
             .put("providerAssetId", price?.providerAssetId)
-            .put("usdPrice", price?.usdPrice?.toPlainString())
+            .put("usdPrice", usdPrice ?: JSONObject.NULL)
             .put("localCurrencyCode", localCurrencyCode)
+            .put("updatedAt", nowMillis),
+    )
+    return root.toString()
+}
+
+private fun String.withCachedUsdReprice(
+    usdPrice: BigDecimal,
+    localCurrencyCode: String,
+    fxProvider: String,
+    nowMillis: Long,
+): String {
+    val root = runCatching { JSONObject(this) }.getOrElse { JSONObject() }
+    root.put(
+        "priceSync",
+        JSONObject()
+            .put("status", "cached")
+            .put("provider", "local-database+$fxProvider")
+            .put("providerAssetId", JSONObject.NULL)
+            .put("usdPrice", usdPrice.toPlainString())
+            .put("localCurrencyCode", localCurrencyCode)
+            .put("updatedAt", nowMillis),
+    )
+    return root.toString()
+}
+
+private fun String.withUsdFxRate(
+    fxQuote: FxRateQuote,
+    nowMillis: Long = System.currentTimeMillis(),
+): String {
+    val root = runCatching { JSONObject(this) }.getOrElse { JSONObject() }
+    val rates = root.optJSONObject("usdFxRates") ?: JSONObject()
+    rates.put(
+        fxQuote.quoteCurrency.uppercase(),
+        JSONObject()
+            .put("baseCurrency", fxQuote.baseCurrency.uppercase())
+            .put("quoteCurrency", fxQuote.quoteCurrency.uppercase())
+            .put("rate", fxQuote.rate.toPlainString())
+            .put("provider", fxQuote.provider)
+            .put("updatedAt", nowMillis),
+    )
+    root.put("usdFxRates", rates)
+    return root.toString()
+}
+
+private fun String.cachedUsdFxRate(localCurrencyCode: String): FxRateQuote? {
+    val normalizedCurrency = localCurrencyCode.uppercase()
+    if (normalizedCurrency == DEFAULT_LOCAL_CURRENCY_CODE) {
+        return FxRateQuote(
+            baseCurrency = DEFAULT_LOCAL_CURRENCY_CODE,
+            quoteCurrency = DEFAULT_LOCAL_CURRENCY_CODE,
+            rate = BigDecimal.ONE,
+            provider = "local-fx-cache",
+        )
+    }
+    val entry = runCatching { JSONObject(this) }
+        .getOrNull()
+        ?.optJSONObject("usdFxRates")
+        ?.optJSONObject(normalizedCurrency)
+        ?: return null
+    val rate = entry.optString("rate").toPositiveBigDecimalOrNull() ?: return null
+    return FxRateQuote(
+        baseCurrency = entry.optString("baseCurrency", DEFAULT_LOCAL_CURRENCY_CODE).uppercase(),
+        quoteCurrency = normalizedCurrency,
+        rate = rate,
+        provider = entry.optString("provider", "local-fx-cache"),
+    )
+}
+
+private fun String.usdPriceFromPriceSyncMetadata(): BigDecimal? =
+    runCatching { JSONObject(this) }
+        .getOrNull()
+        ?.optJSONObject("priceSync")
+        ?.optString("usdPrice")
+        ?.toPositiveBigDecimalOrNull()
+
+private fun String.withLocalCurrencyReprice(
+    fxQuote: FxRateQuote,
+    nowMillis: Long,
+): String {
+    val root = runCatching { JSONObject(this) }.getOrElse { JSONObject() }
+    root.put(
+        "localCurrencyReprice",
+        JSONObject()
+            .put("baseCurrency", fxQuote.baseCurrency.uppercase())
+            .put("quoteCurrency", fxQuote.quoteCurrency.uppercase())
+            .put("fxProvider", fxQuote.provider)
             .put("updatedAt", nowMillis),
     )
     return root.toString()
@@ -2155,6 +2397,42 @@ private fun String.withPriceSync(
 
 private fun String.toBigDecimalOrZero(): BigDecimal =
     runCatching { BigDecimal(this) }.getOrDefault(BigDecimal.ZERO)
+
+private fun String?.toPositiveBigDecimalOrNull(): BigDecimal? =
+    this
+        ?.takeIf(String::isNotBlank)
+        ?.let { value -> runCatching { BigDecimal(value) }.getOrNull() }
+        ?.takeIf { value -> value > BigDecimal.ZERO }
+
+private fun String?.localFromUsd(fxRate: BigDecimal): String? =
+    toPositiveBigDecimalOrNull()
+        ?.multiply(fxRate)
+        ?.toPlainString()
+
+private fun WalletAssetRecord.cachedUsdPrice(
+    priceSymbol: String,
+    marketDataBySymbol: Map<String, AssetMarketDataRecord>,
+    settingsMetadataJson: String,
+): BigDecimal? {
+    val metadataUsdPrice = metadataJson.usdPriceFromPriceSyncMetadata()
+    val marketUsdPrice = marketDataBySymbol[priceSymbol.uppercase()]
+        ?.priceUsd
+        .toPositiveBigDecimalOrNull()
+    val usdLocalPrice = priceFiatValue
+        .toPositiveBigDecimalOrNull()
+        ?.takeIf { localCurrencyCode.equals(DEFAULT_LOCAL_CURRENCY_CODE, ignoreCase = true) }
+    val localFxRate = settingsMetadataJson.cachedUsdFxRate(localCurrencyCode)?.rate
+    val derivedUsdPrice = priceFiatValue
+        .toPositiveBigDecimalOrNull()
+        ?.takeIf { !localCurrencyCode.equals(DEFAULT_LOCAL_CURRENCY_CODE, ignoreCase = true) }
+        ?.let { localPrice ->
+            localFxRate
+                ?.takeIf { rate -> rate > BigDecimal.ZERO }
+                ?.let { rate -> localPrice.divide(rate, 18, RoundingMode.HALF_UP) }
+        }
+
+    return metadataUsdPrice ?: marketUsdPrice ?: usdLocalPrice ?: derivedUsdPrice
+}
 
 private fun WalletAssetRecord?.cachedBalanceFiatValue(
     balanceDecimal: String,

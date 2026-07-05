@@ -403,6 +403,11 @@ class SatraMarketDataClient(
                 provider = FRANKFURTER_PROVIDER,
             )
         }
+        val coinbaseQuote = runCatching { getCoinbaseUsdFxRate(target) }.getOrNull()
+        if (coinbaseQuote != null) {
+            return coinbaseQuote
+        }
+
         val frankfurterQuote = runCatching {
             val response = transport.get(
                 "https://api.frankfurter.dev/v1/latest?base=USD&symbols=${urlEncode(target)}",
@@ -432,6 +437,22 @@ class SatraMarketDataClient(
             quoteCurrency = target,
             rate = rate,
             provider = EXCHANGE_RATE_API_OPEN_PROVIDER,
+        )
+    }
+
+    fun getCoinbaseUsdFxRate(quoteCurrency: String): FxRateQuote {
+        val target = quoteCurrency.normalizedTicker()
+        val response = transport.get("https://api.coinbase.com/v2/exchange-rates?currency=USD")
+        val rate = JSONObject(response)
+            .getJSONObject("data")
+            .getJSONObject("rates")
+            .getString(target)
+            .toBigDecimal()
+        return FxRateQuote(
+            baseCurrency = "USD",
+            quoteCurrency = target,
+            rate = rate,
+            provider = COINBASE_FX_PROVIDER,
         )
     }
 
@@ -536,6 +557,7 @@ class SatraMarketDataClient(
         const val KUCOIN_PROVIDER = "kucoin-spot-public"
         const val KUCOIN_MARKET_PROVIDER = "kucoin-spot-public+kucoin-candles-public"
         const val FRANKFURTER_PROVIDER = "frankfurter-public"
+        const val COINBASE_FX_PROVIDER = "coinbase-fx-public"
         const val EXCHANGE_RATE_API_OPEN_PROVIDER = "exchangerate-api-open-public"
     }
 }
