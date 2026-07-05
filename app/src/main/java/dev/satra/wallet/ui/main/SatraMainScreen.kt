@@ -1613,7 +1613,7 @@ private fun SatraMarketsScreen(
                         .widthIn(max = HomeContentMaxWidth)
                         .padding(horizontal = 20.dp, vertical = 20.dp),
                 ) {
-                    MarketsHeader(currencyCode = content.currencyCode)
+                    MarketsHeader()
                     Spacer(modifier = Modifier.height(18.dp))
                     MarketsSearchField(
                         query = marketSearchQuery,
@@ -1657,44 +1657,13 @@ private fun SatraMarketsScreen(
 }
 
 @Composable
-private fun MarketsHeader(
-    currencyCode: String,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.Top,
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = stringResource(R.string.markets_title),
-                style = MaterialTheme.typography.headlineLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Bold,
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = stringResource(R.string.markets_body),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        Spacer(modifier = Modifier.width(12.dp))
-        Row(
-            modifier = Modifier
-                .clip(RoundedCornerShape(100.dp))
-                .background(MaterialTheme.colorScheme.surfaceContainer)
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = currencyCode,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Bold,
-            )
-        }
-    }
+private fun MarketsHeader() {
+    Text(
+        text = stringResource(R.string.markets_title),
+        style = MaterialTheme.typography.headlineLarge,
+        color = MaterialTheme.colorScheme.onSurface,
+        fontWeight = FontWeight.Bold,
+    )
 }
 
 @Composable
