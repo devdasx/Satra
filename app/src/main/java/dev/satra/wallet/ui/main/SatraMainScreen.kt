@@ -94,6 +94,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -150,6 +151,7 @@ fun SatraMainScreen(
     val tabs = remember { SatraMainTab.entries }
     val backStackEntry by tabNavController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route ?: SatraMainTab.Home.route
+    val currentTab = remember(currentRoute) { selectedMainTabForRoute(currentRoute) }
     var activeSetupCompletionFlow by rememberSaveable(setupCompletionFlow?.routeSegment) {
         mutableStateOf(setupCompletionFlow)
     }
@@ -177,15 +179,13 @@ fun SatraMainScreen(
         bottomBar = {
             SatraBottomNavigationBar(
                 tabs = tabs,
-                currentRoute = currentRoute,
+                selectedTab = currentTab,
                 onTabSelected = { tab ->
-                    tabNavController.navigate(tab.route) {
-                        popUpTo(tabNavController.graph.findStartDestination().id) {
-                            saveState = true
-                        }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
+                    tabNavController.navigateMainTab(
+                        tab = tab,
+                        currentTab = currentTab,
+                        currentRoute = currentRoute,
+                    )
                 },
             )
         },
@@ -539,7 +539,7 @@ fun SatraMainScreen(
 @Composable
 private fun SatraBottomNavigationBar(
     tabs: List<SatraMainTab>,
-    currentRoute: String,
+    selectedTab: SatraMainTab,
     onTabSelected: (SatraMainTab) -> Unit,
 ) {
     NavigationBar(
@@ -548,7 +548,7 @@ private fun SatraBottomNavigationBar(
     ) {
         tabs.forEach { tab ->
             NavigationBarItem(
-                selected = currentRoute == tab.route,
+                selected = selectedTab == tab,
                 onClick = { onTabSelected(tab) },
                 icon = {
                     Icon(
@@ -573,6 +573,45 @@ private fun SatraBottomNavigationBar(
                 ),
             )
         }
+    }
+}
+
+private fun selectedMainTabForRoute(route: String): SatraMainTab =
+    when {
+        route == SatraMainTab.Activity.route ||
+            route == SatraMainRoute.TransactionDetailPattern ||
+            route.startsWith("${SatraMainTab.Activity.route}/") -> SatraMainTab.Activity
+        route == SatraMainTab.Markets.route ||
+            route == SatraMainRoute.MarketDetailPattern ||
+            route.startsWith("${SatraMainTab.Markets.route}/") -> SatraMainTab.Markets
+        route == SatraMainTab.Settings.route ||
+            route.startsWith("${SatraMainTab.Settings.route}/") -> SatraMainTab.Settings
+        else -> SatraMainTab.Home
+    }
+
+private fun NavHostController.navigateMainTab(
+    tab: SatraMainTab,
+    currentTab: SatraMainTab,
+    currentRoute: String,
+) {
+    if (tab == currentTab) {
+        if (currentRoute != tab.route) {
+            val poppedToRoot = popBackStack(tab.route, inclusive = false)
+            if (!poppedToRoot) {
+                navigate(tab.route) {
+                    launchSingleTop = true
+                }
+            }
+        }
+        return
+    }
+
+    navigate(tab.route) {
+        popUpTo(graph.findStartDestination().id) {
+            saveState = true
+        }
+        launchSingleTop = true
+        restoreState = true
     }
 }
 
