@@ -1,0 +1,11 @@
+# Copy this file to release.properties and fill the local-only secrets.
+# Never commit release.properties or the upload keystore.
+
+PLAY_PACKAGE_NAME=com.satra.wallet
+PLAY_SERVICE_ACCOUNT_JSON=/Users/thuglifex/Desktop/satra-play-service-account.json
+PLAY_TRACK=internal
+
+SATRA_UPLOAD_STORE_FILE=/Users/thuglifex/Desktop/satra-upload-key.jks
+SATRA_UPLOAD_STORE_PASSWORD=replace-with-upload-keystore-password
+SATRA_UPLOAD_KEY_ALIAS=replace-with-upload-key-alias
+SATRA_UPLOAD_KEY_PASSWORD=replace-with-upload-key-password

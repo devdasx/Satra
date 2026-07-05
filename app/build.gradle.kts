@@ -1,7 +1,33 @@
+import com.github.triplet.gradle.androidpublisher.ReleaseStatus
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("com.github.triplet.play")
 }
+
+val releasePropertiesFile = rootProject.file("release.properties")
+val releaseProperties = Properties().apply {
+    if (releasePropertiesFile.isFile) {
+        releasePropertiesFile.inputStream().use(::load)
+    }
+}
+
+fun releaseProperty(name: String): String? {
+    return providers.gradleProperty(name).orNull?.takeIf { it.isNotBlank() }
+        ?: System.getenv(name)?.takeIf { it.isNotBlank() }
+        ?: releaseProperties.getProperty(name)?.takeIf { it.isNotBlank() }
+}
+
+val defaultPlayServiceAccountJson = "/Users/thuglifex/Desktop/satra-play-service-account.json"
+val releaseSigningKeys = listOf(
+    "SATRA_UPLOAD_STORE_FILE",
+    "SATRA_UPLOAD_STORE_PASSWORD",
+    "SATRA_UPLOAD_KEY_ALIAS",
+    "SATRA_UPLOAD_KEY_PASSWORD",
+)
+val hasReleaseSigningConfig = releaseSigningKeys.all { releaseProperty(it) != null }
 
 android {
     namespace = "dev.satra.wallet"
@@ -31,6 +57,83 @@ android {
             enableSplit = false
         }
     }
+
+    signingConfigs {
+        if (hasReleaseSigningConfig) {
+            create("release") {
+                storeFile = file(releaseProperty("SATRA_UPLOAD_STORE_FILE")!!)
+                storePassword = releaseProperty("SATRA_UPLOAD_STORE_PASSWORD")!!
+                keyAlias = releaseProperty("SATRA_UPLOAD_KEY_ALIAS")!!
+                keyPassword = releaseProperty("SATRA_UPLOAD_KEY_PASSWORD")!!
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            if (hasReleaseSigningConfig) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+        }
+    }
+}
+
+play {
+    serviceAccountCredentials.set(file(releaseProperty("PLAY_SERVICE_ACCOUNT_JSON") ?: defaultPlayServiceAccountJson))
+    track.set(releaseProperty("PLAY_TRACK") ?: "internal")
+    releaseStatus.set(ReleaseStatus.COMPLETED)
+    defaultToAppBundles.set(true)
+}
+
+val checkPlayReleaseConfig by tasks.registering {
+    group = "publishing"
+    description = "Checks local signing and Play upload credentials before building a release for Google Play."
+
+    doLast {
+        val missing = releaseSigningKeys
+            .filter { releaseProperty(it) == null }
+            .toMutableList()
+
+        val credentialsFile = file(releaseProperty("PLAY_SERVICE_ACCOUNT_JSON") ?: defaultPlayServiceAccountJson)
+        if (!credentialsFile.isFile) {
+            missing += "PLAY_SERVICE_ACCOUNT_JSON (file not found: ${credentialsFile.absolutePath})"
+        }
+
+        val uploadStoreFile = releaseProperty("SATRA_UPLOAD_STORE_FILE")?.let(::file)
+        if (uploadStoreFile != null && !uploadStoreFile.isFile) {
+            missing += "SATRA_UPLOAD_STORE_FILE (file not found: ${uploadStoreFile.absolutePath})"
+        }
+
+        if (missing.isNotEmpty()) {
+            error(
+                buildString {
+                    appendLine("Missing Google Play release configuration:")
+                    missing.forEach { appendLine("- $it") }
+                    appendLine()
+                    appendLine("Fill /Users/thuglifex/Documents/Android Bitcoin App/release.properties with the same upload key used for the first Play Console upload.")
+                },
+            )
+        }
+    }
+}
+
+tasks.matching {
+    it.name in setOf(
+        "bundleRelease",
+        "publish",
+        "publishBundle",
+        "publishApk",
+        "publishApps",
+        "publishRelease",
+        "publishReleaseBundle",
+        "publishReleaseApk",
+        "publishReleaseApps",
+        "uploadReleasePrivateBundle",
+        "uploadReleasePrivateApk",
+        "installReleasePrivateArtifact",
+    )
+}.configureEach {
+    dependsOn(checkPlayReleaseConfig)
 }
 
 dependencies {
