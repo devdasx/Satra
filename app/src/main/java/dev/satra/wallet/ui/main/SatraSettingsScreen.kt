@@ -84,6 +84,7 @@ import dev.satra.wallet.data.db.WalletBackupRecord
 import dev.satra.wallet.data.db.WalletKeyType
 import dev.satra.wallet.data.db.WalletPrivateKeyBackupRecord
 import dev.satra.wallet.data.db.WalletRecord
+import dev.satra.wallet.ui.components.RecoveryPhraseWordGrid
 import dev.satra.wallet.ui.components.SatraButton
 import dev.satra.wallet.ui.components.SatraButtonDefaults
 import dev.satra.wallet.ui.components.SatraButtonVariant
@@ -607,10 +608,10 @@ private fun WalletBackupSheet(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     } else {
-                        SecretValueCard(
+                        RecoveryPhraseBackupCard(
                             title = recoveryPhraseLabel,
                             body = stringResource(R.string.settings_wallet_management_recovery_phrase_body),
-                            secret = recoveryPhrase,
+                            recoveryPhrase = recoveryPhrase,
                             onCopy = {
                                 copySecretToClipboard(
                                     context = context,
@@ -660,6 +661,51 @@ private fun WalletBackupSheet(
                 }
             }
             Spacer(modifier = Modifier.height(18.dp))
+        }
+    }
+}
+
+@Composable
+private fun RecoveryPhraseBackupCard(
+    title: String,
+    body: String,
+    recoveryPhrase: String,
+    onCopy: () -> Unit,
+) {
+    val words = remember(recoveryPhrase) {
+        recoveryPhrase.split(Regex("\\s+")).filter(String::isNotBlank)
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.ExtraBold,
+            )
+            Text(
+                text = body,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.SemiBold,
+            )
+            RecoveryPhraseWordGrid(words = words)
+            SatraButton(
+                text = stringResource(R.string.settings_wallet_management_copy_secret),
+                onClick = onCopy,
+                modifier = Modifier.fillMaxWidth(),
+                variant = SatraButtonVariant.Secondary,
+                height = SatraButtonDefaults.CompactHeight,
+            )
         }
     }
 }

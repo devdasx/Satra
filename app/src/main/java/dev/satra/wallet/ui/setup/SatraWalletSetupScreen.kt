@@ -76,6 +76,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.satra.wallet.R
 import dev.satra.wallet.settings.SatraSettings
+import dev.satra.wallet.ui.components.RecoveryPhraseWordGrid
 import dev.satra.wallet.ui.components.SatraButton
 import dev.satra.wallet.ui.components.SatraButtonDefaults
 import dev.satra.wallet.ui.components.SatraButtonVariant
@@ -999,24 +1000,7 @@ private fun RecoveryPhrasePanel(
 
     FramedTool {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            words.chunked(3).forEachIndexed { rowIndex, rowWords ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    rowWords.forEachIndexed { columnIndex, word ->
-                        val wordNumber = rowIndex * 3 + columnIndex + 1
-                        RecoveryWordChip(
-                            number = wordNumber,
-                            text = word,
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                    repeat(3 - rowWords.size) {
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
-                }
-            }
+            RecoveryPhraseWordGrid(words = words)
             SatraButton(
                 text = stringResource(R.string.wallet_setup_recovery_phrase_copy),
                 onClick = onCopyClick,
@@ -1769,35 +1753,6 @@ private fun FramedTool(content: @Composable () -> Unit) {
             .padding(16.dp),
     ) {
         content()
-    }
-}
-
-@Composable
-private fun RecoveryWordChip(
-    number: Int,
-    text: String,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier
-            .clip(MaterialTheme.shapes.medium)
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-            .padding(horizontal = 10.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        Text(
-            text = number.toString(),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontWeight = FontWeight.Bold,
-        )
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.Bold,
-        )
     }
 }
 
