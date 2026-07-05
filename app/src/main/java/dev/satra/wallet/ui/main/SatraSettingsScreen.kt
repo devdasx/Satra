@@ -671,8 +671,6 @@ private fun SecretValueCard(
     secret: String,
     onCopy: () -> Unit,
 ) {
-    var revealed by rememberSaveable(title, secret) { mutableStateOf(false) }
-    val hiddenValue = stringResource(R.string.settings_wallet_management_hidden_secret_value)
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -695,27 +693,13 @@ private fun SecretValueCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                text = if (revealed) secret else hiddenValue,
+                text = secret,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface,
             )
             SatraButton(
-                text = stringResource(
-                    if (revealed) {
-                        R.string.settings_wallet_management_hide_secret
-                    } else {
-                        R.string.settings_wallet_management_reveal_secret
-                    },
-                ),
-                onClick = { revealed = !revealed },
-                modifier = Modifier.fillMaxWidth(),
-                variant = SatraButtonVariant.Secondary,
-                height = SatraButtonDefaults.CompactHeight,
-            )
-            SatraButton(
                 text = stringResource(R.string.settings_wallet_management_copy_secret),
                 onClick = onCopy,
-                enabled = revealed,
                 modifier = Modifier.fillMaxWidth(),
                 variant = SatraButtonVariant.Secondary,
                 height = SatraButtonDefaults.CompactHeight,
