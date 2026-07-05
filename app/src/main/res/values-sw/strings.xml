@@ -541,8 +541,11 @@
     <string name="send_sent_title">Tuma hali</string>
     <string name="send_receipt_empty_body">Rekodi hii ya kutuma haikupatikana.</string>
     <string name="send_receipt_empty_title">Tuma rekodi haipatikani</string>
-    <string name="send_sent_pending_title">Si matangazo</string>
-    <string name="send_sent_pending_body">Uhamisho huu hauna heshi ya blockchain na haukutangazwa. Haupaswi kuonekana katika Shughuli.</string>
+    <string name="send_sent_broadcast_title">Imetangazwa</string>
+    <string name="send_sent_broadcast_body">Uhamisho huu umetumwa kwenye mtandao. Unaweza kubaki unasubiri hadi chain ithibitishe.</string>
+    <string name="send_sent_not_broadcast_title">Haijatangazwa</string>
+    <string name="send_sent_not_broadcast_body">Uhamisho huu hauna heshi ya blockchain na haukutangazwa. Haupaswi kuonekana katika Shughuli.</string>
+    <string name="send_receipt_hash">Hashi</string>
     <string name="send_receipt_status">Hali</string>
     <string name="send_receipt_saved">Imehifadhiwa</string>
     <string name="send_receipt_share">Shiriki</string>

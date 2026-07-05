@@ -541,8 +541,11 @@
     <string name="send_sent_title">Statut d\'envoi</string>
     <string name="send_receipt_empty_body">Cet enregistrement d\'envoi est introuvable.</string>
     <string name="send_receipt_empty_title">Envoyer l\'enregistrement indisponible</string>
-    <string name="send_sent_pending_title">Non diffusé</string>
-    <string name="send_sent_pending_body">Ce transfert n\'a pas de hachage blockchain et n\'a pas été diffusé. Il ne devrait pas apparaître dans Activity.</string>
+    <string name="send_sent_broadcast_title">Diffusé</string>
+    <string name="send_sent_broadcast_body">Ce transfert a été soumis au réseau. Il peut rester en attente jusqu a la confirmation par la chaîne.</string>
+    <string name="send_sent_not_broadcast_title">Non diffusé</string>
+    <string name="send_sent_not_broadcast_body">Ce transfert n a pas de hachage blockchain et n a pas été diffusé. Il ne devrait pas apparaître dans Activité.</string>
+    <string name="send_receipt_hash">Hachage</string>
     <string name="send_receipt_status">Status</string>
     <string name="send_receipt_saved">Saved</string>
     <string name="send_receipt_share">Share</string>

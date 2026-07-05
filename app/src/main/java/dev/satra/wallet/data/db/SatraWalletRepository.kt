@@ -424,6 +424,11 @@ class SatraWalletRepository(
             wallets.firstOrNull { it.isActive } ?: wallets.firstOrNull()
         }
 
+    suspend fun getWallet(walletId: String): WalletRecord? =
+        withContext(Dispatchers.IO) {
+            walletDao.getWallet(walletId)
+        }
+
     suspend fun getWallets(): List<WalletRecord> =
         withContext(Dispatchers.IO) {
             walletDao.getWallets()
@@ -502,6 +507,11 @@ class SatraWalletRepository(
             walletDao.getWalletTransactions(walletId)
         }
 
+    suspend fun getWalletTransaction(transactionId: String): WalletTransactionRecord? =
+        withContext(Dispatchers.IO) {
+            walletDao.getWalletTransaction(transactionId)
+        }
+
     suspend fun getAssetMarketData(symbol: String): AssetMarketDataRecord? =
         withContext(Dispatchers.IO) {
             walletDao.getAssetMarketData(symbol)
@@ -533,6 +543,9 @@ class SatraWalletRepository(
                 ?: throw SatraSendException.UnsupportedNetwork(assetId)
             val network = SupportedAssetCatalog.networks.firstOrNull { it.networkId == asset.networkId }
                 ?: throw SatraSendException.UnsupportedNetwork(asset.networkId)
+            if (!SatraSendService.canSignAndBroadcast(asset, network)) {
+                throw SatraSendException.UnsupportedNetwork(network.networkId)
+            }
             val walletAsset = walletDao.getWalletAssets(wallet.walletId)
                 .firstOrNull { it.assetId == asset.assetId && it.networkId == asset.networkId }
                 ?: throw SatraSendException.UnsupportedNetwork(asset.networkId)
@@ -584,6 +597,12 @@ class SatraWalletRepository(
                     priceFiatValue = walletAsset.priceFiatValue,
                 ),
             )
+            val transactionHash = broadcast.transactionHash.trim()
+                .ifBlank {
+                    throw SatraSendException.BroadcastFailed(
+                        IllegalStateException("Broadcast returned no blockchain hash."),
+                    )
+                }
 
             val fiatValue = amountDecimal
                 .abs()
@@ -595,7 +614,7 @@ class SatraWalletRepository(
                     walletId = wallet.walletId,
                     assetId = asset.assetId,
                     networkId = network.networkId,
-                    transactionHash = broadcast.transactionHash,
+                    transactionHash = transactionHash,
                     direction = WalletTransactionDirection.Outgoing.value,
                     status = WalletTransactionStatus.Pending.value,
                     amountRaw = "-${broadcast.amountRaw}",

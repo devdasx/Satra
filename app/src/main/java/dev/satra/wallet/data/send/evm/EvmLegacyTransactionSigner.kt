@@ -55,6 +55,14 @@ object EvmLegacyTransactionSigner {
         return "0x${signedPayload.toHex()}"
     }
 
+    fun transactionHash(rawTransaction: String): String {
+        val normalized = rawTransaction.removePrefix("0x").removePrefix("0X")
+        require(normalized.isNotBlank() && normalized.length % 2 == 0 && normalized.all(Char::isHexDigit)) {
+            "Invalid signed EVM transaction."
+        }
+        return "0x${keccak256(normalized.hexToBytes()).toHex()}"
+    }
+
     private fun parsePrivateKey(privateKeyHex: String): BigInteger {
         val normalized = privateKeyHex.removePrefix("0x").removePrefix("0X")
         require(normalized.length == PRIVATE_KEY_HEX_LENGTH && normalized.all(Char::isHexDigit)) {

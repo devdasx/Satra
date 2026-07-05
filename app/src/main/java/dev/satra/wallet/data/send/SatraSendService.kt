@@ -1,5 +1,6 @@
 package dev.satra.wallet.data.send
 
+import dev.satra.wallet.data.assets.SupportedAsset
 import dev.satra.wallet.data.assets.SupportedAssetCatalog
 import dev.satra.wallet.data.assets.SupportedNetwork
 import dev.satra.wallet.data.send.aptos.AptosSendClient
@@ -143,6 +144,7 @@ class SatraSendService {
         } catch (error: Throwable) {
             throw SatraSendException.MissingSigningKey()
         }
+        val localTransactionHash = EvmLegacyTransactionSigner.transactionHash(rawTransaction)
 
         val broadcast = try {
             client.sendRawTransaction(rawTransaction)
@@ -155,7 +157,7 @@ class SatraSendService {
             ?.assetId
 
         return SatraBroadcastResult(
-            transactionHash = broadcast.value,
+            transactionHash = localTransactionHash,
             rawTransaction = rawTransaction,
             providerName = broadcast.provider.name,
             fromAddress = fromAddress,
@@ -874,20 +876,40 @@ class SatraSendService {
         }
     }
 
-    private companion object {
-        const val GAS_BUFFER_NUMERATOR = 120L
-        const val GAS_BUFFER_DENOMINATOR = 100L
-        const val MIN_EVM_GAS_LIMIT = 21_000L
-        const val SATOSHIS_PER_COIN = 100_000_000.0
-        const val BYTES_PER_KILOBYTE = 1_000.0
-        const val APTOS_EXPIRATION_SECONDS = 600L
-        const val DEFAULT_APTOS_MAX_GAS_AMOUNT = 100_000UL
-        const val STELLAR_BASE_FEE_STROOPS = 100
-        const val DEFAULT_SUI_GAS_BUDGET_MIST = 5_000_000L
-        const val SUI_COIN_TYPE = "0x2::sui::SUI"
-        const val DEFAULT_KAVA_GAS_LIMIT = 200_000L
-        const val DEFAULT_KAVA_FEE_UKAVA = 20_000L
-        const val XRPL_LAST_LEDGER_OFFSET = 20L
+    companion object {
+        fun canSignAndBroadcast(
+            asset: SupportedAsset,
+            network: SupportedNetwork,
+        ): Boolean =
+            when (network.family) {
+                "evm",
+                "utxo",
+                "solana",
+                "tron",
+                "aptos",
+                "near",
+                "cosmos",
+                -> true
+                "ripple",
+                "stellar",
+                "sui",
+                -> asset.assetType.uppercase(Locale.US) == "NATIVE"
+                else -> false
+            }
+
+        private const val GAS_BUFFER_NUMERATOR = 120L
+        private const val GAS_BUFFER_DENOMINATOR = 100L
+        private const val MIN_EVM_GAS_LIMIT = 21_000L
+        private const val SATOSHIS_PER_COIN = 100_000_000.0
+        private const val BYTES_PER_KILOBYTE = 1_000.0
+        private const val APTOS_EXPIRATION_SECONDS = 600L
+        private const val DEFAULT_APTOS_MAX_GAS_AMOUNT = 100_000UL
+        private const val STELLAR_BASE_FEE_STROOPS = 100
+        private const val DEFAULT_SUI_GAS_BUDGET_MIST = 5_000_000L
+        private const val SUI_COIN_TYPE = "0x2::sui::SUI"
+        private const val DEFAULT_KAVA_GAS_LIMIT = 200_000L
+        private const val DEFAULT_KAVA_FEE_UKAVA = 20_000L
+        private const val XRPL_LAST_LEDGER_OFFSET = 20L
     }
 }
 

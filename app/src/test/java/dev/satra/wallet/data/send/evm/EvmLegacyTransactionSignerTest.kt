@@ -28,6 +28,10 @@ class EvmLegacyTransactionSignerTest {
                 "9f3dc64214b297fb1966a3b6d83",
             rawTransaction,
         )
+        assertEquals(
+            "0x33469b22e9f636356c4160a87eb19df52b7412e8eac32a4a55ffe88ea8350788",
+            EvmLegacyTransactionSigner.transactionHash(rawTransaction),
+        )
     }
 
     @Test

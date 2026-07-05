@@ -541,8 +541,11 @@
     <string name="send_sent_title">స్థితిని పంపండి</string>
     <string name="send_receipt_empty_body">ఈ పంపిన రికార్డు కనుగొనబడలేదు.</string>
     <string name="send_receipt_empty_title">పంపిన రికార్డు అందుబాటులో లేదు</string>
-    <string name="send_sent_pending_title">ప్రసారం కాదు</string>
-    <string name="send_sent_pending_body">ఈ బదిలీకి బ్లాక్‌చెయిన్ హాష్ లేదు మరియు ప్రసారం చేయలేదు. ఇది కార్యాచరణలో కనిపించకూడదు.</string>
+    <string name="send_sent_broadcast_title">ప్రసారమైంది</string>
+    <string name="send_sent_broadcast_body">ఈ బదిలీ నెట్‌వర్క్‌కు సమర్పించబడింది. చైన్ నిర్ధారించే వరకు ఇది పెండింగ్‌లో ఉండవచ్చు.</string>
+    <string name="send_sent_not_broadcast_title">ప్రసారం కాలేదు</string>
+    <string name="send_sent_not_broadcast_body">ఈ బదిలీకి బ్లాక్‌చెయిన్ హాష్ లేదు మరియు ప్రసారం చేయలేదు. ఇది కార్యాచరణలో కనిపించకూడదు.</string>
+    <string name="send_receipt_hash">హాష్</string>
     <string name="send_receipt_status">స్థితి</string>
     <string name="send_receipt_saved">సేవ్ చేయబడింది</string>
     <string name="send_receipt_share">షేర్ చేయండి</string>

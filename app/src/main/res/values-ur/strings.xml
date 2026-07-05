@@ -541,8 +541,11 @@
     <string name="send_sent_title">اسٹیٹس بھیجیں۔</string>
     <string name="send_receipt_empty_body">بھیجنے کا یہ ریکارڈ نہیں مل سکا۔</string>
     <string name="send_receipt_empty_title">ریکارڈ بھیجنا دستیاب نہیں ہے۔</string>
-    <string name="send_sent_pending_title">نشر نہیں کیا گیا۔</string>
-    <string name="send_sent_pending_body">اس منتقلی میں کوئی بلاکچین ہیش نہیں ہے اور اسے نشر نہیں کیا گیا تھا۔ یہ سرگرمی میں ظاہر نہیں ہونا چاہئے۔</string>
+    <string name="send_sent_broadcast_title">نشر ہو گیا</string>
+    <string name="send_sent_broadcast_body">یہ منتقلی نیٹ ورک کو بھیج دی گئی ہے۔ چین کی تصدیق تک یہ زیر التوا رہ سکتی ہے۔</string>
+    <string name="send_sent_not_broadcast_title">نشر نہیں کیا گیا</string>
+    <string name="send_sent_not_broadcast_body">اس منتقلی میں کوئی بلاکچین ہیش نہیں ہے اور اسے نشر نہیں کیا گیا تھا۔ یہ سرگرمی میں ظاہر نہیں ہونا چاہئے۔</string>
+    <string name="send_receipt_hash">ہیش</string>
     <string name="send_receipt_status">حیثیت</string>
     <string name="send_receipt_saved">محفوظ کیا گیا۔</string>
     <string name="send_receipt_share">شیئر کریں۔</string>

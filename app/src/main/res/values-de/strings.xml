@@ -541,8 +541,11 @@
     <string name="send_sent_title">Sendestatus</string>
     <string name="send_receipt_empty_body">Dieser Sendedatensatz konnte nicht gefunden werden.</string>
     <string name="send_receipt_empty_title">Datensatz senden nicht verfügbar</string>
-    <string name="send_sent_pending_title">Nicht ausgestrahlt</string>
-    <string name="send_sent_pending_body">Diese Übertragung hat keinen Blockchain-Hash und wurde nicht gesendet. Es sollte nicht in der Aktivität erscheinen.</string>
+    <string name="send_sent_broadcast_title">Gesendet</string>
+    <string name="send_sent_broadcast_body">Diese Übertragung wurde an das Netzwerk gesendet. Sie kann ausstehend bleiben, bis die Chain sie bestätigt.</string>
+    <string name="send_sent_not_broadcast_title">Nicht gesendet</string>
+    <string name="send_sent_not_broadcast_body">Diese Übertragung hat keinen Blockchain-Hash und wurde nicht gesendet. Sie sollte nicht in der Aktivität erscheinen.</string>
+    <string name="send_receipt_hash">Hash</string>
     <string name="send_receipt_status">Status</string>
     <string name="send_receipt_saved">Gespeichert</string>
     <string name="send_receipt_share">Teilen</string>

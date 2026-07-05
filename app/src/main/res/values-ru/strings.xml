@@ -541,8 +541,11 @@
     <string name="send_sent_title">Отправить статус</string>
     <string name="send_receipt_empty_body">Эту запись отправки не удалось найти.</string>
     <string name="send_receipt_empty_title">Отправить запись недоступна</string>
-    <string name="send_sent_pending_title">Не транслируется</string>
-    <string name="send_sent_pending_body">Эта передача не имеет хэша блокчейна и не транслировалась. Он не должен отображаться в «Активности».</string>
+    <string name="send_sent_broadcast_title">Отправлено в сеть</string>
+    <string name="send_sent_broadcast_body">Этот перевод отправлен в сеть. Он может оставаться в ожидании, пока цепочка его не подтвердит.</string>
+    <string name="send_sent_not_broadcast_title">Не отправлено в сеть</string>
+    <string name="send_sent_not_broadcast_body">У этого перевода нет хэша блокчейна, и он не был отправлен в сеть. Он не должен отображаться в активности.</string>
+    <string name="send_receipt_hash">Хэш</string>
     <string name="send_receipt_status">Статус</string>
     <string name="send_receipt_saved">Сохранено</string>
     <string name="send_receipt_share">Поделиться</string>

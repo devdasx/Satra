@@ -77,6 +77,7 @@ import dev.satra.wallet.data.db.WalletTransactionDirection
 import dev.satra.wallet.data.db.WalletTransactionRecord
 import dev.satra.wallet.data.db.WalletTransactionStatus
 import dev.satra.wallet.data.send.SatraSendException
+import dev.satra.wallet.data.send.SatraSendService
 import dev.satra.wallet.ui.components.SatraButton
 import dev.satra.wallet.ui.components.SatraButtonDefaults
 import dev.satra.wallet.ui.components.SatraButtonVariant
@@ -368,16 +369,7 @@ fun SatraSendSentScreen(
     onSendAnother: () -> Unit,
 ) {
     var state by remember(transactionId) {
-        mutableStateOf(
-            initialWalletSnapshot?.toSendReceiptState(Uri.decode(transactionId))
-                ?: SendReceiptState.Loading,
-        )
-    }
-
-    LaunchedEffect(initialWalletSnapshot, transactionId) {
-        initialWalletSnapshot?.toSendReceiptState(Uri.decode(transactionId))?.let { cachedState ->
-            state = cachedState
-        }
+        mutableStateOf<SendReceiptState>(SendReceiptState.Loading)
     }
 
     LaunchedEffect(walletRepository, transactionId, initialWalletSnapshot?.walletId) {
@@ -1011,6 +1003,8 @@ private fun SendReceiptContent(
 ) {
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
+    val transactionHash = state.transaction.transactionHash?.takeIf(String::isNotBlank)
+    val hasBlockchainHash = transactionHash != null
     val statusLabel = when (state.transaction.status) {
         WalletTransactionStatus.Pending.value -> stringResource(R.string.send_status_pending)
         WalletTransactionStatus.Success.value -> stringResource(R.string.send_status_success)
@@ -1045,7 +1039,13 @@ private fun SendReceiptContent(
                 }
                 Spacer(modifier = Modifier.height(20.dp))
                 Text(
-                    text = stringResource(R.string.send_sent_pending_title),
+                    text = stringResource(
+                        if (hasBlockchainHash) {
+                            R.string.send_sent_broadcast_title
+                        } else {
+                            R.string.send_sent_not_broadcast_title
+                        },
+                    ),
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.displaySmall,
@@ -1054,7 +1054,13 @@ private fun SendReceiptContent(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = stringResource(R.string.send_sent_pending_body),
+                    text = stringResource(
+                        if (hasBlockchainHash) {
+                            R.string.send_sent_broadcast_body
+                        } else {
+                            R.string.send_sent_not_broadcast_body
+                        },
+                    ),
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.bodyLarge,
@@ -1079,6 +1085,12 @@ private fun SendReceiptContent(
                         value = state.transaction.toAddress?.shortAddress()
                             ?: stringResource(R.string.send_review_pending),
                     )
+                    transactionHash?.let { hash ->
+                        SendReviewLine(
+                            label = stringResource(R.string.send_receipt_hash),
+                            value = hash.shortHash(),
+                        )
+                    }
                     SendReviewLine(
                         label = stringResource(R.string.send_receipt_saved),
                         value = savedTime,
@@ -2025,9 +2037,9 @@ private suspend fun SatraWalletRepository.loadSendDetails(assetId: String): Send
 
 private suspend fun SatraWalletRepository.loadSendReceipt(transactionId: String): SendReceiptState =
     coroutineScope {
-        val wallet = getPrimaryWallet() ?: return@coroutineScope SendReceiptState.Empty
-        val transaction = getWalletTransactions(wallet.walletId)
-            .firstOrNull { it.transactionId == transactionId }
+        val transaction = getWalletTransaction(transactionId)
+            ?: return@coroutineScope SendReceiptState.Empty
+        val wallet = getWallet(transaction.walletId) ?: getPrimaryWallet()
             ?: return@coroutineScope SendReceiptState.Empty
         val asset = SupportedAssetCatalog.assets.firstOrNull { it.assetId == transaction.assetId }
             ?: return@coroutineScope SendReceiptState.Empty
@@ -2089,6 +2101,7 @@ private fun SendSnapshot.Content.toSendAssetRows(): List<SendAssetRow> {
             ?.address
             ?: return@mapNotNull null
         val balance = walletAsset.balanceDecimal.toBigDecimalOrZero()
+        val canSignAndBroadcast = SatraSendService.canSignAndBroadcast(asset, network)
         SendAssetRow(
             asset = asset,
             network = network,
@@ -2099,9 +2112,10 @@ private fun SendSnapshot.Content.toSendAssetRows(): List<SendAssetRow> {
             fiatAmount = walletAsset.balanceFiatValue.toBigDecimalOrZero(),
             fiatFormatted = formatFiat(walletAsset.balanceFiatValue, wallet.localCurrencyCode),
             iconRes = assetIconRes(asset.symbol),
-            hasSigningKey = privateKeys.any { privateKey ->
-                privateKey.networkId == walletAsset.networkId
-            },
+            hasSigningKey = canSignAndBroadcast &&
+                privateKeys.any { privateKey ->
+                    privateKey.networkId == walletAsset.networkId
+                },
         )
     }.sortedWith(
         compareByDescending<SendAssetRow> { row -> row.fiatAmount }
@@ -2295,6 +2309,9 @@ private fun formatSendDateTime(timestampMillis: Long): String =
 
 private fun String.shortAddress(): String =
     if (length <= 14) this else "${take(6)}…${takeLast(6)}"
+
+private fun String.shortHash(): String =
+    if (length <= 18) this else "${take(10)}…${takeLast(6)}"
 
 private fun explorerUrlFor(networkId: String, hash: String): String? =
     when (networkId) {

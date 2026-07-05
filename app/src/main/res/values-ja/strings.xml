@@ -541,8 +541,11 @@
     <string name="send_sent_title">送信ステータス</string>
     <string name="send_receipt_empty_body">この送信レコードは見つかりませんでした。</string>
     <string name="send_receipt_empty_title">送信レコードが利用できません</string>
-    <string name="send_sent_pending_title">放送されない</string>
-    <string name="send_sent_pending_body">この転送にはブロックチェーン ハッシュがなく、ブロードキャストされませんでした。アクティビティには表示されないはずです。</string>
+    <string name="send_sent_broadcast_title">ブロードキャスト済み</string>
+    <string name="send_sent_broadcast_body">この送金はネットワークに送信されました。チェーンが確認するまで保留のままになることがあります。</string>
+    <string name="send_sent_not_broadcast_title">ブロードキャストされていません</string>
+    <string name="send_sent_not_broadcast_body">この送金にはブロックチェーンハッシュがなく、ブロードキャストされていません。アクティビティには表示されないはずです。</string>
+    <string name="send_receipt_hash">ハッシュ</string>
     <string name="send_receipt_status">ステータス</string>
     <string name="send_receipt_saved">保存されました</string>
     <string name="send_receipt_share">シェアする</string>

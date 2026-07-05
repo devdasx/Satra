@@ -541,8 +541,11 @@
     <string name="send_sent_title">Magpadala ng katayuan</string>
     <string name="send_receipt_empty_body">Hindi mahanap ang tala ng pagpapadalang ito.</string>
     <string name="send_receipt_empty_title">Hindi available ang pagpapadala ng record</string>
-    <string name="send_sent_pending_title">Hindi broadcast</string>
-    <string name="send_sent_pending_body">Ang paglipat na ito ay walang blockchain hash at hindi nai-broadcast. Hindi ito dapat lumabas sa Aktibidad.</string>
+    <string name="send_sent_broadcast_title">Na-broadcast</string>
+    <string name="send_sent_broadcast_body">Na-submit ang transfer na ito sa network. Maaari itong manatiling pending hanggang makumpirma ito ng chain.</string>
+    <string name="send_sent_not_broadcast_title">Hindi na-broadcast</string>
+    <string name="send_sent_not_broadcast_body">Ang paglipat na ito ay walang blockchain hash at hindi nai-broadcast. Hindi ito dapat lumabas sa Aktibidad.</string>
+    <string name="send_receipt_hash">Hash</string>
     <string name="send_receipt_status">Katayuan</string>
     <string name="send_receipt_saved">Nai-save</string>
     <string name="send_receipt_share">Ibahagi</string>

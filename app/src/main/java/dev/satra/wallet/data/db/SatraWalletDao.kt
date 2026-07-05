@@ -551,6 +551,20 @@ class SatraWalletDao(
             }
         }
 
+    fun getWalletTransaction(transactionId: String): WalletTransactionRecord? =
+        databaseHelper.readableDatabase.query(
+            SatraDatabaseContract.TABLE_WALLET_TRANSACTIONS,
+            null,
+            "transaction_id = ?",
+            arrayOf(transactionId),
+            null,
+            null,
+            null,
+            "1",
+        ).use { cursor ->
+            if (cursor.moveToFirst()) cursor.toWalletTransactionRecord() else null
+        }
+
     fun deleteUnbroadcastSendDraftTransactions(walletId: String): Int =
         databaseHelper.writableDatabase.delete(
             SatraDatabaseContract.TABLE_WALLET_TRANSACTIONS,

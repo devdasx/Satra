@@ -541,8 +541,11 @@
     <string name="send_sent_title">傳送狀態</string>
     <string name="send_receipt_empty_body">搵唔到呢個發送記錄。</string>
     <string name="send_receipt_empty_title">傳送記錄唔可用</string>
-    <string name="send_sent_pending_title">唔播</string>
-    <string name="send_sent_pending_body">呢個轉移冇區塊鏈哈希，亦都冇廣播過。佢唔應該喺活動入面出現。</string>
+    <string name="send_sent_broadcast_title">已廣播</string>
+    <string name="send_sent_broadcast_body">呢筆轉帳已提交到網絡。喺鏈確認之前可能會保持待處理。</string>
+    <string name="send_sent_not_broadcast_title">未廣播</string>
+    <string name="send_sent_not_broadcast_body">呢個轉移冇區塊鏈哈希，亦都冇廣播過。佢唔應該喺活動入面出現。</string>
+    <string name="send_receipt_hash">哈希</string>
     <string name="send_receipt_status">地位</string>
     <string name="send_receipt_saved">儲存咗</string>
     <string name="send_receipt_share">分享</string>

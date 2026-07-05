@@ -541,8 +541,11 @@
     <string name="send_sent_title">Durumu gönder</string>
     <string name="send_receipt_empty_body">Bu gönderme kaydı bulunamadı.</string>
     <string name="send_receipt_empty_title">Kayıt gönderilemiyor</string>
-    <string name="send_sent_pending_title">Yayınlanmıyor</string>
-    <string name="send_sent_pending_body">Bu aktarımın blockchain karması yok ve yayınlanmadı. Aktivite\'de görünmemelidir.</string>
+    <string name="send_sent_broadcast_title">Yayınlandı</string>
+    <string name="send_sent_broadcast_body">Bu transfer ağa gönderildi. Zincir onaylayana kadar beklemede kalabilir.</string>
+    <string name="send_sent_not_broadcast_title">Yayınlanmadı</string>
+    <string name="send_sent_not_broadcast_body">Bu aktarımın blockchain karması yok ve yayınlanmadı. Aktivite içinde görünmemelidir.</string>
+    <string name="send_receipt_hash">Karma</string>
     <string name="send_receipt_status">Durum</string>
     <string name="send_receipt_saved">Kaydedildi</string>
     <string name="send_receipt_share">Paylaşmak</string>

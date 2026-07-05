@@ -541,8 +541,11 @@
     <string name="send_sent_title">स्थिती पाठवा</string>
     <string name="send_receipt_empty_body">हे पाठवण्याचे रेकॉर्ड सापडले नाही.</string>
     <string name="send_receipt_empty_title">रेकॉर्ड पाठवा अनुपलब्ध</string>
-    <string name="send_sent_pending_title">प्रसारित नाही</string>
-    <string name="send_sent_pending_body">या हस्तांतरणामध्ये ब्लॉकचेन हॅश नाही आणि प्रसारित केले गेले नाही. ते ॲक्टिव्हिटीमध्ये दिसू नये.</string>
+    <string name="send_sent_broadcast_title">प्रसारित</string>
+    <string name="send_sent_broadcast_body">हे हस्तांतरण नेटवर्कवर पाठवले गेले आहे. चेन पुष्टी करेपर्यंत ते प्रलंबित राहू शकते.</string>
+    <string name="send_sent_not_broadcast_title">प्रसारित नाही</string>
+    <string name="send_sent_not_broadcast_body">या हस्तांतरणामध्ये ब्लॉकचेन हॅश नाही आणि ते प्रसारित केले गेले नाही. ते अ‍ॅक्टिव्हिटीमध्ये दिसू नये.</string>
+    <string name="send_receipt_hash">हॅश</string>
     <string name="send_receipt_status">स्थिती</string>
     <string name="send_receipt_saved">जतन केले</string>
     <string name="send_receipt_share">शेअर करा</string>

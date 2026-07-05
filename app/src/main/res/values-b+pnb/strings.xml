@@ -541,8 +541,11 @@
     <string name="send_sent_title">حیثیت بھیجو</string>
     <string name="send_receipt_empty_body">ایہ گھلن دا ریکارڈ نئیں لبھ سکیا۔</string>
     <string name="send_receipt_empty_title">ریکارڈ دستیاب نئیں بھیجو</string>
-    <string name="send_sent_pending_title">نشر نئیں کیتا گیا</string>
-    <string name="send_sent_pending_body">اس منتقلی چ کوئی بلاکچین ہیش نئیں اے تے ایہ نشر نئیں کیتی گئی سی۔ ایہ سرگرمی چ نئیں آنا چاہیدا۔</string>
+    <string name="send_sent_broadcast_title">نشر ہو گیا</string>
+    <string name="send_sent_broadcast_body">ایہ منتقلی نیٹ ورک نوں بھیج دتی گئی اے۔ چین تصدیق کرن تک ایہ زیر التوا رہ سکدی اے۔</string>
+    <string name="send_sent_not_broadcast_title">نشر نئیں کیتا گیا</string>
+    <string name="send_sent_not_broadcast_body">اس منتقلی چ کوئی بلاکچین ہیش نئیں اے تے ایہ نشر نئیں کیتی گئی سی۔ ایہ سرگرمی چ نئیں آنا چاہیدا۔</string>
+    <string name="send_receipt_hash">ہیش</string>
     <string name="send_receipt_status">حالت</string>
     <string name="send_receipt_saved">محفوظ کیتا گیا</string>
     <string name="send_receipt_share">اشتراک</string>

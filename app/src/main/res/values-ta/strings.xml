@@ -541,8 +541,11 @@
     <string name="send_sent_title">நிலையை அனுப்பு</string>
     <string name="send_receipt_empty_body">இந்த அனுப்புதல் பதிவைக் கண்டறிய முடியவில்லை.</string>
     <string name="send_receipt_empty_title">அனுப்பு பதிவு கிடைக்கவில்லை</string>
-    <string name="send_sent_pending_title">ஒளிபரப்பப்படவில்லை</string>
-    <string name="send_sent_pending_body">இந்த பரிமாற்றத்திற்கு பிளாக்செயின் ஹாஷ் இல்லை மற்றும் ஒளிபரப்பப்படவில்லை. இது செயல்பாட்டில் தோன்றக்கூடாது.</string>
+    <string name="send_sent_broadcast_title">ஒளிபரப்பப்பட்டது</string>
+    <string name="send_sent_broadcast_body">இந்த பரிமாற்றம் நெட்வொர்க்கிற்கு அனுப்பப்பட்டது. சங்கிலி உறுதிப்படுத்தும் வரை இது நிலுவையில் இருக்கலாம்.</string>
+    <string name="send_sent_not_broadcast_title">ஒளிபரப்பப்படவில்லை</string>
+    <string name="send_sent_not_broadcast_body">இந்த பரிமாற்றத்திற்கு பிளாக்செயின் ஹாஷ் இல்லை மற்றும் ஒளிபரப்பப்படவில்லை. இது செயல்பாட்டில் தோன்றக்கூடாது.</string>
+    <string name="send_receipt_hash">ஹாஷ்</string>
     <string name="send_receipt_status">நிலை</string>
     <string name="send_receipt_saved">சேமிக்கப்பட்டது</string>
     <string name="send_receipt_share">பகிரவும்</string>

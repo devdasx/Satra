@@ -541,8 +541,11 @@
     <string name="send_sent_title">Enviar status</string>
     <string name="send_receipt_empty_body">Este registro de envio não foi encontrado.</string>
     <string name="send_receipt_empty_title">Enviar registro indisponível</string>
-    <string name="send_sent_pending_title">Não transmitido</string>
-    <string name="send_sent_pending_body">Esta transferência não possui hash de blockchain e não foi transmitida. Não deve aparecer na atividade.</string>
+    <string name="send_sent_broadcast_title">Transmitido</string>
+    <string name="send_sent_broadcast_body">Esta transferência foi enviada para a rede. Ela pode ficar pendente até a cadeia confirmar.</string>
+    <string name="send_sent_not_broadcast_title">Não transmitido</string>
+    <string name="send_sent_not_broadcast_body">Esta transferência não possui hash de blockchain e não foi transmitida. Não deve aparecer na atividade.</string>
+    <string name="send_receipt_hash">Hash</string>
     <string name="send_receipt_status">Status</string>
     <string name="send_receipt_saved">Salvo</string>
     <string name="send_receipt_share">Compartilhar</string>

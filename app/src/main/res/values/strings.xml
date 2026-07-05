@@ -549,9 +549,12 @@
     <string name="send_sent_title">Send status</string>
     <string name="send_receipt_empty_body">This send record could not be found.</string>
     <string name="send_receipt_empty_title">Send record unavailable</string>
-    <string name="send_sent_pending_title">Not broadcast</string>
-    <string name="send_sent_pending_body">This transfer has no blockchain hash and was not broadcast. It should not appear in Activity.</string>
+    <string name="send_sent_broadcast_title">Broadcast</string>
+    <string name="send_sent_broadcast_body">This transfer was submitted to the network. It can stay pending until the chain confirms it.</string>
+    <string name="send_sent_not_broadcast_title">Not broadcast</string>
+    <string name="send_sent_not_broadcast_body">This transfer has no blockchain hash and was not broadcast. It should not appear in Activity.</string>
     <string name="send_receipt_status">Status</string>
+    <string name="send_receipt_hash">Hash</string>
     <string name="send_receipt_saved">Saved</string>
     <string name="send_receipt_share">Share</string>
     <string name="send_receipt_explorer">Explorer</string>

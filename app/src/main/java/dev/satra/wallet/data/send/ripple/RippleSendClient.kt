@@ -48,11 +48,7 @@ internal class RippleSendClient(
         if (engine.isNotBlank() && engine != "tesSUCCESS") {
             error(result.optString("engine_result_message").ifBlank { "XRPL submit failed: $engine" })
         }
-        return result.optString("tx_json")
-            .takeIf(String::isNotBlank)
-            ?: result.optJSONObject("tx_json")?.optString("hash")?.takeIf(String::isNotBlank)
-            ?: result.optString("hash").takeIf(String::isNotBlank)
-            ?: error("XRPL submit response missing hash.")
+        return parseSubmitHash(result)
     }
 
     private suspend fun rpc(
@@ -75,6 +71,16 @@ internal class RippleSendClient(
             error(result.optString("error_message").ifBlank { result.optString("error") })
         }
         return result
+    }
+
+    internal companion object {
+        fun parseSubmitHash(result: JSONObject): String =
+            result.optJSONObject("tx_json")?.optString("hash")?.takeIf(String::isNotBlank)
+                ?: result.optString("hash").takeIf(String::isNotBlank)
+                ?: result.optString("tx_json").takeIf { value ->
+                    value.isNotBlank() && !value.trimStart().startsWith("{")
+                }
+                ?: error("XRPL submit response missing hash.")
     }
 }
 

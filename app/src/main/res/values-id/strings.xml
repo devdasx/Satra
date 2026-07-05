@@ -541,8 +541,11 @@
     <string name="send_sent_title">Kirim status</string>
     <string name="send_receipt_empty_body">Catatan pengiriman ini tidak dapat ditemukan.</string>
     <string name="send_receipt_empty_title">Kirim catatan tidak tersedia</string>
-    <string name="send_sent_pending_title">Tidak disiarkan</string>
-    <string name="send_sent_pending_body">Transfer ini tidak memiliki hash blockchain dan tidak disiarkan. Ini seharusnya tidak muncul di Aktivitas.</string>
+    <string name="send_sent_broadcast_title">Disiarkan</string>
+    <string name="send_sent_broadcast_body">Transfer ini telah dikirim ke jaringan. Transfer dapat tetap tertunda sampai chain mengonfirmasinya.</string>
+    <string name="send_sent_not_broadcast_title">Tidak disiarkan</string>
+    <string name="send_sent_not_broadcast_body">Transfer ini tidak memiliki hash blockchain dan tidak disiarkan. Ini seharusnya tidak muncul di Aktivitas.</string>
+    <string name="send_receipt_hash">Hash</string>
     <string name="send_receipt_status">Status</string>
     <string name="send_receipt_saved">Disimpan</string>
     <string name="send_receipt_share">Bagikan</string>

@@ -541,8 +541,11 @@
     <string name="send_sent_title">حالة الإرسال</string>
     <string name="send_receipt_empty_body">تعذر العثور على سجل الإرسال هذا.</string>
     <string name="send_receipt_empty_title">سجل الإرسال غير متاح</string>
-    <string name="send_sent_pending_title">لم يتم البث</string>
-    <string name="send_sent_pending_body">لا يحتوي هذا النقل على تجزئة blockchain ولم يتم بثه. يجب ألا يظهر في النشاط.</string>
+    <string name="send_sent_broadcast_title">تم البث</string>
+    <string name="send_sent_broadcast_body">تم إرسال هذا التحويل إلى الشبكة. قد يبقى معلقا حتى تؤكده السلسلة.</string>
+    <string name="send_sent_not_broadcast_title">لم يتم البث</string>
+    <string name="send_sent_not_broadcast_body">لا يحتوي هذا التحويل على تجزئة بلوكشين ولم يتم بثه. يجب ألا يظهر في النشاط.</string>
+    <string name="send_receipt_hash">التجزئة</string>
     <string name="send_receipt_status">Status</string>
     <string name="send_receipt_saved">Saved</string>
     <string name="send_receipt_share">Share</string>

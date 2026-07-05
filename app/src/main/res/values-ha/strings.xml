@@ -541,8 +541,11 @@
     <string name="send_sent_title">Aika matsayi</string>
     <string name="send_receipt_empty_body">Ba a sami wannan rikodin aika ba.</string>
     <string name="send_receipt_empty_title">Aika rikodin babu</string>
-    <string name="send_sent_pending_title">Ba watsa shirye-shirye</string>
-    <string name="send_sent_pending_body">Wannan canja wuri ba shi da hash na blockchain kuma ba a watsa shi ba. Kada ya bayyana a cikin Aiki.</string>
+    <string name="send_sent_broadcast_title">An watsa</string>
+    <string name="send_sent_broadcast_body">An aika wannan canja wuri zuwa cibiyar sadarwa. Zai iya kasancewa yana jiran aiki har sai sarkar ta tabbatar da shi.</string>
+    <string name="send_sent_not_broadcast_title">Ba a watsa ba</string>
+    <string name="send_sent_not_broadcast_body">Wannan canja wuri ba shi da hash na blockchain kuma ba a watsa shi ba. Kada ya bayyana a cikin Aiki.</string>
+    <string name="send_receipt_hash">Hash</string>
     <string name="send_receipt_status">Matsayi</string>
     <string name="send_receipt_saved">Ajiye</string>
     <string name="send_receipt_share">Raba</string>

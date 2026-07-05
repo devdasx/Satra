@@ -541,8 +541,11 @@
     <string name="send_sent_title">发送状态</string>
     <string name="send_receipt_empty_body">找不到此发送记录。</string>
     <string name="send_receipt_empty_title">发送记录不可用</string>
-    <string name="send_sent_pending_title">未播出</string>
-    <string name="send_sent_pending_body">该转账没有区块链哈希，也没有被广播。它不应该出现在“活动”中。</string>
+    <string name="send_sent_broadcast_title">已广播</string>
+    <string name="send_sent_broadcast_body">这笔转账已提交到网络。在链确认之前可能会保持待处理。</string>
+    <string name="send_sent_not_broadcast_title">未广播</string>
+    <string name="send_sent_not_broadcast_body">该转账没有区块链哈希，也没有被广播。它不应该出现在活动中。</string>
+    <string name="send_receipt_hash">哈希</string>
     <string name="send_receipt_status">地位</string>
     <string name="send_receipt_saved">已保存</string>
     <string name="send_receipt_share">分享</string>

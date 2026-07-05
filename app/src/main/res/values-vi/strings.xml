@@ -541,8 +541,11 @@
     <string name="send_sent_title">Gửi trạng thái</string>
     <string name="send_receipt_empty_body">Không thể tìm thấy bản ghi gửi này.</string>
     <string name="send_receipt_empty_title">Gửi bản ghi không có sẵn</string>
-    <string name="send_sent_pending_title">Không phát sóng</string>
-    <string name="send_sent_pending_body">Việc chuyển tiền này không có hàm băm blockchain và không được phát sóng. Nó sẽ không xuất hiện trong Hoạt động.</string>
+    <string name="send_sent_broadcast_title">Đã phát sóng</string>
+    <string name="send_sent_broadcast_body">Giao dịch chuyển này đã được gửi lên mạng. Nó có thể ở trạng thái chờ cho đến khi chuỗi xác nhận.</string>
+    <string name="send_sent_not_broadcast_title">Chưa phát sóng</string>
+    <string name="send_sent_not_broadcast_body">Giao dịch chuyển này không có hàm băm blockchain và chưa được phát sóng. Nó không nên xuất hiện trong Hoạt động.</string>
+    <string name="send_receipt_hash">Hàm băm</string>
     <string name="send_receipt_status">Trạng thái</string>
     <string name="send_receipt_saved">Đã lưu</string>
     <string name="send_receipt_share">Chia sẻ</string>
