@@ -372,7 +372,7 @@ private fun JSONObject.toTronNativeTransactions(
     providerName: String,
 ): List<AccountChainNormalizedTransaction> {
     val hash = optString("txID").takeIf(String::isNotBlank) ?: return emptyList()
-    val timestampMillis = optLongOrNull("block_timestamp") ?: System.currentTimeMillis()
+    val timestampMillis = optLongOrNull("block_timestamp") ?: 0L
     val blockHeight = optLongOrNull("blockNumber")
     val feeRaw = optLongOrNull("fee")?.toString()
     val status = if (
@@ -451,7 +451,7 @@ private fun JSONObject.toTronTokenTransaction(
         blockHeight = optLongOrNull("block_number"),
         blockHash = null,
         confirmations = 0,
-        timestampMillis = optLongOrNull("block_timestamp") ?: System.currentTimeMillis(),
+        timestampMillis = optLongOrNull("block_timestamp") ?: 0L,
         providerName = providerName,
         metadataJson = JSONObject()
             .put("syncFamily", "account-chain")
@@ -906,7 +906,7 @@ private fun JSONObject.toNearNativeTransaction(
         confirmations = 0,
         timestampMillis = optBigIntegerString("block_timestamp")
             ?.let { runCatching { BigInteger(it).divide(BigInteger("1000000")).toLong() }.getOrNull() }
-            ?: System.currentTimeMillis(),
+            ?: 0L,
         providerName = providerName,
         metadataJson = JSONObject()
             .put("syncFamily", "account-chain")
@@ -959,7 +959,7 @@ private fun JSONObject.toNearTokenTransaction(
         confirmations = 0,
         timestampMillis = optBigIntegerString("block_timestamp")
             ?.let { runCatching { BigInteger(it).divide(BigInteger("1000000")).toLong() }.getOrNull() }
-            ?: System.currentTimeMillis(),
+            ?: 0L,
         providerName = providerName,
         metadataJson = JSONObject()
             .put("syncFamily", "account-chain")
@@ -1484,7 +1484,7 @@ private fun JSONObject.toStellarTransaction(
         timestampMillis = optString("created_at")
             .takeIf(String::isNotBlank)
             ?.let { runCatching { Instant.parse(it).toEpochMilli() }.getOrNull() }
-            ?: System.currentTimeMillis(),
+            ?: 0L,
         providerName = providerName,
         metadataJson = JSONObject()
             .put("syncFamily", "account-chain")
@@ -1764,13 +1764,13 @@ private suspend fun syncTonHistory(
             ?.optJSONArray("transactions")
             ?.objects()
             .orEmpty()
-            .mapNotNull { item -> item.toTonNativeTransaction(walletId, address, nativeAsset, provider.name, nowMillis) }
+            .mapNotNull { item -> item.toTonNativeTransaction(walletId, address, nativeAsset, provider.name, 0L) }
             .let(::addAll)
         eventsResult.getOrNull()
             ?.optJSONArray("events")
             ?.objects()
             .orEmpty()
-            .flatMap { item -> item.toTonJettonTransactions(walletId, address, tokenAssetsByMaster, provider.name, nowMillis) }
+            .flatMap { item -> item.toTonJettonTransactions(walletId, address, tokenAssetsByMaster, provider.name, 0L) }
             .let(::addAll)
     }.distinctBy { it.transactionHash to it.assetId }
         .sortedByDescending { it.timestampMillis }

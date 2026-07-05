@@ -342,6 +342,8 @@ class SolanaWalletSyncService(
                     transactionLimiter.withPermit {
                         runCatching {
                             val parsed = client.parsedTransaction(signature.signature)
+                            val parsedValue = parsed.value
+                            val timestampMillis = parsedValue.resolveSolanaTimestampMillis(signature, client)
                             parsed.value?.toNormalizedTransactions(
                                 walletId = walletId,
                                 walletAddresses = walletAddressSet,
@@ -350,8 +352,7 @@ class SolanaWalletSyncService(
                                 supportedAssetsByMint = supportedAssetsByMint,
                                 latestSlot = latestSlot,
                                 providerName = parsed.provider.name,
-                                fallbackTimestampMillis = signature.blockTimeSeconds?.times(1_000L)
-                                    ?: nowMillis,
+                                fallbackTimestampMillis = timestampMillis,
                                 fallbackSignature = signature.signature,
                             ).orEmpty()
                         }.getOrDefault(emptyList())
@@ -379,6 +380,26 @@ class SolanaWalletSyncService(
                 ).joinToString(" | ").ifBlank { null },
         )
     }
+}
+
+private suspend fun JSONObject?.resolveSolanaTimestampMillis(
+    signature: SolanaSignatureInfo,
+    client: SolanaRpcClient,
+): Long {
+    val transactionBlockTimeMillis = this
+        ?.optLongOrNull("blockTime")
+        ?.times(1_000L)
+    if (transactionBlockTimeMillis != null) return transactionBlockTimeMillis
+
+    val signatureBlockTimeMillis = signature.blockTimeSeconds?.times(1_000L)
+    if (signatureBlockTimeMillis != null) return signatureBlockTimeMillis
+
+    val slot = this?.optLongOrNull("slot") ?: signature.slot.takeIf { it > 0L }
+    return slot
+        ?.let { slotValue ->
+            runCatching { client.blockTime(slotValue).value?.times(1_000L) }.getOrNull()
+        }
+        ?: 0L
 }
 
 private fun JSONObject.toNormalizedTransactions(

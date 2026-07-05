@@ -55,7 +55,55 @@ class SolanaWalletSyncServiceTest {
         assertEquals(SIGNATURE, usdcTransaction.transactionHash)
     }
 
-    private inner class FakeSolanaRpcClient : SolanaRpcClient {
+    @Test
+    fun syncUsesSlotBlockTimeWhenTransactionAndSignatureTimeAreMissing() = runBlocking {
+        val service = SolanaWalletSyncService(
+            clientFactory = {
+                FakeSolanaRpcClient(
+                    signatureBlockTimeSeconds = null,
+                    parsedTransactionJson = parsedUsdcReceiveTransaction(includeBlockTime = false),
+                    blockTimeSecondsBySlot = mapOf((SLOT - 1) to 1_785_000_000L),
+                )
+            },
+            maxSignaturesPerAddress = 10,
+        )
+
+        val result = service.syncWallet(
+            walletId = "wallet",
+            addresses = listOf(address(networkId = "solana", address = WALLET_ADDRESS)),
+        )
+
+        val transaction = result.networkResults.single().transactions.single { it.assetId == "solana:usdc" }
+        assertEquals(1_785_000_000_000L, transaction.timestampMillis)
+    }
+
+    @Test
+    fun syncDoesNotUseLocalClockWhenSolanaTimestampIsUnavailable() = runBlocking {
+        val service = SolanaWalletSyncService(
+            clientFactory = {
+                FakeSolanaRpcClient(
+                    signatureBlockTimeSeconds = null,
+                    parsedTransactionJson = parsedUsdcReceiveTransaction(includeBlockTime = false),
+                    blockTimeSecondsBySlot = mapOf((SLOT - 1) to null),
+                )
+            },
+            maxSignaturesPerAddress = 10,
+        )
+
+        val result = service.syncWallet(
+            walletId = "wallet",
+            addresses = listOf(address(networkId = "solana", address = WALLET_ADDRESS)),
+        )
+
+        val transaction = result.networkResults.single().transactions.single { it.assetId == "solana:usdc" }
+        assertEquals(0L, transaction.timestampMillis)
+    }
+
+    private inner class FakeSolanaRpcClient(
+        private val signatureBlockTimeSeconds: Long? = 1_784_000_000L,
+        private val parsedTransactionJson: JSONObject? = parsedUsdcReceiveTransaction(),
+        private val blockTimeSecondsBySlot: Map<Long, Long?> = emptyMap(),
+    ) : SolanaRpcClient {
         private val provider = SolanaRpcProvider("fake-solana", "memory://solana")
 
         override suspend fun genesisHash(): SolanaRpcCallResult<String> =
@@ -100,7 +148,7 @@ class SolanaWalletSyncServiceTest {
                     SolanaSignatureInfo(
                         signature = SIGNATURE,
                         slot = SLOT - 1,
-                        blockTimeSeconds = 1_784_000_000L,
+                        blockTimeSeconds = signatureBlockTimeSeconds,
                         memo = null,
                         err = null,
                     ),
@@ -110,7 +158,10 @@ class SolanaWalletSyncServiceTest {
             )
 
         override suspend fun parsedTransaction(signature: String): SolanaRpcCallResult<JSONObject?> =
-            SolanaRpcCallResult(parsedUsdcReceiveTransaction(), provider, SLOT)
+            SolanaRpcCallResult(parsedTransactionJson, provider, SLOT)
+
+        override suspend fun blockTime(slot: Long): SolanaRpcCallResult<Long?> =
+            SolanaRpcCallResult(blockTimeSecondsBySlot[slot], provider, SLOT)
 
         override suspend fun tokenLargestAccounts(mint: String): SolanaRpcCallResult<JSONArray> =
             SolanaRpcCallResult(JSONArray(), provider, SLOT)
@@ -119,10 +170,14 @@ class SolanaWalletSyncServiceTest {
             SolanaRpcCallResult(null, provider, SLOT)
     }
 
-    private fun parsedUsdcReceiveTransaction(): JSONObject =
+    private fun parsedUsdcReceiveTransaction(includeBlockTime: Boolean = true): JSONObject =
         JSONObject()
             .put("slot", SLOT - 1)
-            .put("blockTime", 1_784_000_000L)
+            .also { transaction ->
+                if (includeBlockTime) {
+                    transaction.put("blockTime", 1_784_000_000L)
+                }
+            }
             .put(
                 "meta",
                 JSONObject()

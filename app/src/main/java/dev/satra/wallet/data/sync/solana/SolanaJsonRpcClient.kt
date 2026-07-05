@@ -80,6 +80,7 @@ interface SolanaRpcClient {
     ): SolanaRpcCallResult<List<SolanaSignatureInfo>>
 
     suspend fun parsedTransaction(signature: String): SolanaRpcCallResult<JSONObject?>
+    suspend fun blockTime(slot: Long): SolanaRpcCallResult<Long?>
     suspend fun tokenLargestAccounts(mint: String): SolanaRpcCallResult<JSONArray>
     suspend fun parsedAccountInfo(address: String): SolanaRpcCallResult<JSONObject?>
 }
@@ -164,6 +165,14 @@ class SolanaJsonRpcClient(
                 ),
         ) { result ->
             result.takeUnless { it == JSONObject.NULL } as? JSONObject
+        }
+
+    override suspend fun blockTime(slot: Long): SolanaRpcCallResult<Long?> =
+        callVerified(
+            method = "getBlockTime",
+            params = JSONArray().put(slot),
+        ) { result ->
+            (result as? Number)?.toLong()
         }
 
     override suspend fun tokenLargestAccounts(mint: String): SolanaRpcCallResult<JSONArray> =
@@ -376,4 +385,3 @@ internal fun JSONObject.optLongOrNull(name: String): Long? {
     if (!has(name) || isNull(name)) return null
     return optLong(name)
 }
-
