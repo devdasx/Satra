@@ -15,6 +15,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -31,7 +33,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -63,12 +65,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -1035,33 +1034,59 @@ private fun HiddenPhrasePanel(
     mnemonic: String,
     onCopyClick: () -> Unit,
 ) {
+    var revealed by rememberSaveable(mnemonic) { mutableStateOf(false) }
     val words = remember(mnemonic) {
         mnemonic.split(Regex("\\s+")).filter(String::isNotBlank)
     }
 
     FramedTool {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            words.chunked(3).forEachIndexed { rowIndex, rowWords ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    rowWords.forEachIndexed { columnIndex, word ->
-                        val wordNumber = rowIndex * 3 + columnIndex + 1
-                        RecoveryWordChip(
-                            number = wordNumber,
-                            text = word,
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                    repeat(3 - rowWords.size) {
-                        Spacer(modifier = Modifier.weight(1f))
+            if (revealed) {
+                words.chunked(3).forEachIndexed { rowIndex, rowWords ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        rowWords.forEachIndexed { columnIndex, word ->
+                            val wordNumber = rowIndex * 3 + columnIndex + 1
+                            RecoveryWordChip(
+                                number = wordNumber,
+                                text = word,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                        repeat(3 - rowWords.size) {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
                     }
                 }
+            } else {
+                Text(
+                    text = stringResource(R.string.wallet_setup_recovery_phrase_hidden),
+                    modifier = Modifier.fillMaxWidth(),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                )
             }
+            SatraButton(
+                text = stringResource(
+                    if (revealed) {
+                        R.string.wallet_setup_recovery_phrase_hide
+                    } else {
+                        R.string.wallet_setup_recovery_phrase_reveal
+                    },
+                ),
+                onClick = { revealed = !revealed },
+                modifier = Modifier.fillMaxWidth(),
+                variant = SatraButtonVariant.Secondary,
+                height = SatraButtonDefaults.CompactHeight,
+            )
             SatraButton(
                 text = stringResource(R.string.wallet_setup_recovery_phrase_copy),
                 onClick = onCopyClick,
+                enabled = revealed,
                 modifier = Modifier.fillMaxWidth(),
                 variant = SatraButtonVariant.Secondary,
                 height = SatraButtonDefaults.CompactHeight,
@@ -1259,10 +1284,20 @@ private fun PasscodeEntryPanel(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            PasscodePinInput(
+            PasscodeDotDisplay(
                 passcode = passcode,
                 passcodeLength = passcodeLength,
-                onPasscodeChange = onPasscodeChange,
+            )
+
+            SetupPasscodeKeypad(
+                onDigitClick = { digit ->
+                    if (passcode.length < passcodeLength) {
+                        onPasscodeChange(passcode + digit)
+                    }
+                },
+                onBackspaceClick = {
+                    onPasscodeChange(passcode.dropLast(1))
+                },
             )
 
             onOptionsClick?.let {
@@ -1290,44 +1325,17 @@ private fun PasscodeEntryPanel(
     }
 }
 
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
-private fun PasscodePinInput(
+private fun PasscodeDotDisplay(
     passcode: String,
     passcodeLength: Int,
-    onPasscodeChange: (String) -> Unit,
 ) {
-    val focusRequester = remember { FocusRequester() }
-    val keyboardController = LocalSoftwareKeyboardController.current
-
-    LaunchedEffect(passcodeLength) {
-        focusRequester.requestFocus()
-        keyboardController?.show()
-    }
-
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(56.dp)
-            .clip(MaterialTheme.shapes.medium)
-            .clickable {
-                focusRequester.requestFocus()
-                keyboardController?.show()
-            },
+            .height(44.dp),
         contentAlignment = Alignment.Center,
     ) {
-        BasicTextField(
-            value = passcode,
-            onValueChange = onPasscodeChange,
-            modifier = Modifier
-                .fillMaxSize()
-                .focusRequester(focusRequester),
-            textStyle = MaterialTheme.typography.bodyLarge.copy(color = Color.Transparent),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-            cursorBrush = SolidColor(Color.Transparent),
-            singleLine = true,
-        )
-
         Row(
             horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically,
@@ -1336,6 +1344,103 @@ private fun PasscodePinInput(
                 PasscodeDot(filled = index < passcode.length)
             }
         }
+    }
+}
+
+@Composable
+private fun SetupPasscodeKeypad(
+    onDigitClick: (String) -> Unit,
+    onBackspaceClick: () -> Unit,
+) {
+    val rows = listOf(
+        listOf("1", "2", "3"),
+        listOf("4", "5", "6"),
+        listOf("7", "8", "9"),
+    )
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        rows.forEach { row ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                row.forEach { digit ->
+                    SetupPasscodeKey(
+                        modifier = Modifier.weight(1f),
+                        onClick = { onDigitClick(digit) },
+                    ) {
+                        Text(
+                            text = digit,
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                }
+            }
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Spacer(modifier = Modifier.weight(1f))
+            SetupPasscodeKey(
+                modifier = Modifier.weight(1f),
+                onClick = { onDigitClick("0") },
+            ) {
+                Text(
+                    text = "0",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                )
+            }
+            SetupPasscodeKey(
+                modifier = Modifier.weight(1f),
+                onClick = onBackspaceClick,
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_satra_backspace),
+                    contentDescription = stringResource(R.string.app_lock_keypad_backspace),
+                    modifier = Modifier.size(24.dp),
+                    tint = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SetupPasscodeKey(
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    Box(
+        modifier = modifier
+            .height(50.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(
+                if (isPressed) {
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+                } else {
+                    Color.Transparent
+                },
+            )
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick,
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        content()
     }
 }
 

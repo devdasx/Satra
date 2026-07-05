@@ -174,7 +174,7 @@ private fun buttonContentColor(variant: SatraButtonVariant): Color =
 @Composable
 private fun disabledButtonContainerColor(variant: SatraButtonVariant): Color =
     when (variant) {
-        SatraButtonVariant.Danger -> MaterialTheme.colorScheme.error.copy(alpha = 0.14f)
-        SatraButtonVariant.Neutral -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
-        else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+        SatraButtonVariant.Danger -> MaterialTheme.colorScheme.error.copy(alpha = 0.18f)
+        SatraButtonVariant.Neutral -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.14f)
+        else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)
     }

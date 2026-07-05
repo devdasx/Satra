@@ -32,7 +32,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -95,6 +94,7 @@ import dev.satra.wallet.settings.SatraSettings
 import dev.satra.wallet.settings.SatraSettingsDefaults
 import dev.satra.wallet.settings.SatraThemePreference
 import kotlinx.coroutines.launch
+import java.util.Currency
 import java.util.Locale
 
 @Composable
@@ -203,9 +203,11 @@ internal fun SatraWalletManagementScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var wallets by remember { mutableStateOf<List<WalletRecord>?>(null) }
+    var appSettings by remember { mutableStateOf<AppSettingsRecord?>(null) }
     var walletSearchQuery by rememberSaveable { mutableStateOf("") }
     var backupRecord by remember { mutableStateOf<WalletBackupRecord?>(null) }
     var backupMode by remember { mutableStateOf<WalletBackupMode?>(null) }
+    var pendingBackupRequest by remember { mutableStateOf<WalletBackupRequest?>(null) }
     val loadedWallets = wallets.orEmpty()
     val visibleWallets = remember(loadedWallets, walletSearchQuery) {
         loadedWallets.filter { wallet -> wallet.matchesWalletSearch(walletSearchQuery) }
@@ -239,6 +241,26 @@ internal fun SatraWalletManagementScreen(
 
     LaunchedEffect(walletRepository, refreshKey) {
         wallets = walletRepository.getWallets()
+        appSettings = walletRepository.getAppSettings()
+    }
+
+    pendingBackupRequest?.let { request ->
+        WalletBackupPasscodeSheet(
+            appSettings = appSettings,
+            mode = request.mode,
+            onDismiss = { pendingBackupRequest = null },
+            onVerify = { passcode ->
+                scope.launch {
+                    val verified = walletRepository.verifyAppPasscode(passcode)
+                    if (verified) {
+                        pendingBackupRequest = null
+                        loadBackup(request.walletId, request.mode)
+                    } else {
+                        Toast.makeText(context, R.string.settings_security_wrong_passcode, Toast.LENGTH_SHORT).show()
+                    }
+                }
+            },
+        )
     }
 
     backupRecord?.let { backup ->
@@ -309,10 +331,10 @@ internal fun SatraWalletManagementScreen(
                                     }
                                 },
                                 onExportRecoveryPhrase = {
-                                    loadBackup(wallet.walletId, WalletBackupMode.RecoveryPhrase)
+                                    pendingBackupRequest = WalletBackupRequest(wallet.walletId, WalletBackupMode.RecoveryPhrase)
                                 },
                                 onBackupPrivateKeys = {
-                                    loadBackup(wallet.walletId, WalletBackupMode.PrivateKeys)
+                                    pendingBackupRequest = WalletBackupRequest(wallet.walletId, WalletBackupMode.PrivateKeys)
                                 },
                                 onRemoveWallet = {
                                     onRemoveWallet(wallet.walletId)
@@ -330,6 +352,8 @@ internal fun SatraWalletManagementScreen(
 private fun WalletManagementSearchField(
     query: String,
     onQueryChange: (String) -> Unit,
+    @StringRes placeholderRes: Int = R.string.settings_wallet_management_search_placeholder,
+    @StringRes clearContentDescriptionRes: Int = R.string.settings_wallet_management_search_clear,
 ) {
     TextField(
         value = query,
@@ -344,7 +368,7 @@ private fun WalletManagementSearchField(
         ),
         placeholder = {
             Text(
-                text = stringResource(R.string.settings_wallet_management_search_placeholder),
+                text = stringResource(placeholderRes),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Medium,
@@ -368,7 +392,7 @@ private fun WalletManagementSearchField(
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Close,
-                        contentDescription = stringResource(R.string.settings_wallet_management_search_clear),
+                        contentDescription = stringResource(clearContentDescriptionRes),
                         modifier = Modifier.size(20.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -510,6 +534,70 @@ private fun WalletManagementActionsMenu(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+private fun WalletBackupPasscodeSheet(
+    appSettings: AppSettingsRecord?,
+    mode: WalletBackupMode,
+    onDismiss: () -> Unit,
+    onVerify: (String) -> Unit,
+) {
+    var passcode by rememberSaveable { mutableStateOf("") }
+    val titleRes = when (mode) {
+        WalletBackupMode.RecoveryPhrase -> R.string.settings_wallet_management_export_phrase
+        WalletBackupMode.PrivateKeys -> R.string.settings_wallet_management_backup_private_keys
+    }
+    val passcodeEnabled = appSettings?.passcodeEnabled == true
+    val passcodeLength = appSettings?.passcodeLength ?: 6
+
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = stringResource(titleRes),
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = stringResource(R.string.settings_wallet_management_backup_verify_body),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (passcodeEnabled) {
+                OutlinedTextField(
+                    value = passcode,
+                    onValueChange = { passcode = it.filter(Char::isDigit).take(passcodeLength) },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text(stringResource(R.string.settings_security_current_passcode)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                    visualTransformation = PasswordVisualTransformation(),
+                    singleLine = true,
+                )
+            } else {
+                Text(
+                    text = stringResource(R.string.settings_wallet_management_backup_no_passcode_body),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+            SatraButton(
+                text = stringResource(R.string.settings_wallet_management_continue_to_backup),
+                onClick = { onVerify(passcode) },
+                enabled = appSettings != null && passcodeEnabled && passcode.length == passcodeLength,
+                modifier = Modifier.fillMaxWidth(),
+                variant = SatraButtonVariant.Danger,
+            )
+            Spacer(modifier = Modifier.height(18.dp))
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
 private fun WalletBackupSheet(
     backup: WalletBackupRecord,
     mode: WalletBackupMode,
@@ -616,6 +704,8 @@ private fun SecretValueCard(
     secret: String,
     onCopy: () -> Unit,
 ) {
+    var revealed by rememberSaveable(title, secret) { mutableStateOf(false) }
+    val hiddenValue = stringResource(R.string.settings_wallet_management_hidden_secret_value)
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -637,16 +727,28 @@ private fun SecretValueCard(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            SelectionContainer {
-                Text(
-                    text = secret,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-            }
+            Text(
+                text = if (revealed) secret else hiddenValue,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            SatraButton(
+                text = stringResource(
+                    if (revealed) {
+                        R.string.settings_wallet_management_hide_secret
+                    } else {
+                        R.string.settings_wallet_management_reveal_secret
+                    },
+                ),
+                onClick = { revealed = !revealed },
+                modifier = Modifier.fillMaxWidth(),
+                variant = SatraButtonVariant.Secondary,
+                height = SatraButtonDefaults.CompactHeight,
+            )
             SatraButton(
                 text = stringResource(R.string.settings_wallet_management_copy_secret),
                 onClick = onCopy,
+                enabled = revealed,
                 modifier = Modifier.fillMaxWidth(),
                 variant = SatraButtonVariant.Secondary,
                 height = SatraButtonDefaults.CompactHeight,
@@ -965,7 +1067,7 @@ internal fun SatraPreferencesScreen(
                 )
                 SettingsDivider()
                 SettingsSwitchRow(
-                    iconRes = R.drawable.ic_brand_security,
+                    iconRes = R.drawable.ic_brand_move,
                     title = stringResource(R.string.settings_haptics_title),
                     body = stringResource(R.string.settings_haptics_body),
                     checked = settings.hapticsEnabled,
@@ -994,34 +1096,60 @@ internal fun SatraCurrencyScreen(
     var selectedCode by remember(selectedCurrencyCode) {
         mutableStateOf(selectedCurrencyCode.ifBlank { DEFAULT_LOCAL_CURRENCY_CODE })
     }
+    var currencySearchQuery by rememberSaveable { mutableStateOf("") }
+    val activeOptions = remember { activeCurrencyOptions() }
+    val localizedOptions = activeOptions.map { option ->
+        CurrencyOptionLabel(option, stringResource(option.nameRes))
+    }
+    val visibleOptions = remember(localizedOptions, currencySearchQuery) {
+        localizedOptions.filter { option -> option.matches(currencySearchQuery) }
+    }
 
     SettingsScaffold(
         titleRes = R.string.settings_currency_title,
         onBack = onBack,
     ) {
         item {
-            SettingsListCard {
-                allCurrencyOptions.forEachIndexed { index, currency ->
-                    SelectableSettingsRow(
-                        title = stringResource(
-                            R.string.settings_currency_option_title,
-                            currency.code,
-                            stringResource(currency.nameRes),
-                        ),
-                        body = currency.symbol,
-                        selected = selectedCode == currency.code,
-                        leading = { SettingsFlagGlyph(currency.flag) },
-                        onClick = {
-                            selectedCode = currency.code
-                            scope.launch {
-                                val updatedSettings = walletRepository.changeLocalCurrency(currency.code)
-                                selectedCode = updatedSettings.localCurrencyCode
-                                onCurrencyChanged(updatedSettings.localCurrencyCode)
-                            }
-                        },
-                    )
-                    if (index != allCurrencyOptions.lastIndex) {
-                        SettingsDivider()
+            WalletManagementSearchField(
+                query = currencySearchQuery,
+                onQueryChange = { query -> currencySearchQuery = query },
+                placeholderRes = R.string.settings_currency_search_placeholder,
+                clearContentDescriptionRes = R.string.settings_currency_search_clear,
+            )
+        }
+        if (visibleOptions.isEmpty()) {
+            item {
+                SettingsEmptyCard(
+                    titleRes = R.string.settings_currency_no_search_results_title,
+                    bodyRes = R.string.settings_currency_no_search_results_body,
+                )
+            }
+        } else {
+            item {
+                SettingsListCard {
+                    visibleOptions.forEachIndexed { index, currencyLabel ->
+                        val currency = currencyLabel.option
+                        SelectableSettingsRow(
+                            title = stringResource(
+                                R.string.settings_currency_option_title,
+                                currency.code,
+                                currencyLabel.name,
+                            ),
+                            body = currency.symbol,
+                            selected = selectedCode == currency.code,
+                            leading = { SettingsFlagGlyph(currency.flag) },
+                            onClick = {
+                                selectedCode = currency.code
+                                scope.launch {
+                                    val updatedSettings = walletRepository.changeLocalCurrency(currency.code)
+                                    selectedCode = updatedSettings.localCurrencyCode
+                                    onCurrencyChanged(updatedSettings.localCurrencyCode)
+                                }
+                            },
+                        )
+                        if (index != visibleOptions.lastIndex) {
+                            SettingsDivider()
+                        }
                     }
                 }
             }
@@ -1638,12 +1766,19 @@ private fun SettingsRow(
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        Text(
-            text = stringResource(R.string.settings_open_indicator),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontWeight = FontWeight.Bold,
-        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Box(
+            modifier = Modifier.width(24.dp),
+            contentAlignment = Alignment.CenterEnd,
+        ) {
+            Text(
+                text = stringResource(R.string.settings_open_indicator),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+            )
+        }
     }
 }
 
@@ -1887,8 +2022,11 @@ private fun SettingsSwitchRow(
                 text = body,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
             )
         }
+        Spacer(modifier = Modifier.width(12.dp))
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
@@ -2137,11 +2275,138 @@ private data class CurrencyOption(
     val flag: String,
 )
 
+private data class CurrencyOptionLabel(
+    val option: CurrencyOption,
+    val name: String,
+) {
+    fun matches(query: String): Boolean {
+        val normalizedQuery = query.trim()
+        return normalizedQuery.isBlank() ||
+            option.code.contains(normalizedQuery, ignoreCase = true) ||
+            name.contains(normalizedQuery, ignoreCase = true) ||
+            option.symbol.contains(normalizedQuery, ignoreCase = true)
+    }
+}
+
+private data class WalletBackupRequest(
+    val walletId: String,
+    val mode: WalletBackupMode,
+)
+
 private data class AutoLockOption(
     val timeoutMillis: Long,
     @StringRes val titleRes: Int,
     @StringRes val bodyRes: Int,
 )
+
+private val commonCurrencyCodes = listOf(
+    "USD",
+    "EUR",
+    "AED",
+    "GBP",
+    "JPY",
+    "CNY",
+    "INR",
+    "CAD",
+    "AUD",
+    "CHF",
+    "SGD",
+    "HKD",
+    "SAR",
+    "BRL",
+)
+
+private val excludedCurrencyCodes = setOf(
+    "ADP",
+    "AFA",
+    "ATS",
+    "AYM",
+    "AZM",
+    "BEF",
+    "BGL",
+    "BOV",
+    "BYB",
+    "BYR",
+    "CHE",
+    "CHW",
+    "CLF",
+    "COU",
+    "CSD",
+    "CYP",
+    "DEM",
+    "EEK",
+    "ESP",
+    "FIM",
+    "FRF",
+    "GHC",
+    "GRD",
+    "GWP",
+    "IEP",
+    "ITL",
+    "LTL",
+    "LUF",
+    "LVL",
+    "MGF",
+    "MRO",
+    "MTL",
+    "MXV",
+    "MZM",
+    "NLG",
+    "PTE",
+    "ROL",
+    "RUR",
+    "SDD",
+    "SIT",
+    "SKK",
+    "SRG",
+    "STD",
+    "TMM",
+    "TPE",
+    "TRL",
+    "USN",
+    "USS",
+    "UYI",
+    "VEB",
+    "VEF",
+    "XAD",
+    "XAG",
+    "XAU",
+    "XBA",
+    "XBB",
+    "XBC",
+    "XBD",
+    "XDR",
+    "XFO",
+    "XFU",
+    "XPD",
+    "XPT",
+    "XSU",
+    "XTS",
+    "XUA",
+    "XXX",
+    "YUM",
+    "ZMK",
+    "ZWD",
+    "ZWL",
+    "ZWN",
+    "ZWR",
+)
+
+private fun activeCurrencyOptions(): List<CurrencyOption> {
+    val activeCurrencyCodes = Currency.getAvailableCurrencies()
+        .mapTo(mutableSetOf()) { currency -> currency.currencyCode.uppercase(Locale.US) }
+
+    return allCurrencyOptions
+        .asSequence()
+        .filter { option -> option.code in activeCurrencyCodes }
+        .filterNot { option -> option.code in excludedCurrencyCodes }
+        .sortedWith(
+            compareBy<CurrencyOption> { option ->
+                commonCurrencyCodes.indexOf(option.code).takeIf { index -> index >= 0 } ?: Int.MAX_VALUE
+            }.thenBy { option -> option.code },
+        )
+        .toList()
+}
 
 private val allCurrencyOptions: List<CurrencyOption> = listOf(
     CurrencyOption("USD", R.string.settings_currency_name_usd, "$", "🇺🇸"),

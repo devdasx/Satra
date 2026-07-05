@@ -151,6 +151,9 @@ fun SatraMainScreen(
     val backStackEntry by tabNavController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route ?: SatraMainTab.Home.route
     val currentTab = remember(currentRoute) { selectedMainTabForRoute(currentRoute) }
+    val showBottomNavigation = remember(currentRoute, tabs) {
+        tabs.any { tab -> tab.route == currentRoute }
+    }
     var activeSetupCompletionFlow by rememberSaveable(setupCompletionFlow?.routeSegment) {
         mutableStateOf(setupCompletionFlow)
     }
@@ -191,17 +194,19 @@ fun SatraMainScreen(
         modifier = Modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.surface,
         bottomBar = {
-            SatraBottomNavigationBar(
-                tabs = tabs,
-                selectedTab = currentTab,
-                onTabSelected = { tab ->
-                    tabNavController.navigateMainTab(
-                        tab = tab,
-                        currentTab = currentTab,
-                        currentRoute = currentRoute,
-                    )
-                },
-            )
+            if (showBottomNavigation) {
+                SatraBottomNavigationBar(
+                    tabs = tabs,
+                    selectedTab = currentTab,
+                    onTabSelected = { tab ->
+                        tabNavController.navigateMainTab(
+                            tab = tab,
+                            currentTab = currentTab,
+                            currentRoute = currentRoute,
+                        )
+                    },
+                )
+            }
         },
     ) { paddingValues ->
         NavHost(
@@ -222,6 +227,7 @@ fun SatraMainScreen(
                     onBalancesHiddenChange = onBalancesHiddenChange,
                     onSendClick = { tabNavController.navigate(SatraMainRoute.SendAsset) },
                     onReceiveClick = { tabNavController.navigate(SatraMainRoute.Receive) },
+                    onManageWallets = { tabNavController.navigate(SatraMainRoute.WalletManagement) },
                     onCreateWallet = onCreateWallet,
                     onImportWallet = onImportWallet,
                     onAssetClick = { symbol ->
@@ -756,6 +762,7 @@ private fun SatraHomeDashboard(
     onBalancesHiddenChange: (Boolean) -> Unit,
     onSendClick: () -> Unit,
     onReceiveClick: () -> Unit,
+    onManageWallets: () -> Unit,
     onCreateWallet: () -> Unit,
     onImportWallet: () -> Unit,
     onAssetClick: (String) -> Unit,
@@ -905,6 +912,10 @@ private fun SatraHomeDashboard(
             onImportWallet = {
                 walletSwitcherSheetVisible = false
                 onImportWallet()
+            },
+            onManageWallets = {
+                walletSwitcherSheetVisible = false
+                onManageWallets()
             },
         )
     }
@@ -3155,6 +3166,7 @@ private fun WalletSwitcherSheet(
     onWalletSelected: (String) -> Unit,
     onCreateWallet: () -> Unit,
     onImportWallet: () -> Unit,
+    onManageWallets: () -> Unit,
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
@@ -3194,6 +3206,14 @@ private fun WalletSwitcherSheet(
                 }
             }
             Spacer(modifier = Modifier.height(18.dp))
+            SatraButton(
+                text = stringResource(R.string.home_wallet_switcher_manage),
+                onClick = onManageWallets,
+                modifier = Modifier.fillMaxWidth(),
+                variant = SatraButtonVariant.Secondary,
+                height = SatraButtonDefaults.CompactHeight,
+            )
+            Spacer(modifier = Modifier.height(10.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),

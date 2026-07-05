@@ -424,11 +424,13 @@ private fun SendAssetSelectionContent(
 ) {
     val haptic = LocalHapticFeedback.current
     var query by rememberSaveable { mutableStateOf("") }
+    var showAllSupported by rememberSaveable { mutableStateOf(false) }
     val filteredGroups = remember(state.groups, query) {
         state.groups.filterByQuery(query)
     }
     val fundedGroups = filteredGroups.filter { group -> group.totalFiat > BigDecimal.ZERO || group.totalBalance > BigDecimal.ZERO }
     val unfundedGroups = filteredGroups.filterNot { group -> group in fundedGroups }
+    val shouldShowUnfunded = query.isNotBlank() || showAllSupported
 
     SatraChooseAssetScaffold(
         title = stringResource(R.string.send_choose_asset_title),
@@ -461,7 +463,24 @@ private fun SendAssetSelectionContent(
                     )
                 }
             }
-            if (unfundedGroups.isNotEmpty()) {
+            if (fundedGroups.isEmpty() && query.isBlank() && !showAllSupported) {
+                item {
+                    SendNoSpendableAssetsCard(
+                        onBrowseAll = { showAllSupported = true },
+                    )
+                }
+            } else if (unfundedGroups.isNotEmpty() && query.isBlank() && !showAllSupported) {
+                item {
+                    SatraButton(
+                        text = stringResource(R.string.send_browse_supported_assets),
+                        onClick = { showAllSupported = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        variant = SatraButtonVariant.Secondary,
+                        height = SatraButtonDefaults.CompactHeight,
+                    )
+                }
+            }
+            if (unfundedGroups.isNotEmpty() && shouldShowUnfunded) {
                 item { ChooseAssetSectionHeader(title = stringResource(R.string.send_section_all_assets)) }
                 items(unfundedGroups, key = { group -> "all-${group.symbol}" }) { group ->
                     SendAssetGroupRow(
@@ -478,6 +497,42 @@ private fun SendAssetSelectionContent(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun SendNoSpendableAssetsCard(
+    onBrowseAll: () -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+    ) {
+        Column(
+            modifier = Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.send_no_spendable_assets_title),
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = stringResource(R.string.send_no_spendable_assets_body),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            SatraButton(
+                text = stringResource(R.string.send_browse_supported_assets),
+                onClick = onBrowseAll,
+                modifier = Modifier.fillMaxWidth(),
+                variant = SatraButtonVariant.Secondary,
+                height = SatraButtonDefaults.CompactHeight,
+            )
         }
     }
 }
