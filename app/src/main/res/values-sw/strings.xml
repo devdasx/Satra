@@ -930,7 +930,7 @@
     <string name="settings_security_body_enabled">Nambari ya siri imewashwa</string>
     <string name="settings_security_body_disabled">Nambari ya siri imezimwa</string>
     <string name="settings_security_current_passcode">Nambari ya siri ya sasa</string>
-    <string name="settings_security_new_passcode">Nambari mpya ya siri yenye tarakimu 4 au 6</string>
+    <string name="settings_security_new_passcode">Weka nambari ya siri yenye tarakimu 6 kwa kifaa hiki.</string>
     <string name="settings_security_turn_on_passcode">Washa nambari ya siri</string>
     <string name="settings_security_turn_off_passcode">Zima nambari ya siri</string>
     <string name="settings_security_turn_off_passcode_body">Thibitisha nambari yako ya siri kwenye skrini inayofuata kabla ya kuiondoa.</string>

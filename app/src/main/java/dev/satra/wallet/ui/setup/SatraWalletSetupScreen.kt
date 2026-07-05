@@ -15,8 +15,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -60,7 +58,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
@@ -69,9 +66,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -84,13 +79,13 @@ import dev.satra.wallet.settings.SatraSettings
 import dev.satra.wallet.ui.components.SatraButton
 import dev.satra.wallet.ui.components.SatraButtonDefaults
 import dev.satra.wallet.ui.components.SatraButtonVariant
+import dev.satra.wallet.ui.components.SatraPasscodeScreen
 import dev.satra.wallet.ui.main.SatraCryptoIcon
 import dev.satra.wallet.ui.theme.SatraButtonSecondaryBorder
 import dev.satra.wallet.ui.theme.SatraTheme
 import dev.satra.wallet.wallet.bip39.Bip39MnemonicValidation
 import dev.satra.wallet.wallet.bip39.Bip39MnemonicValidator
 import dev.satra.wallet.wallet.derivation.SatraAddressDerivation
-import kotlinx.coroutines.delay
 
 enum class WalletImportMethod(val routeSegment: String, @StringRes val labelRes: Int) {
     RecoveryPhrase(
@@ -174,11 +169,6 @@ private enum class SecuritySetupPage {
     Passcode,
     ConfirmPasscode,
     Success,
-}
-
-private enum class PasscodeConfirmationResult {
-    Confirmed,
-    Mismatch,
 }
 
 @Composable
@@ -580,59 +570,58 @@ fun SetupPasscodeScreen(
 ) {
     SecureWindowFlag()
 
-    var passcode by remember { mutableStateOf("") }
     var passcodeLength by rememberSaveable { mutableStateOf(DEFAULT_PASSCODE_LENGTH) }
     var showPasscodeOptions by rememberSaveable { mutableStateOf(false) }
+    val haptic = LocalHapticFeedback.current
+    val page = securitySetupPage(
+        flow = flow,
+        page = SecuritySetupPage.Passcode,
+    )
 
-    WalletSetupRouteScreen(
-        titleRes = R.string.wallet_setup_screen_create_passcode,
-        page = securitySetupPage(
-            flow = flow,
-            page = SecuritySetupPage.Passcode,
-        ),
+    SatraPasscodeScreen(
+        passcodeLength = passcodeLength,
+        title = stringResource(page.titleRes),
+        body = stringResource(page.bodyRes),
         settings = settings,
-        primaryTextRes = null,
-        onBack = onBack,
-    ) { performHaptic ->
-        PasscodeEntryPanel(
-            passcode = passcode,
-            passcodeLength = passcodeLength,
-            onPasscodeChange = { value ->
-                val nextPasscode = value.filter(Char::isDigit).take(passcodeLength)
-                passcode = nextPasscode
-                if (nextPasscode.length == passcodeLength) {
-                    performHaptic()
-                    onPasscodeCreated(nextPasscode)
+        onPasscodeComplete = onPasscodeCreated,
+        middleContent = {
+            SatraButton(
+                text = stringResource(R.string.wallet_setup_passcode_options),
+                onClick = {
+                    if (settings.hapticsEnabled) {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    }
+                    showPasscodeOptions = true
+                },
+                variant = SatraButtonVariant.Text,
+                height = 40.dp,
+            )
+        },
+    )
+
+    if (showPasscodeOptions) {
+        PasscodeOptionsBottomSheet(
+            selectedPasscodeLength = passcodeLength,
+            onPasscodeLengthSelected = { selectedLength ->
+                passcodeLength = selectedLength
+                showPasscodeOptions = false
+            },
+            onSkip = {
+                showPasscodeOptions = false
+                onSkip()
+            },
+            onDismissRequest = {
+                showPasscodeOptions = false
+            },
+            performHaptic = {
+                if (settings.hapticsEnabled) {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 }
             },
-            onOptionsClick = {
-                performHaptic()
-                showPasscodeOptions = true
-            },
         )
-
-        if (showPasscodeOptions) {
-            PasscodeOptionsBottomSheet(
-                selectedPasscodeLength = passcodeLength,
-                onPasscodeLengthSelected = { selectedLength ->
-                    passcodeLength = selectedLength
-                    passcode = passcode.take(selectedLength)
-                    showPasscodeOptions = false
-                },
-                onSkip = {
-                    showPasscodeOptions = false
-                    onSkip()
-                },
-                onDismissRequest = {
-                    showPasscodeOptions = false
-                },
-                performHaptic = performHaptic,
-            )
-        }
     }
 }
 
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun SetupConfirmPasscodeScreen(
     flow: WalletSetupFlow,
@@ -645,73 +634,43 @@ fun SetupConfirmPasscodeScreen(
 ) {
     SecureWindowFlag()
 
-    var confirmation by remember(expectedPasscode) { mutableStateOf("") }
     var biometricsEnabled by rememberSaveable(showBiometricsOption, expectedPasscode) {
         mutableStateOf(showBiometricsOption)
     }
-    var pendingResult by remember { mutableStateOf<PasscodeConfirmationResult?>(null) }
-    val focusManager = LocalFocusManager.current
-    val keyboardController = LocalSoftwareKeyboardController.current
+    val haptic = LocalHapticFeedback.current
     val passcodeLength = expectedPasscode.length.takeIf { it in supportedPasscodeLengths }
         ?: DEFAULT_PASSCODE_LENGTH
-    val isComplete = confirmation.length == passcodeLength
-    val matches = expectedPasscode.isNotBlank() && confirmation == expectedPasscode
+    val page = securitySetupPage(
+        flow = flow,
+        page = SecuritySetupPage.ConfirmPasscode,
+    )
 
-    LaunchedEffect(pendingResult) {
-        val result = pendingResult ?: return@LaunchedEffect
-        focusManager.clearFocus(force = true)
-        keyboardController?.hide()
-        delay(PASSCODE_KEYBOARD_HIDE_DELAY_MILLIS)
-        when (result) {
-            PasscodeConfirmationResult.Confirmed -> onConfirmed(showBiometricsOption && biometricsEnabled)
-            PasscodeConfirmationResult.Mismatch -> onMismatch()
-        }
-        pendingResult = null
-    }
-
-    WalletSetupRouteScreen(
-        titleRes = R.string.wallet_setup_screen_confirm_passcode,
-        page = securitySetupPage(
-            flow = flow,
-            page = SecuritySetupPage.ConfirmPasscode,
-        ),
+    SatraPasscodeScreen(
+        passcodeLength = passcodeLength,
+        title = stringResource(page.titleRes),
+        body = stringResource(page.bodyRes),
         settings = settings,
-        primaryTextRes = null,
-        onBack = onBack,
-    ) { performHaptic ->
-        PasscodeEntryPanel(
-            passcode = confirmation,
-            passcodeLength = passcodeLength,
-            onPasscodeChange = { value ->
-                if (pendingResult != null) return@PasscodeEntryPanel
-                val nextConfirmation = value.filter(Char::isDigit).take(passcodeLength)
-                confirmation = nextConfirmation
-                if (nextConfirmation.length == passcodeLength) {
-                    performHaptic()
-                    pendingResult = if (expectedPasscode.isNotBlank() && nextConfirmation == expectedPasscode) {
-                        PasscodeConfirmationResult.Confirmed
-                    } else {
-                        PasscodeConfirmationResult.Mismatch
-                    }
-                }
-            },
-            noteRes = if (isComplete && !matches) {
-                R.string.wallet_setup_passcode_mismatch
+        onPasscodeComplete = { confirmation ->
+            if (expectedPasscode.isNotBlank() && confirmation == expectedPasscode) {
+                onConfirmed(showBiometricsOption && biometricsEnabled)
             } else {
-                R.string.wallet_setup_confirm_passcode_note
-            },
-            isError = isComplete && !matches,
-        )
-        if (showBiometricsOption) {
-            BiometricChoicePanel(
-                biometricsEnabled = biometricsEnabled,
-                onBiometricsEnabledChange = { enabled ->
-                    performHaptic()
-                    biometricsEnabled = enabled
-                },
-            )
-        }
-    }
+                onMismatch()
+            }
+        },
+        middleContent = {
+            if (showBiometricsOption) {
+                BiometricChoicePanel(
+                    biometricsEnabled = biometricsEnabled,
+                    onBiometricsEnabledChange = { enabled ->
+                        if (settings.hapticsEnabled) {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        }
+                        biometricsEnabled = enabled
+                    },
+                )
+            }
+        },
+    )
 }
 
 @Composable
@@ -1242,201 +1201,6 @@ private fun BackupChecklist(
             )
         }
     }
-}
-
-@Composable
-private fun PasscodeEntryPanel(
-    passcode: String,
-    passcodeLength: Int,
-    onPasscodeChange: (String) -> Unit,
-    @StringRes noteRes: Int? = null,
-    isError: Boolean = false,
-    onOptionsClick: (() -> Unit)? = null,
-) {
-    FramedTool {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            PasscodeDotDisplay(
-                passcode = passcode,
-                passcodeLength = passcodeLength,
-            )
-
-            SetupPasscodeKeypad(
-                onDigitClick = { digit ->
-                    if (passcode.length < passcodeLength) {
-                        onPasscodeChange(passcode + digit)
-                    }
-                },
-                onBackspaceClick = {
-                    onPasscodeChange(passcode.dropLast(1))
-                },
-            )
-
-            onOptionsClick?.let {
-                SatraButton(
-                    text = stringResource(R.string.wallet_setup_passcode_options),
-                    onClick = it,
-                    variant = SatraButtonVariant.Text,
-                    height = 40.dp,
-                )
-            }
-
-            noteRes?.let { messageRes ->
-                Text(
-                    text = stringResource(messageRes),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (isError) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun PasscodeDotDisplay(
-    passcode: String,
-    passcodeLength: Int,
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(44.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            repeat(passcodeLength) { index ->
-                PasscodeDot(filled = index < passcode.length)
-            }
-        }
-    }
-}
-
-@Composable
-private fun SetupPasscodeKeypad(
-    onDigitClick: (String) -> Unit,
-    onBackspaceClick: () -> Unit,
-) {
-    val rows = listOf(
-        listOf("1", "2", "3"),
-        listOf("4", "5", "6"),
-        listOf("7", "8", "9"),
-    )
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        rows.forEach { row ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                row.forEach { digit ->
-                    SetupPasscodeKey(
-                        modifier = Modifier.weight(1f),
-                        onClick = { onDigitClick(digit) },
-                    ) {
-                        Text(
-                            text = digit,
-                            style = MaterialTheme.typography.titleLarge,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center,
-                        )
-                    }
-                }
-            }
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Spacer(modifier = Modifier.weight(1f))
-            SetupPasscodeKey(
-                modifier = Modifier.weight(1f),
-                onClick = { onDigitClick("0") },
-            ) {
-                Text(
-                    text = "0",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                )
-            }
-            SetupPasscodeKey(
-                modifier = Modifier.weight(1f),
-                onClick = onBackspaceClick,
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_satra_backspace),
-                    contentDescription = stringResource(R.string.app_lock_keypad_backspace),
-                    modifier = Modifier.size(24.dp),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun SetupPasscodeKey(
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit,
-    content: @Composable () -> Unit,
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    Box(
-        modifier = modifier
-            .height(50.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(
-                if (isPressed) {
-                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
-                } else {
-                    Color.Transparent
-                },
-            )
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onClick,
-            ),
-        contentAlignment = Alignment.Center,
-    ) {
-        content()
-    }
-}
-
-@Composable
-private fun PasscodeDot(filled: Boolean) {
-    Box(
-        modifier = Modifier
-            .size(16.dp)
-            .clip(CircleShape)
-            .background(
-                if (filled) {
-                    MaterialTheme.colorScheme.onSurface
-                } else {
-                    MaterialTheme.colorScheme.surfaceContainerHigh
-                },
-            )
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outline,
-                shape = CircleShape,
-            ),
-    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

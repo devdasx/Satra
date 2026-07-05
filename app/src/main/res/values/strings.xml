@@ -952,7 +952,7 @@
     <string name="settings_security_body_enabled">Passcode enabled</string>
     <string name="settings_security_body_disabled">Passcode off</string>
     <string name="settings_security_current_passcode">Current passcode</string>
-    <string name="settings_security_new_passcode">New 4- or 6-digit passcode</string>
+    <string name="settings_security_new_passcode">Enter a 6-digit passcode for this device.</string>
     <string name="settings_security_turn_on_passcode">Turn on passcode</string>
     <string name="settings_security_turn_off_passcode">Turn off passcode</string>
     <string name="settings_security_turn_off_passcode_body">Verify your passcode on the next screen before removing it.</string>

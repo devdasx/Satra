@@ -930,7 +930,7 @@
     <string name="settings_security_body_enabled">पासकोड सक्षम</string>
     <string name="settings_security_body_disabled">पासकोड बंद</string>
     <string name="settings_security_current_passcode">वर्तमान पासकोड</string>
-    <string name="settings_security_new_passcode">नवीन 4- किंवा 6-अंकी पासकोड</string>
+    <string name="settings_security_new_passcode">या डिव्हाइससाठी ६ अंकी पासकोड प्रविष्ट करा.</string>
     <string name="settings_security_turn_on_passcode">पासकोड चालू करा</string>
     <string name="settings_security_turn_off_passcode">पासकोड बंद करा</string>
     <string name="settings_security_turn_off_passcode_body">तुमचा पासकोड काढण्यापूर्वी पुढील स्क्रीनवर सत्यापित करा.</string>

@@ -930,7 +930,7 @@
     <string name="settings_security_body_enabled">啟用咗密碼</string>
     <string name="settings_security_body_disabled">閂咗密碼</string>
     <string name="settings_security_current_passcode">而家嘅密碼</string>
-    <string name="settings_security_new_passcode">新嘅4位數或者6位數密碼</string>
+    <string name="settings_security_new_passcode">請為呢部裝置輸入 6 位數密碼。</string>
     <string name="settings_security_turn_on_passcode">開密碼</string>
     <string name="settings_security_turn_off_passcode">閂密碼</string>
     <string name="settings_security_turn_off_passcode_body">喺下一個畫面驗證你嘅密碼，然後再移除佢。</string>

@@ -930,7 +930,7 @@
     <string name="settings_security_body_enabled">An kunna lambar wucewa</string>
     <string name="settings_security_body_disabled">A kashe lambar wucewa</string>
     <string name="settings_security_current_passcode">Lambar wucewa ta yanzu</string>
-    <string name="settings_security_new_passcode">Sabuwar lambar wucewar lambobi 4 ko 6</string>
+    <string name="settings_security_new_passcode">Shigar da lambar wucewa mai lambobi 6 don wannan na\'urar.</string>
     <string name="settings_security_turn_on_passcode">Kunna lambar wucewa</string>
     <string name="settings_security_turn_off_passcode">Kashe lambar wucewa</string>
     <string name="settings_security_turn_off_passcode_body">Tabbatar da lambar wucewar ku akan allo na gaba kafin cire shi.</string>

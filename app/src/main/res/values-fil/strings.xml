@@ -930,7 +930,7 @@
     <string name="settings_security_body_enabled">Pinagana ang passcode</string>
     <string name="settings_security_body_disabled">Naka-off ang passcode</string>
     <string name="settings_security_current_passcode">Kasalukuyang passcode</string>
-    <string name="settings_security_new_passcode">Bagong 4- o 6 na digit na passcode</string>
+    <string name="settings_security_new_passcode">Maglagay ng 6-digit na passcode para sa device na ito.</string>
     <string name="settings_security_turn_on_passcode">I-on ang passcode</string>
     <string name="settings_security_turn_off_passcode">I-off ang passcode</string>
     <string name="settings_security_turn_off_passcode_body">I-verify ang iyong passcode sa susunod na screen bago ito alisin.</string>

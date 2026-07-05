@@ -930,7 +930,7 @@
     <string name="settings_security_body_enabled">パスコードが有効になっています</string>
     <string name="settings_security_body_disabled">パスコードオフ</string>
     <string name="settings_security_current_passcode">現在のパスコード</string>
-    <string name="settings_security_new_passcode">新しい 4 桁または 6 桁のパスコード</string>
+    <string name="settings_security_new_passcode">このデバイス用の6桁のパスコードを入力してください。</string>
     <string name="settings_security_turn_on_passcode">パスコードをオンにする</string>
     <string name="settings_security_turn_off_passcode">パスコードをオフにする</string>
     <string name="settings_security_turn_off_passcode_body">パスコードを削除する前に、次の画面でパスコードを確認してください。</string>
