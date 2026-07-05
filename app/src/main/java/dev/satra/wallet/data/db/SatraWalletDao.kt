@@ -109,11 +109,11 @@ class SatraWalletDao(
                     put("wallet_name", wallet.walletName)
                     put("wallet_type", wallet.walletType)
                     put("wallet_key_type", wallet.walletKeyType)
-                    putNullable("wallet_key_material", wallet.walletKeyMaterial)
+                    putNullable("primary_secret_id", wallet.primarySecretId)
                     putNullable("wallet_key_fingerprint", wallet.walletKeyFingerprint)
                     putNullable("wallet_key_derivation_path", wallet.walletKeyDerivationPath)
-                    putNullable("passphrase", wallet.passphrase)
-                    put("wallet_key_encryption_state", wallet.walletKeyEncryptionState)
+                    putNullable("passphrase_secret_id", wallet.passphraseSecretId)
+                    put("secret_storage_state", wallet.secretStorageState)
                     put("local_currency_code", wallet.localCurrencyCode)
                     put("balance_fiat_value", "0")
                     putNull("balance_fiat_updated_at")
@@ -145,6 +145,84 @@ class SatraWalletDao(
 
         return walletId
     }
+
+    fun updateWalletSecretReferences(
+        walletId: String,
+        primarySecretId: String?,
+        passphraseSecretId: String?,
+        nowMillis: Long = System.currentTimeMillis(),
+    ): WalletRecord? {
+        databaseHelper.writableDatabase.update(
+            SatraDatabaseContract.TABLE_WALLETS,
+            ContentValues().apply {
+                putNullable("primary_secret_id", primarySecretId)
+                putNullable("passphrase_secret_id", passphraseSecretId)
+                put("secret_storage_state", SecretStorageState.KeystoreAesGcmV1.value)
+                put("updated_at", nowMillis)
+            },
+            "wallet_id = ?",
+            arrayOf(walletId),
+        )
+        return getWallet(walletId)
+    }
+
+    fun insertWalletSecret(
+        secret: NewWalletSecretRecord,
+        nowMillis: Long = System.currentTimeMillis(),
+    ): String {
+        val secretId = UUID.randomUUID().toString()
+        databaseHelper.writableDatabase.insertOrThrow(
+            SatraDatabaseContract.TABLE_WALLET_SECRETS,
+            null,
+            ContentValues().apply {
+                put("secret_id", secretId)
+                put("wallet_id", secret.walletId)
+                put("secret_type", secret.secretType)
+                putNullable("network_id", secret.networkId)
+                putNullable("derivation_path", secret.derivationPath)
+                put("encryption_version", secret.encryptionVersion)
+                put("encryption_algorithm", secret.encryptionAlgorithm)
+                put("keystore_alias", secret.keystoreAlias)
+                put("iv_base64", secret.ivBase64)
+                put("ciphertext_base64", secret.ciphertextBase64)
+                put("created_at", nowMillis)
+                put("updated_at", nowMillis)
+                put("metadata_json", secret.metadataJson)
+            },
+        )
+        return secretId
+    }
+
+    fun getWalletSecret(secretId: String): WalletSecretRecord? =
+        databaseHelper.readableDatabase.query(
+            SatraDatabaseContract.TABLE_WALLET_SECRETS,
+            null,
+            "secret_id = ?",
+            arrayOf(secretId),
+            null,
+            null,
+            null,
+            "1",
+        ).use { cursor ->
+            if (cursor.moveToFirst()) cursor.toWalletSecretRecord() else null
+        }
+
+    fun getWalletSecrets(walletId: String): List<WalletSecretRecord> =
+        databaseHelper.readableDatabase.query(
+            SatraDatabaseContract.TABLE_WALLET_SECRETS,
+            null,
+            "wallet_id = ?",
+            arrayOf(walletId),
+            null,
+            null,
+            "secret_type ASC, network_id ASC, derivation_path ASC",
+        ).use { cursor ->
+            buildList {
+                while (cursor.moveToNext()) {
+                    add(cursor.toWalletSecretRecord())
+                }
+            }
+        }
 
     fun getWallet(walletId: String): WalletRecord? =
         databaseHelper.readableDatabase.query(
@@ -289,13 +367,12 @@ class SatraWalletDao(
                 put("wallet_id", privateKey.walletId)
                 put("network_id", privateKey.networkId)
                 putNullable("address_id", privateKey.addressId)
-                put("key_material", privateKey.keyMaterial)
+                put("secret_id", privateKey.secretId)
                 put("key_format", privateKey.keyFormat)
                 putNullable("derivation_path", privateKey.derivationPath)
                 putNullable("public_key", privateKey.publicKey)
                 put("key_source", privateKey.keySource)
                 put("is_imported", privateKey.isImported.toInt())
-                put("is_encrypted", privateKey.isEncrypted.toInt())
                 putNullable("key_fingerprint", privateKey.keyFingerprint)
                 put("created_at", nowMillis)
                 put("updated_at", nowMillis)
@@ -856,11 +933,11 @@ private fun Cursor.toWalletRecord(): WalletRecord =
         walletName = string("wallet_name"),
         walletType = string("wallet_type"),
         walletKeyType = string("wallet_key_type"),
-        walletKeyMaterial = nullableString("wallet_key_material"),
+        primarySecretId = nullableString("primary_secret_id"),
         walletKeyFingerprint = nullableString("wallet_key_fingerprint"),
         walletKeyDerivationPath = nullableString("wallet_key_derivation_path"),
-        passphrase = nullableString("passphrase"),
-        walletKeyEncryptionState = string("wallet_key_encryption_state"),
+        passphraseSecretId = nullableString("passphrase_secret_id"),
+        secretStorageState = string("secret_storage_state"),
         localCurrencyCode = string("local_currency_code"),
         balanceFiatValue = string("balance_fiat_value"),
         balanceFiatUpdatedAt = nullableLong("balance_fiat_updated_at"),
@@ -872,6 +949,23 @@ private fun Cursor.toWalletRecord(): WalletRecord =
         createdAt = long("created_at"),
         updatedAt = long("updated_at"),
         lastSyncedAt = nullableLong("last_synced_at"),
+        metadataJson = string("metadata_json"),
+    )
+
+private fun Cursor.toWalletSecretRecord(): WalletSecretRecord =
+    WalletSecretRecord(
+        secretId = string("secret_id"),
+        walletId = string("wallet_id"),
+        secretType = string("secret_type"),
+        networkId = nullableString("network_id"),
+        derivationPath = nullableString("derivation_path"),
+        encryptionVersion = int("encryption_version"),
+        encryptionAlgorithm = string("encryption_algorithm"),
+        keystoreAlias = string("keystore_alias"),
+        ivBase64 = string("iv_base64"),
+        ciphertextBase64 = string("ciphertext_base64"),
+        createdAt = long("created_at"),
+        updatedAt = long("updated_at"),
         metadataJson = string("metadata_json"),
     )
 
@@ -958,13 +1052,12 @@ private fun Cursor.toWalletPrivateKeyRecord(): WalletPrivateKeyRecord =
         walletId = string("wallet_id"),
         networkId = string("network_id"),
         addressId = nullableString("address_id"),
-        keyMaterial = string("key_material"),
+        secretId = string("secret_id"),
         keyFormat = string("key_format"),
         derivationPath = nullableString("derivation_path"),
         publicKey = nullableString("public_key"),
         keySource = string("key_source"),
         isImported = boolean("is_imported"),
-        isEncrypted = boolean("is_encrypted"),
         keyFingerprint = nullableString("key_fingerprint"),
         createdAt = long("created_at"),
         updatedAt = long("updated_at"),

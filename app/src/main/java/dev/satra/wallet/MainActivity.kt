@@ -97,17 +97,17 @@ class MainActivity : FragmentActivity() {
             var themePreference by remember { mutableStateOf(readThemePreference(settingsStore)) }
             var hapticsEnabled by remember { mutableStateOf(readHapticsEnabled(settingsStore)) }
             var languageTag by remember { mutableStateOf(readLanguageTag(settingsStore)) }
-            var pendingSetupPasscode by rememberSaveable { mutableStateOf("") }
-            var pendingGeneratedMnemonic by rememberSaveable { mutableStateOf("") }
+            var pendingSetupPasscode by remember { mutableStateOf("") }
+            var pendingGeneratedMnemonic by remember { mutableStateOf("") }
             var pendingGeneratedMnemonicWordCount by rememberSaveable {
                 mutableStateOf(DEFAULT_MNEMONIC_WORD_COUNT)
             }
-            var pendingCreatePassphrase by rememberSaveable { mutableStateOf("") }
+            var pendingCreatePassphrase by remember { mutableStateOf("") }
             var pendingImportMethodSegment by rememberSaveable { mutableStateOf("") }
             var pendingImportNetworkSegment by rememberSaveable { mutableStateOf("") }
-            var pendingImportRecoveryPhrase by rememberSaveable { mutableStateOf("") }
-            var pendingImportPassphrase by rememberSaveable { mutableStateOf("") }
-            var pendingImportPrivateKey by rememberSaveable { mutableStateOf("") }
+            var pendingImportRecoveryPhrase by remember { mutableStateOf("") }
+            var pendingImportPassphrase by remember { mutableStateOf("") }
+            var pendingImportPrivateKey by remember { mutableStateOf("") }
             var pendingImportWatchAddress by rememberSaveable { mutableStateOf("") }
             var pendingWalletId by rememberSaveable { mutableStateOf("") }
             var screenshotWarningRequests by remember { mutableStateOf(0) }

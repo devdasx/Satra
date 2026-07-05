@@ -2,6 +2,10 @@ package dev.satra.wallet.ui.setup
 
 import android.content.ClipData
 import android.content.ClipboardManager
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
+import android.view.WindowManager
 import android.widget.Toast
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
@@ -50,6 +54,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -178,6 +183,24 @@ private enum class PasscodeConfirmationResult {
 }
 
 @Composable
+private fun SecureWindowFlag() {
+    val activity = LocalContext.current.findActivity()
+
+    DisposableEffect(activity) {
+        activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        onDispose {
+            activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        }
+    }
+}
+
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
+}
+
+@Composable
 fun CreateWalletPhraseScreen(
     mnemonic: String,
     mnemonicWordCount: Int = DEFAULT_RECOVERY_PHRASE_WORD_COUNT,
@@ -190,6 +213,8 @@ fun CreateWalletPhraseScreen(
     onGenerateNewMnemonic: () -> Unit = {},
     onNext: () -> Unit = {},
 ) {
+    SecureWindowFlag()
+
     val context = LocalContext.current
     val clipboardManager = remember(context) {
         context.getSystemService(ClipboardManager::class.java)
@@ -357,13 +382,15 @@ fun ImportRecoveryPhraseScreen(
     onScannedRecoveryPhraseConsumed: () -> Unit = {},
     onNext: (String, String) -> Unit = { _, _ -> },
 ) {
+    SecureWindowFlag()
+
     val context = LocalContext.current
     val clipboardManager = remember(context) {
         context.getSystemService(ClipboardManager::class.java)
     }
     val clipboardEmptyMessage = stringResource(R.string.wallet_setup_clipboard_empty)
-    var recoveryPhrase by rememberSaveable { mutableStateOf("") }
-    var passphrase by rememberSaveable { mutableStateOf("") }
+    var recoveryPhrase by remember { mutableStateOf("") }
+    var passphrase by remember { mutableStateOf("") }
     var showRecoveryPhraseOptions by rememberSaveable { mutableStateOf(false) }
     val phraseValidation = remember(recoveryPhrase) {
         Bip39MnemonicValidator.validate(recoveryPhrase)
@@ -477,7 +504,9 @@ fun ImportPrivateKeyScreen(
     onBack: () -> Unit = {},
     onNext: (String) -> Unit = {},
 ) {
-    var privateKey by rememberSaveable(network.routeSegment) { mutableStateOf("") }
+    SecureWindowFlag()
+
+    var privateKey by remember(network.routeSegment) { mutableStateOf("") }
     val privateKeyValidation = remember(network.networkId, privateKey) {
         SatraAddressDerivation.validatePrivateKeyImport(
             networkId = network.networkId,
@@ -550,7 +579,9 @@ fun SetupPasscodeScreen(
     onPasscodeCreated: (String) -> Unit = {},
     onSkip: () -> Unit = {},
 ) {
-    var passcode by rememberSaveable { mutableStateOf("") }
+    SecureWindowFlag()
+
+    var passcode by remember { mutableStateOf("") }
     var passcodeLength by rememberSaveable { mutableStateOf(DEFAULT_PASSCODE_LENGTH) }
     var showPasscodeOptions by rememberSaveable { mutableStateOf(false) }
 
@@ -613,7 +644,9 @@ fun SetupConfirmPasscodeScreen(
     onConfirmed: (Boolean) -> Unit = {},
     onMismatch: () -> Unit = {},
 ) {
-    var confirmation by rememberSaveable(expectedPasscode) { mutableStateOf("") }
+    SecureWindowFlag()
+
+    var confirmation by remember(expectedPasscode) { mutableStateOf("") }
     var biometricsEnabled by rememberSaveable(showBiometricsOption, expectedPasscode) {
         mutableStateOf(showBiometricsOption)
     }

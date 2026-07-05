@@ -1926,7 +1926,7 @@ private fun SendSnapshot.Content.toSendAssetRows(): List<SendAssetRow> {
             fiatFormatted = formatFiat(walletAsset.balanceFiatValue, wallet.localCurrencyCode),
             iconRes = assetIconRes(asset.symbol),
             hasSigningKey = privateKeys.any { privateKey ->
-                privateKey.networkId == walletAsset.networkId && !privateKey.isEncrypted
+                privateKey.networkId == walletAsset.networkId
             },
         )
     }.sortedWith(

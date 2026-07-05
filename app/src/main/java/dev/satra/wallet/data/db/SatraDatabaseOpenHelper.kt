@@ -21,11 +21,7 @@ class SatraDatabaseOpenHelper(
     }
 
     override fun onCreate(db: SQLiteDatabase) {
-        SatraDatabaseContract.createStatements.forEach(db::execSQL)
-        SatraDatabaseContract.indexStatements.forEach(db::execSQL)
-        seedSupportedNetworks(db)
-        seedSupportedAssets(db)
-        seedDefaultAppSettings(db)
+        createSchema(db)
     }
 
     override fun onUpgrade(
@@ -33,100 +29,28 @@ class SatraDatabaseOpenHelper(
         oldVersion: Int,
         newVersion: Int,
     ) {
-        var migratedVersion = oldVersion
+        recreateSchema(db)
+    }
 
-        if (migratedVersion < 2) {
-            db.execSQL(
-                "ALTER TABLE ${SatraDatabaseContract.TABLE_WALLETS} ADD COLUMN passphrase TEXT",
-            )
-            migratedVersion = 2
-        }
+    override fun onDowngrade(
+        db: SQLiteDatabase,
+        oldVersion: Int,
+        newVersion: Int,
+    ) {
+        recreateSchema(db)
+    }
 
-        if (migratedVersion < 3) {
-            db.execSQL(
-                """
-                CREATE TABLE ${SatraDatabaseContract.TABLE_APP_SETTINGS} (
-                    settings_id TEXT NOT NULL PRIMARY KEY,
-                    local_currency_code TEXT NOT NULL DEFAULT '$DEFAULT_LOCAL_CURRENCY_CODE',
-                    language_tag TEXT NOT NULL DEFAULT 'en',
-                    theme_preference TEXT NOT NULL DEFAULT 'System',
-                    haptics_enabled INTEGER NOT NULL DEFAULT 1,
-                    passcode_enabled INTEGER NOT NULL DEFAULT 0,
-                    passcode_hash TEXT,
-                    passcode_salt TEXT,
-                    passcode_length INTEGER,
-                    biometrics_enabled INTEGER NOT NULL DEFAULT 0,
-                    auto_lock_timeout_millis INTEGER NOT NULL DEFAULT 0,
-                    erase_wallet_enabled INTEGER NOT NULL DEFAULT 1,
-                    erase_wallet_attempt_limit INTEGER NOT NULL DEFAULT 10,
-                    failed_passcode_attempts INTEGER NOT NULL DEFAULT 0,
-                    notifications_news_enabled INTEGER NOT NULL DEFAULT 1,
-                    notifications_prices_enabled INTEGER NOT NULL DEFAULT 1,
-                    notifications_transactions_enabled INTEGER NOT NULL DEFAULT 1,
-                    created_at INTEGER NOT NULL,
-                    updated_at INTEGER NOT NULL,
-                    metadata_json TEXT NOT NULL DEFAULT '$EMPTY_JSON'
-                )
-                """.trimIndent(),
-            )
-            db.execSQL(
-                """
-                CREATE TABLE ${SatraDatabaseContract.TABLE_ADDRESS_BOOK} (
-                    entry_id TEXT NOT NULL PRIMARY KEY,
-                    label TEXT NOT NULL,
-                    network_id TEXT NOT NULL,
-                    address TEXT NOT NULL,
-                    notes TEXT,
-                    is_favorite INTEGER NOT NULL DEFAULT 0,
-                    created_at INTEGER NOT NULL,
-                    updated_at INTEGER NOT NULL,
-                    metadata_json TEXT NOT NULL DEFAULT '$EMPTY_JSON',
-                    UNIQUE(network_id, address),
-                    FOREIGN KEY(network_id) REFERENCES ${SatraDatabaseContract.TABLE_SUPPORTED_NETWORKS}(network_id) ON DELETE RESTRICT
-                )
-                """.trimIndent(),
-            )
-            db.execSQL("CREATE INDEX index_address_book_network ON ${SatraDatabaseContract.TABLE_ADDRESS_BOOK}(network_id)")
-            db.execSQL("CREATE INDEX index_address_book_label ON ${SatraDatabaseContract.TABLE_ADDRESS_BOOK}(label)")
-            seedDefaultAppSettings(db)
-            migratedVersion = 3
-        }
+    private fun recreateSchema(db: SQLiteDatabase) {
+        SatraDatabaseContract.dropStatements.forEach(db::execSQL)
+        createSchema(db)
+    }
 
-        if (migratedVersion < 4) {
-            db.execSQL(
-                """
-                CREATE TABLE ${SatraDatabaseContract.TABLE_ASSET_MARKET_DATA} (
-                    symbol TEXT NOT NULL PRIMARY KEY,
-                    name TEXT NOT NULL,
-                    coin_gecko_id TEXT,
-                    local_currency_code TEXT NOT NULL DEFAULT '$DEFAULT_LOCAL_CURRENCY_CODE',
-                    price_usd TEXT NOT NULL DEFAULT '0',
-                    price_local TEXT NOT NULL DEFAULT '0',
-                    market_cap_usd TEXT,
-                    market_cap_local TEXT,
-                    volume_24h_usd TEXT,
-                    volume_24h_local TEXT,
-                    high_24h_usd TEXT,
-                    low_24h_usd TEXT,
-                    price_change_24h_percent TEXT,
-                    description TEXT,
-                    homepage_url TEXT,
-                    provider TEXT NOT NULL,
-                    chart_7d_json TEXT NOT NULL DEFAULT '[]',
-                    updated_at INTEGER NOT NULL,
-                    metadata_json TEXT NOT NULL DEFAULT '$EMPTY_JSON'
-                )
-                """.trimIndent(),
-            )
-            db.execSQL(
-                "CREATE INDEX index_asset_market_data_updated_at ON ${SatraDatabaseContract.TABLE_ASSET_MARKET_DATA}(updated_at)",
-            )
-            migratedVersion = 4
-        }
-
-        if (migratedVersion != newVersion) {
-            error("No migration from $migratedVersion to $newVersion is defined yet.")
-        }
+    private fun createSchema(db: SQLiteDatabase) {
+        SatraDatabaseContract.createStatements.forEach(db::execSQL)
+        SatraDatabaseContract.indexStatements.forEach(db::execSQL)
+        seedSupportedNetworks(db)
+        seedSupportedAssets(db)
+        seedDefaultAppSettings(db)
     }
 
     private fun seedSupportedNetworks(db: SQLiteDatabase) {

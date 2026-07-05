@@ -1,7 +1,6 @@
 package dev.satra.wallet.data.sync.utxo
 
 import dev.satra.wallet.data.db.WalletAddressRecord
-import dev.satra.wallet.data.db.WalletKeyType
 import dev.satra.wallet.data.db.WalletRecord
 import dev.satra.wallet.data.db.WalletTransactionDirection
 import dev.satra.wallet.data.db.WalletTransactionStatus
@@ -18,6 +17,11 @@ import org.json.JSONObject
 import java.math.BigDecimal
 import java.math.RoundingMode
 
+data class UtxoWalletSecrets(
+    val mnemonic: String,
+    val passphrase: String?,
+)
+
 class UtxoWalletSyncService(
     private val electrumClient: UtxoElectrumClient = UtxoElectrumClient(),
     private val gapLimit: Int = 20,
@@ -28,12 +32,13 @@ class UtxoWalletSyncService(
     suspend fun syncWallet(
         wallet: WalletRecord,
         addresses: List<WalletAddressRecord>,
+        walletSecrets: UtxoWalletSecrets? = null,
         networkId: String? = null,
         nowMillis: Long = System.currentTimeMillis(),
         onNetworkResult: suspend (UtxoNetworkSyncResult) -> Unit = {},
     ): UtxoWalletSyncResult = coroutineScope {
         val requestedNetworks = if (networkId == null) {
-            if (wallet.walletKeyType == WalletKeyType.Mnemonic.value && !wallet.walletKeyMaterial.isNullOrBlank()) {
+            if (walletSecrets != null) {
                 UtxoElectrumProviderRegistry.supportedNetworkIds
             } else {
                 addresses
@@ -55,6 +60,7 @@ class UtxoWalletSyncService(
                             wallet = wallet,
                             networkId = utxoNetworkId,
                             addresses = addresses.filter { it.networkId == utxoNetworkId },
+                            walletSecrets = walletSecrets,
                             nowMillis = nowMillis,
                         )
                         runCatching { onNetworkResult(result) }
@@ -74,6 +80,7 @@ class UtxoWalletSyncService(
         wallet: WalletRecord,
         networkId: String,
         addresses: List<WalletAddressRecord>,
+        walletSecrets: UtxoWalletSecrets?,
         nowMillis: Long,
     ): UtxoNetworkSyncResult {
         val config = UtxoElectrumProviderRegistry.requireConfig(networkId)
@@ -82,11 +89,11 @@ class UtxoWalletSyncService(
             val result = runCatching {
                 electrumClient.serverVersion(provider)
                 val latestBlockHeight = electrumClient.latestBlockHeight(provider)
-                val scan = if (wallet.walletKeyType == WalletKeyType.Mnemonic.value && !wallet.walletKeyMaterial.isNullOrBlank()) {
+                val scan = if (walletSecrets != null) {
                     scanMnemonicWallet(
-                        wallet = wallet,
                         networkId = networkId,
                         provider = provider,
+                        walletSecrets = walletSecrets,
                     )
                 } else {
                     scanStoredAddresses(
@@ -171,9 +178,9 @@ class UtxoWalletSyncService(
     }
 
     private suspend fun scanMnemonicWallet(
-        wallet: WalletRecord,
         networkId: String,
         provider: UtxoElectrumProvider,
+        walletSecrets: UtxoWalletSecrets,
     ): UtxoScanResult {
         val allScripts = mutableListOf<UtxoWatchedScript>()
         val allAccounts = mutableListOf<DerivedReceiveAccount>()
@@ -185,8 +192,8 @@ class UtxoWalletSyncService(
         repeat(maxScanBatches) { batch ->
             val startIndex = batch * gapLimit
             val accounts = SatraAddressDerivation.deriveUtxoScanAccounts(
-                mnemonic = checkNotNull(wallet.walletKeyMaterial),
-                passphrase = wallet.passphrase,
+                mnemonic = walletSecrets.mnemonic,
+                passphrase = walletSecrets.passphrase,
                 networkId = networkId,
                 startIndex = startIndex,
                 gapLimit = gapLimit,

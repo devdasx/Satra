@@ -2,7 +2,7 @@ package dev.satra.wallet.data.db
 
 object SatraDatabaseContract {
     const val DATABASE_NAME = "satra_wallet.db"
-    const val DATABASE_VERSION = 4
+    const val DATABASE_VERSION = 5
 
     const val TABLE_SUPPORTED_NETWORKS = "supported_networks"
     const val TABLE_SUPPORTED_ASSETS = "supported_assets"
@@ -11,6 +11,7 @@ object SatraDatabaseContract {
     const val TABLE_WALLETS = "wallets"
     const val TABLE_WALLET_ASSETS = "wallet_assets"
     const val TABLE_WALLET_ADDRESSES = "wallet_addresses"
+    const val TABLE_WALLET_SECRETS = "wallet_secrets"
     const val TABLE_WALLET_PRIVATE_KEYS = "wallet_private_keys"
     const val TABLE_WALLET_TRANSACTIONS = "wallet_transactions"
     const val TABLE_ASSET_MARKET_DATA = "asset_market_data"
@@ -93,11 +94,11 @@ object SatraDatabaseContract {
             wallet_name TEXT NOT NULL,
             wallet_type TEXT NOT NULL,
             wallet_key_type TEXT NOT NULL,
-            wallet_key_material TEXT,
+            primary_secret_id TEXT,
             wallet_key_fingerprint TEXT,
             wallet_key_derivation_path TEXT,
-            passphrase TEXT,
-            wallet_key_encryption_state TEXT NOT NULL DEFAULT 'plain',
+            passphrase_secret_id TEXT,
+            secret_storage_state TEXT NOT NULL DEFAULT 'keystore_aes_gcm_v1',
             local_currency_code TEXT NOT NULL DEFAULT '$DEFAULT_LOCAL_CURRENCY_CODE',
             balance_fiat_value TEXT NOT NULL DEFAULT '0',
             balance_fiat_updated_at INTEGER,
@@ -109,7 +110,9 @@ object SatraDatabaseContract {
             created_at INTEGER NOT NULL,
             updated_at INTEGER NOT NULL,
             last_synced_at INTEGER,
-            metadata_json TEXT NOT NULL DEFAULT '$EMPTY_JSON'
+            metadata_json TEXT NOT NULL DEFAULT '$EMPTY_JSON',
+            FOREIGN KEY(primary_secret_id) REFERENCES $TABLE_WALLET_SECRETS(secret_id) ON DELETE SET NULL,
+            FOREIGN KEY(passphrase_secret_id) REFERENCES $TABLE_WALLET_SECRETS(secret_id) ON DELETE SET NULL
         )
         """,
         """
@@ -160,18 +163,37 @@ object SatraDatabaseContract {
         )
         """,
         """
+        CREATE TABLE $TABLE_WALLET_SECRETS (
+            secret_id TEXT NOT NULL PRIMARY KEY,
+            wallet_id TEXT NOT NULL,
+            secret_type TEXT NOT NULL,
+            network_id TEXT,
+            derivation_path TEXT,
+            encryption_version INTEGER NOT NULL,
+            encryption_algorithm TEXT NOT NULL,
+            keystore_alias TEXT NOT NULL,
+            iv_base64 TEXT NOT NULL,
+            ciphertext_base64 TEXT NOT NULL,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL,
+            metadata_json TEXT NOT NULL DEFAULT '$EMPTY_JSON',
+            UNIQUE(wallet_id, secret_type, network_id, derivation_path),
+            FOREIGN KEY(wallet_id) REFERENCES $TABLE_WALLETS(wallet_id) ON DELETE CASCADE,
+            FOREIGN KEY(network_id) REFERENCES $TABLE_SUPPORTED_NETWORKS(network_id) ON DELETE RESTRICT
+        )
+        """,
+        """
         CREATE TABLE $TABLE_WALLET_PRIVATE_KEYS (
             private_key_id TEXT NOT NULL PRIMARY KEY,
             wallet_id TEXT NOT NULL,
             network_id TEXT NOT NULL,
             address_id TEXT,
-            key_material TEXT NOT NULL,
+            secret_id TEXT NOT NULL,
             key_format TEXT NOT NULL,
             derivation_path TEXT,
             public_key TEXT,
             key_source TEXT NOT NULL,
             is_imported INTEGER NOT NULL DEFAULT 0,
-            is_encrypted INTEGER NOT NULL DEFAULT 0,
             key_fingerprint TEXT,
             created_at INTEGER NOT NULL,
             updated_at INTEGER NOT NULL,
@@ -179,7 +201,8 @@ object SatraDatabaseContract {
             UNIQUE(wallet_id, network_id, derivation_path),
             FOREIGN KEY(wallet_id) REFERENCES $TABLE_WALLETS(wallet_id) ON DELETE CASCADE,
             FOREIGN KEY(network_id) REFERENCES $TABLE_SUPPORTED_NETWORKS(network_id) ON DELETE RESTRICT,
-            FOREIGN KEY(address_id) REFERENCES $TABLE_WALLET_ADDRESSES(address_id) ON DELETE SET NULL
+            FOREIGN KEY(address_id) REFERENCES $TABLE_WALLET_ADDRESSES(address_id) ON DELETE SET NULL,
+            FOREIGN KEY(secret_id) REFERENCES $TABLE_WALLET_SECRETS(secret_id) ON DELETE CASCADE
         )
         """,
         """
@@ -248,10 +271,25 @@ object SatraDatabaseContract {
         "CREATE INDEX index_wallet_assets_wallet_id ON $TABLE_WALLET_ASSETS(wallet_id)",
         "CREATE INDEX index_wallet_assets_asset_id ON $TABLE_WALLET_ASSETS(asset_id)",
         "CREATE INDEX index_wallet_addresses_wallet_network ON $TABLE_WALLET_ADDRESSES(wallet_id, network_id)",
+        "CREATE INDEX index_wallet_secrets_wallet_type ON $TABLE_WALLET_SECRETS(wallet_id, secret_type)",
         "CREATE INDEX index_wallet_private_keys_wallet_network ON $TABLE_WALLET_PRIVATE_KEYS(wallet_id, network_id)",
         "CREATE INDEX index_wallet_transactions_wallet_time ON $TABLE_WALLET_TRANSACTIONS(wallet_id, timestamp)",
         "CREATE INDEX index_wallet_transactions_hash ON $TABLE_WALLET_TRANSACTIONS(transaction_hash)",
         "CREATE INDEX index_wallet_transactions_status ON $TABLE_WALLET_TRANSACTIONS(status)",
         "CREATE INDEX index_asset_market_data_updated_at ON $TABLE_ASSET_MARKET_DATA(updated_at)",
+    )
+
+    val dropStatements = listOf(
+        "DROP TABLE IF EXISTS $TABLE_WALLET_TRANSACTIONS",
+        "DROP TABLE IF EXISTS $TABLE_WALLET_PRIVATE_KEYS",
+        "DROP TABLE IF EXISTS $TABLE_WALLET_SECRETS",
+        "DROP TABLE IF EXISTS $TABLE_WALLET_ADDRESSES",
+        "DROP TABLE IF EXISTS $TABLE_WALLET_ASSETS",
+        "DROP TABLE IF EXISTS $TABLE_WALLETS",
+        "DROP TABLE IF EXISTS $TABLE_ADDRESS_BOOK",
+        "DROP TABLE IF EXISTS $TABLE_ASSET_MARKET_DATA",
+        "DROP TABLE IF EXISTS $TABLE_SUPPORTED_ASSETS",
+        "DROP TABLE IF EXISTS $TABLE_SUPPORTED_NETWORKS",
+        "DROP TABLE IF EXISTS $TABLE_APP_SETTINGS",
     )
 }

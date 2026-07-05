@@ -5,11 +5,11 @@ data class WalletRecord(
     val walletName: String,
     val walletType: String,
     val walletKeyType: String,
-    val walletKeyMaterial: String?,
+    val primarySecretId: String?,
     val walletKeyFingerprint: String?,
     val walletKeyDerivationPath: String?,
-    val passphrase: String?,
-    val walletKeyEncryptionState: String,
+    val passphraseSecretId: String?,
+    val secretStorageState: String,
     val localCurrencyCode: String,
     val balanceFiatValue: String,
     val balanceFiatUpdatedAt: Long?,
@@ -28,16 +28,45 @@ data class NewWalletRecord(
     val walletName: String,
     val walletType: String,
     val walletKeyType: String,
-    val walletKeyMaterial: String?,
+    val primarySecretId: String? = null,
     val walletKeyFingerprint: String? = null,
     val walletKeyDerivationPath: String? = null,
-    val passphrase: String? = null,
-    val walletKeyEncryptionState: String = WalletKeyEncryptionState.Plain.value,
+    val passphraseSecretId: String? = null,
+    val secretStorageState: String = SecretStorageState.KeystoreAesGcmV1.value,
     val localCurrencyCode: String = DEFAULT_LOCAL_CURRENCY_CODE,
     val isBackedUp: Boolean = false,
     val backupVerifiedAt: Long? = null,
     val isImported: Boolean = false,
     val isWatchOnly: Boolean = false,
+    val metadataJson: String = EMPTY_JSON,
+)
+
+data class WalletSecretRecord(
+    val secretId: String,
+    val walletId: String,
+    val secretType: String,
+    val networkId: String?,
+    val derivationPath: String?,
+    val encryptionVersion: Int,
+    val encryptionAlgorithm: String,
+    val keystoreAlias: String,
+    val ivBase64: String,
+    val ciphertextBase64: String,
+    val createdAt: Long,
+    val updatedAt: Long,
+    val metadataJson: String,
+)
+
+data class NewWalletSecretRecord(
+    val walletId: String,
+    val secretType: String,
+    val networkId: String? = null,
+    val derivationPath: String? = null,
+    val encryptionVersion: Int,
+    val encryptionAlgorithm: String,
+    val keystoreAlias: String,
+    val ivBase64: String,
+    val ciphertextBase64: String,
     val metadataJson: String = EMPTY_JSON,
 )
 
@@ -164,13 +193,12 @@ data class WalletPrivateKeyRecord(
     val walletId: String,
     val networkId: String,
     val addressId: String?,
-    val keyMaterial: String,
+    val secretId: String,
     val keyFormat: String,
     val derivationPath: String?,
     val publicKey: String?,
     val keySource: String,
     val isImported: Boolean,
-    val isEncrypted: Boolean,
     val keyFingerprint: String?,
     val createdAt: Long,
     val updatedAt: Long,
@@ -181,13 +209,12 @@ data class NewWalletPrivateKeyRecord(
     val walletId: String,
     val networkId: String,
     val addressId: String? = null,
-    val keyMaterial: String,
+    val secretId: String,
     val keyFormat: String,
     val derivationPath: String? = null,
     val publicKey: String? = null,
     val keySource: String,
     val isImported: Boolean,
-    val isEncrypted: Boolean = false,
     val keyFingerprint: String? = null,
     val metadataJson: String = EMPTY_JSON,
 )
@@ -301,9 +328,15 @@ enum class WalletKeyType(val value: String) {
     Address("address"),
 }
 
-enum class WalletKeyEncryptionState(val value: String) {
-    Plain("plain"),
-    Encrypted("encrypted"),
+enum class SecretStorageState(val value: String) {
+    None("none"),
+    KeystoreAesGcmV1("keystore_aes_gcm_v1"),
+}
+
+enum class WalletSecretType(val value: String) {
+    Mnemonic("mnemonic"),
+    Passphrase("passphrase"),
+    PrivateKey("private_key"),
 }
 
 enum class WalletAddressType(val value: String) {

@@ -6,6 +6,8 @@ import dev.satra.wallet.data.pricing.SatraAssetPrice
 import dev.satra.wallet.data.pricing.SatraAssetMarketData
 import dev.satra.wallet.data.pricing.SatraPriceSyncResult
 import dev.satra.wallet.data.pricing.SatraPriceSyncService
+import dev.satra.wallet.data.security.SatraSecretCipher
+import dev.satra.wallet.data.security.SatraSecretVault
 import dev.satra.wallet.data.send.SatraSendException
 import dev.satra.wallet.data.send.SatraSendRequest
 import dev.satra.wallet.data.send.SatraSendService
@@ -27,6 +29,7 @@ import dev.satra.wallet.data.sync.solana.SolanaWalletSyncService
 import dev.satra.wallet.data.sync.utxo.UtxoAssetBalance
 import dev.satra.wallet.data.sync.utxo.UtxoNetworkSyncResult
 import dev.satra.wallet.data.sync.utxo.UtxoNormalizedTransaction
+import dev.satra.wallet.data.sync.utxo.UtxoWalletSecrets
 import dev.satra.wallet.data.sync.utxo.UtxoWalletSyncResult
 import dev.satra.wallet.data.sync.utxo.UtxoWalletSyncService
 import dev.satra.wallet.settings.SatraPasscodeHasher
@@ -52,8 +55,57 @@ class SatraWalletRepository(
     private val accountChainWalletSyncService: AccountChainWalletSyncService = AccountChainWalletSyncService(),
     private val priceSyncService: SatraPriceSyncService = SatraPriceSyncService(),
     private val sendService: SatraSendService = SatraSendService(),
+    private val secretCipher: SatraSecretCipher = SatraSecretVault(),
 ) {
     private val syncPersistenceMutex = Mutex()
+
+    private data class MnemonicWalletSecrets(
+        val mnemonic: String,
+        val passphrase: String?,
+    )
+
+    private fun encryptSecret(
+        walletId: String,
+        secretType: WalletSecretType,
+        plaintext: String,
+        networkId: String? = null,
+        derivationPath: String? = null,
+        metadataJson: String = EMPTY_JSON,
+    ): String =
+        walletDao.insertWalletSecret(
+            secretCipher.encrypt(
+                walletId = walletId,
+                secretType = secretType.value,
+                plaintext = plaintext,
+                networkId = networkId,
+                derivationPath = derivationPath,
+                metadataJson = metadataJson,
+            ),
+        )
+
+    private fun decryptSecret(secretId: String?): String? {
+        if (secretId.isNullOrBlank()) return null
+        val secret = walletDao.getWalletSecret(secretId) ?: return null
+        return secretCipher.decrypt(secret)
+    }
+
+    private fun WalletRecord.decryptMnemonicSecretsOrNull(): MnemonicWalletSecrets? {
+        if (walletKeyType != WalletKeyType.Mnemonic.value || primarySecretId.isNullOrBlank()) return null
+        val mnemonic = runCatching { decryptSecret(primarySecretId) }.getOrNull() ?: return null
+        val passphrase = runCatching { decryptSecret(passphraseSecretId) }.getOrNull()
+        return MnemonicWalletSecrets(
+            mnemonic = mnemonic,
+            passphrase = passphrase,
+        )
+    }
+
+    private fun WalletRecord.decryptUtxoWalletSecretsOrNull(): UtxoWalletSecrets? =
+        decryptMnemonicSecretsOrNull()?.let { secrets ->
+            UtxoWalletSecrets(
+                mnemonic = secrets.mnemonic,
+                passphrase = secrets.passphrase,
+            )
+        }
 
     fun createMnemonicWallet(
         walletName: String,
@@ -74,10 +126,9 @@ class SatraWalletRepository(
                 walletName = walletName,
                 walletType = WalletType.Standard.value,
                 walletKeyType = WalletKeyType.Mnemonic.value,
-                walletKeyMaterial = mnemonic,
                 walletKeyFingerprint = primaryAccount.keyFingerprint,
                 walletKeyDerivationPath = primaryAccount.derivationPath,
-                passphrase = cleanedPassphrase,
+                secretStorageState = SecretStorageState.KeystoreAesGcmV1.value,
                 localCurrencyCode = localCurrencyCode,
                 isBackedUp = isBackedUp,
                 isImported = false,
@@ -85,7 +136,20 @@ class SatraWalletRepository(
                 metadataJson = metadataJson,
             ),
         )
-        walletDao.insertDerivedReceiveAccounts(walletId, receiveAccounts)
+        val mnemonicSecretId = encryptSecret(
+            walletId = walletId,
+            secretType = WalletSecretType.Mnemonic,
+            plaintext = mnemonic,
+        )
+        val passphraseSecretId = cleanedPassphrase?.let { phrase ->
+            encryptSecret(
+                walletId = walletId,
+                secretType = WalletSecretType.Passphrase,
+                plaintext = phrase,
+            )
+        }
+        walletDao.updateWalletSecretReferences(walletId, mnemonicSecretId, passphraseSecretId)
+        walletDao.insertDerivedReceiveAccounts(walletId, receiveAccounts, secretCipher)
         return walletId
     }
 
@@ -107,17 +171,29 @@ class SatraWalletRepository(
                 walletName = walletName,
                 walletType = WalletType.Imported.value,
                 walletKeyType = WalletKeyType.Mnemonic.value,
-                walletKeyMaterial = mnemonic,
                 walletKeyFingerprint = primaryAccount.keyFingerprint,
                 walletKeyDerivationPath = primaryAccount.derivationPath,
-                passphrase = cleanedPassphrase,
+                secretStorageState = SecretStorageState.KeystoreAesGcmV1.value,
                 localCurrencyCode = localCurrencyCode,
                 isImported = true,
                 isWatchOnly = false,
                 metadataJson = metadataJson,
             ),
         )
-        walletDao.insertDerivedReceiveAccounts(walletId, receiveAccounts)
+        val mnemonicSecretId = encryptSecret(
+            walletId = walletId,
+            secretType = WalletSecretType.Mnemonic,
+            plaintext = mnemonic,
+        )
+        val passphraseSecretId = cleanedPassphrase?.let { phrase ->
+            encryptSecret(
+                walletId = walletId,
+                secretType = WalletSecretType.Passphrase,
+                plaintext = phrase,
+            )
+        }
+        walletDao.updateWalletSecretReferences(walletId, mnemonicSecretId, passphraseSecretId)
+        walletDao.insertDerivedReceiveAccounts(walletId, receiveAccounts, secretCipher)
         return walletId
     }
 
@@ -134,19 +210,29 @@ class SatraWalletRepository(
                 walletName = walletName,
                 walletType = WalletType.Imported.value,
                 walletKeyType = WalletKeyType.PrivateKey.value,
-                walletKeyMaterial = receiveAccount.privateKeyHex,
                 walletKeyFingerprint = receiveAccount.keyFingerprint,
                 walletKeyDerivationPath = receiveAccount.derivationPath,
+                secretStorageState = SecretStorageState.KeystoreAesGcmV1.value,
                 localCurrencyCode = localCurrencyCode,
                 isImported = true,
                 isWatchOnly = false,
                 metadataJson = metadataJson,
             ),
         )
+        val privateKeySecretId = encryptSecret(
+            walletId = walletId,
+            secretType = WalletSecretType.PrivateKey,
+            plaintext = receiveAccount.privateKeyHex,
+            networkId = networkId,
+            derivationPath = receiveAccount.derivationPath,
+            metadataJson = receiveAccount.metadataJson(),
+        )
+        walletDao.updateWalletSecretReferences(walletId, privateKeySecretId, null)
         walletDao.insertImportedPrivateKeyReceiveAccount(
             walletId = walletId,
             networkId = networkId,
             account = receiveAccount,
+            secretId = privateKeySecretId,
         )
         return walletId
     }
@@ -163,7 +249,7 @@ class SatraWalletRepository(
                 walletName = walletName,
                 walletType = WalletType.WatchOnly.value,
                 walletKeyType = WalletKeyType.Address.value,
-                walletKeyMaterial = address,
+                secretStorageState = SecretStorageState.None.value,
                 localCurrencyCode = localCurrencyCode,
                 isImported = true,
                 isWatchOnly = true,
@@ -412,7 +498,9 @@ class SatraWalletRepository(
                 ?.address
                 ?: throw SatraSendException.MissingSigningKey()
             val privateKey = walletDao.getWalletPrivateKeys(wallet.walletId)
-                .firstOrNull { key -> key.networkId == asset.networkId && !key.isEncrypted }
+                .firstOrNull { key -> key.networkId == asset.networkId }
+                ?: throw SatraSendException.MissingSigningKey()
+            val privateKeyHex = decryptSecret(privateKey.secretId)
                 ?: throw SatraSendException.MissingSigningKey()
 
             val broadcast = sendService.signAndBroadcast(
@@ -428,7 +516,7 @@ class SatraWalletRepository(
                     recipientAddress = recipientAddress,
                     amountDecimal = amountDecimal.stripTrailingZeros().toPlainString(),
                     balanceRaw = walletAsset.balanceRaw,
-                    privateKeyHex = privateKey.keyMaterial,
+                    privateKeyHex = privateKeyHex,
                     localCurrencyCode = wallet.localCurrencyCode,
                     priceFiatValue = walletAsset.priceFiatValue,
                 ),
@@ -472,7 +560,8 @@ class SatraWalletRepository(
     suspend fun ensureMnemonicReceiveAddresses(walletId: String): List<WalletAddressRecord> =
         withContext(Dispatchers.IO) {
             val wallet = walletDao.getWallet(walletId) ?: return@withContext emptyList()
-            if (wallet.walletKeyType != WalletKeyType.Mnemonic.value || wallet.walletKeyMaterial.isNullOrBlank()) {
+            val secrets = wallet.decryptMnemonicSecretsOrNull()
+            if (secrets == null) {
                 return@withContext walletDao.getWalletAddresses(walletId)
             }
             val existing = walletDao.getWalletAddresses(walletId)
@@ -480,12 +569,12 @@ class SatraWalletRepository(
                 "${address.networkId}:${address.derivationPath}:${address.address}"
             }.toSet()
             val missing = SatraAddressDerivation
-                .deriveReceiveAccounts(wallet.walletKeyMaterial, wallet.passphrase)
+                .deriveReceiveAccounts(secrets.mnemonic, secrets.passphrase)
                 .filterNot { account ->
                     "${account.networkId}:${account.derivationPath}:${account.address}" in existingKeys
                 }
             if (missing.isNotEmpty()) {
-                walletDao.insertDerivedReceiveAccounts(walletId, missing)
+                walletDao.insertDerivedReceiveAccounts(walletId, missing, secretCipher)
             }
             walletDao.getWalletAddresses(walletId)
         }
@@ -539,6 +628,7 @@ class SatraWalletRepository(
             val result = utxoWalletSyncService.syncWallet(
                 wallet = wallet,
                 addresses = walletDao.getWalletAddresses(walletId),
+                walletSecrets = wallet.decryptUtxoWalletSecretsOrNull(),
                 onNetworkResult = { networkResult ->
                     syncPersistenceMutex.withLock {
                         persistUtxoNetworkSyncResult(wallet, networkResult)
@@ -561,6 +651,7 @@ class SatraWalletRepository(
             val result = utxoWalletSyncService.syncWallet(
                 wallet = wallet,
                 addresses = walletDao.getWalletAddresses(walletId),
+                walletSecrets = wallet.decryptUtxoWalletSecretsOrNull(),
                 networkId = networkId,
                 onNetworkResult = { networkResult ->
                     syncPersistenceMutex.withLock {
@@ -666,6 +757,7 @@ class SatraWalletRepository(
             val wallet = walletDao.getWallet(walletId)
                 ?: error("Wallet not found: $walletId")
             val addresses = walletDao.getWalletAddresses(walletId)
+            val utxoWalletSecrets = wallet.decryptUtxoWalletSecretsOrNull()
             coroutineScope {
                 val evmDeferred = async {
                     evmWalletSyncService.syncWallet(
@@ -683,6 +775,7 @@ class SatraWalletRepository(
                     utxoWalletSyncService.syncWallet(
                         wallet = wallet,
                         addresses = addresses,
+                        walletSecrets = utxoWalletSecrets,
                         onNetworkResult = { networkResult ->
                             syncPersistenceMutex.withLock {
                                 persistUtxoNetworkSyncResult(wallet, networkResult)
@@ -779,6 +872,7 @@ class SatraWalletRepository(
             val wallet = walletDao.getWallet(walletId)
                 ?: error("Wallet not found: $walletId")
             val addresses = walletDao.getWalletAddresses(walletId)
+            val utxoWalletSecrets = wallet.decryptUtxoWalletSecretsOrNull()
             coroutineScope {
                 val evmDeferred = async {
                     evmWalletSyncService.syncWallet(
@@ -796,6 +890,7 @@ class SatraWalletRepository(
                     utxoWalletSyncService.syncWallet(
                         wallet = wallet,
                         addresses = addresses,
+                        walletSecrets = utxoWalletSecrets,
                         onNetworkResult = { networkResult ->
                             syncPersistenceMutex.withLock {
                                 persistUtxoNetworkHistoryResult(wallet, networkResult)
@@ -1014,8 +1109,20 @@ class SatraWalletRepository(
     private fun SatraWalletDao.insertDerivedReceiveAccounts(
         walletId: String,
         accounts: List<DerivedReceiveAccount>,
+        secretCipher: SatraSecretCipher,
     ) {
         accounts.forEach { account ->
+            val metadataJson = account.metadataJson()
+            val secretId = insertWalletSecret(
+                secretCipher.encrypt(
+                    walletId = walletId,
+                    secretType = WalletSecretType.PrivateKey.value,
+                    plaintext = account.privateKeyHex,
+                    networkId = account.networkId,
+                    derivationPath = account.derivationPath,
+                    metadataJson = metadataJson,
+                ),
+            )
             val addressId = insertWalletAddress(
                 NewWalletAddressRecord(
                     walletId = walletId,
@@ -1028,7 +1135,7 @@ class SatraWalletRepository(
                     isChange = account.isChange,
                     addressIndex = account.addressIndex,
                     label = account.derivationLabel,
-                    metadataJson = account.metadataJson(),
+                    metadataJson = metadataJson,
                 ),
             )
             insertWalletPrivateKey(
@@ -1036,14 +1143,14 @@ class SatraWalletRepository(
                     walletId = walletId,
                     networkId = account.networkId,
                     addressId = addressId,
-                    keyMaterial = account.privateKeyHex,
+                    secretId = secretId,
                     keyFormat = "hex",
                     derivationPath = account.derivationPath,
                     publicKey = account.publicKeyHex,
                     keySource = WalletPrivateKeySource.MnemonicDerived.value,
                     isImported = false,
                     keyFingerprint = account.keyFingerprint,
-                    metadataJson = account.metadataJson(),
+                    metadataJson = metadataJson,
                 ),
             )
         }
@@ -1053,7 +1160,9 @@ class SatraWalletRepository(
         walletId: String,
         networkId: String,
         account: DerivedReceiveAccount,
+        secretId: String,
     ) {
+        val metadataJson = account.metadataJson()
         val addressId = insertWalletAddress(
             NewWalletAddressRecord(
                 walletId = walletId,
@@ -1065,7 +1174,7 @@ class SatraWalletRepository(
                 isPrimary = true,
                 addressIndex = 0,
                 label = account.derivationLabel,
-                metadataJson = account.metadataJson(),
+                metadataJson = metadataJson,
             ),
         )
         insertWalletPrivateKey(
@@ -1073,14 +1182,14 @@ class SatraWalletRepository(
                 walletId = walletId,
                 networkId = networkId,
                 addressId = addressId,
-                keyMaterial = account.privateKeyHex,
+                secretId = secretId,
                 keyFormat = "hex",
                 derivationPath = account.derivationPath,
                 publicKey = account.publicKeyHex,
                 keySource = WalletPrivateKeySource.Imported.value,
                 isImported = true,
                 keyFingerprint = account.keyFingerprint,
-                metadataJson = account.metadataJson(),
+                metadataJson = metadataJson,
             ),
         )
     }
@@ -1392,7 +1501,7 @@ class SatraWalletRepository(
                 "${account.networkId}:${account.derivationPath}:${account.address}" in existingKeys
             }
         if (missing.isNotEmpty()) {
-            walletDao.insertDerivedReceiveAccounts(walletId, missing)
+            walletDao.insertDerivedReceiveAccounts(walletId, missing, secretCipher)
         }
     }
 

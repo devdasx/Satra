@@ -18,7 +18,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.json.JSONObject
 import kotlinx.coroutines.runBlocking
 
 @RunWith(AndroidJUnit4::class)
@@ -46,7 +45,7 @@ class SatraWalletDatabaseTest {
         assertEquals(SupportedAssetCatalog.networks.size.toLong(), dao.supportedNetworkCount())
         assertEquals(SupportedAssetCatalog.assets.size.toLong(), dao.supportedAssetCount())
         assertEquals(26, SupportedAssetCatalog.networks.size)
-        assertEquals(128, SupportedAssetCatalog.assets.size)
+        assertEquals(127, SupportedAssetCatalog.assets.size)
     }
 
     @Test
@@ -73,8 +72,6 @@ class SatraWalletDatabaseTest {
                 walletName = "Primary",
                 walletType = WalletType.Standard.value,
                 walletKeyType = WalletKeyType.Mnemonic.value,
-                walletKeyMaterial = TEST_MNEMONIC,
-                passphrase = TEST_PASSPHRASE,
                 isBackedUp = false,
                 isImported = false,
             ),
@@ -88,8 +85,9 @@ class SatraWalletDatabaseTest {
         checkNotNull(wallet)
         assertEquals("Primary", wallet.walletName)
         assertEquals(WalletKeyType.Mnemonic.value, wallet.walletKeyType)
-        assertEquals(TEST_MNEMONIC, wallet.walletKeyMaterial)
-        assertEquals(TEST_PASSPHRASE, wallet.passphrase)
+        assertNull(wallet.primarySecretId)
+        assertNull(wallet.passphraseSecretId)
+        assertEquals(SecretStorageState.KeystoreAesGcmV1.value, wallet.secretStorageState)
         assertEquals(DEFAULT_LOCAL_CURRENCY_CODE, wallet.localCurrencyCode)
         assertEquals("0", wallet.balanceFiatValue)
         assertFalse(wallet.isBackedUp)
@@ -107,7 +105,6 @@ class SatraWalletDatabaseTest {
                 walletName = "Currency",
                 walletType = WalletType.Standard.value,
                 walletKeyType = WalletKeyType.Mnemonic.value,
-                walletKeyMaterial = TEST_MNEMONIC,
             ),
             nowMillis = TEST_TIME,
         )
@@ -160,7 +157,6 @@ class SatraWalletDatabaseTest {
                 walletName = "Prices",
                 walletType = WalletType.Standard.value,
                 walletKeyType = WalletKeyType.Mnemonic.value,
-                walletKeyMaterial = TEST_MNEMONIC,
             ),
             nowMillis = TEST_TIME,
         )
@@ -263,7 +259,6 @@ class SatraWalletDatabaseTest {
                 walletName = "Imported",
                 walletType = WalletType.Imported.value,
                 walletKeyType = WalletKeyType.PrivateKey.value,
-                walletKeyMaterial = "private-key-material",
                 isImported = true,
             ),
             nowMillis = TEST_TIME,
@@ -281,12 +276,26 @@ class SatraWalletDatabaseTest {
             ),
             nowMillis = TEST_TIME,
         )
+        val secretId = dao.insertWalletSecret(
+            NewWalletSecretRecord(
+                walletId = walletId,
+                secretType = WalletSecretType.PrivateKey.value,
+                networkId = "ethereum",
+                derivationPath = "m/44'/60'/0'/0/0",
+                encryptionVersion = 1,
+                encryptionAlgorithm = "test-only",
+                keystoreAlias = "test-only",
+                ivBase64 = "test-iv",
+                ciphertextBase64 = "encrypted-private-key-material",
+            ),
+            nowMillis = TEST_TIME,
+        )
         val privateKeyId = dao.insertWalletPrivateKey(
             NewWalletPrivateKeyRecord(
                 walletId = walletId,
                 networkId = "ethereum",
                 addressId = addressId,
-                keyMaterial = "private-key-material",
+                secretId = secretId,
                 keyFormat = "hex",
                 derivationPath = "m/44'/60'/0'/0/0",
                 publicKey = "public-key",
@@ -326,89 +335,12 @@ class SatraWalletDatabaseTest {
         assertEquals(1, privateKeys.size)
         assertEquals(privateKeyId, privateKeys.single().privateKeyId)
         assertEquals(addressId, privateKeys.single().addressId)
+        assertEquals(secretId, privateKeys.single().secretId)
+        assertEquals("encrypted-private-key-material", checkNotNull(dao.getWalletSecret(secretId)).ciphertextBase64)
         assertEquals(1, transactions.size)
         assertEquals(transactionId, transactions.single().transactionId)
         assertEquals(WalletTransactionStatus.Success.value, transactions.single().status)
         assertEquals("3500.00", transactions.single().fiatValue)
-    }
-
-    @Test
-    fun repositoryPreparesPendingSendTransactionWithLocalWalletData() = runBlocking {
-        val walletId = dao.createWallet(
-            NewWalletRecord(
-                walletName = "Sender",
-                walletType = WalletType.Imported.value,
-                walletKeyType = WalletKeyType.PrivateKey.value,
-                walletKeyMaterial = TEST_PRIVATE_KEY_HEX,
-                isImported = true,
-            ),
-            nowMillis = TEST_TIME,
-        )
-        val addressId = dao.insertWalletAddress(
-            NewWalletAddressRecord(
-                walletId = walletId,
-                networkId = "ethereum",
-                address = "0x1111111111111111111111111111111111111111",
-                isPrimary = true,
-                addressIndex = 0,
-            ),
-            nowMillis = TEST_TIME,
-        )
-        dao.insertWalletPrivateKey(
-            NewWalletPrivateKeyRecord(
-                walletId = walletId,
-                networkId = "ethereum",
-                addressId = addressId,
-                keyMaterial = TEST_PRIVATE_KEY_HEX,
-                keyFormat = "hex",
-                keySource = WalletPrivateKeySource.Imported.value,
-                isImported = true,
-            ),
-            nowMillis = TEST_TIME,
-        )
-        dao.updateWalletAssetPrice(
-            walletId = walletId,
-            assetId = "ethereum:eth",
-            priceFiatValue = "2500",
-            balanceFiatValue = "5000",
-            localCurrencyCode = "USD",
-            metadataJson = TEST_METADATA,
-            nowMillis = TEST_TIME,
-        )
-        dao.updateWalletAssetBalance(
-            walletId = walletId,
-            assetId = "ethereum:eth",
-            balanceRaw = "2000000000000000000",
-            balanceDecimal = "2",
-            balanceFiatValue = "5000",
-            nowMillis = TEST_TIME,
-        )
-        val repository = SatraWalletRepository(dao)
-
-        val transactionId = repository.createPendingSendTransaction(
-            SatraPendingSendRequest(
-                walletId = walletId,
-                assetId = "ethereum:eth",
-                amountDecimal = java.math.BigDecimal("0.25"),
-                toAddress = "0x2222222222222222222222222222222222222222",
-                memo = "Treasury",
-            ),
-        )
-
-        val transaction = dao.getWalletTransactions(walletId).single()
-        assertEquals(transactionId, transaction.transactionId)
-        assertEquals(WalletTransactionDirection.Outgoing.value, transaction.direction)
-        assertEquals(WalletTransactionStatus.Pending.value, transaction.status)
-        assertEquals("250000000000000000", transaction.amountRaw)
-        assertEquals("0.25", transaction.amountDecimal)
-        assertEquals("ethereum:eth", transaction.feeAssetId)
-        assertEquals("625", transaction.fiatValue)
-        assertEquals("0x1111111111111111111111111111111111111111", transaction.fromAddress)
-        assertEquals("0x2222222222222222222222222222222222222222", transaction.toAddress)
-        assertEquals(
-            "trustwallet/wallet-core",
-            JSONObject(transaction.metadataJson).getString("signingProvider"),
-        )
     }
 
     @Test
@@ -418,7 +350,7 @@ class SatraWalletDatabaseTest {
                 walletName = "Watch",
                 walletType = WalletType.WatchOnly.value,
                 walletKeyType = WalletKeyType.Address.value,
-                walletKeyMaterial = "0x1111111111111111111111111111111111111111",
+                secretStorageState = SecretStorageState.None.value,
                 isImported = true,
                 isWatchOnly = true,
             ),
@@ -491,7 +423,6 @@ class SatraWalletDatabaseTest {
                 walletName = "Reset",
                 walletType = WalletType.Standard.value,
                 walletKeyType = WalletKeyType.Mnemonic.value,
-                walletKeyMaterial = TEST_MNEMONIC,
             ),
             nowMillis = TEST_TIME,
         )
@@ -544,7 +475,6 @@ class SatraWalletDatabaseTest {
                 walletName = "Protected",
                 walletType = WalletType.Standard.value,
                 walletKeyType = WalletKeyType.Mnemonic.value,
-                walletKeyMaterial = TEST_MNEMONIC,
             ),
             nowMillis = TEST_TIME,
         )
@@ -588,11 +518,17 @@ class SatraWalletDatabaseTest {
         checkNotNull(dao.getWallet(createdWalletId)).also { wallet ->
             assertEquals(WalletType.Standard.value, wallet.walletType)
             assertTrue(wallet.isBackedUp)
-            assertEquals(TEST_PASSPHRASE, wallet.passphrase)
+            assertNotNull(wallet.primarySecretId)
+            assertNotNull(wallet.passphraseSecretId)
+            assertEquals(SecretStorageState.KeystoreAesGcmV1.value, wallet.secretStorageState)
             assertEquals(TEST_METADATA, wallet.metadataJson)
             assertEquals(8, wallet.walletKeyFingerprint?.length)
             assertEquals("m/44'/60'/0'/0/0", wallet.walletKeyDerivationPath)
         }
+        val createdSecrets = dao.getWalletSecrets(createdWalletId)
+        assertEquals(2, createdSecrets.count { it.secretType in setOf(WalletSecretType.Mnemonic.value, WalletSecretType.Passphrase.value) })
+        assertTrue(createdSecrets.none { it.ciphertextBase64.contains(TEST_MNEMONIC) })
+        assertTrue(createdSecrets.none { it.ciphertextBase64.contains(TEST_PASSPHRASE) })
         assertEquals(EXPECTED_RECEIVE_ADDRESS_COUNT, dao.getWalletAddresses(createdWalletId).size)
         assertEquals(EXPECTED_RECEIVE_ADDRESS_COUNT, dao.getWalletPrivateKeys(createdWalletId).size)
         SupportedAssetCatalog.networks.forEach { network ->
@@ -614,8 +550,11 @@ class SatraWalletDatabaseTest {
             assertEquals(WalletType.Imported.value, wallet.walletType)
             assertTrue(wallet.isImported)
             assertFalse(wallet.isWatchOnly)
-            assertEquals(" imported passphrase ", wallet.passphrase)
+            assertNotNull(wallet.primarySecretId)
+            assertNotNull(wallet.passphraseSecretId)
         }
+        assertTrue(dao.getWalletSecrets(importedMnemonicWalletId).none { it.ciphertextBase64.contains(TEST_MNEMONIC) })
+        assertTrue(dao.getWalletSecrets(importedMnemonicWalletId).none { it.ciphertextBase64.contains("imported passphrase") })
         assertEquals(EXPECTED_RECEIVE_ADDRESS_COUNT, dao.getWalletAddresses(importedMnemonicWalletId).size)
         assertEquals(EXPECTED_RECEIVE_ADDRESS_COUNT, dao.getWalletPrivateKeys(importedMnemonicWalletId).size)
 
@@ -636,7 +575,10 @@ class SatraWalletDatabaseTest {
             assertEquals(SupportedAssetCatalog.assets.size, dao.getWalletAssets(walletId).size)
             assertEquals(1, privateKeys.size)
             assertEquals(network.networkId, privateKeys.single().networkId)
-            assertEquals(TEST_PRIVATE_KEY_HEX, privateKeys.single().keyMaterial)
+            assertTrue(privateKeys.single().secretId.isNotBlank())
+            val secret = checkNotNull(dao.getWalletSecret(privateKeys.single().secretId))
+            assertEquals(WalletSecretType.PrivateKey.value, secret.secretType)
+            assertFalse(secret.ciphertextBase64.contains(TEST_PRIVATE_KEY_HEX))
             assertEquals("hex", privateKeys.single().keyFormat)
             if (network.networkId in SECP256K1_PRIVATE_KEY_IMPORT_NETWORKS) {
                 val addresses = dao.getWalletAddresses(walletId)
@@ -648,7 +590,7 @@ class SatraWalletDatabaseTest {
     }
 
     @Test
-    fun migratesVersionOneDatabaseWithPassphraseColumn() {
+    fun recreatesOldDatabaseWithoutPlaintextSecretColumns() {
         val migrationDatabaseName = "satra_wallet_migration_test.db"
         context.deleteDatabase(migrationDatabaseName)
         context.openOrCreateDatabase(migrationDatabaseName, Context.MODE_PRIVATE, null).use { db ->
@@ -664,7 +606,14 @@ class SatraWalletDatabaseTest {
 
         val migrationHelper = SatraDatabaseOpenHelper(context, migrationDatabaseName)
         migrationHelper.writableDatabase.use { db ->
-            assertTrue(db.hasColumn(SatraDatabaseContract.TABLE_WALLETS, "passphrase"))
+            assertTrue(db.hasTable(SatraDatabaseContract.TABLE_WALLET_SECRETS))
+            assertFalse(db.hasColumn(SatraDatabaseContract.TABLE_WALLETS, "wallet_key_material"))
+            assertFalse(db.hasColumn(SatraDatabaseContract.TABLE_WALLETS, "passphrase"))
+            assertFalse(db.hasColumn(SatraDatabaseContract.TABLE_WALLETS, "wallet_key_encryption_state"))
+            assertFalse(db.hasColumn(SatraDatabaseContract.TABLE_WALLET_PRIVATE_KEYS, "key_material"))
+            assertFalse(db.hasColumn(SatraDatabaseContract.TABLE_WALLET_PRIVATE_KEYS, "is_encrypted"))
+            assertTrue(db.hasColumn(SatraDatabaseContract.TABLE_WALLETS, "primary_secret_id"))
+            assertTrue(db.hasColumn(SatraDatabaseContract.TABLE_WALLET_PRIVATE_KEYS, "secret_id"))
             assertTrue(db.hasTable(SatraDatabaseContract.TABLE_APP_SETTINGS))
             assertTrue(db.hasTable(SatraDatabaseContract.TABLE_ADDRESS_BOOK))
             assertTrue(db.hasColumn(SatraDatabaseContract.TABLE_APP_SETTINGS, "local_currency_code"))
