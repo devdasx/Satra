@@ -2907,7 +2907,7 @@ private fun HomeBalanceCard(
                     iconRes = R.drawable.ic_brand_move,
                     onClick = onSendClick,
                     solid = !isEmpty,
-                    enabled = !isEmpty,
+                    enabled = true,
                     solidContainerColor = buttonBackground,
                     solidContentColor = buttonContent,
                     outlinedContentColor = contentColor,
