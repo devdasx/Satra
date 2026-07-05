@@ -256,11 +256,13 @@
     <string name="scanner_status_invalid_payment">That QR code does not contain a supported payment request.</string>
     <string name="scanner_status_invalid_generic">That QR code is not supported yet.</string>
     <string name="scanner_status_camera_unavailable">Camera is not available on this device.</string>
-    <string name="app_lock_title">Unlock Satra</string>
-    <string name="app_lock_body">Enter your passcode to open this wallet.</string>
+    <string name="app_lock_title">Welcome back</string>
+    <string name="app_lock_body">Enter your passcode</string>
     <string name="app_lock_wrong_passcode">Incorrect passcode. Try again.</string>
     <string name="app_lock_wallet_erased">Wallet data was reset after too many failed passcode attempts.</string>
     <string name="app_lock_biometric_action">Use biometrics</string>
+    <string name="app_lock_keypad_biometric">Unlock with Satra ID</string>
+    <string name="app_lock_keypad_backspace">Delete digit</string>
     <string name="app_lock_biometric_failed">Biometric unlock was not recognized.</string>
     <string name="app_lock_biometric_prompt_title">Unlock Satra</string>
     <string name="app_lock_biometric_prompt_subtitle">Confirm it is you to open this wallet.</string>
