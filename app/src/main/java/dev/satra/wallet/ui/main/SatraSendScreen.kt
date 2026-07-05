@@ -119,13 +119,16 @@ fun SatraSendAssetScreen(
 ) {
     var state by remember {
         mutableStateOf(
-            initialWalletSnapshot?.toSendSnapshot()?.toAssetSelectionState()
+            initialWalletSnapshot
+                ?.takeIf { snapshot -> snapshot.hasSendData() }
+                ?.toSendSnapshot()
+                ?.toAssetSelectionState()
                 ?: SendAssetScreenState.Loading,
         )
     }
 
     LaunchedEffect(initialWalletSnapshot) {
-        initialWalletSnapshot?.let { snapshot ->
+        initialWalletSnapshot?.takeIf { snapshot -> snapshot.hasSendData() }?.let { snapshot ->
             state = snapshot.toSendSnapshot().toAssetSelectionState()
         }
     }
@@ -172,13 +175,16 @@ fun SatraSendNetworkScreen(
 ) {
     var state by remember(symbol) {
         mutableStateOf(
-            initialWalletSnapshot?.toSendSnapshot()?.toNetworkSelectionState(Uri.decode(symbol))
+            initialWalletSnapshot
+                ?.takeIf { snapshot -> snapshot.hasSendData() }
+                ?.toSendSnapshot()
+                ?.toNetworkSelectionState(Uri.decode(symbol))
                 ?: SendNetworkScreenState.Loading,
         )
     }
 
     LaunchedEffect(initialWalletSnapshot, symbol) {
-        initialWalletSnapshot?.let { snapshot ->
+        initialWalletSnapshot?.takeIf { snapshot -> snapshot.hasSendData() }?.let { snapshot ->
             state = snapshot.toSendSnapshot().toNetworkSelectionState(Uri.decode(symbol))
         }
     }
@@ -424,13 +430,11 @@ private fun SendAssetSelectionContent(
 ) {
     val haptic = LocalHapticFeedback.current
     var query by rememberSaveable { mutableStateOf("") }
-    var showAllSupported by rememberSaveable { mutableStateOf(false) }
     val filteredGroups = remember(state.groups, query) {
         state.groups.filterByQuery(query)
     }
     val fundedGroups = filteredGroups.filter { group -> group.totalFiat > BigDecimal.ZERO || group.totalBalance > BigDecimal.ZERO }
     val unfundedGroups = filteredGroups.filterNot { group -> group in fundedGroups }
-    val shouldShowUnfunded = query.isNotBlank() || showAllSupported
 
     SatraChooseAssetScaffold(
         title = stringResource(R.string.send_choose_asset_title),
@@ -463,25 +467,13 @@ private fun SendAssetSelectionContent(
                     )
                 }
             }
-            if (fundedGroups.isEmpty() && query.isBlank() && !showAllSupported) {
-                item {
-                    SendNoSpendableAssetsCard(
-                        onBrowseAll = { showAllSupported = true },
-                    )
+            if (unfundedGroups.isNotEmpty()) {
+                val title = if (fundedGroups.isEmpty()) {
+                    R.string.send_section_your_assets
+                } else {
+                    R.string.send_section_all_assets
                 }
-            } else if (unfundedGroups.isNotEmpty() && query.isBlank() && !showAllSupported) {
-                item {
-                    SatraButton(
-                        text = stringResource(R.string.send_browse_supported_assets),
-                        onClick = { showAllSupported = true },
-                        modifier = Modifier.fillMaxWidth(),
-                        variant = SatraButtonVariant.Secondary,
-                        height = SatraButtonDefaults.CompactHeight,
-                    )
-                }
-            }
-            if (unfundedGroups.isNotEmpty() && shouldShowUnfunded) {
-                item { ChooseAssetSectionHeader(title = stringResource(R.string.send_section_all_assets)) }
+                item { ChooseAssetSectionHeader(title = stringResource(title)) }
                 items(unfundedGroups, key = { group -> "all-${group.symbol}" }) { group ->
                     SendAssetGroupRow(
                         group = group,
@@ -497,42 +489,6 @@ private fun SendAssetSelectionContent(
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun SendNoSpendableAssetsCard(
-    onBrowseAll: () -> Unit,
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-    ) {
-        Column(
-            modifier = Modifier.padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text(
-                text = stringResource(R.string.send_no_spendable_assets_title),
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Bold,
-            )
-            Text(
-                text = stringResource(R.string.send_no_spendable_assets_body),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            SatraButton(
-                text = stringResource(R.string.send_browse_supported_assets),
-                onClick = onBrowseAll,
-                modifier = Modifier.fillMaxWidth(),
-                variant = SatraButtonVariant.Secondary,
-                height = SatraButtonDefaults.CompactHeight,
-            )
         }
     }
 }
@@ -2633,8 +2589,7 @@ private fun SendEmptyInline(
 private fun SatraMainWalletSnapshot?.hasSendData(): Boolean {
     val snapshot = this ?: return false
     val wallet = snapshot.wallet ?: return false
-    return snapshot.assets.isNotEmpty() &&
-        snapshot.addresses.isNotEmpty() &&
+    return snapshot.addresses.isNotEmpty() &&
         (wallet.isWatchOnly || snapshot.privateKeys.isNotEmpty())
 }
 
@@ -2787,15 +2742,14 @@ private fun SendSnapshot.toNetworkSelectionState(symbol: String): SendNetworkScr
     }
 
 private fun SendSnapshot.Content.toSendAssetRows(): List<SendAssetRow> {
-    val catalogAssetsById = SupportedAssetCatalog.assets.associateBy { it.assetId }
     val networksById = SupportedAssetCatalog.networks.associateBy { it.networkId }
+    val walletAssetsById = assets.associateBy { it.assetId }
     val addressesByNetwork = addresses
         .filter { address -> address.addressType == "receive" || address.addressType == "watch_only" }
         .groupBy { address -> address.networkId }
-    return assets.mapNotNull { walletAsset ->
-        val asset = catalogAssetsById[walletAsset.assetId] ?: return@mapNotNull null
-        val network = networksById[walletAsset.networkId] ?: return@mapNotNull null
-        val sourceAddress = addressesByNetwork[walletAsset.networkId]
+    return SupportedAssetCatalog.assets.mapNotNull { asset ->
+        val network = networksById[asset.networkId] ?: return@mapNotNull null
+        val sourceAddress = addressesByNetwork[asset.networkId]
             .orEmpty()
             .sortedWith(
                 compareByDescending<WalletAddressRecord> { it.isPrimary }
@@ -2804,6 +2758,8 @@ private fun SendSnapshot.Content.toSendAssetRows(): List<SendAssetRow> {
             .firstOrNull()
             ?.address
             ?: return@mapNotNull null
+        val walletAsset = walletAssetsById[asset.assetId]
+            ?: asset.toZeroBalanceWalletAsset(wallet)
         val balance = walletAsset.balanceDecimal.toBigDecimalOrZero()
         val canSignAndBroadcast = SatraSendService.canSignAndBroadcast(asset, network)
         SendAssetRow(
@@ -2828,6 +2784,26 @@ private fun SendSnapshot.Content.toSendAssetRows(): List<SendAssetRow> {
             .thenBy { row -> row.network.displayName.lowercase(Locale.US) },
     )
 }
+
+private fun SupportedAsset.toZeroBalanceWalletAsset(wallet: WalletRecord): WalletAssetRecord =
+    WalletAssetRecord(
+        walletAssetId = "catalog-${wallet.walletId}-$assetId",
+        walletId = wallet.walletId,
+        assetId = assetId,
+        networkId = networkId,
+        isEnabled = true,
+        isVisible = true,
+        balanceRaw = "0",
+        balanceDecimal = "0",
+        balanceFiatValue = "0",
+        localCurrencyCode = wallet.localCurrencyCode,
+        priceFiatValue = "0",
+        priceFiatUpdatedAt = null,
+        balanceUpdatedAt = null,
+        createdAt = 0L,
+        updatedAt = 0L,
+        metadataJson = "{}",
+    )
 
 private fun List<SendAssetRow>.groupForAssetSelection(localCurrencyCode: String): List<SendAssetGroup> =
     groupBy { row -> row.asset.symbol.uppercase(Locale.US) }
