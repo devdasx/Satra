@@ -162,6 +162,7 @@ fun SatraMainScreen(
         )
     }
     var activeCurrencyCode by remember { mutableStateOf(DEFAULT_LOCAL_CURRENCY_CODE) }
+    var walletManagementRefreshKey by remember { mutableStateOf(0) }
     LaunchedEffect(walletRepository) {
         activeCurrencyCode = walletRepository.getAppSettings().localCurrencyCode
     }
@@ -237,6 +238,40 @@ fun SatraMainScreen(
                     walletRepository = walletRepository,
                     localCurrencyCode = activeCurrencyCode,
                     onNavigate = tabNavController::navigate,
+                )
+            }
+            composable(SatraMainRoute.WalletManagement) {
+                SatraWalletManagementScreen(
+                    walletRepository = walletRepository,
+                    refreshKey = walletManagementRefreshKey,
+                    onBack = { tabNavController.popBackStack() },
+                    onRemoveWallet = { walletId ->
+                        tabNavController.navigate(SatraMainRoute.walletRemoveWarning(walletId))
+                    },
+                )
+            }
+            composable(SatraMainRoute.WalletRemoveWarningPattern) { entry ->
+                val walletId = entry.arguments?.getString(SatraMainRoute.ArgWalletId).orEmpty()
+                SatraWalletRemoveWarningScreen(
+                    walletRepository = walletRepository,
+                    walletId = walletId,
+                    onBack = { tabNavController.popBackStack() },
+                    onContinue = { selectedWalletId ->
+                        tabNavController.navigate(SatraMainRoute.walletRemovePasscode(selectedWalletId))
+                    },
+                )
+            }
+            composable(SatraMainRoute.WalletRemovePasscodePattern) { entry ->
+                val walletId = entry.arguments?.getString(SatraMainRoute.ArgWalletId).orEmpty()
+                SatraWalletRemovePasscodeScreen(
+                    walletRepository = walletRepository,
+                    walletId = walletId,
+                    onBack = { tabNavController.popBackStack() },
+                    onWalletRemoved = {
+                        walletManagementRefreshKey += 1
+                        tabNavController.popBackStack(SatraMainRoute.WalletManagement, inclusive = false)
+                    },
+                    onWalletsEmpty = onResetComplete,
                 )
             }
             composable(SatraMainRoute.AddressBook) {
@@ -5092,6 +5127,7 @@ internal object SatraMainRoute {
     const val ArgRecipient = "recipient"
     const val ArgAmount = "amount"
     const val ArgWarnPoison = "warnPoison"
+    const val ArgWalletId = "walletId"
     const val TokenDetailPattern = "main/token/{$ArgSymbol}"
     const val ReceiveNetworkPattern = "main/receive/network/{$ArgSymbol}"
     const val ReceiveQrPattern = "main/receive/qr/{$ArgAssetId}"
@@ -5103,6 +5139,9 @@ internal object SatraMainRoute {
     const val SendSentPattern = "main/send/sent/{$ArgTransactionId}"
     const val TransactionDetailPattern = "main/activity/transaction/{$ArgTransactionId}"
     const val MarketDetailPattern = "main/markets/asset/{$ArgSymbol}"
+    const val WalletManagement = "main/settings/wallet-management"
+    const val WalletRemoveWarningPattern = "main/settings/wallet-management/remove/{$ArgWalletId}/warning"
+    const val WalletRemovePasscodePattern = "main/settings/wallet-management/remove/{$ArgWalletId}/passcode"
     const val AddressBook = "main/settings/address-book"
     const val Preferences = "main/settings/preferences"
     const val Currency = "main/settings/preferences/currency"
@@ -5156,6 +5195,12 @@ internal object SatraMainRoute {
 
     fun marketDetail(symbol: String): String =
         "main/markets/asset/${Uri.encode(symbol)}"
+
+    fun walletRemoveWarning(walletId: String): String =
+        "main/settings/wallet-management/remove/${Uri.encode(walletId)}/warning"
+
+    fun walletRemovePasscode(walletId: String): String =
+        "main/settings/wallet-management/remove/${Uri.encode(walletId)}/passcode"
 }
 
 private val HomeContentMaxWidth = 720.dp

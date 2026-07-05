@@ -290,6 +290,65 @@ class SatraWalletDao(
         return getWallet(walletId)
     }
 
+    fun deleteWallet(
+        walletId: String,
+        nowMillis: Long = System.currentTimeMillis(),
+    ): List<WalletRecord> {
+        if (getWallet(walletId) == null) return getWallets()
+
+        val db = databaseHelper.writableDatabase
+        db.beginTransaction()
+        try {
+            db.delete(
+                SatraDatabaseContract.TABLE_WALLETS,
+                "wallet_id = ?",
+                arrayOf(walletId),
+            )
+            val activeWalletId = db.query(
+                SatraDatabaseContract.TABLE_WALLETS,
+                arrayOf("wallet_id"),
+                "is_active = 1",
+                null,
+                null,
+                null,
+                "created_at DESC",
+                "1",
+            ).use { cursor ->
+                if (cursor.moveToFirst()) cursor.string("wallet_id") else null
+            }
+            if (activeWalletId == null) {
+                val nextWalletId = db.query(
+                    SatraDatabaseContract.TABLE_WALLETS,
+                    arrayOf("wallet_id"),
+                    null,
+                    null,
+                    null,
+                    null,
+                    "created_at DESC",
+                    "1",
+                ).use { cursor ->
+                    if (cursor.moveToFirst()) cursor.string("wallet_id") else null
+                }
+                if (nextWalletId != null) {
+                    db.update(
+                        SatraDatabaseContract.TABLE_WALLETS,
+                        ContentValues().apply {
+                            put("is_active", 1)
+                            put("updated_at", nowMillis)
+                        },
+                        "wallet_id = ?",
+                        arrayOf(nextWalletId),
+                    )
+                }
+            }
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+
+        return getWallets()
+    }
+
     fun getWalletAssets(walletId: String): List<WalletAssetRecord> =
         databaseHelper.readableDatabase.query(
             SatraDatabaseContract.TABLE_WALLET_ASSETS,

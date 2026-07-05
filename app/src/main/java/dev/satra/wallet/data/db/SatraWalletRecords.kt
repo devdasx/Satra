@@ -219,6 +219,23 @@ data class NewWalletPrivateKeyRecord(
     val metadataJson: String = EMPTY_JSON,
 )
 
+data class WalletBackupRecord(
+    val wallet: WalletRecord,
+    val recoveryPhrase: String?,
+    val passphrase: String?,
+    val privateKeys: List<WalletPrivateKeyBackupRecord>,
+)
+
+data class WalletPrivateKeyBackupRecord(
+    val networkId: String,
+    val networkName: String,
+    val address: String?,
+    val derivationPath: String?,
+    val keySource: String,
+    val keyFormat: String,
+    val privateKeyHex: String,
+)
+
 data class WalletTransactionRecord(
     val transactionId: String,
     val walletId: String,

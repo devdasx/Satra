@@ -435,6 +435,58 @@ class SatraWalletRepository(
             walletDao.setActiveWallet(walletId)
         }
 
+    suspend fun removeWallet(walletId: String): List<WalletRecord> =
+        withContext(Dispatchers.IO) {
+            walletDao.deleteWallet(walletId)
+        }
+
+    suspend fun getWalletBackup(walletId: String): WalletBackupRecord? =
+        withContext(Dispatchers.IO) {
+            val wallet = walletDao.getWallet(walletId) ?: return@withContext null
+            val mnemonicSecrets = if (wallet.walletKeyType == WalletKeyType.Mnemonic.value) {
+                wallet.decryptMnemonicSecretsOrNull()
+                    ?: throw IllegalStateException("Recovery phrase is unavailable for this wallet.")
+            } else {
+                null
+            }
+            val addressesById = walletDao.getWalletAddresses(walletId).associateBy { address ->
+                address.addressId
+            }
+            val networksById = SupportedAssetCatalog.networks.associateBy { network ->
+                network.networkId
+            }
+            val networkSortOrder = SupportedAssetCatalog.networks
+                .mapIndexed { index, network -> network.networkId to index }
+                .toMap()
+            val privateKeys = walletDao.getWalletPrivateKeys(walletId)
+                .sortedWith(
+                    compareBy<WalletPrivateKeyRecord> { privateKey ->
+                        networkSortOrder[privateKey.networkId] ?: Int.MAX_VALUE
+                    }.thenBy { privateKey -> privateKey.derivationPath.orEmpty() },
+                )
+                .map { privateKey ->
+                    val secret = decryptSecret(privateKey.secretId)
+                        ?: throw IllegalStateException("Private key is unavailable for ${privateKey.networkId}.")
+                    val network = networksById[privateKey.networkId]
+                    val address = privateKey.addressId?.let(addressesById::get)
+                    WalletPrivateKeyBackupRecord(
+                        networkId = privateKey.networkId,
+                        networkName = network?.displayName ?: privateKey.networkId,
+                        address = address?.address,
+                        derivationPath = privateKey.derivationPath,
+                        keySource = privateKey.keySource,
+                        keyFormat = privateKey.keyFormat,
+                        privateKeyHex = secret,
+                    )
+                }
+            WalletBackupRecord(
+                wallet = wallet,
+                recoveryPhrase = mnemonicSecrets?.mnemonic,
+                passphrase = mnemonicSecrets?.passphrase,
+                privateKeys = privateKeys,
+            )
+        }
+
     suspend fun getWalletAssets(walletId: String): List<WalletAssetRecord> =
         withContext(Dispatchers.IO) {
             walletDao.getWalletAssets(walletId)

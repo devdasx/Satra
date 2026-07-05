@@ -38,7 +38,7 @@ object EvmLegacyTransactionSigner {
             expectedPublicKey = publicKeyFromPrivateKey(privateKey),
         ) ?: error("Could not recover EVM signature ID.")
         val v = BigInteger.valueOf(transaction.chainId)
-            .multiply(BigInteger.TWO)
+            .multiply(BigInteger.valueOf(2L))
             .add(BigInteger.valueOf(35L + recId))
 
         val signedPayload = Rlp.encodeList(
@@ -162,7 +162,7 @@ object EvmLegacyTransactionSigner {
 
         fun encodeList(vararg elements: ByteArray): ByteArray {
             val payload = ByteArrayOutputStream()
-            elements.forEach(payload::writeBytes)
+            elements.forEach { element -> payload.write(element) }
             val payloadBytes = payload.toByteArray()
             return encodeLength(payloadBytes.size, LIST_OFFSET) + payloadBytes
         }

@@ -1,5 +1,8 @@
 package dev.satra.wallet.ui.main
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
@@ -29,6 +32,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -63,6 +67,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -74,6 +79,10 @@ import dev.satra.wallet.data.db.AppSettingsUpdate
 import dev.satra.wallet.data.db.DEFAULT_LOCAL_CURRENCY_CODE
 import dev.satra.wallet.data.db.NewAddressBookEntryRecord
 import dev.satra.wallet.data.db.SatraWalletRepository
+import dev.satra.wallet.data.db.WalletBackupRecord
+import dev.satra.wallet.data.db.WalletKeyType
+import dev.satra.wallet.data.db.WalletPrivateKeyBackupRecord
+import dev.satra.wallet.data.db.WalletRecord
 import dev.satra.wallet.settings.SatraSettings
 import dev.satra.wallet.settings.SatraSettingsDefaults
 import dev.satra.wallet.settings.SatraThemePreference
@@ -98,6 +107,17 @@ internal fun SatraSettingsRootScreen(
                 bodyRes = R.string.settings_screen_body,
                 iconRes = R.drawable.ic_brand_settings,
             )
+        }
+        item { SettingsSectionTitle(R.string.settings_section_wallet_management) }
+        item {
+            SettingsCard {
+                SettingsRow(
+                    iconRes = R.drawable.ic_brand_wallet,
+                    title = stringResource(R.string.settings_wallet_management_title),
+                    body = stringResource(R.string.settings_wallet_management_body),
+                    onClick = { onNavigate(SatraMainRoute.WalletManagement) },
+                )
+            }
         }
         item { SettingsSectionTitle(R.string.settings_section_wallet) }
         item {
@@ -168,6 +188,547 @@ internal fun SatraSettingsRootScreen(
                     isDanger = true,
                 )
             }
+        }
+    }
+}
+
+@Composable
+internal fun SatraWalletManagementScreen(
+    walletRepository: SatraWalletRepository,
+    refreshKey: Int,
+    onBack: () -> Unit,
+    onRemoveWallet: (String) -> Unit,
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var wallets by remember { mutableStateOf<List<WalletRecord>?>(null) }
+    var backupRecord by remember { mutableStateOf<WalletBackupRecord?>(null) }
+    var backupMode by remember { mutableStateOf<WalletBackupMode?>(null) }
+
+    fun reloadWallets() {
+        scope.launch {
+            wallets = walletRepository.getWallets()
+        }
+    }
+
+    fun loadBackup(
+        walletId: String,
+        mode: WalletBackupMode,
+    ) {
+        scope.launch {
+            runCatching {
+                walletRepository.getWalletBackup(walletId)
+            }.onSuccess { backup ->
+                if (backup == null) {
+                    Toast.makeText(context, R.string.settings_wallet_management_wallet_missing, Toast.LENGTH_SHORT).show()
+                } else {
+                    backupRecord = backup
+                    backupMode = mode
+                }
+            }.onFailure {
+                Toast.makeText(context, R.string.settings_wallet_management_backup_failed, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    LaunchedEffect(walletRepository, refreshKey) {
+        wallets = walletRepository.getWallets()
+    }
+
+    backupRecord?.let { backup ->
+        val mode = backupMode
+        if (mode != null) {
+            WalletBackupSheet(
+                backup = backup,
+                mode = mode,
+                onDismiss = {
+                    backupRecord = null
+                    backupMode = null
+                },
+            )
+        }
+    }
+
+    SettingsScaffold(
+        titleRes = R.string.settings_wallet_management_title,
+        onBack = onBack,
+    ) {
+        item {
+            SettingsHeroCard(
+                titleRes = R.string.settings_wallet_management_title,
+                bodyRes = R.string.settings_wallet_management_screen_body,
+                iconRes = R.drawable.ic_brand_wallet,
+            )
+        }
+        when {
+            wallets == null -> {
+                item {
+                    SettingsEmptyCard(
+                        titleRes = R.string.settings_wallet_management_loading_title,
+                        bodyRes = R.string.settings_wallet_management_loading_body,
+                    )
+                }
+            }
+
+            wallets.orEmpty().isEmpty() -> {
+                item {
+                    SettingsEmptyCard(
+                        titleRes = R.string.settings_wallet_management_empty_title,
+                        bodyRes = R.string.settings_wallet_management_empty_body,
+                    )
+                }
+            }
+
+            else -> {
+                val currentWallets = wallets.orEmpty()
+                items(currentWallets, key = { wallet -> wallet.walletId }) { wallet ->
+                    SettingsCard {
+                        WalletManagementCard(
+                            wallet = wallet,
+                            onSetActive = {
+                                scope.launch {
+                                    walletRepository.setActiveWallet(wallet.walletId)
+                                    reloadWallets()
+                                    Toast.makeText(
+                                        context,
+                                        R.string.settings_wallet_management_active_toast,
+                                        Toast.LENGTH_SHORT,
+                                    ).show()
+                                }
+                            },
+                            onExportRecoveryPhrase = {
+                                loadBackup(wallet.walletId, WalletBackupMode.RecoveryPhrase)
+                            },
+                            onBackupPrivateKeys = {
+                                loadBackup(wallet.walletId, WalletBackupMode.PrivateKeys)
+                            },
+                            onRemoveWallet = {
+                                onRemoveWallet(wallet.walletId)
+                            },
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WalletManagementCard(
+    wallet: WalletRecord,
+    onSetActive: () -> Unit,
+    onExportRecoveryPhrase: () -> Unit,
+    onBackupPrivateKeys: () -> Unit,
+    onRemoveWallet: () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            SettingsIcon(iconRes = if (wallet.isWatchOnly) R.drawable.ic_brand_scan else R.drawable.ic_brand_wallet)
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = wallet.walletName,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = walletManagementSubtitle(wallet),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        if (!wallet.isActive) {
+            OutlinedButton(
+                onClick = onSetActive,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(100.dp),
+            ) {
+                Text(stringResource(R.string.settings_wallet_management_make_active), fontWeight = FontWeight.Bold)
+            }
+        }
+        if (wallet.walletKeyType == WalletKeyType.Mnemonic.value) {
+            OutlinedButton(
+                onClick = onExportRecoveryPhrase,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(100.dp),
+            ) {
+                Text(stringResource(R.string.settings_wallet_management_export_phrase), fontWeight = FontWeight.Bold)
+            }
+        }
+        if (!wallet.isWatchOnly) {
+            OutlinedButton(
+                onClick = onBackupPrivateKeys,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(100.dp),
+            ) {
+                Text(stringResource(R.string.settings_wallet_management_backup_private_keys), fontWeight = FontWeight.Bold)
+            }
+        }
+        OutlinedButton(
+            onClick = onRemoveWallet,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(100.dp),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+        ) {
+            Text(stringResource(R.string.settings_wallet_management_remove_wallet), fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun WalletBackupSheet(
+    backup: WalletBackupRecord,
+    mode: WalletBackupMode,
+    onDismiss: () -> Unit,
+) {
+    val context = LocalContext.current
+    val titleRes = when (mode) {
+        WalletBackupMode.RecoveryPhrase -> R.string.settings_wallet_management_export_phrase
+        WalletBackupMode.PrivateKeys -> R.string.settings_wallet_management_backup_private_keys
+    }
+    val recoveryPhraseLabel = stringResource(R.string.settings_wallet_management_recovery_phrase_label)
+    val passphraseLabel = stringResource(R.string.settings_wallet_management_passphrase_label)
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = stringResource(titleRes),
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = stringResource(R.string.settings_wallet_management_backup_warning),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.error,
+                fontWeight = FontWeight.Bold,
+            )
+            when (mode) {
+                WalletBackupMode.RecoveryPhrase -> {
+                    val recoveryPhrase = backup.recoveryPhrase
+                    if (recoveryPhrase == null) {
+                        Text(
+                            text = stringResource(R.string.settings_wallet_management_no_phrase),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    } else {
+                        SecretValueCard(
+                            title = recoveryPhraseLabel,
+                            body = stringResource(R.string.settings_wallet_management_recovery_phrase_body),
+                            secret = recoveryPhrase,
+                            onCopy = {
+                                copySecretToClipboard(
+                                    context = context,
+                                    label = recoveryPhraseLabel,
+                                    value = recoveryPhrase,
+                                )
+                            },
+                        )
+                        backup.passphrase?.takeIf(String::isNotBlank)?.let { passphrase ->
+                            SecretValueCard(
+                                title = passphraseLabel,
+                                body = stringResource(R.string.settings_wallet_management_passphrase_body),
+                                secret = passphrase,
+                                onCopy = {
+                                    copySecretToClipboard(
+                                        context = context,
+                                        label = passphraseLabel,
+                                        value = passphrase,
+                                    )
+                                },
+                            )
+                        }
+                    }
+                }
+
+                WalletBackupMode.PrivateKeys -> {
+                    if (backup.privateKeys.isEmpty()) {
+                        Text(
+                            text = stringResource(R.string.settings_wallet_management_no_private_keys),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    } else {
+                        backup.privateKeys.forEach { privateKey ->
+                            PrivateKeyBackupCard(
+                                privateKey = privateKey,
+                                onCopy = {
+                                    copySecretToClipboard(
+                                        context = context,
+                                        label = privateKey.networkName,
+                                        value = privateKey.privateKeyHex,
+                                    )
+                                },
+                            )
+                        }
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(18.dp))
+        }
+    }
+}
+
+@Composable
+private fun SecretValueCard(
+    title: String,
+    body: String,
+    secret: String,
+    onCopy: () -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = body,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            SelectionContainer {
+                Text(
+                    text = secret,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+            OutlinedButton(
+                onClick = onCopy,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(100.dp),
+            ) {
+                Text(stringResource(R.string.settings_wallet_management_copy_secret), fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+@Composable
+private fun PrivateKeyBackupCard(
+    privateKey: WalletPrivateKeyBackupRecord,
+    onCopy: () -> Unit,
+) {
+    SecretValueCard(
+        title = privateKey.networkName,
+        body = buildString {
+            privateKey.address?.let { address ->
+                append(address.shortSettingsValue())
+            }
+            privateKey.derivationPath?.let { path ->
+                if (isNotEmpty()) append(" · ")
+                append(path)
+            }
+            if (isEmpty()) append(privateKey.keyFormat)
+        },
+        secret = privateKey.privateKeyHex,
+        onCopy = onCopy,
+    )
+}
+
+@Composable
+internal fun SatraWalletRemoveWarningScreen(
+    walletRepository: SatraWalletRepository,
+    walletId: String,
+    onBack: () -> Unit,
+    onContinue: (String) -> Unit,
+) {
+    var wallet by remember { mutableStateOf<WalletRecord?>(null) }
+    var confirmation by remember { mutableStateOf("") }
+    LaunchedEffect(walletRepository, walletId) {
+        wallet = walletRepository.getWallets().firstOrNull { it.walletId == walletId }
+    }
+
+    SettingsScaffold(
+        titleRes = R.string.settings_wallet_management_remove_wallet,
+        onBack = onBack,
+    ) {
+        item {
+            SettingsHeroCard(
+                titleRes = R.string.settings_wallet_management_remove_wallet,
+                bodyRes = R.string.settings_wallet_management_remove_warning_body,
+                iconRes = R.drawable.ic_brand_empty,
+                isDanger = true,
+            )
+        }
+        item {
+            SettingsCard {
+                Text(
+                    text = stringResource(
+                        R.string.settings_wallet_management_remove_warning,
+                        wallet?.walletName ?: stringResource(R.string.settings_wallet_management_wallet_missing_name),
+                    ),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.error,
+                    fontWeight = FontWeight.Bold,
+                )
+                OutlinedTextField(
+                    value = confirmation,
+                    onValueChange = { confirmation = it.uppercase(Locale.US).take(12) },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text(stringResource(R.string.settings_wallet_management_remove_confirm_label)) },
+                    singleLine = true,
+                )
+                Button(
+                    onClick = { onContinue(walletId) },
+                    enabled = wallet != null && confirmation == REMOVE_CONFIRMATION,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(54.dp),
+                    shape = RoundedCornerShape(100.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError,
+                    ),
+                ) {
+                    Text(stringResource(R.string.settings_wallet_management_continue_to_passcode), fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+internal fun SatraWalletRemovePasscodeScreen(
+    walletRepository: SatraWalletRepository,
+    walletId: String,
+    onBack: () -> Unit,
+    onWalletRemoved: () -> Unit,
+    onWalletsEmpty: () -> Unit,
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var wallet by remember { mutableStateOf<WalletRecord?>(null) }
+    var appSettings by remember { mutableStateOf<AppSettingsRecord?>(null) }
+    var passcode by remember { mutableStateOf("") }
+    var removing by remember { mutableStateOf(false) }
+
+    LaunchedEffect(walletRepository, walletId) {
+        wallet = walletRepository.getWallets().firstOrNull { it.walletId == walletId }
+        appSettings = walletRepository.getAppSettings()
+    }
+
+    SettingsScaffold(
+        titleRes = R.string.settings_wallet_management_verify_passcode,
+        onBack = onBack,
+    ) {
+        item {
+            SettingsHeroCard(
+                titleRes = R.string.settings_wallet_management_verify_passcode,
+                bodyRes = R.string.settings_wallet_management_verify_passcode_body,
+                iconRes = R.drawable.ic_brand_security,
+                isDanger = true,
+            )
+        }
+        item {
+            UnifiedPasscodeActionCard(
+                appSettings = appSettings,
+                passcode = passcode,
+                actionTextRes = R.string.settings_wallet_management_remove_wallet,
+                running = removing,
+                actionEnabled = wallet != null,
+                onPasscodeChange = { passcode = it },
+                onAction = {
+                    scope.launch {
+                        removing = true
+                        val settings = appSettings ?: walletRepository.getAppSettings()
+                        val verified = !settings.passcodeEnabled || walletRepository.verifyAppPasscode(passcode)
+                        if (verified) {
+                            val remainingWallets = walletRepository.removeWallet(walletId)
+                            Toast.makeText(
+                                context,
+                                R.string.settings_wallet_management_removed_toast,
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                            if (remainingWallets.isEmpty()) {
+                                onWalletsEmpty()
+                            } else {
+                                onWalletRemoved()
+                            }
+                        } else {
+                            removing = false
+                            Toast.makeText(context, R.string.settings_security_wrong_passcode, Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun UnifiedPasscodeActionCard(
+    appSettings: AppSettingsRecord?,
+    passcode: String,
+    @StringRes actionTextRes: Int,
+    running: Boolean,
+    actionEnabled: Boolean,
+    onPasscodeChange: (String) -> Unit,
+    onAction: () -> Unit,
+) {
+    val passcodeEnabled = appSettings?.passcodeEnabled == true
+    val passcodeLength = appSettings?.passcodeLength ?: 6
+    SettingsCard {
+        Text(
+            text = stringResource(R.string.settings_wallet_management_biometric_not_allowed),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        if (passcodeEnabled) {
+            OutlinedTextField(
+                value = passcode,
+                onValueChange = { onPasscodeChange(it.filter(Char::isDigit).take(passcodeLength)) },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text(stringResource(R.string.settings_security_current_passcode)) },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                visualTransformation = PasswordVisualTransformation(),
+                singleLine = true,
+            )
+        } else {
+            Text(
+                text = stringResource(R.string.settings_wallet_management_no_passcode_body),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+        Button(
+            onClick = onAction,
+            enabled = actionEnabled && appSettings != null && !running && (!passcodeEnabled || passcode.length == passcodeLength),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(54.dp),
+            shape = RoundedCornerShape(100.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.error,
+                contentColor = MaterialTheme.colorScheme.onError,
+            ),
+        ) {
+            Text(stringResource(actionTextRes), fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -1849,5 +2410,36 @@ private val autoLockOptions = listOf(
 private fun String.shortSettingsValue(): String =
     if (length <= 18) this else "${take(8)}...${takeLast(6)}"
 
+@Composable
+private fun walletManagementSubtitle(wallet: WalletRecord): String {
+    val walletType = when {
+        wallet.isWatchOnly -> stringResource(R.string.settings_wallet_management_type_watch_only)
+        wallet.walletKeyType == WalletKeyType.Mnemonic.value -> stringResource(R.string.settings_wallet_management_type_recovery_phrase)
+        wallet.walletKeyType == WalletKeyType.PrivateKey.value -> stringResource(R.string.settings_wallet_management_type_private_key)
+        else -> stringResource(R.string.settings_wallet_management_type_wallet)
+    }
+    return if (wallet.isActive) {
+        stringResource(R.string.settings_wallet_management_wallet_active_subtitle, walletType)
+    } else {
+        stringResource(R.string.settings_wallet_management_wallet_inactive_subtitle, walletType)
+    }
+}
+
+private fun copySecretToClipboard(
+    context: Context,
+    label: String,
+    value: String,
+) {
+    val clipboard = context.getSystemService(ClipboardManager::class.java)
+    clipboard.setPrimaryClip(ClipData.newPlainText(label, value))
+    Toast.makeText(context, R.string.settings_wallet_management_copied_toast, Toast.LENGTH_SHORT).show()
+}
+
+private enum class WalletBackupMode {
+    RecoveryPhrase,
+    PrivateKeys,
+}
+
 private const val RESET_CONFIRMATION = "RESET"
+private const val REMOVE_CONFIRMATION = "REMOVE"
 private val SettingsContentMaxWidth = 720.dp
