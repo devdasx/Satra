@@ -163,8 +163,22 @@ fun SatraMainScreen(
     }
     var activeCurrencyCode by remember { mutableStateOf(DEFAULT_LOCAL_CURRENCY_CODE) }
     var walletManagementRefreshKey by remember { mutableStateOf(0) }
+    var walletSnapshot by remember { mutableStateOf<SatraMainWalletSnapshot?>(null) }
+    var marketSnapshot by remember { mutableStateOf<SatraMainMarketSnapshot?>(null) }
     LaunchedEffect(walletRepository) {
         activeCurrencyCode = walletRepository.getAppSettings().localCurrencyCode
+    }
+    LaunchedEffect(walletRepository, activeCurrencyCode) {
+        coroutineScope {
+            val walletDeferred = async {
+                walletRepository.loadMainWalletSnapshot()
+            }
+            val marketDeferred = async {
+                walletRepository.loadMainMarketSnapshot(activeCurrencyCode)
+            }
+            walletSnapshot = walletDeferred.await()
+            marketSnapshot = marketDeferred.await()
+        }
     }
     val onBalancesHiddenChange: (Boolean) -> Unit = { hidden ->
         balancesHidden = hidden
@@ -202,6 +216,8 @@ fun SatraMainScreen(
                 SatraHomeDashboard(
                     walletRepository = walletRepository,
                     localCurrencyCode = activeCurrencyCode,
+                    initialWalletSnapshot = walletSnapshot,
+                    onWalletSnapshotLoaded = { snapshot -> walletSnapshot = snapshot },
                     balancesHidden = balancesHidden,
                     hapticsEnabled = settings.hapticsEnabled,
                     onBalancesHiddenChange = onBalancesHiddenChange,
@@ -218,6 +234,8 @@ fun SatraMainScreen(
                 SatraActivityScreen(
                     walletRepository = walletRepository,
                     localCurrencyCode = activeCurrencyCode,
+                    initialWalletSnapshot = walletSnapshot,
+                    onWalletSnapshotLoaded = { snapshot -> walletSnapshot = snapshot },
                     balancesHidden = balancesHidden,
                     onTransactionClick = { transactionId ->
                         tabNavController.navigate(SatraMainRoute.transactionDetail(transactionId))
@@ -228,6 +246,8 @@ fun SatraMainScreen(
                 SatraMarketsScreen(
                     walletRepository = walletRepository,
                     localCurrencyCode = activeCurrencyCode,
+                    initialMarketSnapshot = marketSnapshot,
+                    onMarketSnapshotLoaded = { snapshot -> marketSnapshot = snapshot },
                     onAssetClick = { symbol ->
                         tabNavController.navigate(SatraMainRoute.marketDetail(symbol))
                     },
@@ -364,6 +384,8 @@ fun SatraMainScreen(
             composable(SatraMainRoute.Receive) {
                 SatraReceiveAssetScreen(
                     walletRepository = walletRepository,
+                    initialWalletSnapshot = walletSnapshot,
+                    onWalletSnapshotLoaded = { snapshot -> walletSnapshot = snapshot },
                     onBack = { tabNavController.popBackStack() },
                     onAssetSelected = { assetId ->
                         tabNavController.navigate(SatraMainRoute.receiveQr(assetId))
@@ -377,6 +399,8 @@ fun SatraMainScreen(
                 val symbol = entry.arguments?.getString(SatraMainRoute.ArgSymbol).orEmpty()
                 SatraReceiveNetworkScreen(
                     walletRepository = walletRepository,
+                    initialWalletSnapshot = walletSnapshot,
+                    onWalletSnapshotLoaded = { snapshot -> walletSnapshot = snapshot },
                     symbol = symbol,
                     onBack = { tabNavController.popBackStack() },
                     onNetworkSelected = { assetId ->
@@ -388,6 +412,8 @@ fun SatraMainScreen(
                 val assetId = entry.arguments?.getString(SatraMainRoute.ArgAssetId).orEmpty()
                 SatraReceiveQrScreen(
                     walletRepository = walletRepository,
+                    initialWalletSnapshot = walletSnapshot,
+                    onWalletSnapshotLoaded = { snapshot -> walletSnapshot = snapshot },
                     assetId = assetId,
                     onBack = { tabNavController.popBackStack() },
                 )
@@ -398,6 +424,8 @@ fun SatraMainScreen(
                     walletRepository = walletRepository,
                     symbol = symbol,
                     localCurrencyCode = activeCurrencyCode,
+                    initialWalletSnapshot = walletSnapshot,
+                    onWalletSnapshotLoaded = { snapshot -> walletSnapshot = snapshot },
                     balancesHidden = balancesHidden,
                     onBalancesHiddenChange = onBalancesHiddenChange,
                     onBack = { tabNavController.popBackStack() },
@@ -434,12 +462,16 @@ fun SatraMainScreen(
                     walletRepository = walletRepository,
                     symbol = symbol,
                     localCurrencyCode = activeCurrencyCode,
+                    initialMarketSnapshot = marketSnapshot,
+                    onMarketSnapshotLoaded = { snapshot -> marketSnapshot = snapshot },
                     onBack = { tabNavController.popBackStack() },
                 )
             }
             composable(SatraMainRoute.SendAsset) {
                 SatraSendAssetScreen(
                     walletRepository = walletRepository,
+                    initialWalletSnapshot = walletSnapshot,
+                    onWalletSnapshotLoaded = { snapshot -> walletSnapshot = snapshot },
                     onBack = { tabNavController.popBackStack() },
                     onAssetSelected = { assetId ->
                         tabNavController.navigate(SatraMainRoute.sendRecipient(assetId))
@@ -453,6 +485,8 @@ fun SatraMainScreen(
                 val symbol = entry.arguments?.getString(SatraMainRoute.ArgSymbol).orEmpty()
                 SatraSendNetworkScreen(
                     walletRepository = walletRepository,
+                    initialWalletSnapshot = walletSnapshot,
+                    onWalletSnapshotLoaded = { snapshot -> walletSnapshot = snapshot },
                     symbol = symbol,
                     onBack = { tabNavController.popBackStack() },
                     onNetworkSelected = { assetId ->
@@ -464,6 +498,8 @@ fun SatraMainScreen(
                 val assetId = entry.arguments?.getString(SatraMainRoute.ArgAssetId).orEmpty()
                 SatraSendRecipientScreen(
                     walletRepository = walletRepository,
+                    initialWalletSnapshot = walletSnapshot,
+                    onWalletSnapshotLoaded = { snapshot -> walletSnapshot = snapshot },
                     assetId = assetId,
                     scannedAddress = scannedAddress,
                     onBack = { tabNavController.popBackStack() },
@@ -486,6 +522,8 @@ fun SatraMainScreen(
                 val warnPoison = entry.arguments?.getString(SatraMainRoute.ArgWarnPoison).toBoolean()
                 SatraSendAmountScreen(
                     walletRepository = walletRepository,
+                    initialWalletSnapshot = walletSnapshot,
+                    onWalletSnapshotLoaded = { snapshot -> walletSnapshot = snapshot },
                     assetId = assetId,
                     recipient = recipient,
                     warnPoison = warnPoison,
@@ -509,6 +547,8 @@ fun SatraMainScreen(
                 val warnPoison = entry.arguments?.getString(SatraMainRoute.ArgWarnPoison).toBoolean()
                 SatraSendReviewScreen(
                     walletRepository = walletRepository,
+                    initialWalletSnapshot = walletSnapshot,
+                    onWalletSnapshotLoaded = { snapshot -> walletSnapshot = snapshot },
                     assetId = assetId,
                     recipient = recipient,
                     amount = amount,
@@ -527,6 +567,8 @@ fun SatraMainScreen(
                 val transactionId = entry.arguments?.getString(SatraMainRoute.ArgTransactionId).orEmpty()
                 SatraSendSentScreen(
                     walletRepository = walletRepository,
+                    initialWalletSnapshot = walletSnapshot,
+                    onWalletSnapshotLoaded = { snapshot -> walletSnapshot = snapshot },
                     transactionId = transactionId,
                     onDone = {
                         tabNavController.navigate(SatraMainTab.Home.route) {
@@ -549,6 +591,8 @@ fun SatraMainScreen(
                 val assetId = entry.arguments?.getString(SatraMainRoute.ArgAssetId).orEmpty()
                 SatraSendRecipientScreen(
                     walletRepository = walletRepository,
+                    initialWalletSnapshot = walletSnapshot,
+                    onWalletSnapshotLoaded = { snapshot -> walletSnapshot = snapshot },
                     assetId = assetId,
                     scannedAddress = scannedAddress,
                     onBack = { tabNavController.popBackStack() },
@@ -713,6 +757,8 @@ private fun SetupCompletionBottomSheet(
 private fun SatraHomeDashboard(
     walletRepository: SatraWalletRepository,
     localCurrencyCode: String,
+    initialWalletSnapshot: SatraMainWalletSnapshot?,
+    onWalletSnapshotLoaded: (SatraMainWalletSnapshot) -> Unit,
     balancesHidden: Boolean,
     hapticsEnabled: Boolean,
     onBalancesHiddenChange: (Boolean) -> Unit,
@@ -722,7 +768,16 @@ private fun SatraHomeDashboard(
     onImportWallet: () -> Unit,
     onAssetClick: (String) -> Unit,
 ) {
-    var homeState by remember { mutableStateOf<HomeDashboardState>(HomeDashboardState.Loading) }
+    var homeState by remember {
+        mutableStateOf<HomeDashboardState>(
+            initialWalletSnapshot?.toHomeDashboardState(
+                localCurrencyCode = localCurrencyCode,
+                status = HomeSyncStatus.Ready,
+                chartRange = HomeChartRange.OneWeek,
+                nowMillis = System.currentTimeMillis(),
+            ) ?: HomeDashboardState.Loading,
+        )
+    }
     var assetFilterState by remember { mutableStateOf(HomeAssetFilterState()) }
     var assetSearchQuery by remember { mutableStateOf("") }
     var assetFilterSheetVisible by remember { mutableStateOf(false) }
@@ -739,58 +794,44 @@ private fun SatraHomeDashboard(
         }
     }
 
+    LaunchedEffect(initialWalletSnapshot, localCurrencyCode) {
+        val snapshot = initialWalletSnapshot ?: return@LaunchedEffect
+        if (!isRefreshing) {
+            homeState = snapshot.toHomeDashboardState(
+                localCurrencyCode = localCurrencyCode,
+                status = HomeSyncStatus.Ready,
+                chartRange = HomeChartRange.OneWeek,
+                nowMillis = System.currentTimeMillis(),
+            )
+        }
+    }
+
     LaunchedEffect(walletRepository, localCurrencyCode, refreshRequest) {
         try {
-            val wallet = walletRepository.getPrimaryWallet()
-            if (wallet == null) {
-                homeState = HomeDashboardState.Content(
-                    walletId = "",
-                    walletName = "",
-                    status = HomeSyncStatus.Ready,
-                    totalBalance = formatFiat("0", localCurrencyCode),
-                    totalBalanceAmount = BigDecimal.ZERO,
-                    currencyCode = localCurrencyCode,
-                    assets = emptyList(),
-                    chartTransactions = emptyList(),
-                    chartData = buildHomeBalanceChartData(
-                        transactions = emptyList(),
-                        range = HomeChartRange.OneWeek,
-                        nowMillis = System.currentTimeMillis(),
-                    ),
-                )
-                return@LaunchedEffect
-            }
-
-            suspend fun loadContent(status: HomeSyncStatus) {
-                val (latestWallet, walletAssets, walletTransactions) = coroutineScope {
-                    val walletDeferred = async { walletRepository.getPrimaryWallet() }
-                    val assetsDeferred = async { walletRepository.getWalletAssets(wallet.walletId) }
-                    val transactionsDeferred = async { walletRepository.getWalletTransactions(wallet.walletId) }
-                    Triple(
-                        walletDeferred.await() ?: wallet,
-                        assetsDeferred.await(),
-                        transactionsDeferred.await(),
-                    )
-                }
-                homeState = latestWallet.copy(localCurrencyCode = localCurrencyCode).toHomeDashboardState(
-                    walletAssets = walletAssets,
-                    walletTransactions = walletTransactions,
+            suspend fun loadContent(status: HomeSyncStatus): SatraMainWalletSnapshot {
+                val snapshot = walletRepository.loadMainWalletSnapshot()
+                onWalletSnapshotLoaded(snapshot)
+                homeState = snapshot.toHomeDashboardState(
+                    localCurrencyCode = localCurrencyCode,
                     status = status,
                     chartRange = HomeChartRange.OneWeek,
                     nowMillis = System.currentTimeMillis(),
                 )
+                return snapshot
             }
 
-            loadContent(HomeSyncStatus.Syncing)
-            runCatching {
-                walletRepository.syncWalletData(
-                    walletId = wallet.walletId,
-                    onProgress = {
-                        withContext(Dispatchers.Main) {
-                            loadContent(HomeSyncStatus.Syncing)
-                        }
-                    },
-                )
+            val snapshot = loadContent(HomeSyncStatus.Syncing)
+            snapshot.wallet?.let { wallet ->
+                runCatching {
+                    walletRepository.syncWalletData(
+                        walletId = wallet.walletId,
+                        onProgress = {
+                            withContext(Dispatchers.Main) {
+                                loadContent(HomeSyncStatus.Syncing)
+                            }
+                        },
+                    )
+                }
             }
             loadContent(HomeSyncStatus.Ready)
         } finally {
@@ -996,95 +1037,101 @@ private fun SatraHomeDashboard(
 private fun SatraActivityScreen(
     walletRepository: SatraWalletRepository,
     localCurrencyCode: String,
+    initialWalletSnapshot: SatraMainWalletSnapshot?,
+    onWalletSnapshotLoaded: (SatraMainWalletSnapshot) -> Unit,
     balancesHidden: Boolean,
     onTransactionClick: (String) -> Unit,
 ) {
     val resources = LocalContext.current.resources
     var activityState by remember {
-        mutableStateOf<ActivityScreenState>(ActivityScreenState.Loading)
+        mutableStateOf<ActivityScreenState>(
+            initialWalletSnapshot?.toActivityScreenState(
+                localCurrencyCode = localCurrencyCode,
+                status = HomeSyncStatus.Ready,
+                resources = resources,
+            ) ?: ActivityScreenState.Loading,
+        )
     }
     var refreshRequest by remember { mutableStateOf(0) }
     var isRefreshing by remember { mutableStateOf(false) }
     var activitySearchQuery by rememberSaveable { mutableStateOf("") }
 
+    LaunchedEffect(initialWalletSnapshot, localCurrencyCode) {
+        val snapshot = initialWalletSnapshot ?: return@LaunchedEffect
+        if (!isRefreshing) {
+            activityState = snapshot.toActivityScreenState(
+                localCurrencyCode = localCurrencyCode,
+                status = HomeSyncStatus.Ready,
+                resources = resources,
+            )
+        }
+    }
+
     LaunchedEffect(walletRepository, localCurrencyCode, refreshRequest) {
         try {
-            val wallet = walletRepository.getPrimaryWallet()
-            if (wallet == null) {
-                activityState = ActivityScreenState.Content(
-                    walletName = "",
-                    status = HomeSyncStatus.Ready,
-                    transactions = emptyList(),
-                    syncedNetworkCount = 0,
-                    error = null,
+            suspend fun loadContent(status: HomeSyncStatus, error: String? = null): SatraMainWalletSnapshot {
+                val snapshot = walletRepository.loadMainWalletSnapshot(
+                    ensureReceiveAddresses = false,
+                    includePrivateKeys = false,
                 )
-                return@LaunchedEffect
-            }
-
-            suspend fun loadContent(status: HomeSyncStatus, error: String? = null) {
-                val (latestWallet, walletAssets, walletTransactions) = coroutineScope {
-                    val walletDeferred = async { walletRepository.getPrimaryWallet() }
-                    val assetsDeferred = async { walletRepository.getWalletAssets(wallet.walletId) }
-                    val transactionsDeferred = async { walletRepository.getWalletTransactions(wallet.walletId) }
-                    Triple(
-                        walletDeferred.await() ?: wallet,
-                        assetsDeferred.await(),
-                        transactionsDeferred.await(),
-                    )
-                }
-                val transactions = walletTransactions.toActivityRows(
+                onWalletSnapshotLoaded(snapshot)
+                activityState = snapshot.toActivityScreenState(
                     localCurrencyCode = localCurrencyCode,
-                    walletAssets = walletAssets,
+                    status = status,
+                    error = error,
                     resources = resources,
                 )
-                activityState = ActivityScreenState.Content(
-                    walletName = latestWallet.walletName,
-                    status = status,
-                    transactions = transactions,
-                    syncedNetworkCount = latestWallet.syncedNetworkCount(),
-                    error = error,
-                )
+                return snapshot
             }
 
-            loadContent(HomeSyncStatus.Syncing)
-            val syncError = runCatching {
-                val result = walletRepository.syncWalletHistoryData(
-                    walletId = wallet.walletId,
-                    onProgress = {
-                        withContext(Dispatchers.Main) {
-                            loadContent(HomeSyncStatus.Syncing)
-                        }
-                    },
-                )
-                val evmPartial = result.evmSyncResult.networkResults.any { network ->
-                    network.error != null ||
-                        network.balanceCompleteness != EvmSyncCompleteness.Complete ||
-                        network.historyCompleteness != EvmSyncCompleteness.Complete
-                }
-                val utxoPartial = result.utxoSyncResult.networkResults.any { network ->
-                    network.error != null ||
-                        network.balanceCompleteness != EvmSyncCompleteness.Complete ||
-                        network.historyCompleteness != EvmSyncCompleteness.Complete
-                }
-                val solanaPartial = result.solanaSyncResult.networkResults.any { network ->
-                    network.error != null ||
-                        network.balanceCompleteness != EvmSyncCompleteness.Complete ||
-                        network.historyCompleteness != EvmSyncCompleteness.Complete
-                }
-                val accountChainPartial = result.accountChainSyncResult.networkResults.any { network ->
-                    network.error != null ||
-                        network.balanceCompleteness != EvmSyncCompleteness.Complete ||
-                        network.historyCompleteness != EvmSyncCompleteness.Complete
-                }
-                if (evmPartial || utxoPartial || solanaPartial || accountChainPartial) {
-                    resources.getString(R.string.activity_partial_sync_error)
-                } else {
+            val snapshot = loadContent(
+                status = if (refreshRequest > 0) HomeSyncStatus.Syncing else HomeSyncStatus.Ready,
+            )
+            if (refreshRequest > 0) {
+                val wallet = snapshot.wallet
+                val syncError = if (wallet == null) {
                     null
+                } else {
+                    runCatching {
+                        val result = walletRepository.syncWalletHistoryData(
+                            walletId = wallet.walletId,
+                            onProgress = {
+                                withContext(Dispatchers.Main) {
+                                    loadContent(HomeSyncStatus.Syncing)
+                                }
+                            },
+                        )
+                        val evmPartial = result.evmSyncResult.networkResults.any { network ->
+                            network.error != null ||
+                                network.balanceCompleteness != EvmSyncCompleteness.Complete ||
+                                network.historyCompleteness != EvmSyncCompleteness.Complete
+                        }
+                        val utxoPartial = result.utxoSyncResult.networkResults.any { network ->
+                            network.error != null ||
+                                network.balanceCompleteness != EvmSyncCompleteness.Complete ||
+                                network.historyCompleteness != EvmSyncCompleteness.Complete
+                        }
+                        val solanaPartial = result.solanaSyncResult.networkResults.any { network ->
+                            network.error != null ||
+                                network.balanceCompleteness != EvmSyncCompleteness.Complete ||
+                                network.historyCompleteness != EvmSyncCompleteness.Complete
+                        }
+                        val accountChainPartial = result.accountChainSyncResult.networkResults.any { network ->
+                            network.error != null ||
+                                network.balanceCompleteness != EvmSyncCompleteness.Complete ||
+                                network.historyCompleteness != EvmSyncCompleteness.Complete
+                        }
+                        if (evmPartial || utxoPartial || solanaPartial || accountChainPartial) {
+                            resources.getString(R.string.activity_partial_sync_error)
+                        } else {
+                            null
+                        }
+                    }.getOrElse { error ->
+                        error.message
+                    }
                 }
-            }.getOrElse { error ->
-                error.message
+                loadContent(HomeSyncStatus.Ready, syncError)
             }
-            loadContent(HomeSyncStatus.Ready, syncError)
         } finally {
             isRefreshing = false
         }
@@ -1483,38 +1530,58 @@ private fun TransactionDetailRowItem(
 private fun SatraMarketsScreen(
     walletRepository: SatraWalletRepository,
     localCurrencyCode: String,
+    initialMarketSnapshot: SatraMainMarketSnapshot?,
+    onMarketSnapshotLoaded: (SatraMainMarketSnapshot) -> Unit,
     onAssetClick: (String) -> Unit,
 ) {
     var state by remember {
-        mutableStateOf<MarketsScreenState>(MarketsScreenState.Loading)
+        mutableStateOf<MarketsScreenState>(
+            initialMarketSnapshot
+                ?.takeIf { snapshot -> snapshot.localCurrencyCode.equals(localCurrencyCode, ignoreCase = true) }
+                ?.toMarketsScreenState(localCurrencyCode)
+                ?: MarketsScreenState.Content(
+                    currencyCode = localCurrencyCode,
+                    rows = SupportedAssetCatalog.assets.toMarketRows(
+                        marketData = emptyList(),
+                        localCurrencyCode = localCurrencyCode,
+                    ),
+                ),
+        )
     }
     var marketSearchQuery by remember { mutableStateOf("") }
     var refreshRequest by remember { mutableStateOf(0) }
     var isRefreshing by remember { mutableStateOf(false) }
 
+    LaunchedEffect(initialMarketSnapshot, localCurrencyCode) {
+        val snapshot = initialMarketSnapshot
+            ?.takeIf { it.localCurrencyCode.equals(localCurrencyCode, ignoreCase = true) }
+            ?: return@LaunchedEffect
+        if (!isRefreshing) {
+            state = snapshot.toMarketsScreenState(localCurrencyCode)
+        }
+    }
+
     LaunchedEffect(walletRepository, localCurrencyCode, refreshRequest) {
         try {
-            suspend fun loadMarketData() {
-                val marketData = walletRepository.getAllAssetMarketData()
-                state = MarketsScreenState.Content(
-                    currencyCode = localCurrencyCode,
-                    rows = SupportedAssetCatalog.assets.toMarketRows(
-                        marketData = marketData,
-                        localCurrencyCode = localCurrencyCode,
-                    ),
-                )
+            suspend fun loadMarketData(): SatraMainMarketSnapshot {
+                val snapshot = walletRepository.loadMainMarketSnapshot(localCurrencyCode)
+                onMarketSnapshotLoaded(snapshot)
+                state = snapshot.toMarketsScreenState(localCurrencyCode)
+                return snapshot
             }
 
-            loadMarketData()
-            walletRepository.syncMarketData(
-                localCurrencyCode = localCurrencyCode,
-                onProgress = {
-                    withContext(Dispatchers.Main) {
-                        loadMarketData()
-                    }
-                },
-            )
-            loadMarketData()
+            val snapshot = loadMarketData()
+            if (refreshRequest > 0 || snapshot.marketData.isEmpty()) {
+                walletRepository.syncMarketData(
+                    localCurrencyCode = localCurrencyCode,
+                    onProgress = {
+                        withContext(Dispatchers.Main) {
+                            loadMarketData()
+                        }
+                    },
+                )
+                loadMarketData()
+            }
         } finally {
             isRefreshing = false
         }
@@ -1807,34 +1874,65 @@ private fun SatraMarketDetailScreen(
     walletRepository: SatraWalletRepository,
     symbol: String,
     localCurrencyCode: String,
+    initialMarketSnapshot: SatraMainMarketSnapshot?,
+    onMarketSnapshotLoaded: (SatraMainMarketSnapshot) -> Unit,
     onBack: () -> Unit,
 ) {
     val resources = LocalContext.current.resources
-    var state by remember(symbol) {
-        mutableStateOf<MarketDetailState>(MarketDetailState.Loading)
-    }
     val normalizedSymbol = remember(symbol) { Uri.decode(symbol).uppercase(Locale.US) }
+    var state by remember(symbol) {
+        mutableStateOf<MarketDetailState>(
+            initialMarketSnapshot
+                ?.takeIf { snapshot -> snapshot.localCurrencyCode.equals(localCurrencyCode, ignoreCase = true) }
+                ?.marketData
+                ?.firstOrNull { market -> market.symbol.equals(normalizedSymbol, ignoreCase = true) }
+                ?.toMarketDetailState(
+                    localCurrencyCode = localCurrencyCode,
+                    resources = resources,
+                ) ?: MarketDetailState.Loading,
+        )
+    }
     var refreshRequest by remember { mutableStateOf(0) }
     var isRefreshing by remember { mutableStateOf(false) }
 
+    LaunchedEffect(initialMarketSnapshot, normalizedSymbol, localCurrencyCode) {
+        val cached = initialMarketSnapshot
+            ?.takeIf { snapshot -> snapshot.localCurrencyCode.equals(localCurrencyCode, ignoreCase = true) }
+            ?.marketData
+            ?.firstOrNull { market -> market.symbol.equals(normalizedSymbol, ignoreCase = true) }
+            ?: return@LaunchedEffect
+        if (!isRefreshing) {
+            state = cached.toMarketDetailState(
+                localCurrencyCode = localCurrencyCode,
+                resources = resources,
+            )
+        }
+    }
+
     LaunchedEffect(walletRepository, normalizedSymbol, localCurrencyCode, refreshRequest) {
         try {
-            walletRepository.getAssetMarketData(normalizedSymbol)?.let { cached ->
+            val cached = walletRepository.getAssetMarketData(normalizedSymbol)
+            cached?.let {
                 state = cached.toMarketDetailState(
                     localCurrencyCode = localCurrencyCode,
                     resources = resources,
                 )
             }
-            val refreshed = walletRepository.syncAssetMarketDetail(
-                symbol = normalizedSymbol,
-                localCurrencyCode = localCurrencyCode,
-            )
-            state = (refreshed ?: walletRepository.getAssetMarketData(normalizedSymbol))
-                ?.toMarketDetailState(
+            if (refreshRequest > 0 || cached == null) {
+                val refreshed = walletRepository.syncAssetMarketDetail(
+                    symbol = normalizedSymbol,
                     localCurrencyCode = localCurrencyCode,
-                    resources = resources,
                 )
-                ?: MarketDetailState.NotFound(normalizedSymbol)
+                state = (refreshed ?: walletRepository.getAssetMarketData(normalizedSymbol))
+                    ?.toMarketDetailState(
+                        localCurrencyCode = localCurrencyCode,
+                        resources = resources,
+                    )
+                    ?: MarketDetailState.NotFound(normalizedSymbol)
+                onMarketSnapshotLoaded(walletRepository.loadMainMarketSnapshot(localCurrencyCode))
+            } else {
+                onMarketSnapshotLoaded(walletRepository.loadMainMarketSnapshot(localCurrencyCode))
+            }
         } finally {
             isRefreshing = false
         }
@@ -2198,6 +2296,8 @@ private fun SatraTokenDetailScreen(
     walletRepository: SatraWalletRepository,
     symbol: String,
     localCurrencyCode: String,
+    initialWalletSnapshot: SatraMainWalletSnapshot?,
+    onWalletSnapshotLoaded: (SatraMainWalletSnapshot) -> Unit,
     balancesHidden: Boolean,
     onBalancesHiddenChange: (Boolean) -> Unit,
     onBack: () -> Unit,
@@ -2208,66 +2308,65 @@ private fun SatraTokenDetailScreen(
     onTransactionClick: (String) -> Unit,
 ) {
     val resources = LocalContext.current.resources
-    var state by remember(symbol) {
-        mutableStateOf<TokenDetailState>(TokenDetailState.Loading)
-    }
     val normalizedSymbol = remember(symbol) { Uri.decode(symbol).uppercase(Locale.US) }
+    var state by remember(symbol) {
+        mutableStateOf<TokenDetailState>(
+            initialWalletSnapshot?.toTokenDetailState(
+                symbol = normalizedSymbol,
+                localCurrencyCode = localCurrencyCode,
+                resources = resources,
+                nowMillis = System.currentTimeMillis(),
+            ) ?: TokenDetailState.Loading,
+        )
+    }
     var refreshRequest by remember { mutableStateOf(0) }
     var isRefreshing by remember { mutableStateOf(false) }
 
+    LaunchedEffect(initialWalletSnapshot, normalizedSymbol, localCurrencyCode) {
+        val snapshot = initialWalletSnapshot ?: return@LaunchedEffect
+        if (!isRefreshing) {
+            state = snapshot.toTokenDetailState(
+                symbol = normalizedSymbol,
+                localCurrencyCode = localCurrencyCode,
+                resources = resources,
+                nowMillis = System.currentTimeMillis(),
+            )
+        }
+    }
+
     LaunchedEffect(walletRepository, normalizedSymbol, localCurrencyCode, refreshRequest) {
         try {
-            val wallet = walletRepository.getPrimaryWallet()
-            if (wallet == null) {
-                state = TokenDetailState.Content(
-                    symbol = normalizedSymbol,
-                    name = normalizedSymbol,
-                    iconRes = assetIconRes(normalizedSymbol),
-                    currencyCode = localCurrencyCode,
-                    totalBalance = formatFiat("0", localCurrencyCode),
-                    networkBalances = emptyList(),
-                    transactions = emptyList(),
-                    chartTransactions = emptyList(),
-                    chartData = buildHomeBalanceChartData(
-                        transactions = emptyList(),
-                        range = HomeChartRange.OneWeek,
-                        nowMillis = System.currentTimeMillis(),
-                    ),
-                    sendAssetId = null,
-                    sendRequiresNetwork = false,
+            suspend fun loadContent(): SatraMainWalletSnapshot {
+                val snapshot = walletRepository.loadMainWalletSnapshot(
+                    ensureReceiveAddresses = false,
+                    includePrivateKeys = false,
                 )
-                return@LaunchedEffect
-            }
-
-            suspend fun loadContent() {
-                val (walletAssets, walletTransactions) = coroutineScope {
-                    val assetsDeferred = async { walletRepository.getWalletAssets(wallet.walletId) }
-                    val transactionsDeferred = async { walletRepository.getWalletTransactions(wallet.walletId) }
-                    assetsDeferred.await() to transactionsDeferred.await()
-                }
-                state = wallet.copy(localCurrencyCode = localCurrencyCode).toTokenDetailState(
+                onWalletSnapshotLoaded(snapshot)
+                state = snapshot.toTokenDetailState(
                     symbol = normalizedSymbol,
-                    walletAssets = walletAssets,
-                    walletTransactions = walletTransactions,
                     resources = resources,
+                    localCurrencyCode = localCurrencyCode,
                     nowMillis = System.currentTimeMillis(),
                 )
+                return snapshot
             }
 
-            loadContent()
+            val snapshot = loadContent()
             if (refreshRequest > 0) {
-                runCatching {
-                    walletRepository.syncAssetNetworks(
-                        walletId = wallet.walletId,
-                        symbol = normalizedSymbol,
-                        onProgress = {
-                            withContext(Dispatchers.Main) {
-                                loadContent()
-                            }
-                        },
-                    )
+                snapshot.wallet?.let { wallet ->
+                    runCatching {
+                        walletRepository.syncAssetNetworks(
+                            walletId = wallet.walletId,
+                            symbol = normalizedSymbol,
+                            onProgress = {
+                                withContext(Dispatchers.Main) {
+                                    loadContent()
+                                }
+                            },
+                        )
+                    }
+                    loadContent()
                 }
-                loadContent()
             }
         } finally {
             isRefreshing = false
@@ -4207,6 +4306,93 @@ private enum class HomeSyncStatus(@StringRes val labelRes: Int) {
     Ready(R.string.home_wallet_status_ready),
     Syncing(R.string.home_wallet_status_syncing),
 }
+
+private fun SatraMainWalletSnapshot.toHomeDashboardState(
+    localCurrencyCode: String,
+    status: HomeSyncStatus,
+    chartRange: HomeChartRange,
+    nowMillis: Long,
+): HomeDashboardState.Content =
+    wallet?.copy(localCurrencyCode = localCurrencyCode)?.toHomeDashboardState(
+        walletAssets = assets,
+        walletTransactions = transactions,
+        status = status,
+        chartRange = chartRange,
+        nowMillis = nowMillis,
+    ) ?: HomeDashboardState.Content(
+        walletId = "",
+        walletName = "",
+        status = HomeSyncStatus.Ready,
+        totalBalance = formatFiat("0", localCurrencyCode),
+        totalBalanceAmount = BigDecimal.ZERO,
+        currencyCode = localCurrencyCode,
+        assets = emptyList(),
+        chartTransactions = emptyList(),
+        chartData = buildHomeBalanceChartData(
+            transactions = emptyList(),
+            range = chartRange,
+            nowMillis = nowMillis,
+        ),
+    )
+
+private fun SatraMainWalletSnapshot.toActivityScreenState(
+    localCurrencyCode: String,
+    status: HomeSyncStatus,
+    resources: Resources,
+    error: String? = null,
+): ActivityScreenState.Content =
+    ActivityScreenState.Content(
+        walletName = wallet?.walletName.orEmpty(),
+        status = status,
+        transactions = transactions.toActivityRows(
+            localCurrencyCode = localCurrencyCode,
+            walletAssets = assets,
+            resources = resources,
+        ),
+        syncedNetworkCount = wallet?.syncedNetworkCount() ?: 0,
+        error = error,
+    )
+
+private fun SatraMainMarketSnapshot.toMarketsScreenState(
+    localCurrencyCode: String,
+): MarketsScreenState.Content =
+    MarketsScreenState.Content(
+        currencyCode = localCurrencyCode,
+        rows = SupportedAssetCatalog.assets.toMarketRows(
+            marketData = marketData,
+            localCurrencyCode = localCurrencyCode,
+        ),
+    )
+
+private fun SatraMainWalletSnapshot.toTokenDetailState(
+    symbol: String,
+    localCurrencyCode: String,
+    resources: Resources,
+    nowMillis: Long,
+): TokenDetailState.Content =
+    wallet?.copy(localCurrencyCode = localCurrencyCode)?.toTokenDetailState(
+        symbol = symbol,
+        walletAssets = assets,
+        walletTransactions = transactions,
+        resources = resources,
+        nowMillis = nowMillis,
+    ) ?: TokenDetailState.Content(
+        symbol = symbol,
+        name = symbol,
+        iconRes = assetIconRes(symbol),
+        currencyCode = localCurrencyCode,
+        totalBalance = formatFiat("0", localCurrencyCode),
+        networkBalances = emptyList(),
+        transactions = emptyList(),
+        chartTransactions = emptyList(),
+        chartData = buildHomeBalanceChartData(
+            transactions = emptyList(),
+            range = HomeChartRange.OneWeek,
+            nowMillis = nowMillis,
+        ),
+        sendAssetId = null,
+        sendRequiresNetwork = false,
+    )
 
 private fun WalletRecord.toHomeDashboardState(
     walletAssets: List<WalletAssetRecord>,

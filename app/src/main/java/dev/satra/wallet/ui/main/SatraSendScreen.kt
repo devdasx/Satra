@@ -96,14 +96,32 @@ import java.util.Locale
 @Composable
 fun SatraSendAssetScreen(
     walletRepository: SatraWalletRepository,
+    initialWalletSnapshot: SatraMainWalletSnapshot?,
+    onWalletSnapshotLoaded: (SatraMainWalletSnapshot) -> Unit,
     onBack: () -> Unit,
     onAssetSelected: (String) -> Unit,
     onNetworkRequired: (String) -> Unit,
 ) {
-    var state by remember { mutableStateOf<SendAssetScreenState>(SendAssetScreenState.Loading) }
+    var state by remember {
+        mutableStateOf(
+            initialWalletSnapshot?.toSendSnapshot()?.toAssetSelectionState()
+                ?: SendAssetScreenState.Loading,
+        )
+    }
 
-    LaunchedEffect(walletRepository) {
-        state = walletRepository.loadSendSnapshot().toAssetSelectionState()
+    LaunchedEffect(initialWalletSnapshot) {
+        initialWalletSnapshot?.let { snapshot ->
+            state = snapshot.toSendSnapshot().toAssetSelectionState()
+        }
+    }
+
+    LaunchedEffect(walletRepository, initialWalletSnapshot?.walletId) {
+        if (initialWalletSnapshot.hasSendData()) return@LaunchedEffect
+        val snapshot = walletRepository.loadMainWalletSnapshot(
+            includeTransactions = false,
+        )
+        onWalletSnapshotLoaded(snapshot)
+        state = snapshot.toSendSnapshot().toAssetSelectionState()
     }
 
     when (val current = state) {
@@ -131,14 +149,32 @@ fun SatraSendAssetScreen(
 @Composable
 fun SatraSendNetworkScreen(
     walletRepository: SatraWalletRepository,
+    initialWalletSnapshot: SatraMainWalletSnapshot?,
+    onWalletSnapshotLoaded: (SatraMainWalletSnapshot) -> Unit,
     symbol: String,
     onBack: () -> Unit,
     onNetworkSelected: (String) -> Unit,
 ) {
-    var state by remember(symbol) { mutableStateOf<SendNetworkScreenState>(SendNetworkScreenState.Loading) }
+    var state by remember(symbol) {
+        mutableStateOf(
+            initialWalletSnapshot?.toSendSnapshot()?.toNetworkSelectionState(Uri.decode(symbol))
+                ?: SendNetworkScreenState.Loading,
+        )
+    }
 
-    LaunchedEffect(walletRepository, symbol) {
-        state = walletRepository.loadSendSnapshot().toNetworkSelectionState(Uri.decode(symbol))
+    LaunchedEffect(initialWalletSnapshot, symbol) {
+        initialWalletSnapshot?.let { snapshot ->
+            state = snapshot.toSendSnapshot().toNetworkSelectionState(Uri.decode(symbol))
+        }
+    }
+
+    LaunchedEffect(walletRepository, symbol, initialWalletSnapshot?.walletId) {
+        if (initialWalletSnapshot.hasSendData()) return@LaunchedEffect
+        val snapshot = walletRepository.loadMainWalletSnapshot(
+            includeTransactions = false,
+        )
+        onWalletSnapshotLoaded(snapshot)
+        state = snapshot.toSendSnapshot().toNetworkSelectionState(Uri.decode(symbol))
     }
 
     when (val current = state) {
@@ -165,6 +201,8 @@ fun SatraSendNetworkScreen(
 @Composable
 fun SatraSendRecipientScreen(
     walletRepository: SatraWalletRepository,
+    initialWalletSnapshot: SatraMainWalletSnapshot?,
+    onWalletSnapshotLoaded: (SatraMainWalletSnapshot) -> Unit,
     assetId: String,
     scannedAddress: String,
     onBack: () -> Unit,
@@ -172,10 +210,22 @@ fun SatraSendRecipientScreen(
     onScannedAddressConsumed: () -> Unit,
     onContinue: (assetId: String, recipient: String, warnPoison: Boolean) -> Unit,
 ) {
-    var state by remember(assetId) { mutableStateOf<SendDetailsState>(SendDetailsState.Loading) }
+    var state by remember(assetId) {
+        mutableStateOf(
+            initialWalletSnapshot?.toSendDetailsState(Uri.decode(assetId))
+                ?: SendDetailsState.Loading,
+        )
+    }
 
-    LaunchedEffect(walletRepository, assetId) {
+    LaunchedEffect(initialWalletSnapshot, assetId) {
+        initialWalletSnapshot?.toSendDetailsState(Uri.decode(assetId))?.let { cachedState ->
+            state = cachedState
+        }
+    }
+
+    LaunchedEffect(walletRepository, assetId, initialWalletSnapshot?.walletId) {
         state = walletRepository.loadSendDetails(Uri.decode(assetId))
+        onWalletSnapshotLoaded(walletRepository.loadMainWalletSnapshot())
     }
 
     when (val current = state) {
@@ -205,16 +255,30 @@ fun SatraSendRecipientScreen(
 @Composable
 fun SatraSendAmountScreen(
     walletRepository: SatraWalletRepository,
+    initialWalletSnapshot: SatraMainWalletSnapshot?,
+    onWalletSnapshotLoaded: (SatraMainWalletSnapshot) -> Unit,
     assetId: String,
     recipient: String,
     warnPoison: Boolean,
     onBack: () -> Unit,
     onReview: (assetId: String, recipient: String, amount: String, warnPoison: Boolean) -> Unit,
 ) {
-    var state by remember(assetId) { mutableStateOf<SendDetailsState>(SendDetailsState.Loading) }
+    var state by remember(assetId) {
+        mutableStateOf(
+            initialWalletSnapshot?.toSendDetailsState(Uri.decode(assetId))
+                ?: SendDetailsState.Loading,
+        )
+    }
 
-    LaunchedEffect(walletRepository, assetId) {
+    LaunchedEffect(initialWalletSnapshot, assetId) {
+        initialWalletSnapshot?.toSendDetailsState(Uri.decode(assetId))?.let { cachedState ->
+            state = cachedState
+        }
+    }
+
+    LaunchedEffect(walletRepository, assetId, initialWalletSnapshot?.walletId) {
         state = walletRepository.loadSendDetails(Uri.decode(assetId))
+        onWalletSnapshotLoaded(walletRepository.loadMainWalletSnapshot())
     }
 
     when (val current = state) {
@@ -243,6 +307,8 @@ fun SatraSendAmountScreen(
 @Composable
 fun SatraSendReviewScreen(
     walletRepository: SatraWalletRepository,
+    initialWalletSnapshot: SatraMainWalletSnapshot?,
+    onWalletSnapshotLoaded: (SatraMainWalletSnapshot) -> Unit,
     assetId: String,
     recipient: String,
     amount: String,
@@ -250,10 +316,22 @@ fun SatraSendReviewScreen(
     onBack: () -> Unit,
     onSent: (String) -> Unit,
 ) {
-    var state by remember(assetId) { mutableStateOf<SendDetailsState>(SendDetailsState.Loading) }
+    var state by remember(assetId) {
+        mutableStateOf(
+            initialWalletSnapshot?.toSendDetailsState(Uri.decode(assetId))
+                ?: SendDetailsState.Loading,
+        )
+    }
 
-    LaunchedEffect(walletRepository, assetId) {
+    LaunchedEffect(initialWalletSnapshot, assetId) {
+        initialWalletSnapshot?.toSendDetailsState(Uri.decode(assetId))?.let { cachedState ->
+            state = cachedState
+        }
+    }
+
+    LaunchedEffect(walletRepository, assetId, initialWalletSnapshot?.walletId) {
         state = walletRepository.loadSendDetails(Uri.decode(assetId))
+        onWalletSnapshotLoaded(walletRepository.loadMainWalletSnapshot())
     }
 
     when (val current = state) {
@@ -284,14 +362,28 @@ fun SatraSendReviewScreen(
 @Composable
 fun SatraSendSentScreen(
     walletRepository: SatraWalletRepository,
+    initialWalletSnapshot: SatraMainWalletSnapshot?,
+    onWalletSnapshotLoaded: (SatraMainWalletSnapshot) -> Unit,
     transactionId: String,
     onDone: () -> Unit,
     onSendAnother: () -> Unit,
 ) {
-    var state by remember(transactionId) { mutableStateOf<SendReceiptState>(SendReceiptState.Loading) }
+    var state by remember(transactionId) {
+        mutableStateOf(
+            initialWalletSnapshot?.toSendReceiptState(Uri.decode(transactionId))
+                ?: SendReceiptState.Loading,
+        )
+    }
 
-    LaunchedEffect(walletRepository, transactionId) {
+    LaunchedEffect(initialWalletSnapshot, transactionId) {
+        initialWalletSnapshot?.toSendReceiptState(Uri.decode(transactionId))?.let { cachedState ->
+            state = cachedState
+        }
+    }
+
+    LaunchedEffect(walletRepository, transactionId, initialWalletSnapshot?.walletId) {
         state = walletRepository.loadSendReceipt(Uri.decode(transactionId))
+        onWalletSnapshotLoaded(walletRepository.loadMainWalletSnapshot())
     }
 
     when (val current = state) {
@@ -1857,6 +1949,61 @@ private fun SendEmptyInline(
         modifier = modifier,
     )
 }
+
+private fun SatraMainWalletSnapshot?.hasSendData(): Boolean {
+    val snapshot = this ?: return false
+    val wallet = snapshot.wallet ?: return false
+    return snapshot.assets.isNotEmpty() &&
+        snapshot.addresses.isNotEmpty() &&
+        (wallet.isWatchOnly || snapshot.privateKeys.isNotEmpty())
+}
+
+private fun SatraMainWalletSnapshot.toSendSnapshot(): SendSnapshot =
+    wallet?.let { walletRecord ->
+        SendSnapshot.Content(
+            wallet = walletRecord,
+            assets = assets,
+            addresses = addresses,
+            privateKeys = privateKeys,
+        )
+    } ?: SendSnapshot.Empty
+
+private fun SatraMainWalletSnapshot.toSendDetailsState(assetId: String): SendDetailsState =
+    when (val snapshot = toSendSnapshot()) {
+        SendSnapshot.Empty -> SendDetailsState.Empty
+        is SendSnapshot.Content -> {
+            val row = snapshot.toSendAssetRows().firstOrNull { candidate -> candidate.asset.assetId == assetId }
+                ?: return SendDetailsState.Empty
+            SendDetailsState.Content(
+                wallet = snapshot.wallet,
+                row = row,
+                canSign = !snapshot.wallet.isWatchOnly && row.hasSigningKey,
+                addressBookEntries = emptyList(),
+                recentRecipients = emptyList(),
+            )
+        }
+    }
+
+private fun SatraMainWalletSnapshot.toSendReceiptState(transactionId: String): SendReceiptState =
+    when (val walletRecord = wallet) {
+        null -> SendReceiptState.Empty
+        else -> {
+            val transaction = transactions.firstOrNull { it.transactionId == transactionId }
+                ?: return SendReceiptState.Empty
+            val asset = SupportedAssetCatalog.assets.firstOrNull { it.assetId == transaction.assetId }
+                ?: return SendReceiptState.Empty
+            val network = SupportedAssetCatalog.networks.firstOrNull { it.networkId == transaction.networkId }
+                ?: return SendReceiptState.Empty
+            SendReceiptState.Content(
+                wallet = walletRecord,
+                transaction = transaction,
+                asset = asset,
+                network = network,
+                amountFormatted = "${formatCryptoAmount(transaction.amountDecimal.toBigDecimalOrZero())} ${asset.symbol}",
+                explorerUrl = transaction.transactionHash?.let { hash -> explorerUrlFor(network.networkId, hash) },
+            )
+        }
+    }
 
 private suspend fun SatraWalletRepository.loadSendSnapshot(): SendSnapshot =
     coroutineScope {

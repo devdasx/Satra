@@ -71,8 +71,6 @@ import dev.satra.wallet.data.db.DEFAULT_LOCAL_CURRENCY_CODE
 import dev.satra.wallet.data.db.SatraWalletRepository
 import dev.satra.wallet.data.db.WalletAddressRecord
 import dev.satra.wallet.data.db.WalletAssetRecord
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.text.NumberFormat
@@ -82,14 +80,33 @@ import java.util.Locale
 @Composable
 fun SatraReceiveAssetScreen(
     walletRepository: SatraWalletRepository,
+    initialWalletSnapshot: SatraMainWalletSnapshot?,
+    onWalletSnapshotLoaded: (SatraMainWalletSnapshot) -> Unit,
     onBack: () -> Unit,
     onAssetSelected: (String) -> Unit,
     onNetworkRequired: (String) -> Unit,
 ) {
-    var state by remember { mutableStateOf<ReceiveAssetScreenState>(ReceiveAssetScreenState.Loading) }
+    var state by remember {
+        mutableStateOf(
+            initialWalletSnapshot?.toReceiveSnapshot()?.toAssetSelectionState()
+                ?: ReceiveAssetScreenState.Loading,
+        )
+    }
 
-    LaunchedEffect(walletRepository) {
-        state = walletRepository.loadReceiveSnapshot().toAssetSelectionState()
+    LaunchedEffect(initialWalletSnapshot) {
+        initialWalletSnapshot?.let { snapshot ->
+            state = snapshot.toReceiveSnapshot().toAssetSelectionState()
+        }
+    }
+
+    LaunchedEffect(walletRepository, initialWalletSnapshot?.walletId) {
+        if (initialWalletSnapshot.hasReceiveData()) return@LaunchedEffect
+        val snapshot = walletRepository.loadMainWalletSnapshot(
+            includePrivateKeys = false,
+            includeTransactions = false,
+        )
+        onWalletSnapshotLoaded(snapshot)
+        state = snapshot.toReceiveSnapshot().toAssetSelectionState()
     }
 
     when (val current = state) {
@@ -117,14 +134,33 @@ fun SatraReceiveAssetScreen(
 @Composable
 fun SatraReceiveNetworkScreen(
     walletRepository: SatraWalletRepository,
+    initialWalletSnapshot: SatraMainWalletSnapshot?,
+    onWalletSnapshotLoaded: (SatraMainWalletSnapshot) -> Unit,
     symbol: String,
     onBack: () -> Unit,
     onNetworkSelected: (String) -> Unit,
 ) {
-    var state by remember(symbol) { mutableStateOf<ReceiveNetworkScreenState>(ReceiveNetworkScreenState.Loading) }
+    var state by remember(symbol) {
+        mutableStateOf(
+            initialWalletSnapshot?.toReceiveSnapshot()?.toNetworkSelectionState(Uri.decode(symbol))
+                ?: ReceiveNetworkScreenState.Loading,
+        )
+    }
 
-    LaunchedEffect(walletRepository, symbol) {
-        state = walletRepository.loadReceiveSnapshot().toNetworkSelectionState(Uri.decode(symbol))
+    LaunchedEffect(initialWalletSnapshot, symbol) {
+        initialWalletSnapshot?.let { snapshot ->
+            state = snapshot.toReceiveSnapshot().toNetworkSelectionState(Uri.decode(symbol))
+        }
+    }
+
+    LaunchedEffect(walletRepository, symbol, initialWalletSnapshot?.walletId) {
+        if (initialWalletSnapshot.hasReceiveData()) return@LaunchedEffect
+        val snapshot = walletRepository.loadMainWalletSnapshot(
+            includePrivateKeys = false,
+            includeTransactions = false,
+        )
+        onWalletSnapshotLoaded(snapshot)
+        state = snapshot.toReceiveSnapshot().toNetworkSelectionState(Uri.decode(symbol))
     }
 
     when (val current = state) {
@@ -151,13 +187,32 @@ fun SatraReceiveNetworkScreen(
 @Composable
 fun SatraReceiveQrScreen(
     walletRepository: SatraWalletRepository,
+    initialWalletSnapshot: SatraMainWalletSnapshot?,
+    onWalletSnapshotLoaded: (SatraMainWalletSnapshot) -> Unit,
     assetId: String,
     onBack: () -> Unit,
 ) {
-    var state by remember(assetId) { mutableStateOf<ReceiveQrScreenState>(ReceiveQrScreenState.Loading) }
+    var state by remember(assetId) {
+        mutableStateOf(
+            initialWalletSnapshot?.toReceiveSnapshot()?.toQrState(Uri.decode(assetId))
+                ?: ReceiveQrScreenState.Loading,
+        )
+    }
 
-    LaunchedEffect(walletRepository, assetId) {
-        state = walletRepository.loadReceiveSnapshot().toQrState(Uri.decode(assetId))
+    LaunchedEffect(initialWalletSnapshot, assetId) {
+        initialWalletSnapshot?.let { snapshot ->
+            state = snapshot.toReceiveSnapshot().toQrState(Uri.decode(assetId))
+        }
+    }
+
+    LaunchedEffect(walletRepository, assetId, initialWalletSnapshot?.walletId) {
+        if (initialWalletSnapshot.hasReceiveData()) return@LaunchedEffect
+        val snapshot = walletRepository.loadMainWalletSnapshot(
+            includePrivateKeys = false,
+            includeTransactions = false,
+        )
+        onWalletSnapshotLoaded(snapshot)
+        state = snapshot.toReceiveSnapshot().toQrState(Uri.decode(assetId))
     }
 
     when (val current = state) {
@@ -787,24 +842,19 @@ private fun ReceiveQrCode(
     )
 }
 
-private suspend fun SatraWalletRepository.loadReceiveSnapshot(): ReceiveSnapshot =
-    coroutineScope {
-        val wallet = getPrimaryWallet()
-        if (wallet == null) {
-            ReceiveSnapshot.Empty
-        } else {
-            val addressesDeferred = async {
-                ensureMnemonicReceiveAddresses(wallet.walletId)
-                    .ifEmpty { getWalletAddresses(wallet.walletId) }
-            }
-            val assetsDeferred = async { getWalletAssets(wallet.walletId) }
-            ReceiveSnapshot.Content(
-                assets = assetsDeferred.await(),
-                addresses = addressesDeferred.await(),
-                localCurrencyCode = wallet.localCurrencyCode,
-            )
-        }
-    }
+private fun SatraMainWalletSnapshot?.hasReceiveData(): Boolean =
+    this?.wallet != null &&
+        assets.isNotEmpty() &&
+        addresses.any { address -> address.addressType == "receive" || address.addressType == "watch_only" }
+
+private fun SatraMainWalletSnapshot.toReceiveSnapshot(): ReceiveSnapshot =
+    wallet?.let { walletRecord ->
+        ReceiveSnapshot.Content(
+            assets = assets,
+            addresses = addresses,
+            localCurrencyCode = walletRecord.localCurrencyCode,
+        )
+    } ?: ReceiveSnapshot.Empty
 
 private fun ReceiveSnapshot.toAssetSelectionState(): ReceiveAssetScreenState =
     when (this) {
