@@ -457,6 +457,8 @@
     <string name="send_asset_header_body">Start with the coin or token. If it exists on more than one chain, Satra will ask for the network next.</string>
     <string name="send_asset_network_count">%1$d networks</string>
     <string name="send_network_header_title">Choose %1$s network.</string>
+    <string name="send_network_header_title_prefix">Choose %1$s</string>
+    <string name="send_network_header_title_suffix">network.</string>
     <string name="send_network_header_body">Network choice changes the sender address, token contract, fee asset, and final transaction format.</string>
     <string name="send_composer_header_title">Send %1$s</string>
     <string name="send_cannot_sign_title">Signing is not available</string>

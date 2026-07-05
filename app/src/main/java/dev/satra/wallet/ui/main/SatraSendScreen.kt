@@ -339,11 +339,7 @@ private fun SendAssetSelectionContent(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             item {
-                SendHero(
-                    iconRes = R.drawable.ic_brand_move,
-                    title = stringResource(R.string.send_asset_header_title),
-                    body = stringResource(R.string.send_asset_header_body),
-                )
+                SendPickerHeader(title = stringResource(R.string.send_asset_header_title))
                 SendSearchBar(
                     query = query,
                     onQueryChange = { query = it },
@@ -432,10 +428,9 @@ private fun SendNetworkSelectionContent(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             item {
-                SendHero(
+                SendNetworkPickerHeader(
+                    symbol = state.symbol,
                     iconRes = assetIconRes(state.symbol),
-                    title = stringResource(R.string.send_network_header_title, state.symbol),
-                    body = stringResource(R.string.send_network_context, state.symbol, state.assets.size),
                 )
             }
             items(state.assets, key = { row -> row.asset.assetId }) { row ->
@@ -1164,6 +1159,64 @@ private fun SendHero(
 }
 
 @Composable
+private fun SendPickerHeader(title: String) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .widthIn(max = SendContentMaxWidth)
+            .padding(horizontal = 20.dp, vertical = 18.dp),
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.displaySmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Bold,
+        )
+        Spacer(modifier = Modifier.height(20.dp))
+    }
+}
+
+@Composable
+private fun SendNetworkPickerHeader(
+    symbol: String,
+    @DrawableRes iconRes: Int,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .widthIn(max = SendContentMaxWidth)
+            .padding(horizontal = 20.dp, vertical = 18.dp),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.send_network_header_title_prefix, symbol),
+                style = MaterialTheme.typography.displaySmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Image(
+                painter = painterResource(iconRes),
+                contentDescription = null,
+                modifier = Modifier.size(34.dp),
+            )
+            Text(
+                text = stringResource(R.string.send_network_header_title_suffix),
+                style = MaterialTheme.typography.displaySmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+            )
+        }
+        Spacer(modifier = Modifier.height(20.dp))
+    }
+}
+
+@Composable
 private fun SendContentColumn(content: @Composable ColumnScope.() -> Unit) {
     Column(
         modifier = Modifier
@@ -1258,11 +1311,11 @@ private fun SendAssetGroupRow(
     onClick: () -> Unit,
 ) {
     SendSelectableRow(
-        title = group.name,
+        title = "${group.name} - ${group.symbol}",
         subtitle = if (group.assets.size > 1) {
             stringResource(R.string.send_asset_network_count, group.assets.size)
         } else {
-            "${group.symbol} · ${group.assets.first().network.displayName}"
+            group.assets.first().network.displayName
         },
         trailingPrimary = group.totalFiatFormatted,
         trailingSecondary = group.totalBalanceFormatted,
@@ -1272,7 +1325,7 @@ private fun SendAssetGroupRow(
             Image(
                 painter = painterResource(group.iconRes),
                 contentDescription = null,
-                modifier = Modifier.size(50.dp),
+                modifier = Modifier.size(42.dp),
             )
         },
     )
@@ -1284,8 +1337,8 @@ private fun SendNetworkRow(
     onClick: () -> Unit,
 ) {
     SendSelectableRow(
-        title = row.network.displayName,
-        subtitle = row.network.tokenStandard ?: row.network.family.uppercase(Locale.US),
+        title = "${row.network.displayName} - ${row.asset.symbol}",
+        subtitle = row.network.family.uppercase(Locale.US),
         trailingPrimary = row.fiatFormatted,
         trailingSecondary = row.balanceFormatted,
         enabled = row.hasSigningKey,
@@ -1313,19 +1366,20 @@ private fun SendSelectableRow(
         modifier = Modifier
             .fillMaxWidth()
             .widthIn(max = SendContentMaxWidth)
-            .height(82.dp)
+            .height(76.dp)
             .padding(horizontal = 20.dp)
-            .clip(RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surface)
             .clickable(enabled = enabled, onClick = onClick)
-            .padding(horizontal = 4.dp),
+            .padding(horizontal = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         leadingIcon()
-        Spacer(modifier = Modifier.width(14.dp))
+        Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
@@ -1333,7 +1387,7 @@ private fun SendSelectableRow(
             )
             Text(
                 text = subtitle,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -1343,14 +1397,14 @@ private fun SendSelectableRow(
         Column(horizontalAlignment = Alignment.End) {
             Text(
                 text = trailingPrimary,
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
             )
             Text(
                 text = trailingSecondary,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
