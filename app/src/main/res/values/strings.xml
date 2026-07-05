@@ -954,7 +954,11 @@
     <string name="settings_danger_body">Erase all local wallets, addresses, keys, transactions, settings, and saved contacts.</string>
     <string name="settings_danger_reset_body">This removes every local wallet record and returns Satra to first launch.</string>
     <string name="settings_danger_reset_warning">Reset deletes wallets, private keys, recovery data, addresses, transactions, address book entries, and local settings from this device. This cannot be undone.</string>
-    <string name="settings_danger_reset_confirm_label">Type RESET to continue</string>
-    <string name="settings_danger_reset_passcode_label">Passcode required</string>
+    <string name="settings_danger_reset_agreement_title">I understand this reset is permanent</string>
+    <string name="settings_danger_reset_agreement_body">I already backed up every recovery phrase and private key I need before resetting Satra.</string>
+    <string name="settings_danger_reset_passcode_required_body">Set an app passcode before resetting Satra. Reset cannot continue without passcode verification.</string>
+    <string name="settings_danger_verify_passcode">Verify passcode</string>
+    <string name="settings_danger_verify_passcode_body">Enter the app passcode to erase all local Satra data from this device.</string>
+    <string name="settings_danger_reset_biometric_not_allowed">Biometric unlock is not available for reset. Use the app passcode for this action.</string>
     <string name="settings_danger_reset_action">Erase all local data</string>
 </resources>

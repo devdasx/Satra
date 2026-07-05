@@ -651,6 +651,8 @@ internal fun SatraWalletRemovePasscodeScreen(
                 actionTextRes = R.string.settings_wallet_management_remove_wallet,
                 running = removing,
                 actionEnabled = wallet != null,
+                biometricBodyRes = R.string.settings_wallet_management_biometric_not_allowed,
+                noPasscodeBodyRes = R.string.settings_wallet_management_no_passcode_body,
                 onPasscodeChange = { passcode = it },
                 onAction = {
                     scope.launch {
@@ -687,14 +689,22 @@ private fun UnifiedPasscodeActionCard(
     @StringRes actionTextRes: Int,
     running: Boolean,
     actionEnabled: Boolean,
+    @StringRes biometricBodyRes: Int,
+    @StringRes noPasscodeBodyRes: Int,
+    requirePasscode: Boolean = false,
     onPasscodeChange: (String) -> Unit,
     onAction: () -> Unit,
 ) {
     val passcodeEnabled = appSettings?.passcodeEnabled == true
     val passcodeLength = appSettings?.passcodeLength ?: 6
+    val canSubmit = if (requirePasscode) {
+        passcodeEnabled && passcode.length == passcodeLength
+    } else {
+        !passcodeEnabled || passcode.length == passcodeLength
+    }
     SettingsCard {
         Text(
-            text = stringResource(R.string.settings_wallet_management_biometric_not_allowed),
+            text = stringResource(biometricBodyRes),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -710,7 +720,7 @@ private fun UnifiedPasscodeActionCard(
             )
         } else {
             Text(
-                text = stringResource(R.string.settings_wallet_management_no_passcode_body),
+                text = stringResource(noPasscodeBodyRes),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.error,
                 fontWeight = FontWeight.Bold,
@@ -718,7 +728,7 @@ private fun UnifiedPasscodeActionCard(
         }
         Button(
             onClick = onAction,
-            enabled = actionEnabled && appSettings != null && !running && (!passcodeEnabled || passcode.length == passcodeLength),
+            enabled = actionEnabled && appSettings != null && !running && canSubmit,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(54.dp),
@@ -1400,19 +1410,15 @@ internal fun SatraLegalScreen(onBack: () -> Unit) {
 internal fun SatraDangerZoneScreen(
     walletRepository: SatraWalletRepository,
     onBack: () -> Unit,
-    onResetComplete: () -> Unit,
+    onContinueReset: () -> Unit,
 ) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     var appSettings by remember { mutableStateOf<AppSettingsRecord?>(null) }
-    var confirmation by remember { mutableStateOf("") }
-    var passcode by remember { mutableStateOf("") }
-    var resetting by remember { mutableStateOf(false) }
+    var agreementAccepted by remember { mutableStateOf(false) }
     LaunchedEffect(walletRepository) {
         appSettings = walletRepository.getAppSettings()
     }
-    val passcodeRequired = appSettings?.passcodeEnabled == true
-    val canReset = confirmation == RESET_CONFIRMATION && (!passcodeRequired || passcode.isNotBlank()) && !resetting
+    val passcodeEnabled = appSettings?.passcodeEnabled == true
+    val canContinue = agreementAccepted && passcodeEnabled
 
     SettingsScaffold(
         titleRes = R.string.settings_danger_title,
@@ -1434,41 +1440,27 @@ internal fun SatraDangerZoneScreen(
                     color = MaterialTheme.colorScheme.error,
                     fontWeight = FontWeight.Bold,
                 )
-                Spacer(modifier = Modifier.height(14.dp))
-                OutlinedTextField(
-                    value = confirmation,
-                    onValueChange = { confirmation = it.uppercase(Locale.US).take(12) },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text(stringResource(R.string.settings_danger_reset_confirm_label)) },
-                    singleLine = true,
+                SettingsDivider()
+                SettingsSwitchRow(
+                    iconRes = R.drawable.ic_brand_security,
+                    title = stringResource(R.string.settings_danger_reset_agreement_title),
+                    body = stringResource(R.string.settings_danger_reset_agreement_body),
+                    checked = agreementAccepted,
+                    onCheckedChange = { accepted -> agreementAccepted = accepted },
                 )
-                if (passcodeRequired) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    OutlinedTextField(
-                        value = passcode,
-                        onValueChange = { passcode = it.filter(Char::isDigit).take(appSettings?.passcodeLength ?: 6) },
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text(stringResource(R.string.settings_danger_reset_passcode_label)) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-                        singleLine = true,
+                if (!passcodeEnabled && appSettings != null) {
+                    SettingsDivider()
+                    Text(
+                        text = stringResource(R.string.settings_danger_reset_passcode_required_body),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error,
+                        fontWeight = FontWeight.Bold,
                     )
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
-                    onClick = {
-                        scope.launch {
-                            resetting = true
-                            val verified = !passcodeRequired || walletRepository.verifyAppPasscode(passcode)
-                            if (verified) {
-                                walletRepository.resetUserData()
-                                onResetComplete()
-                            } else {
-                                resetting = false
-                                Toast.makeText(context, R.string.settings_security_wrong_passcode, Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                    },
-                    enabled = canReset,
+                    onClick = onContinueReset,
+                    enabled = canContinue,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(54.dp),
@@ -1481,6 +1473,62 @@ internal fun SatraDangerZoneScreen(
                     Text(stringResource(R.string.settings_danger_reset_action), fontWeight = FontWeight.Bold)
                 }
             }
+        }
+    }
+}
+
+@Composable
+internal fun SatraDangerZonePasscodeScreen(
+    walletRepository: SatraWalletRepository,
+    onBack: () -> Unit,
+    onResetComplete: () -> Unit,
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var appSettings by remember { mutableStateOf<AppSettingsRecord?>(null) }
+    var passcode by remember { mutableStateOf("") }
+    var resetting by remember { mutableStateOf(false) }
+
+    LaunchedEffect(walletRepository) {
+        appSettings = walletRepository.getAppSettings()
+    }
+
+    SettingsScaffold(
+        titleRes = R.string.settings_danger_verify_passcode,
+        onBack = onBack,
+    ) {
+        item {
+            SettingsHeroCard(
+                titleRes = R.string.settings_danger_verify_passcode,
+                bodyRes = R.string.settings_danger_verify_passcode_body,
+                iconRes = R.drawable.ic_brand_security,
+                isDanger = true,
+            )
+        }
+        item {
+            UnifiedPasscodeActionCard(
+                appSettings = appSettings,
+                passcode = passcode,
+                actionTextRes = R.string.settings_danger_reset_action,
+                running = resetting,
+                actionEnabled = true,
+                biometricBodyRes = R.string.settings_danger_reset_biometric_not_allowed,
+                noPasscodeBodyRes = R.string.settings_danger_reset_passcode_required_body,
+                requirePasscode = true,
+                onPasscodeChange = { passcode = it },
+                onAction = {
+                    scope.launch {
+                        resetting = true
+                        if (walletRepository.verifyAppPasscode(passcode)) {
+                            walletRepository.resetUserData()
+                            onResetComplete()
+                        } else {
+                            resetting = false
+                            Toast.makeText(context, R.string.settings_security_wrong_passcode, Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                },
+            )
         }
     }
 }
@@ -2440,6 +2488,5 @@ private enum class WalletBackupMode {
     PrivateKeys,
 }
 
-private const val RESET_CONFIRMATION = "RESET"
 private const val REMOVE_CONFIRMATION = "REMOVE"
 private val SettingsContentMaxWidth = 720.dp

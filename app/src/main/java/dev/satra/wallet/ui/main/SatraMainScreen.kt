@@ -351,6 +351,13 @@ fun SatraMainScreen(
                 SatraDangerZoneScreen(
                     walletRepository = walletRepository,
                     onBack = { tabNavController.popBackStack() },
+                    onContinueReset = { tabNavController.navigate(SatraMainRoute.DangerZonePasscode) },
+                )
+            }
+            composable(SatraMainRoute.DangerZonePasscode) {
+                SatraDangerZonePasscodeScreen(
+                    walletRepository = walletRepository,
+                    onBack = { tabNavController.popBackStack() },
                     onResetComplete = onResetComplete,
                 )
             }
@@ -5153,6 +5160,7 @@ internal object SatraMainRoute {
     const val About = "main/settings/about"
     const val Legal = "main/settings/legal"
     const val DangerZone = "main/settings/danger-zone"
+    const val DangerZonePasscode = "main/settings/danger-zone/passcode"
 
     fun tokenDetail(symbol: String): String =
         "main/token/${Uri.encode(symbol)}"
