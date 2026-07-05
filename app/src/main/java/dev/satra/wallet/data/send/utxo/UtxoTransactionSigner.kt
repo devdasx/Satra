@@ -379,7 +379,11 @@ internal object UtxoTransactionSigner {
         }
 
     private fun BigInteger.toLongExactOrNull(): Long? =
-        runCatching { longValueExact() }.getOrNull()
+        if (this < Long.MIN_VALUE.toBigInteger() || this > Long.MAX_VALUE.toBigInteger()) {
+            null
+        } else {
+            toLong()
+        }
 
     private fun dustThreshold(networkId: String): Long =
         when (networkId) {

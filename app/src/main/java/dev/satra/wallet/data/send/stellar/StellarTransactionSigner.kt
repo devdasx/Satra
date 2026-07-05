@@ -154,8 +154,12 @@ internal object StellarTransactionSigner {
         return crc and 0xffff
     }
 
-    private fun BigInteger.toLongExact(): Long =
-        longValueExact()
+    private fun BigInteger.toLongExact(): Long {
+        if (this < Long.MIN_VALUE.toBigInteger() || this > Long.MAX_VALUE.toBigInteger()) {
+            throw ArithmeticException("BigInteger out of Long range.")
+        }
+        return toLong()
+    }
 
     private const val MAINNET_PASSPHRASE = "Public Global Stellar Network ; September 2015"
     private const val ENVELOPE_TYPE_TX = 2
