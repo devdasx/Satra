@@ -924,6 +924,7 @@ private fun SatraActivityScreen(
     }
     var refreshRequest by remember { mutableStateOf(0) }
     var isRefreshing by remember { mutableStateOf(false) }
+    var activitySearchQuery by rememberSaveable { mutableStateOf("") }
 
     LaunchedEffect(walletRepository, localCurrencyCode, refreshRequest) {
         try {
@@ -1019,6 +1020,9 @@ private fun SatraActivityScreen(
 
         is ActivityScreenState.Content -> state
     }
+    val visibleTransactions = remember(content.transactions, activitySearchQuery) {
+        content.transactions.applyActivitySearch(activitySearchQuery)
+    }
 
     PullToRefreshBox(
         isRefreshing = isRefreshing,
@@ -1055,8 +1059,13 @@ private fun SatraActivityScreen(
                         syncedNetworkCount = content.syncedNetworkCount,
                         error = content.error,
                     )
+                    Spacer(modifier = Modifier.height(18.dp))
+                    ActivitySearchField(
+                        query = activitySearchQuery,
+                        onQueryChange = { query -> activitySearchQuery = query },
+                    )
                     Spacer(modifier = Modifier.height(22.dp))
-                    ActivityTransactionsHeader(transactionCount = content.transactions.size)
+                    ActivityTransactionsHeader(transactionCount = visibleTransactions.size)
                 }
             }
             if (content.transactions.isEmpty()) {
@@ -1069,9 +1078,20 @@ private fun SatraActivityScreen(
                             .padding(horizontal = 20.dp),
                     )
                 }
+            } else if (visibleTransactions.isEmpty()) {
+                item {
+                    SatraEmptyState(
+                        title = stringResource(R.string.activity_search_empty_title),
+                        body = stringResource(R.string.activity_search_empty_body),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .widthIn(max = HomeContentMaxWidth)
+                            .padding(horizontal = 20.dp),
+                    )
+                }
             } else {
                 items(
-                    items = content.transactions,
+                    items = visibleTransactions,
                     key = { transaction -> transaction.transactionId },
                 ) { transaction ->
                     ActivityTransactionCard(
@@ -2622,6 +2642,70 @@ private fun ActivityTransactionsHeader(transactionCount: Int) {
 }
 
 @Composable
+private fun ActivitySearchField(
+    query: String,
+    onQueryChange: (String) -> Unit,
+) {
+    TextField(
+        value = query,
+        onValueChange = onQueryChange,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp),
+        textStyle = MaterialTheme.typography.bodyLarge.copy(
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Medium,
+        ),
+        placeholder = {
+            Text(
+                text = stringResource(R.string.activity_search_placeholder),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
+        leadingIcon = {
+            Icon(
+                imageVector = Icons.Filled.Search,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        },
+        trailingIcon = if (query.isNotBlank()) {
+            {
+                IconButton(
+                    onClick = { onQueryChange("") },
+                    modifier = Modifier.size(44.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Close,
+                        contentDescription = stringResource(R.string.activity_search_clear),
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        } else {
+            null
+        },
+        singleLine = true,
+        shape = RoundedCornerShape(100.dp),
+        colors = TextFieldDefaults.colors(
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+            disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+            disabledIndicatorColor = Color.Transparent,
+            cursorColor = MaterialTheme.colorScheme.primary,
+        ),
+    )
+}
+
+@Composable
 private fun ActivityEmptyState(
     isSyncing: Boolean,
     modifier: Modifier = Modifier,
@@ -3976,6 +4060,7 @@ private data class ActivityTransactionRow(
     val counterparty: String,
     val hash: String,
     val fee: String,
+    val searchText: String,
 )
 
 private data class TransactionDetailRow(
@@ -4280,6 +4365,22 @@ private fun List<MarketAssetRow>.applyMarketSearch(query: String): List<MarketAs
     }
 }
 
+private fun List<ActivityTransactionRow>.applyActivitySearch(query: String): List<ActivityTransactionRow> {
+    val normalizedQuery = query.trim().lowercase(Locale.US)
+    if (normalizedQuery.isBlank()) return this
+
+    return filter { row ->
+        row.title.lowercase(Locale.US).contains(normalizedQuery) ||
+            row.subtitle.lowercase(Locale.US).contains(normalizedQuery) ||
+            row.amount.lowercase(Locale.US).contains(normalizedQuery) ||
+            row.fiatValue.lowercase(Locale.US).contains(normalizedQuery) ||
+            row.counterparty.lowercase(Locale.US).contains(normalizedQuery) ||
+            row.hash.lowercase(Locale.US).contains(normalizedQuery) ||
+            row.fee.lowercase(Locale.US).contains(normalizedQuery) ||
+            row.searchText.lowercase(Locale.US).contains(normalizedQuery)
+    }
+}
+
 private fun AssetMarketDataRecord.toMarketDetailState(
     localCurrencyCode: String,
     resources: Resources,
@@ -4371,6 +4472,23 @@ private fun List<WalletTransactionRecord>.toActivityRows(
                 status = transaction.status,
                 resources = resources,
             )
+            val amount = "${transaction.direction.activityAmountPrefix()}${formatCryptoAmount(transaction.amountDecimal)} ${asset.symbol}"
+            val fiatValue = transaction.displayFiatValue(
+                localCurrencyCode = localCurrencyCode,
+                localPrice = localPricesByAssetId[transaction.assetId],
+            )
+            val counterparty = transaction.activityCounterparty(resources)
+            val hash = transaction.transactionHash?.shortHash().orEmpty()
+            val fee = transaction.feeDecimal?.takeIf { it.toBigDecimalOrZero() > BigDecimal.ZERO }
+                ?.let { fee ->
+                    val feeAsset = transaction.feeAssetId?.let(catalogAssetsById::get)
+                    resources.getString(
+                        R.string.activity_fee,
+                        formatCryptoAmount(fee),
+                        feeAsset?.symbol.orEmpty(),
+                    ).trim()
+                }
+                .orEmpty()
             ActivityTransactionRow(
                 transactionId = transaction.transactionId,
                 iconRes = assetIconRes(asset.symbol),
@@ -4383,23 +4501,33 @@ private fun List<WalletTransactionRecord>.toActivityRows(
                     network.nativeSymbol,
                     time,
                 ),
-                amount = "${transaction.direction.activityAmountPrefix()}${formatCryptoAmount(transaction.amountDecimal)} ${asset.symbol}",
-                fiatValue = transaction.displayFiatValue(
-                    localCurrencyCode = localCurrencyCode,
-                    localPrice = localPricesByAssetId[transaction.assetId],
-                ),
-                counterparty = transaction.activityCounterparty(resources),
-                hash = transaction.transactionHash?.shortHash().orEmpty(),
-                fee = transaction.feeDecimal?.takeIf { it.toBigDecimalOrZero() > BigDecimal.ZERO }
-                    ?.let { fee ->
-                        val feeAsset = transaction.feeAssetId?.let(catalogAssetsById::get)
-                        resources.getString(
-                            R.string.activity_fee,
-                            formatCryptoAmount(fee),
-                            feeAsset?.symbol.orEmpty(),
-                        ).trim()
-                    }
-                    .orEmpty(),
+                amount = amount,
+                fiatValue = fiatValue,
+                counterparty = counterparty,
+                hash = hash,
+                fee = fee,
+                searchText = listOf(
+                    asset.name,
+                    asset.symbol,
+                    asset.assetId,
+                    network.displayName,
+                    network.nativeSymbol,
+                    network.networkId,
+                    direction,
+                    time,
+                    amount,
+                    fiatValue,
+                    counterparty,
+                    fee,
+                    transaction.transactionId,
+                    transaction.transactionHash.orEmpty(),
+                    transaction.fromAddress.orEmpty(),
+                    transaction.toAddress.orEmpty(),
+                    transaction.status,
+                    transaction.amountDecimal,
+                    transaction.fiatValue.orEmpty(),
+                    transaction.feeDecimal.orEmpty(),
+                ).joinToString(" "),
             )
         }
 }

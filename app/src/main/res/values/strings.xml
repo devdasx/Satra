@@ -353,6 +353,10 @@
     <string name="activity_summary_transactions">Transactions</string>
     <string name="activity_summary_transactions_value">%1$d stored</string>
     <string name="activity_summary_partial">Some public providers returned partial history. Satra keeps the sync state visible and will retry on the next refresh.</string>
+    <string name="activity_search_placeholder">Search transactions</string>
+    <string name="activity_search_clear">Clear activity search</string>
+    <string name="activity_search_empty_title">No matching transactions</string>
+    <string name="activity_search_empty_body">Try another asset, network, address, amount, or transaction hash.</string>
     <string name="activity_transactions_title">Transactions</string>
     <string name="activity_transactions_count">%1$d shown</string>
     <string name="asset_detail_balances_title">Balances by network</string>
