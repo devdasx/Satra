@@ -650,6 +650,8 @@
     <string name="settings_wallet_management_backup_warning">このバックアップを持っている人は誰でもこのウォレットを制御できます。オフラインに保存し、決して共有しないでください。</string>
     <string name="settings_wallet_management_no_phrase">このウォレットにはリカバリ フレーズのバックアップがありません。</string>
     <string name="settings_wallet_management_no_private_keys">このウォレットにはバックアップするローカル秘密キーがありません。</string>
+    <string name="settings_wallet_management_search_private_keys">秘密鍵を検索</string>
+    <string name="settings_wallet_management_no_private_key_matches">この検索に一致する秘密鍵はありません。</string>
     <string name="settings_wallet_management_recovery_phrase_label">回復フレーズ</string>
     <string name="settings_wallet_management_recovery_phrase_body">これらの言葉を順番に書き、非公開にしてください。</string>
     <string name="settings_wallet_management_passphrase_label">回復パスフレーズ</string>

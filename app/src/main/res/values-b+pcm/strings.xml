@@ -650,6 +650,8 @@
     <string name="settings_wallet_management_backup_warning">Anyone with this backup can control this wallet. Store it offline and never share it.</string>
     <string name="settings_wallet_management_no_phrase">This wallet no dey have a recovery phrase backup.</string>
     <string name="settings_wallet_management_no_private_keys">This wallet no dey have local private keys to back up.</string>
+    <string name="settings_wallet_management_search_private_keys">Search private keys</string>
+    <string name="settings_wallet_management_no_private_key_matches">No private keys match this search.</string>
     <string name="settings_wallet_management_recovery_phrase_label">Recovery phrase</string>
     <string name="settings_wallet_management_recovery_phrase_body">Write these words in order and keep them private.</string>
     <string name="settings_wallet_management_passphrase_label">Recovery passphrase</string>

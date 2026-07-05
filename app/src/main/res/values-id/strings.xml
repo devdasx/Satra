@@ -650,6 +650,8 @@
     <string name="settings_wallet_management_backup_warning">Siapa pun yang memiliki cadangan ini dapat mengontrol dompet ini. Simpan secara offline dan jangan pernah membagikannya.</string>
     <string name="settings_wallet_management_no_phrase">Dompet ini tidak memiliki cadangan frase pemulihan.</string>
     <string name="settings_wallet_management_no_private_keys">Dompet ini tidak memiliki kunci pribadi lokal untuk dicadangkan.</string>
+    <string name="settings_wallet_management_search_private_keys">Cari kunci privat</string>
+    <string name="settings_wallet_management_no_private_key_matches">Tidak ada kunci privat yang cocok dengan pencarian ini.</string>
     <string name="settings_wallet_management_recovery_phrase_label">Frase pemulihan</string>
     <string name="settings_wallet_management_recovery_phrase_body">Tuliskan kata-kata ini secara berurutan dan jaga kerahasiaannya.</string>
     <string name="settings_wallet_management_passphrase_label">Frasa sandi pemulihan</string>

@@ -650,6 +650,8 @@
     <string name="settings_wallet_management_backup_warning">हा बॅकअप असलेले कोणीही हे वॉलेट नियंत्रित करू शकते. ते ऑफलाइन संचयित करा आणि कधीही सामायिक करू नका.</string>
     <string name="settings_wallet_management_no_phrase">या वॉलेटमध्ये पुनर्प्राप्ती वाक्यांश बॅकअप नाही.</string>
     <string name="settings_wallet_management_no_private_keys">या वॉलेटमध्ये बॅकअप घेण्यासाठी स्थानिक खाजगी की नाहीत.</string>
+    <string name="settings_wallet_management_search_private_keys">खाजगी की शोधा</string>
+    <string name="settings_wallet_management_no_private_key_matches">या शोधाशी कोणतीही खाजगी की जुळत नाही.</string>
     <string name="settings_wallet_management_recovery_phrase_label">पुनर्प्राप्ती वाक्यांश</string>
     <string name="settings_wallet_management_recovery_phrase_body">हे शब्द क्रमाने लिहा आणि ते खाजगी ठेवा.</string>
     <string name="settings_wallet_management_passphrase_label">पुनर्प्राप्ती सांकेतिक वाक्यांश</string>

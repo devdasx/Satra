@@ -650,6 +650,8 @@
     <string name="settings_wallet_management_backup_warning">اس بیک اپ کے ساتھ کوئی بھی اس پرس کو کنٹرول کر سکتا ہے۔ اسے آف لائن اسٹور کریں اور کبھی بھی اس کا اشتراک نہ کریں۔</string>
     <string name="settings_wallet_management_no_phrase">اس بٹوے میں بازیابی کے فقرے کا بیک اپ نہیں ہے۔</string>
     <string name="settings_wallet_management_no_private_keys">اس بٹوے میں بیک اپ لینے کے لیے مقامی نجی کلیدیں نہیں ہیں۔</string>
+    <string name="settings_wallet_management_search_private_keys">پرائیویٹ کیز تلاش کریں</string>
+    <string name="settings_wallet_management_no_private_key_matches">اس تلاش سے کوئی پرائیویٹ کیز مطابقت نہیں رکھتیں۔</string>
     <string name="settings_wallet_management_recovery_phrase_label">بازیابی کا جملہ</string>
     <string name="settings_wallet_management_recovery_phrase_body">ان الفاظ کو ترتیب سے لکھیں اور انہیں نجی رکھیں۔</string>
     <string name="settings_wallet_management_passphrase_label">بازیابی کا پاسفریز</string>

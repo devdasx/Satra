@@ -650,6 +650,8 @@
     <string name="settings_wallet_management_backup_warning">اس بیک اپ دے نال کوئی وی اس پرس نو کنٹرول کر سکدا اے۔ اینوں آف لائن رکھو تے کدی وی شیئر نہ کرو۔</string>
     <string name="settings_wallet_management_no_phrase">اس پرس چ ریکوری فریز بیک اپ نئیں اے۔</string>
     <string name="settings_wallet_management_no_private_keys">اس پرس چ بیک اپ لین لئی مقامی نجی چابیاں نئیں ہن۔</string>
+    <string name="settings_wallet_management_search_private_keys">پرائیویٹ کنجیاں لبھو</string>
+    <string name="settings_wallet_management_no_private_key_matches">اس تلاش نال کوئی پرائیویٹ کنجی نہیں ملی۔</string>
     <string name="settings_wallet_management_recovery_phrase_label">وصولی دا جملہ</string>
     <string name="settings_wallet_management_recovery_phrase_body">ایہناں لفظاں نو ترتیب نال لکھو تے ایہناں نو خفیہ رکھو۔</string>
     <string name="settings_wallet_management_passphrase_label">ریکوری پاس فریس</string>

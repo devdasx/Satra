@@ -650,6 +650,8 @@
     <string name="settings_wallet_management_backup_warning">Yeyote aliye na nakala hii anaweza kudhibiti pochi hii. Ihifadhi nje ya mtandao na usiwahi kuishiriki.</string>
     <string name="settings_wallet_management_no_phrase">Mkoba huu hauna nakala rudufu ya maneno ya uokoaji.</string>
     <string name="settings_wallet_management_no_private_keys">Mkoba huu hauna funguo za kibinafsi za ndani za kuhifadhi nakala.</string>
+    <string name="settings_wallet_management_search_private_keys">Tafuta funguo binafsi</string>
+    <string name="settings_wallet_management_no_private_key_matches">Hakuna funguo binafsi zinazolingana na utafutaji huu.</string>
     <string name="settings_wallet_management_recovery_phrase_label">Maneno ya kurejesha</string>
     <string name="settings_wallet_management_recovery_phrase_body">Andika maneno haya kwa mpangilio na uyaweke faragha.</string>
     <string name="settings_wallet_management_passphrase_label">Nenosiri la urejeshaji</string>

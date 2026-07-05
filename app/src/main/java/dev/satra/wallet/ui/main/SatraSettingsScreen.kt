@@ -572,6 +572,12 @@ private fun WalletBackupSheet(
     onDismiss: () -> Unit,
 ) {
     val context = LocalContext.current
+    var privateKeySearchQuery by rememberSaveable(backup.wallet.walletId, mode.name) { mutableStateOf("") }
+    val visiblePrivateKeys = remember(backup.privateKeys, privateKeySearchQuery) {
+        backup.privateKeys.filter { privateKey ->
+            privateKey.matchesPrivateKeyBackupSearch(privateKeySearchQuery)
+        }
+    }
     val titleRes = when (mode) {
         WalletBackupMode.RecoveryPhrase -> R.string.settings_wallet_management_export_phrase
         WalletBackupMode.PrivateKeys -> R.string.settings_wallet_management_backup_private_keys
@@ -645,14 +651,26 @@ private fun WalletBackupSheet(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     } else {
-                        backup.privateKeys.forEach { privateKey ->
+                        WalletManagementSearchField(
+                            query = privateKeySearchQuery,
+                            onQueryChange = { privateKeySearchQuery = it },
+                            placeholderRes = R.string.settings_wallet_management_search_private_keys,
+                        )
+                        if (visiblePrivateKeys.isEmpty()) {
+                            Text(
+                                text = stringResource(R.string.settings_wallet_management_no_private_key_matches),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        visiblePrivateKeys.forEach { privateKey ->
                             PrivateKeyBackupCard(
                                 privateKey = privateKey,
                                 onCopy = {
                                     copySecretToClipboard(
                                         context = context,
                                         label = privateKey.networkName,
-                                        value = privateKey.privateKeyHex,
+                                        value = privateKey.backupValue,
                                     )
                                 },
                             )
@@ -759,21 +777,65 @@ private fun PrivateKeyBackupCard(
     privateKey: WalletPrivateKeyBackupRecord,
     onCopy: () -> Unit,
 ) {
-    SecretValueCard(
-        title = privateKey.networkName,
-        body = buildString {
-            privateKey.address?.let { address ->
-                append(address.shortSettingsValue())
+    val details = listOfNotNull(
+        privateKey.backupFormat.takeIf(String::isNotBlank),
+        privateKey.address?.shortSettingsValue(),
+        privateKey.derivationPath,
+    ).joinToString(" · ")
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                SatraCryptoIcon(
+                    iconRes = networkIconRes(privateKey.networkId),
+                    modifier = Modifier.size(46.dp),
+                    contentDescription = privateKey.networkName,
+                )
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        text = privateKey.networkName,
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.ExtraBold,
+                    )
+                    Text(
+                        text = details.ifBlank { privateKey.keySource },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Medium,
+                    )
+                }
             }
-            privateKey.derivationPath?.let { path ->
-                if (isNotEmpty()) append(" · ")
-                append(path)
-            }
-            if (isEmpty()) append(privateKey.keyFormat)
-        },
-        secret = privateKey.privateKeyHex,
-        onCopy = onCopy,
-    )
+            Text(
+                text = privateKey.backupValue,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.SemiBold,
+            )
+            SatraButton(
+                text = stringResource(R.string.settings_wallet_management_copy_secret),
+                onClick = onCopy,
+                modifier = Modifier.fillMaxWidth(),
+                variant = SatraButtonVariant.Secondary,
+                height = SatraButtonDefaults.CompactHeight,
+            )
+        }
+    }
 }
 
 @Composable
@@ -2646,6 +2708,24 @@ private fun WalletRecord.matchesWalletSearch(query: String): Boolean {
         walletKeyDerivationPath.orEmpty(),
         walletKeyLabel,
         statusLabel,
+    ).any { value ->
+        value.lowercase(Locale.US).contains(normalizedQuery)
+    }
+}
+
+private fun WalletPrivateKeyBackupRecord.matchesPrivateKeyBackupSearch(query: String): Boolean {
+    val normalizedQuery = query.trim().lowercase(Locale.US)
+    if (normalizedQuery.isBlank()) return true
+
+    return listOf(
+        networkName,
+        networkId,
+        address.orEmpty(),
+        derivationPath.orEmpty(),
+        keySource,
+        keyFormat,
+        backupFormat,
+        backupValue,
     ).any { value ->
         value.lowercase(Locale.US).contains(normalizedQuery)
     }

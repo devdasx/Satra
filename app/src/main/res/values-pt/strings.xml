@@ -650,6 +650,8 @@
     <string name="settings_wallet_management_backup_warning">Qualquer pessoa com este backup pode controlar esta carteira. Armazene-o off-line e nunca o compartilhe.</string>
     <string name="settings_wallet_management_no_phrase">Esta carteira não possui backup de frase de recuperação.</string>
     <string name="settings_wallet_management_no_private_keys">Esta carteira não possui chaves privadas locais para fazer backup.</string>
+    <string name="settings_wallet_management_search_private_keys">Pesquisar chaves privadas</string>
+    <string name="settings_wallet_management_no_private_key_matches">Nenhuma chave privada corresponde a esta pesquisa.</string>
     <string name="settings_wallet_management_recovery_phrase_label">Frase de recuperação</string>
     <string name="settings_wallet_management_recovery_phrase_body">Escreva essas palavras em ordem e mantenha-as privadas.</string>
     <string name="settings_wallet_management_passphrase_label">Senha de recuperação</string>

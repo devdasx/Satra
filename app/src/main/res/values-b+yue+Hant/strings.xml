@@ -650,6 +650,8 @@
     <string name="settings_wallet_management_backup_warning">任何有呢個備份嘅人都可以控制呢個錢包。離線儲存，千祈唔好分享。</string>
     <string name="settings_wallet_management_no_phrase">呢個錢包冇復原短語備份。</string>
     <string name="settings_wallet_management_no_private_keys">呢個錢包冇本地私人密鑰可以備份。</string>
+    <string name="settings_wallet_management_search_private_keys">搜尋私鑰</string>
+    <string name="settings_wallet_management_no_private_key_matches">沒有私鑰符合此搜尋。</string>
     <string name="settings_wallet_management_recovery_phrase_label">復原詞組</string>
     <string name="settings_wallet_management_recovery_phrase_body">按順序寫呢啲字，同埋保密。</string>
     <string name="settings_wallet_management_passphrase_label">恢復密碼短語</string>

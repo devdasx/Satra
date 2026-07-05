@@ -650,6 +650,8 @@
     <string name="settings_wallet_management_backup_warning">এই ব্যাকআপ সহ যে কেউ এই ওয়ালেট নিয়ন্ত্রণ করতে পারেন৷ এটি অফলাইনে সঞ্চয় করুন এবং এটি শেয়ার করবেন না।</string>
     <string name="settings_wallet_management_no_phrase">এই ওয়ালেটে একটি পুনরুদ্ধার বাক্যাংশ ব্যাকআপ নেই৷</string>
     <string name="settings_wallet_management_no_private_keys">এই ওয়ালেটে ব্যাক আপ করার জন্য স্থানীয় ব্যক্তিগত কী নেই৷</string>
+    <string name="settings_wallet_management_search_private_keys">প্রাইভেট কী খুঁজুন</string>
+    <string name="settings_wallet_management_no_private_key_matches">এই অনুসন্ধানের সাথে কোনো প্রাইভেট কী মেলেনি।</string>
     <string name="settings_wallet_management_recovery_phrase_label">পুনরুদ্ধার বাক্যাংশ</string>
     <string name="settings_wallet_management_recovery_phrase_body">এই শব্দগুলিকে ক্রমানুসারে লিখুন এবং সেগুলিকে ব্যক্তিগত রাখুন।</string>
     <string name="settings_wallet_management_passphrase_label">পুনরুদ্ধার পাসফ্রেজ</string>

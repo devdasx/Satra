@@ -650,6 +650,8 @@
     <string name="settings_wallet_management_backup_warning">இந்தக் காப்புப் பிரதியை வைத்திருக்கும் எவரும் இந்தப் பணப்பையைக் கட்டுப்படுத்தலாம். அதை ஆஃப்லைனில் சேமித்து வைக்கவும், ஒருபோதும் பகிரவும்.</string>
     <string name="settings_wallet_management_no_phrase">இந்த வாலட்டில் மீட்பு சொற்றொடர் காப்புப்பிரதி இல்லை.</string>
     <string name="settings_wallet_management_no_private_keys">இந்த வாலட்டில் காப்புப் பிரதி எடுக்க உள்ளூர் தனிப்பட்ட விசைகள் இல்லை.</string>
+    <string name="settings_wallet_management_search_private_keys">தனிப்பட்ட விசைகளைத் தேடுங்கள்</string>
+    <string name="settings_wallet_management_no_private_key_matches">இந்தத் தேடலுடன் பொருந்தும் தனிப்பட்ட விசைகள் இல்லை.</string>
     <string name="settings_wallet_management_recovery_phrase_label">மீட்பு சொற்றொடர்</string>
     <string name="settings_wallet_management_recovery_phrase_body">இந்த வார்த்தைகளை வரிசையாக எழுதி அவற்றை தனிப்பட்டதாக வைத்துக் கொள்ளுங்கள்.</string>
     <string name="settings_wallet_management_passphrase_label">மீட்பு கடவுச்சொற்றொடர்</string>

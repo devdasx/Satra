@@ -650,6 +650,8 @@
     <string name="settings_wallet_management_backup_warning">Maaaring kontrolin ng sinumang may ganitong backup ang wallet na ito. I-store ito offline at huwag na huwag itong ibahagi.</string>
     <string name="settings_wallet_management_no_phrase">Ang wallet na ito ay walang backup na parirala sa pagbawi.</string>
     <string name="settings_wallet_management_no_private_keys">Ang wallet na ito ay walang mga lokal na pribadong key upang i-back up.</string>
+    <string name="settings_wallet_management_search_private_keys">Maghanap ng mga private key</string>
+    <string name="settings_wallet_management_no_private_key_matches">Walang private key na tumutugma sa paghahanap na ito.</string>
     <string name="settings_wallet_management_recovery_phrase_label">Parirala sa pagbawi</string>
     <string name="settings_wallet_management_recovery_phrase_body">Isulat ang mga salitang ito sa pagkakasunud-sunod at panatilihing pribado ang mga ito.</string>
     <string name="settings_wallet_management_passphrase_label">Passphrase sa pagbawi</string>

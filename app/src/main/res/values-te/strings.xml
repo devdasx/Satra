@@ -650,6 +650,8 @@
     <string name="settings_wallet_management_backup_warning">ఈ బ్యాకప్ ఉన్న ఎవరైనా ఈ వాలెట్‌ని నియంత్రించగలరు. దీన్ని ఆఫ్‌లైన్‌లో నిల్వ చేయండి మరియు ఎప్పుడూ భాగస్వామ్యం చేయవద్దు.</string>
     <string name="settings_wallet_management_no_phrase">ఈ వాలెట్‌లో రికవరీ పదబంధం బ్యాకప్ లేదు.</string>
     <string name="settings_wallet_management_no_private_keys">ఈ వాలెట్‌లో బ్యాకప్ చేయడానికి స్థానిక ప్రైవేట్ కీలు లేవు.</string>
+    <string name="settings_wallet_management_search_private_keys">ప్రైవేట్ కీలను వెతకండి</string>
+    <string name="settings_wallet_management_no_private_key_matches">ఈ శోధనకు సరిపోలే ప్రైవేట్ కీలు లేవు.</string>
     <string name="settings_wallet_management_recovery_phrase_label">రికవరీ పదబంధం</string>
     <string name="settings_wallet_management_recovery_phrase_body">ఈ పదాలను క్రమంలో వ్రాసి వాటిని ప్రైవేట్‌గా ఉంచండి.</string>
     <string name="settings_wallet_management_passphrase_label">రికవరీ పాస్‌ఫ్రేజ్</string>

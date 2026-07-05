@@ -650,6 +650,8 @@
     <string name="settings_wallet_management_backup_warning">Cualquier persona con esta copia de seguridad puede controlar esta billetera. Guárdelo sin conexión y nunca lo comparta.</string>
     <string name="settings_wallet_management_no_phrase">Esta billetera no tiene una copia de seguridad de la frase de recuperación.</string>
     <string name="settings_wallet_management_no_private_keys">Esta billetera no tiene claves privadas locales para realizar una copia de seguridad.</string>
+    <string name="settings_wallet_management_search_private_keys">Buscar claves privadas</string>
+    <string name="settings_wallet_management_no_private_key_matches">No hay claves privadas que coincidan con esta búsqueda.</string>
     <string name="settings_wallet_management_recovery_phrase_label">Frase de recuperación</string>
     <string name="settings_wallet_management_recovery_phrase_body">Escriba estas palabras en orden y manténgalas privadas.</string>
     <string name="settings_wallet_management_passphrase_label">Frase de contraseña de recuperación</string>

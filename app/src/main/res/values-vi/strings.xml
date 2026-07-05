@@ -650,6 +650,8 @@
     <string name="settings_wallet_management_backup_warning">Bất kỳ ai có bản sao lưu này đều có thể kiểm soát ví này. Lưu trữ ngoại tuyến và không bao giờ chia sẻ nó.</string>
     <string name="settings_wallet_management_no_phrase">Ví này không có bản sao lưu cụm từ khôi phục.</string>
     <string name="settings_wallet_management_no_private_keys">Ví này không có khóa riêng cục bộ để sao lưu.</string>
+    <string name="settings_wallet_management_search_private_keys">Tìm khóa riêng tư</string>
+    <string name="settings_wallet_management_no_private_key_matches">Không có khóa riêng tư nào khớp với tìm kiếm này.</string>
     <string name="settings_wallet_management_recovery_phrase_label">Cụm từ khôi phục</string>
     <string name="settings_wallet_management_recovery_phrase_body">Viết những từ này theo thứ tự và giữ chúng ở chế độ riêng tư.</string>
     <string name="settings_wallet_management_passphrase_label">Cụm mật khẩu khôi phục</string>

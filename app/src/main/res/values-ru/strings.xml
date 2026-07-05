@@ -650,6 +650,8 @@
     <string name="settings_wallet_management_backup_warning">Любой, у кого есть эта резервная копия, может управлять этим кошельком. Храните его в автономном режиме и никогда не делитесь им.</string>
     <string name="settings_wallet_management_no_phrase">В этом кошельке нет резервной копии фразы восстановления.</string>
     <string name="settings_wallet_management_no_private_keys">В этом кошельке нет локальных закрытых ключей для резервного копирования.</string>
+    <string name="settings_wallet_management_search_private_keys">Поиск приватных ключей</string>
+    <string name="settings_wallet_management_no_private_key_matches">Нет приватных ключей, соответствующих этому поиску.</string>
     <string name="settings_wallet_management_recovery_phrase_label">Восстановительная фраза</string>
     <string name="settings_wallet_management_recovery_phrase_body">Напишите эти слова по порядку и держите их в тайне.</string>
     <string name="settings_wallet_management_passphrase_label">Кодовая фраза восстановления</string>

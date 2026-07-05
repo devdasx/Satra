@@ -650,6 +650,8 @@
     <string name="settings_wallet_management_backup_warning">يمكن لأي شخص لديه هذه النسخة الاحتياطية التحكم في هذه المحفظة. قم بتخزينه في وضع عدم الاتصال ولا تشاركه أبدًا.</string>
     <string name="settings_wallet_management_no_phrase">لا تحتوي هذه المحفظة على نسخة احتياطية لعبارة الاسترداد.</string>
     <string name="settings_wallet_management_no_private_keys">لا تحتوي هذه المحفظة على مفاتيح خاصة محلية لإجراء نسخ احتياطي لها.</string>
+    <string name="settings_wallet_management_search_private_keys">دور في المفاتيح الخاصة</string>
+    <string name="settings_wallet_management_no_private_key_matches">مافيش مفاتيح خاصة مطابقة للبحث ده.</string>
     <string name="settings_wallet_management_recovery_phrase_label">عبارة الاسترداد</string>
     <string name="settings_wallet_management_recovery_phrase_body">اكتب هذه الكلمات بالترتيب واحتفظ بها خاصة.</string>
     <string name="settings_wallet_management_passphrase_label">عبارة مرور الاسترداد</string>

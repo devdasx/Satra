@@ -650,6 +650,8 @@
     <string name="settings_wallet_management_backup_warning">Duk wanda ke da wannan ajiyar zai iya sarrafa wannan walat. Ajiye shi a layi kuma kada ku raba shi.</string>
     <string name="settings_wallet_management_no_phrase">Wannan walat ɗin ba shi da madaidaicin jumlar dawowa.</string>
     <string name="settings_wallet_management_no_private_keys">Wannan walat ɗin bashi da maɓallan sirri na gida don adanawa.</string>
+    <string name="settings_wallet_management_search_private_keys">Nemo maɓallan sirri</string>
+    <string name="settings_wallet_management_no_private_key_matches">Babu maɓallan sirri da suka dace da wannan binciken.</string>
     <string name="settings_wallet_management_recovery_phrase_label">Maganar farfadowa</string>
     <string name="settings_wallet_management_recovery_phrase_body">Rubuta waɗannan kalmomi a cikin tsari kuma a ɓoye su.</string>
     <string name="settings_wallet_management_passphrase_label">Kalmar wucewar dawowa</string>

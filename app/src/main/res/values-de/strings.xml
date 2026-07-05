@@ -650,6 +650,8 @@
     <string name="settings_wallet_management_backup_warning">Jeder mit diesem Backup kann dieses Wallet kontrollieren. Speichern Sie es offline und geben Sie es niemals weiter.</string>
     <string name="settings_wallet_management_no_phrase">Dieses Wallet verfügt nicht über ein Backup der Wiederherstellungsphrase.</string>
     <string name="settings_wallet_management_no_private_keys">Dieses Wallet verfügt nicht über lokale private Schlüssel zum Sichern.</string>
+    <string name="settings_wallet_management_search_private_keys">Private Schlüssel suchen</string>
+    <string name="settings_wallet_management_no_private_key_matches">Keine privaten Schlüssel passen zu dieser Suche.</string>
     <string name="settings_wallet_management_recovery_phrase_label">Wiederherstellungssatz</string>
     <string name="settings_wallet_management_recovery_phrase_body">Schreiben Sie diese Wörter der Reihe nach auf und halten Sie sie für sich.</string>
     <string name="settings_wallet_management_passphrase_label">Wiederherstellungspassphrase</string>

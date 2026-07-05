@@ -650,6 +650,8 @@
     <string name="settings_wallet_management_backup_warning">Bu yedeğe sahip olan herkes bu cüzdanı kontrol edebilir. Çevrimdışı olarak saklayın ve asla paylaşmayın.</string>
     <string name="settings_wallet_management_no_phrase">Bu cüzdanda bir kurtarma ifadesi yedeği yoktur.</string>
     <string name="settings_wallet_management_no_private_keys">Bu cüzdanın yedeklenecek yerel özel anahtarları yok.</string>
+    <string name="settings_wallet_management_search_private_keys">Özel anahtarları ara</string>
+    <string name="settings_wallet_management_no_private_key_matches">Bu aramayla eşleşen özel anahtar yok.</string>
     <string name="settings_wallet_management_recovery_phrase_label">Kurtarma ifadesi</string>
     <string name="settings_wallet_management_recovery_phrase_body">Bu kelimeleri sırayla yazın ve gizli tutun.</string>
     <string name="settings_wallet_management_passphrase_label">Kurtarma parolası</string>

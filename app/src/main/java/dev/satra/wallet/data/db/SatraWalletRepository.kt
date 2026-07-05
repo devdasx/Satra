@@ -481,6 +481,14 @@ class SatraWalletRepository(
                         keySource = privateKey.keySource,
                         keyFormat = privateKey.keyFormat,
                         privateKeyHex = secret,
+                        backupValue = WalletPrivateKeyBackupFormatter.backupValue(
+                            networkId = privateKey.networkId,
+                            privateKeyHex = secret,
+                        ),
+                        backupFormat = WalletPrivateKeyBackupFormatter.backupFormat(
+                            networkId = privateKey.networkId,
+                            fallbackFormat = privateKey.keyFormat,
+                        ),
                     )
                 }
             WalletBackupRecord(

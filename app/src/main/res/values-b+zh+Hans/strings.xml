@@ -650,6 +650,8 @@
     <string name="settings_wallet_management_backup_warning">拥有此备份的任何人都可以控制此钱包。离线存储并且绝不共享。</string>
     <string name="settings_wallet_management_no_phrase">该钱包没有恢复短语备份。</string>
     <string name="settings_wallet_management_no_private_keys">该钱包没有本地私钥可供备份。</string>
+    <string name="settings_wallet_management_search_private_keys">搜索私钥</string>
+    <string name="settings_wallet_management_no_private_key_matches">没有私钥匹配此搜索。</string>
     <string name="settings_wallet_management_recovery_phrase_label">恢复短语</string>
     <string name="settings_wallet_management_recovery_phrase_body">按顺序写下这些单词并保密。</string>
     <string name="settings_wallet_management_passphrase_label">恢复密码</string>

@@ -234,6 +234,8 @@ data class WalletPrivateKeyBackupRecord(
     val keySource: String,
     val keyFormat: String,
     val privateKeyHex: String,
+    val backupValue: String,
+    val backupFormat: String,
 )
 
 data class WalletTransactionRecord(

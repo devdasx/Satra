@@ -650,6 +650,8 @@
     <string name="settings_wallet_management_backup_warning">Toute personne disposant de cette sauvegarde peut contrôler ce portefeuille. Stockez-le hors ligne et ne le partagez jamais.</string>
     <string name="settings_wallet_management_no_phrase">Ce portefeuille n\'a pas de sauvegarde de phrase de récupération.</string>
     <string name="settings_wallet_management_no_private_keys">Ce portefeuille n\'a pas de clés privées locales à sauvegarder.</string>
+    <string name="settings_wallet_management_search_private_keys">Rechercher des clés privées</string>
+    <string name="settings_wallet_management_no_private_key_matches">Aucune clé privée ne correspond à cette recherche.</string>
     <string name="settings_wallet_management_recovery_phrase_label">Phrase de récupération</string>
     <string name="settings_wallet_management_recovery_phrase_body">Écrivez ces mots dans l\'ordre et gardez-les privés.</string>
     <string name="settings_wallet_management_passphrase_label">Phrase secrète de récupération</string>
