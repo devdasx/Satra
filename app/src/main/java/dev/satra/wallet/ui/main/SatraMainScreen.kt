@@ -553,6 +553,9 @@ fun SatraMainScreen(
                     amount = amount,
                     warnPoison = warnPoison,
                     onBack = { tabNavController.popBackStack() },
+                    onCheckRecipient = {
+                        tabNavController.popBackStack(SatraMainRoute.SendRecipientPattern, false)
+                    },
                     onSent = { transactionId ->
                         tabNavController.navigate(SatraMainRoute.sendSent(transactionId)) {
                             popUpTo(SatraMainRoute.SendAsset) {

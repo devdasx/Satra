@@ -57,9 +57,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.satra.wallet.R
@@ -313,6 +316,7 @@ fun SatraSendReviewScreen(
     amount: String,
     warnPoison: Boolean,
     onBack: () -> Unit,
+    onCheckRecipient: () -> Unit,
     onSent: (String) -> Unit,
 ) {
     var state by remember(assetId) {
@@ -353,6 +357,7 @@ fun SatraSendReviewScreen(
             amountText = Uri.decode(amount),
             warnPoison = warnPoison,
             onBack = onBack,
+            onCheckRecipient = onCheckRecipient,
             onSent = onSent,
         )
     }
@@ -741,6 +746,7 @@ private fun SendReviewContent(
     amountText: String,
     warnPoison: Boolean,
     onBack: () -> Unit,
+    onCheckRecipient: () -> Unit,
     onSent: (String) -> Unit,
 ) {
     val haptic = LocalHapticFeedback.current
@@ -750,6 +756,9 @@ private fun SendReviewContent(
     var showPoisonSheet by remember(warnPoison) { mutableStateOf(false) }
     val amount = amountText.toBigDecimalOrNullSafe() ?: BigDecimal.ZERO
     val feeQuote = estimatedFeeFor(state.row, SendFeeSpeed.Normal)
+    val maxAmount = remember(state.row, feeQuote) { state.row.maxSendAmount(feeQuote) }
+    val amountFormatted = "${formatCryptoAmount(amount)} ${state.row.asset.symbol}"
+    val fiatPreview = remember(amount, state.row) { state.row.fiatValueForAmount(amount) }
     val unsupportedNetworkBody = stringResource(
         R.string.send_broadcast_unsupported_network_body,
         state.row.network.displayName,
@@ -759,7 +768,7 @@ private fun SendReviewContent(
     val invalidAmountBody = stringResource(R.string.send_broadcast_invalid_amount_body)
     val insufficientBalanceBody = stringResource(R.string.send_broadcast_insufficient_balance_body)
     val broadcastFailedBody = stringResource(R.string.send_broadcast_failed_body)
-    val canSubmit = state.canSign && amount > BigDecimal.ZERO && amount <= state.row.balanceDecimal
+    val canSubmit = state.canSign && amount > BigDecimal.ZERO && amount <= maxAmount
 
     fun submit() {
         if (!canSubmit || sending) return
@@ -808,96 +817,91 @@ private fun SendReviewContent(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 SendPrimaryButton(
+                    text = stringResource(R.string.send_poison_review_again),
+                    onClick = {
+                        showPoisonSheet = false
+                        onCheckRecipient()
+                    },
+                )
+                SatraButton(
                     text = stringResource(R.string.send_poison_send_anyway),
-                    enabled = canSubmit,
-                    loading = sending,
                     onClick = {
                         showPoisonSheet = false
                         submit()
                     },
-                )
-                SatraButton(
-                    text = stringResource(R.string.send_poison_review_again),
-                    onClick = { showPoisonSheet = false },
+                    enabled = canSubmit && !sending,
                     modifier = Modifier.fillMaxWidth(),
                     variant = SatraButtonVariant.Secondary,
                     height = SatraButtonDefaults.CompactHeight,
+                    contentColor = MaterialTheme.colorScheme.error,
+                    borderColor = MaterialTheme.colorScheme.error,
                 )
             }
         }
     }
 
-    SendScaffold(
+    SendStepScaffold(
         title = stringResource(R.string.send_review_screen_title),
         onBack = onBack,
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .verticalScroll(rememberScrollState()),
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                SendHero(
-                    title = stringResource(R.string.send_review_header_title),
-                    body = stringResource(R.string.send_review_header_body),
-                )
-                SendContentColumn {
-                SendAmountHero(
-                    row = state.row,
-                    amount = amount,
-                )
-                Spacer(modifier = Modifier.height(14.dp))
-                SendInputCard {
-                    SendReviewLine(
-                        label = stringResource(R.string.send_review_to),
-                        value = recipient.shortAddress(),
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .widthIn(max = ChooseAssetContentMaxWidth),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    SendReviewHeaderBlock(
+                        row = state.row,
+                        amountFormatted = amountFormatted,
+                        fiatPreview = formatFiat(fiatPreview.toPlainString(), state.wallet.localCurrencyCode),
                     )
-                    SendReviewLine(
-                        label = stringResource(R.string.send_review_network),
-                        value = state.row.network.displayName,
+                    SendReviewFactCard(
+                        rows = listOf(
+                            stringResource(R.string.send_review_to) to recipient.shortAddress(),
+                            stringResource(R.string.send_review_network) to
+                                "${state.row.network.displayName} · ${state.row.networkStandardLabel()}",
+                            stringResource(R.string.send_review_fee) to "~${feeQuote.displayText}",
+                            stringResource(R.string.send_review_total) to
+                                stringResource(R.string.send_review_total_plus_fee, amountFormatted),
+                        ),
                     )
-                    SendReviewLine(
-                        label = stringResource(R.string.send_review_source),
-                        value = state.row.sourceAddress.shortAddress(),
-                    )
-                    SendReviewLine(
-                        label = stringResource(R.string.send_review_fee),
-                        value = feeQuote.displayText,
-                    )
-                    SendReviewLine(
-                        label = stringResource(R.string.send_review_total),
-                        value = "${formatCryptoAmount(amount)} ${state.row.asset.symbol}",
-                    )
-                }
-                Spacer(modifier = Modifier.height(14.dp))
-                SendWarningCard(
-                    title = stringResource(R.string.send_final_warning_title),
-                    body = stringResource(R.string.send_final_warning_body),
-                )
-                submitError?.let { error ->
                     Spacer(modifier = Modifier.height(14.dp))
-                    SendWarningCard(
-                        title = stringResource(R.string.send_prepare_failed_title),
-                        body = error,
+                    SendReviewWarningStrip(
+                        text = stringResource(R.string.send_final_warning_body, state.row.network.displayName),
+                        emphasizedText = state.row.network.displayName,
                     )
-                }
+                    submitError?.let { error ->
+                        Spacer(modifier = Modifier.height(14.dp))
+                        SendWarningCard(
+                            title = stringResource(R.string.send_prepare_failed_title),
+                            body = error,
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(18.dp))
                 }
             }
-            SendBottomActionBar {
-                SendPrimaryButton(
-                    text = stringResource(R.string.send_now_action),
-                    enabled = canSubmit,
-                    loading = sending,
-                    onClick = {
-                        if (warnPoison) {
-                            showPoisonSheet = true
-                        } else {
-                            submit()
-                        }
-                    },
-                )
-            }
+            SendReviewBottomAction(
+                enabled = canSubmit,
+                loading = sending,
+                onClick = {
+                    if (warnPoison) {
+                        showPoisonSheet = true
+                    } else {
+                        submit()
+                    }
+                },
+            )
         }
     }
 }
@@ -1556,6 +1560,157 @@ private fun SendAmountAvailableRow(
 }
 
 @Composable
+private fun SendReviewHeaderBlock(
+    row: SendAssetRow,
+    amountFormatted: String,
+    fiatPreview: String,
+) {
+    Column(
+        modifier = Modifier.padding(top = 18.dp, bottom = 20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        SatraCryptoIcon(
+            iconRes = row.iconRes,
+            modifier = Modifier.size(42.dp),
+        )
+        Text(
+            text = amountFormatted,
+            modifier = Modifier.padding(top = 12.dp),
+            style = MaterialTheme.typography.headlineLarge.copy(fontSize = 32.sp, lineHeight = 32.sp),
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            text = fiatPreview,
+            modifier = Modifier.padding(top = 8.dp),
+            style = MaterialTheme.typography.labelMedium.copy(fontSize = 13.5.sp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun SendReviewFactCard(rows: List<Pair<String, String>>) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+    ) {
+        Column {
+            rows.forEachIndexed { index, row ->
+                if (index > 0) {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                }
+                SendReviewFactRow(
+                    label = row.first,
+                    value = row.second,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SendReviewFactRow(
+    label: String,
+    value: String,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium.copy(fontSize = 13.sp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            text = value,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.labelMedium.copy(fontSize = 13.5.sp),
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.End,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun SendReviewWarningStrip(text: String) {
+    SendReviewWarningStrip(
+        text = text,
+        emphasizedText = "",
+    )
+}
+
+@Composable
+private fun SendReviewWarningStrip(
+    text: String,
+    emphasizedText: String,
+) {
+    val emphasisColor = MaterialTheme.colorScheme.onSurface
+    val warningText = remember(text, emphasizedText, emphasisColor) {
+        val emphasisStart = emphasizedText
+            .takeIf(String::isNotBlank)
+            ?.let { text.indexOf(it) }
+            ?: -1
+        if (emphasisStart < 0) {
+            buildAnnotatedString { append(text) }
+        } else {
+            buildAnnotatedString {
+                append(text.take(emphasisStart))
+                withStyle(
+                    SpanStyle(
+                        color = emphasisColor,
+                        fontWeight = FontWeight.Bold,
+                    ),
+                ) {
+                    append(emphasizedText)
+                }
+                append(text.drop(emphasisStart + emphasizedText.length))
+            }
+        }
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_brand_scan),
+            contentDescription = null,
+            modifier = Modifier
+                .padding(top = 2.dp)
+                .size(15.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.width(9.dp))
+        Text(
+            text = warningText,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.labelMedium.copy(fontSize = 12.sp, lineHeight = 18.sp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
 private fun SendInputCard(content: @Composable ColumnScope.() -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -1991,6 +2146,45 @@ private fun SendStepBottomAction(
                 .widthIn(max = ChooseAssetContentMaxWidth),
             height = 50.dp,
         )
+    }
+}
+
+@Composable
+private fun SendReviewBottomAction(
+    enabled: Boolean,
+    loading: Boolean,
+    onClick: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(horizontal = 20.dp)
+            .padding(top = 10.dp, bottom = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        SatraButton(
+            onClick = onClick,
+            enabled = enabled,
+            loading = loading,
+            modifier = Modifier
+                .fillMaxWidth()
+                .widthIn(max = ChooseAssetContentMaxWidth),
+            height = 50.dp,
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_brand_move),
+                contentDescription = null,
+                modifier = Modifier.size(15.dp),
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = stringResource(R.string.send_now_action),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+            )
+        }
     }
 }
 
