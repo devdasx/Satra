@@ -40,8 +40,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -54,14 +52,12 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -113,6 +109,9 @@ import dev.satra.wallet.data.db.WalletTransactionStatus
 import dev.satra.wallet.data.sync.evm.EvmSyncCompleteness
 import dev.satra.wallet.settings.SatraSettings
 import dev.satra.wallet.settings.SatraThemePreference
+import dev.satra.wallet.ui.components.SatraButton
+import dev.satra.wallet.ui.components.SatraButtonDefaults
+import dev.satra.wallet.ui.components.SatraButtonVariant
 import dev.satra.wallet.ui.setup.WalletSetupFlow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -733,21 +732,11 @@ private fun SetupCompletionBottomSheet(
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Button(
+            SatraButton(
+                text = stringResource(R.string.wallet_setup_complete_action),
                 onClick = onDismiss,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(100.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.onSurface,
-                    contentColor = MaterialTheme.colorScheme.surface,
-                ),
-            ) {
-                Text(
-                    text = stringResource(R.string.wallet_setup_complete_action),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
+            )
         }
     }
 }
@@ -3237,18 +3226,19 @@ private fun WalletSwitcherSheet(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                OutlinedButton(
+                SatraButton(
+                    text = stringResource(R.string.home_wallet_switcher_import),
                     onClick = onImportWallet,
                     modifier = Modifier.weight(1f),
-                ) {
-                    Text(text = stringResource(R.string.home_wallet_switcher_import))
-                }
-                Button(
+                    variant = SatraButtonVariant.Secondary,
+                    height = SatraButtonDefaults.CompactHeight,
+                )
+                SatraButton(
+                    text = stringResource(R.string.home_wallet_switcher_create),
                     onClick = onCreateWallet,
                     modifier = Modifier.weight(1f),
-                ) {
-                    Text(text = stringResource(R.string.home_wallet_switcher_create))
-                }
+                    height = SatraButtonDefaults.CompactHeight,
+                )
             }
             Spacer(modifier = Modifier.height(28.dp))
         }
@@ -3372,18 +3362,16 @@ private fun HomeBalanceActionButton(
     modifier: Modifier = Modifier,
 ) {
     if (solid) {
-        Button(
+        SatraButton(
             onClick = onClick,
             enabled = enabled,
-            modifier = modifier.height(46.dp),
-            shape = RoundedCornerShape(100.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = solidContainerColor,
-                contentColor = solidContentColor,
-                disabledContainerColor = solidContainerColor.copy(alpha = 0.16f),
-                disabledContentColor = outlinedContentColor.copy(alpha = 0.45f),
-            ),
+            modifier = modifier,
+            height = 46.dp,
             contentPadding = PaddingValues(horizontal = 10.dp),
+            containerColor = solidContainerColor,
+            contentColor = solidContentColor,
+            disabledContainerColor = solidContainerColor.copy(alpha = 0.16f),
+            disabledContentColor = outlinedContentColor.copy(alpha = 0.45f),
         ) {
             HomeBalanceActionButtonContent(
                 label = label,
@@ -3391,20 +3379,16 @@ private fun HomeBalanceActionButton(
             )
         }
     } else {
-        OutlinedButton(
+        SatraButton(
             onClick = onClick,
             enabled = enabled,
-            modifier = modifier.height(46.dp),
-            shape = RoundedCornerShape(100.dp),
-            border = BorderStroke(
-                width = 1.dp,
-                color = outlinedContentColor.copy(alpha = if (enabled) 0.28f else 0.14f),
-            ),
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = outlinedContentColor,
-                disabledContentColor = outlinedContentColor.copy(alpha = 0.36f),
-            ),
+            modifier = modifier,
+            variant = SatraButtonVariant.Secondary,
+            height = 46.dp,
             contentPadding = PaddingValues(horizontal = 10.dp),
+            contentColor = outlinedContentColor,
+            disabledContentColor = outlinedContentColor.copy(alpha = 0.36f),
+            borderColor = outlinedContentColor.copy(alpha = if (enabled) 0.28f else 0.14f),
         ) {
             HomeBalanceActionButtonContent(
                 label = label,
@@ -3451,20 +3435,17 @@ private fun HomeChartRangeSelector(
         HomeChartRange.entries.forEach { range ->
             val selected = selectedRange == range
             if (selected) {
-                Button(
+                SatraButton(
                     onClick = { onRangeSelected(range) },
                     enabled = enabled,
                     modifier = Modifier
-                        .weight(1f)
-                        .height(32.dp),
-                    shape = RoundedCornerShape(100.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = selectedContainerColor,
-                        contentColor = selectedContentColor,
-                        disabledContainerColor = selectedContainerColor,
-                        disabledContentColor = selectedContentColor,
-                    ),
+                        .weight(1f),
+                    height = 32.dp,
                     contentPadding = PaddingValues(horizontal = 4.dp),
+                    containerColor = selectedContainerColor,
+                    contentColor = selectedContentColor,
+                    disabledContainerColor = selectedContainerColor,
+                    disabledContentColor = selectedContentColor,
                 ) {
                     Text(
                         text = stringResource(range.labelRes),
@@ -3474,19 +3455,19 @@ private fun HomeChartRangeSelector(
                     )
                 }
             } else {
-                TextButton(
+                SatraButton(
                     onClick = { onRangeSelected(range) },
                     enabled = enabled,
                     modifier = Modifier
-                        .weight(1f)
-                        .height(32.dp),
-                    shape = RoundedCornerShape(100.dp),
+                        .weight(1f),
+                    variant = SatraButtonVariant.Text,
+                    height = 32.dp,
                     contentPadding = PaddingValues(horizontal = 4.dp),
+                    contentColor = unselectedContentColor,
                 ) {
                     Text(
                         text = stringResource(range.labelRes),
                         style = MaterialTheme.typography.labelMedium,
-                        color = unselectedContentColor,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                     )
@@ -3815,15 +3796,11 @@ private fun HomeAssetsHeader(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Bold,
             )
-            OutlinedButton(
+            SatraButton(
                 onClick = onFilterClick,
-                modifier = Modifier.height(36.dp),
-                shape = RoundedCornerShape(100.dp),
-                border = BorderStroke(
-                    width = 1.dp,
-                    color = MaterialTheme.colorScheme.outline,
-                ),
-                contentPadding = ButtonDefaults.ContentPadding,
+                variant = SatraButtonVariant.Secondary,
+                height = 36.dp,
+                borderColor = MaterialTheme.colorScheme.outline,
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_brand_settings),
@@ -3880,15 +3857,13 @@ private fun HomeAssetFilterSheet(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                TextButton(
+                SatraButton(
+                    text = stringResource(R.string.home_assets_filter_reset),
                     onClick = { onFilterStateChange(HomeAssetFilterState()) },
                     enabled = filterState.isActive,
-                ) {
-                    Text(
-                        text = stringResource(R.string.home_assets_filter_reset),
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
+                    variant = SatraButtonVariant.Text,
+                    height = 40.dp,
+                )
             }
             Spacer(modifier = Modifier.height(18.dp))
             HomeAssetFilterSectionTitle(R.string.home_assets_filter_show)

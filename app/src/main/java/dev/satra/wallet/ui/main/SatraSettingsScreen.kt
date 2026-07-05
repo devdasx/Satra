@@ -36,8 +36,6 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -46,12 +44,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -83,6 +79,9 @@ import dev.satra.wallet.data.db.WalletBackupRecord
 import dev.satra.wallet.data.db.WalletKeyType
 import dev.satra.wallet.data.db.WalletPrivateKeyBackupRecord
 import dev.satra.wallet.data.db.WalletRecord
+import dev.satra.wallet.ui.components.SatraButton
+import dev.satra.wallet.ui.components.SatraButtonDefaults
+import dev.satra.wallet.ui.components.SatraButtonVariant
 import dev.satra.wallet.settings.SatraSettings
 import dev.satra.wallet.settings.SatraSettingsDefaults
 import dev.satra.wallet.settings.SatraThemePreference
@@ -344,40 +343,39 @@ private fun WalletManagementCard(
             }
         }
         if (!wallet.isActive) {
-            OutlinedButton(
+            SatraButton(
+                text = stringResource(R.string.settings_wallet_management_make_active),
                 onClick = onSetActive,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(100.dp),
-            ) {
-                Text(stringResource(R.string.settings_wallet_management_make_active), fontWeight = FontWeight.Bold)
-            }
+                variant = SatraButtonVariant.Secondary,
+                height = SatraButtonDefaults.CompactHeight,
+            )
         }
         if (wallet.walletKeyType == WalletKeyType.Mnemonic.value) {
-            OutlinedButton(
+            SatraButton(
+                text = stringResource(R.string.settings_wallet_management_export_phrase),
                 onClick = onExportRecoveryPhrase,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(100.dp),
-            ) {
-                Text(stringResource(R.string.settings_wallet_management_export_phrase), fontWeight = FontWeight.Bold)
-            }
+                variant = SatraButtonVariant.Secondary,
+                height = SatraButtonDefaults.CompactHeight,
+            )
         }
         if (!wallet.isWatchOnly) {
-            OutlinedButton(
+            SatraButton(
+                text = stringResource(R.string.settings_wallet_management_backup_private_keys),
                 onClick = onBackupPrivateKeys,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(100.dp),
-            ) {
-                Text(stringResource(R.string.settings_wallet_management_backup_private_keys), fontWeight = FontWeight.Bold)
-            }
+                variant = SatraButtonVariant.Secondary,
+                height = SatraButtonDefaults.CompactHeight,
+            )
         }
-        OutlinedButton(
+        SatraButton(
+            text = stringResource(R.string.settings_wallet_management_remove_wallet),
             onClick = onRemoveWallet,
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(100.dp),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-        ) {
-            Text(stringResource(R.string.settings_wallet_management_remove_wallet), fontWeight = FontWeight.Bold)
-        }
+            variant = SatraButtonVariant.Danger,
+            height = SatraButtonDefaults.CompactHeight,
+        )
     }
 }
 
@@ -517,13 +515,13 @@ private fun SecretValueCard(
                     color = MaterialTheme.colorScheme.onSurface,
                 )
             }
-            OutlinedButton(
+            SatraButton(
+                text = stringResource(R.string.settings_wallet_management_copy_secret),
                 onClick = onCopy,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(100.dp),
-            ) {
-                Text(stringResource(R.string.settings_wallet_management_copy_secret), fontWeight = FontWeight.Bold)
-            }
+                variant = SatraButtonVariant.Secondary,
+                height = SatraButtonDefaults.CompactHeight,
+            )
         }
     }
 }
@@ -593,20 +591,14 @@ internal fun SatraWalletRemoveWarningScreen(
                     label = { Text(stringResource(R.string.settings_wallet_management_remove_confirm_label)) },
                     singleLine = true,
                 )
-                Button(
+                SatraButton(
+                    text = stringResource(R.string.settings_wallet_management_continue_to_passcode),
                     onClick = { onContinue(walletId) },
                     enabled = wallet != null && confirmation == REMOVE_CONFIRMATION,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(54.dp),
-                    shape = RoundedCornerShape(100.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = MaterialTheme.colorScheme.onError,
-                    ),
-                ) {
-                    Text(stringResource(R.string.settings_wallet_management_continue_to_passcode), fontWeight = FontWeight.Bold)
-                }
+                        .fillMaxWidth(),
+                    variant = SatraButtonVariant.Danger,
+                )
             }
         }
     }
@@ -726,20 +718,14 @@ private fun UnifiedPasscodeActionCard(
                 fontWeight = FontWeight.Bold,
             )
         }
-        Button(
+        SatraButton(
+            text = stringResource(actionTextRes),
             onClick = onAction,
             enabled = actionEnabled && appSettings != null && !running && canSubmit,
             modifier = Modifier
-                .fillMaxWidth()
-                .height(54.dp),
-            shape = RoundedCornerShape(100.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.error,
-                contentColor = MaterialTheme.colorScheme.onError,
-            ),
-        ) {
-            Text(stringResource(actionTextRes), fontWeight = FontWeight.Bold)
-        }
+                .fillMaxWidth(),
+            variant = SatraButtonVariant.Danger,
+        )
     }
 }
 
@@ -773,21 +759,16 @@ internal fun SatraAddressBookScreen(
             )
         }
         item {
-            Button(
+            SatraButton(
+                text = stringResource(R.string.settings_address_book_add),
                 onClick = {
                     editingEntry = null
                     showEditor = true
                 },
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                shape = RoundedCornerShape(100.dp),
-            ) {
-                Text(
-                    text = stringResource(R.string.settings_address_book_add),
-                    fontWeight = FontWeight.Bold,
-                )
-            }
+                    .fillMaxWidth(),
+                height = SatraButtonDefaults.CompactHeight,
+            )
         }
         if (entries.isEmpty()) {
             item {
@@ -1137,7 +1118,8 @@ internal fun SatraSecurityScreen(
                         singleLine = true,
                     )
                     Spacer(modifier = Modifier.height(12.dp))
-                    Button(
+                    SatraButton(
+                        text = stringResource(R.string.settings_security_turn_on_passcode),
                         onClick = {
                             scope.launch {
                                 appSettings = walletRepository.setAppPasscode(newPasscode)
@@ -1146,10 +1128,7 @@ internal fun SatraSecurityScreen(
                         },
                         enabled = newPasscode.length == 4 || newPasscode.length == 6,
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(100.dp),
-                    ) {
-                        Text(stringResource(R.string.settings_security_turn_on_passcode), fontWeight = FontWeight.Bold)
-                    }
+                    )
                 }
             }
         }
@@ -1237,7 +1216,8 @@ internal fun SatraSecurityTurnOffPasscodeScreen(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                     singleLine = true,
                 )
-                Button(
+                SatraButton(
+                    text = stringResource(R.string.settings_security_turn_off_passcode),
                     onClick = {
                         scope.launch {
                             if (walletRepository.verifyAppPasscode(passcode)) {
@@ -1251,19 +1231,8 @@ internal fun SatraSecurityTurnOffPasscodeScreen(
                     },
                     enabled = passcode.isNotBlank(),
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(54.dp),
-                    shape = RoundedCornerShape(100.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.onSurface,
-                        contentColor = MaterialTheme.colorScheme.surface,
-                    ),
-                ) {
-                    Text(
-                        text = stringResource(R.string.settings_security_turn_off_passcode),
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
+                        .fillMaxWidth(),
+                )
             }
         }
     }
@@ -1458,20 +1427,14 @@ internal fun SatraDangerZoneScreen(
                     )
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-                Button(
+                SatraButton(
+                    text = stringResource(R.string.settings_danger_reset_action),
                     onClick = onContinueReset,
                     enabled = canContinue,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(54.dp),
-                    shape = RoundedCornerShape(100.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = MaterialTheme.colorScheme.onError,
-                    ),
-                ) {
-                    Text(stringResource(R.string.settings_danger_reset_action), fontWeight = FontWeight.Bold)
-                }
+                        .fillMaxWidth(),
+                    variant = SatraButtonVariant.Danger,
+                )
             }
         }
     }
@@ -1588,23 +1551,17 @@ private fun SettingsHeroCard(
     isDanger: Boolean = false,
 ) {
     SettingsCard {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            SettingsIcon(iconRes = iconRes, isDanger = isDanger)
-            Spacer(modifier = Modifier.width(14.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(titleRes),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = if (isDanger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Bold,
-                )
-                Text(
-                    text = stringResource(bodyRes),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
+        Text(
+            text = stringResource(titleRes),
+            style = MaterialTheme.typography.titleLarge,
+            color = if (isDanger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Bold,
+        )
+        Text(
+            text = stringResource(bodyRes),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
@@ -1979,21 +1936,20 @@ private fun AddressBookEntryRow(
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            OutlinedButton(
+            SatraButton(
+                text = stringResource(R.string.settings_action_edit),
                 onClick = onEdit,
                 modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(100.dp),
-            ) {
-                Text(stringResource(R.string.settings_action_edit), fontWeight = FontWeight.Bold)
-            }
-            OutlinedButton(
+                variant = SatraButtonVariant.Secondary,
+                height = SatraButtonDefaults.CompactHeight,
+            )
+            SatraButton(
+                text = stringResource(R.string.settings_action_delete),
                 onClick = onDelete,
                 modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(100.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-            ) {
-                Text(stringResource(R.string.settings_action_delete), fontWeight = FontWeight.Bold)
-            }
+                variant = SatraButtonVariant.Danger,
+                height = SatraButtonDefaults.CompactHeight,
+            )
         }
     }
 }
@@ -2069,7 +2025,8 @@ private fun AddressBookEditorSheet(
                 checked = favorite,
                 onCheckedChange = { favorite = it },
             )
-            Button(
+            SatraButton(
+                text = stringResource(R.string.settings_action_save),
                 onClick = {
                     onSave(
                         NewAddressBookEntryRecord(
@@ -2083,12 +2040,8 @@ private fun AddressBookEditorSheet(
                 },
                 enabled = label.isNotBlank() && address.isNotBlank(),
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(54.dp),
-                shape = RoundedCornerShape(100.dp),
-            ) {
-                Text(stringResource(R.string.settings_action_save), fontWeight = FontWeight.Bold)
-            }
+                    .fillMaxWidth(),
+            )
             Spacer(modifier = Modifier.height(18.dp))
         }
     }

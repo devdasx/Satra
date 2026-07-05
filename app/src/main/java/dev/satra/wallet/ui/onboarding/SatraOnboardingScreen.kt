@@ -2,7 +2,6 @@ package dev.satra.wallet.ui.onboarding
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -33,15 +32,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -80,7 +76,8 @@ import androidx.compose.ui.unit.dp
 import dev.satra.wallet.R
 import dev.satra.wallet.settings.SatraSettings
 import dev.satra.wallet.settings.SatraThemePreference
-import dev.satra.wallet.ui.theme.SatraButtonSecondaryBorder
+import dev.satra.wallet.ui.components.SatraButton
+import dev.satra.wallet.ui.components.SatraButtonVariant
 import dev.satra.wallet.ui.theme.SatraTheme
 import kotlinx.coroutines.delay
 
@@ -679,48 +676,26 @@ private fun OnboardingActions(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Button(
+        SatraButton(
+            text = stringResource(R.string.onboarding_action_create_wallet),
             onClick = {
                 performHaptic()
                 onCreateWallet()
             },
             modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                disabledContainerColor = MaterialTheme.colorScheme.outlineVariant,
-                disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            ),
-        ) {
-            Text(
-                text = stringResource(R.string.onboarding_action_create_wallet),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-            )
-        }
+                .fillMaxWidth(),
+        )
 
-        OutlinedButton(
+        SatraButton(
+            text = stringResource(R.string.onboarding_action_restore_wallet),
             onClick = {
                 performHaptic()
                 onRestoreWallet()
             },
             modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            border = BorderStroke(1.dp, SatraButtonSecondaryBorder),
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = MaterialTheme.colorScheme.onSurface,
-                disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            ),
-        ) {
-            Text(
-                text = stringResource(R.string.onboarding_action_restore_wallet),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-            )
-        }
+                .fillMaxWidth(),
+            variant = SatraButtonVariant.Secondary,
+        )
 
         OnboardingFooterLinks(modifier = Modifier.padding(top = 2.dp))
     }

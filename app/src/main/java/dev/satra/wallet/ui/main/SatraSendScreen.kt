@@ -29,8 +29,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -40,10 +38,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
@@ -81,6 +77,9 @@ import dev.satra.wallet.data.db.WalletTransactionDirection
 import dev.satra.wallet.data.db.WalletTransactionRecord
 import dev.satra.wallet.data.db.WalletTransactionStatus
 import dev.satra.wallet.data.send.SatraSendException
+import dev.satra.wallet.ui.components.SatraButton
+import dev.satra.wallet.ui.components.SatraButtonDefaults
+import dev.satra.wallet.ui.components.SatraButtonVariant
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -584,112 +583,114 @@ private fun SendRecipientContent(
         title = stringResource(R.string.send_recipient_title),
         onBack = onBack,
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            SendHero(
-                iconRes = R.drawable.ic_brand_receive,
-                title = stringResource(R.string.send_recipient_header_title),
-                body = stringResource(
-                    R.string.send_recipient_header_body,
-                    state.row.asset.symbol,
-                    state.row.network.displayName,
-                ),
-            )
-            SendContentColumn {
-                if (!state.canSign) {
-                    SendWarningCard(
-                        title = stringResource(R.string.send_cannot_sign_title),
-                        body = if (state.wallet.isWatchOnly) {
-                            stringResource(R.string.send_watch_only_body)
-                        } else {
-                            stringResource(R.string.send_missing_key_body)
-                        },
-                    )
-                    Spacer(modifier = Modifier.height(14.dp))
-                }
-                SendInputCard {
-                    OutlinedTextField(
-                        value = recipient,
-                        onValueChange = { recipient = it.trim() },
-                        modifier = Modifier.fillMaxWidth(),
-                        minLines = 3,
-                        label = { Text(stringResource(R.string.send_recipient_label)) },
-                        supportingText = {
-                            Text(
-                                text = if (showError) {
-                                    stringResource(R.string.send_recipient_error)
-                                } else {
-                                    stringResource(R.string.send_recipient_helper, state.row.network.displayName)
+        Column(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                SendHero(
+                    title = stringResource(R.string.send_recipient_header_title),
+                    body = stringResource(
+                        R.string.send_recipient_header_body,
+                        state.row.asset.symbol,
+                        state.row.network.displayName,
+                    ),
+                )
+                SendContentColumn {
+                    if (!state.canSign) {
+                        SendWarningCard(
+                            title = stringResource(R.string.send_cannot_sign_title),
+                            body = if (state.wallet.isWatchOnly) {
+                                stringResource(R.string.send_watch_only_body)
+                            } else {
+                                stringResource(R.string.send_missing_key_body)
+                            },
+                        )
+                        Spacer(modifier = Modifier.height(14.dp))
+                    }
+                    SendInputCard {
+                        OutlinedTextField(
+                            value = recipient,
+                            onValueChange = { recipient = it.trim() },
+                            modifier = Modifier.fillMaxWidth(),
+                            minLines = 3,
+                            label = { Text(stringResource(R.string.send_recipient_label)) },
+                            supportingText = {
+                                Text(
+                                    text = if (showError) {
+                                        stringResource(R.string.send_recipient_error)
+                                    } else {
+                                        stringResource(R.string.send_recipient_helper, state.row.network.displayName)
+                                    },
+                                )
+                            },
+                            isError = showError,
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            SendToolButton(
+                                text = stringResource(R.string.send_recipient_paste),
+                                onClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    clipboard.getText()?.text?.takeIf(String::isNotBlank)?.let { recipient = it.trim() }
                                 },
+                                modifier = Modifier.weight(1f),
                             )
-                        },
-                        isError = showError,
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        SendToolButton(
-                            text = stringResource(R.string.send_recipient_paste),
-                            onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                clipboard.getText()?.text?.takeIf(String::isNotBlank)?.let { recipient = it.trim() }
-                            },
-                            modifier = Modifier.weight(1f),
+                            SendToolButton(
+                                text = stringResource(R.string.send_recipient_scan),
+                                onClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    onScanClick()
+                                },
+                                modifier = Modifier.weight(1f),
+                            )
+                            SendToolButton(
+                                text = stringResource(R.string.send_recipient_book),
+                                onClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    bookVisible = true
+                                },
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(14.dp))
+                    when {
+                        warnPoison -> SendWarningCard(
+                            title = stringResource(R.string.send_recipient_poison_title),
+                            body = stringResource(R.string.send_recipient_poison_body),
                         )
-                        SendToolButton(
-                            text = stringResource(R.string.send_recipient_scan),
-                            onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                onScanClick()
-                            },
-                            modifier = Modifier.weight(1f),
+                        isKnown && isValid -> SendNoticeCard(
+                            title = stringResource(R.string.send_recipient_known_title),
+                            body = recipient.shortAddress(),
                         )
-                        SendToolButton(
-                            text = stringResource(R.string.send_recipient_book),
-                            onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                bookVisible = true
-                            },
-                            modifier = Modifier.weight(1f),
+                        recipient.isNotBlank() && isValid -> SendNoticeCard(
+                            title = stringResource(R.string.send_recipient_never_sent_title),
+                            body = stringResource(R.string.send_recipient_never_sent_body),
                         )
                     }
-                }
-                Spacer(modifier = Modifier.height(14.dp))
-                when {
-                    warnPoison -> SendWarningCard(
-                        title = stringResource(R.string.send_recipient_poison_title),
-                        body = stringResource(R.string.send_recipient_poison_body),
-                    )
-                    isKnown && isValid -> SendNoticeCard(
-                        title = stringResource(R.string.send_recipient_known_title),
-                        body = recipient.shortAddress(),
-                    )
-                    recipient.isNotBlank() && isValid -> SendNoticeCard(
-                        title = stringResource(R.string.send_recipient_never_sent_title),
-                        body = stringResource(R.string.send_recipient_never_sent_body),
-                    )
-                }
-                if (state.recentRecipients.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(18.dp))
-                    Text(
-                        text = stringResource(R.string.send_recent_recipients_title),
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    state.recentRecipients.take(3).forEach { recent ->
-                        SendCompactAddressRow(
-                            title = recent.label,
-                            body = recent.address.shortAddress(),
-                            onClick = { recipient = recent.address },
+                    if (state.recentRecipients.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(18.dp))
+                        Text(
+                            text = stringResource(R.string.send_recent_recipients_title),
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.Bold,
                         )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        state.recentRecipients.take(3).forEach { recent ->
+                            SendCompactAddressRow(
+                                title = recent.label,
+                                body = recent.address.shortAddress(),
+                                onClick = { recipient = recent.address },
+                            )
+                        }
                     }
                 }
-                Spacer(modifier = Modifier.height(26.dp))
+            }
+            SendBottomActionBar {
                 SendPrimaryButton(
                     text = stringResource(R.string.send_continue_action),
                     enabled = canContinue,
@@ -698,7 +699,6 @@ private fun SendRecipientContent(
                         onContinue(state.row.asset.assetId, recipient.trim(), warnPoison)
                     },
                 )
-                Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }
@@ -739,19 +739,18 @@ private fun SendAmountContent(
         title = stringResource(R.string.send_amount_title),
         onBack = onBack,
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            SendHero(
-                iconRes = state.row.iconRes,
-                cryptoIcon = true,
-                title = stringResource(R.string.send_amount_header_title),
-                body = stringResource(R.string.send_amount_header_body),
-            )
-            SendContentColumn {
+        Column(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                SendHero(
+                    title = stringResource(R.string.send_amount_header_title),
+                    body = stringResource(R.string.send_amount_header_body),
+                )
+                SendContentColumn {
                 SendInputCard {
                     Text(
                         text = amountText.takeIf(String::isNotBlank) ?: "0",
@@ -783,14 +782,16 @@ private fun SendAmountContent(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Bold,
                         )
-                        TextButton(
-                            onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                amountText = formatCryptoAmount(maxAmount)
-                            },
-                        ) {
-                            Text(
-                                text = stringResource(R.string.send_amount_max),
+                    SatraButton(
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            amountText = formatCryptoAmount(maxAmount)
+                        },
+                        variant = SatraButtonVariant.Text,
+                        height = 40.dp,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.send_amount_max),
                                 fontWeight = FontWeight.Bold,
                             )
                         }
@@ -816,7 +817,9 @@ private fun SendAmountContent(
                         amountText = amountText.applyAmountKey(key)
                     },
                 )
-                Spacer(modifier = Modifier.height(26.dp))
+                }
+            }
+            SendBottomActionBar {
                 SendPrimaryButton(
                     text = stringResource(R.string.send_review_action),
                     enabled = canReview,
@@ -825,7 +828,6 @@ private fun SendAmountContent(
                         onReview(state.row.asset.assetId, recipient, amountText, warnPoison)
                     },
                 )
-                Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }
@@ -915,16 +917,13 @@ private fun SendReviewContent(
                         submit()
                     },
                 )
-                OutlinedButton(
+                SatraButton(
+                    text = stringResource(R.string.send_poison_review_again),
                     onClick = { showPoisonSheet = false },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(100.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.send_poison_review_again),
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
+                    variant = SatraButtonVariant.Secondary,
+                    height = SatraButtonDefaults.CompactHeight,
+                )
             }
         }
     }
@@ -933,18 +932,18 @@ private fun SendReviewContent(
         title = stringResource(R.string.send_review_screen_title),
         onBack = onBack,
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            SendHero(
-                iconRes = R.drawable.ic_brand_list,
-                title = stringResource(R.string.send_review_header_title),
-                body = stringResource(R.string.send_review_header_body),
-            )
-            SendContentColumn {
+        Column(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                SendHero(
+                    title = stringResource(R.string.send_review_header_title),
+                    body = stringResource(R.string.send_review_header_body),
+                )
+                SendContentColumn {
                 SendAmountHero(
                     row = state.row,
                     amount = amount,
@@ -984,7 +983,9 @@ private fun SendReviewContent(
                         body = error,
                     )
                 }
-                Spacer(modifier = Modifier.height(26.dp))
+                }
+            }
+            SendBottomActionBar {
                 SendPrimaryButton(
                     text = stringResource(R.string.send_now_action),
                     enabled = canSubmit,
@@ -997,7 +998,6 @@ private fun SendReviewContent(
                         }
                     },
                 )
-                Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }
@@ -1086,20 +1086,18 @@ private fun SendReceiptContent(
                 }
                 Spacer(modifier = Modifier.height(14.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OutlinedButton(
+                    SatraButton(
+                        text = stringResource(R.string.send_receipt_share),
                         onClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             shareReceipt(context, state)
                         },
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(100.dp),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.send_receipt_share),
-                            fontWeight = FontWeight.Bold,
-                        )
-                    }
-                    OutlinedButton(
+                        variant = SatraButtonVariant.Secondary,
+                        height = SatraButtonDefaults.CompactHeight,
+                    )
+                    SatraButton(
+                        text = stringResource(R.string.send_receipt_explorer),
                         onClick = {
                             state.explorerUrl?.let { url ->
                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -1108,13 +1106,9 @@ private fun SendReceiptContent(
                         },
                         enabled = state.explorerUrl != null,
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(100.dp),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.send_receipt_explorer),
-                            fontWeight = FontWeight.Bold,
-                        )
-                    }
+                        variant = SatraButtonVariant.Secondary,
+                        height = SatraButtonDefaults.CompactHeight,
+                    )
                 }
                 Spacer(modifier = Modifier.height(26.dp))
                 SendPrimaryButton(
@@ -1122,18 +1116,14 @@ private fun SendReceiptContent(
                     onClick = onDone,
                 )
                 Spacer(modifier = Modifier.height(10.dp))
-                OutlinedButton(
+                SatraButton(
+                    text = stringResource(R.string.send_receipt_send_another),
                     onClick = onSendAnother,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(54.dp),
-                    shape = RoundedCornerShape(100.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.send_receipt_send_another),
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
+                        .fillMaxWidth(),
+                    variant = SatraButtonVariant.Secondary,
+                    height = SatraButtonDefaults.CompactHeight,
+                )
                 Spacer(modifier = Modifier.height(24.dp))
             }
         }
@@ -1219,8 +1209,6 @@ private fun SendEmptyScreen(
 
 @Composable
 private fun SendHero(
-    @DrawableRes iconRes: Int,
-    cryptoIcon: Boolean = false,
     title: String,
     body: String,
 ) {
@@ -1230,19 +1218,6 @@ private fun SendHero(
             .widthIn(max = SendContentMaxWidth)
             .padding(horizontal = 20.dp, vertical = 18.dp),
     ) {
-        if (cryptoIcon) {
-            SatraCryptoIcon(
-                iconRes = iconRes,
-                modifier = Modifier.size(48.dp),
-            )
-        } else {
-            Image(
-                painter = painterResource(iconRes),
-                contentDescription = null,
-                modifier = Modifier.size(48.dp),
-            )
-        }
-        Spacer(modifier = Modifier.height(22.dp))
         Text(
             text = title,
             style = MaterialTheme.typography.displaySmall,
@@ -1533,18 +1508,13 @@ private fun SendToolButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    OutlinedButton(
+    SatraButton(
+        text = text,
         onClick = onClick,
-        modifier = modifier.height(46.dp),
-        shape = RoundedCornerShape(100.dp),
-    ) {
-        Text(
-            text = text,
-            fontWeight = FontWeight.Bold,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
+        modifier = modifier,
+        variant = SatraButtonVariant.Secondary,
+        height = SatraButtonDefaults.CompactHeight,
+    )
 }
 
 @Composable
@@ -1809,16 +1779,12 @@ private fun SendKeypad(onKey: (String) -> Unit) {
         keys.forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 row.forEach { key ->
-                    Button(
+                    SatraButton(
                         onClick = { onKey(key) },
                         modifier = Modifier
-                            .weight(1f)
-                            .height(54.dp),
-                        shape = RoundedCornerShape(100.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                            contentColor = MaterialTheme.colorScheme.onSurface,
-                        ),
+                            .weight(1f),
+                        variant = SatraButtonVariant.Neutral,
+                        height = 54.dp,
                     ) {
                         Text(
                             text = key,
@@ -1914,33 +1880,33 @@ private fun SendPrimaryButton(
     loading: Boolean = false,
     onClick: () -> Unit,
 ) {
-    Button(
+    SatraButton(
+        text = text,
         onClick = onClick,
-        enabled = enabled && !loading,
+        enabled = enabled,
+        loading = loading,
+        modifier = Modifier
+            .fillMaxWidth(),
+        height = 58.dp,
+    )
+}
+
+@Composable
+private fun SendBottomActionBar(content: @Composable ColumnScope.() -> Unit) {
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .height(58.dp),
-        shape = RoundedCornerShape(100.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.onSurface,
-            contentColor = MaterialTheme.colorScheme.surface,
-            disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-            disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
-        ),
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(horizontal = 20.dp)
+            .padding(top = 12.dp, bottom = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        if (loading) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(20.dp),
-                strokeWidth = 2.dp,
-                color = MaterialTheme.colorScheme.surface,
-            )
-        } else {
-            Text(
-                text = text,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-            )
-        }
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .widthIn(max = SendContentMaxWidth),
+            content = content,
+        )
     }
 }
 

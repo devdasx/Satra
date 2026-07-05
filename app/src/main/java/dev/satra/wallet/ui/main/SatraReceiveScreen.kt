@@ -29,15 +29,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -71,6 +68,9 @@ import dev.satra.wallet.data.db.DEFAULT_LOCAL_CURRENCY_CODE
 import dev.satra.wallet.data.db.SatraWalletRepository
 import dev.satra.wallet.data.db.WalletAddressRecord
 import dev.satra.wallet.data.db.WalletAssetRecord
+import dev.satra.wallet.ui.components.SatraButton
+import dev.satra.wallet.ui.components.SatraButtonDefaults
+import dev.satra.wallet.ui.components.SatraButtonVariant
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.text.NumberFormat
@@ -255,7 +255,6 @@ private fun ReceiveAssetSelectionContent(
         ) {
             item {
                 ReceiveHeader(
-                    iconRes = R.drawable.ic_brand_receive,
                     title = stringResource(R.string.receive_asset_header_title),
                     body = stringResource(R.string.receive_asset_header_body),
                 )
@@ -304,7 +303,6 @@ private fun ReceiveNetworkSelectionContent(
         ) {
             item {
                 ReceiveHeader(
-                    iconRes = R.drawable.ic_brand_assets,
                     title = stringResource(R.string.receive_network_header_title, state.symbol),
                     body = stringResource(R.string.receive_network_header_body),
                 )
@@ -464,7 +462,6 @@ private fun ReceiveScaffold(
 
 @Composable
 private fun ReceiveHeader(
-    @DrawableRes iconRes: Int,
     title: String,
     body: String,
 ) {
@@ -474,12 +471,6 @@ private fun ReceiveHeader(
             .widthIn(max = ReceiveContentMaxWidth)
             .padding(horizontal = 20.dp, vertical = 18.dp),
     ) {
-        Image(
-            painter = painterResource(iconRes),
-            contentDescription = null,
-            modifier = Modifier.size(44.dp),
-        )
-        Spacer(modifier = Modifier.height(24.dp))
         Text(
             text = title,
             style = MaterialTheme.typography.displaySmall,
@@ -716,7 +707,8 @@ private fun ReceiveAddressCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Button(
+                SatraButton(
+                    text = stringResource(R.string.receive_copy_address),
                     onClick = {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         clipboardManager.setPrimaryClip(
@@ -725,22 +717,11 @@ private fun ReceiveAddressCard(
                         Toast.makeText(context, R.string.receive_copied, Toast.LENGTH_SHORT).show()
                     },
                     modifier = Modifier
-                        .weight(1f)
-                        .height(52.dp),
-                    shape = RoundedCornerShape(100.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.onSurface,
-                        contentColor = MaterialTheme.colorScheme.surface,
-                    ),
-                ) {
-                    Text(
-                        text = stringResource(R.string.receive_copy_address),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                    )
-                }
-                OutlinedButton(
+                        .weight(1f),
+                    height = SatraButtonDefaults.CompactHeight,
+                )
+                SatraButton(
+                    text = stringResource(R.string.receive_share_address),
                     onClick = {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         val sendIntent = Intent(Intent.ACTION_SEND).apply {
@@ -756,17 +737,10 @@ private fun ReceiveAddressCard(
                         )
                     },
                     modifier = Modifier
-                        .weight(1f)
-                        .height(52.dp),
-                    shape = RoundedCornerShape(100.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.receive_share_address),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                    )
-                }
+                        .weight(1f),
+                    variant = SatraButtonVariant.Secondary,
+                    height = SatraButtonDefaults.CompactHeight,
+                )
             }
         }
     }
@@ -806,23 +780,18 @@ private fun AddressVariantButton(
 ) {
     val label = address.label ?: address.derivationPath ?: address.address
     if (selected) {
-        Button(
+        SatraButton(
+            text = label,
             onClick = onClick,
-            shape = RoundedCornerShape(100.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.onSurface,
-                contentColor = MaterialTheme.colorScheme.surface,
-            ),
-        ) {
-            Text(text = label, fontWeight = FontWeight.Bold, maxLines = 1)
-        }
+            height = 40.dp,
+        )
     } else {
-        OutlinedButton(
+        SatraButton(
+            text = label,
             onClick = onClick,
-            shape = RoundedCornerShape(100.dp),
-        ) {
-            Text(text = label, fontWeight = FontWeight.Bold, maxLines = 1)
-        }
+            variant = SatraButtonVariant.Secondary,
+            height = 40.dp,
+        )
     }
 }
 

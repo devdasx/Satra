@@ -38,20 +38,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -86,6 +82,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.satra.wallet.R
 import dev.satra.wallet.settings.SatraSettings
+import dev.satra.wallet.ui.components.SatraButton
+import dev.satra.wallet.ui.components.SatraButtonDefaults
+import dev.satra.wallet.ui.components.SatraButtonVariant
 import dev.satra.wallet.ui.main.SatraCryptoIcon
 import dev.satra.wallet.ui.theme.SatraButtonSecondaryBorder
 import dev.satra.wallet.ui.theme.SatraTheme
@@ -999,31 +998,6 @@ private fun SetupContentFrame(
 }
 
 @Composable
-private fun SetupPageIcon(
-    page: SetupPageContent,
-    compactHeight: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    val iconContainerSize = if (compactHeight) 58.dp else 66.dp
-    val iconSize = if (compactHeight) 34.dp else 38.dp
-
-    Box(
-        modifier = modifier
-            .size(iconContainerSize)
-            .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            painter = painterResource(page.iconRes),
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.62f),
-            modifier = Modifier.size(iconSize),
-        )
-    }
-}
-
-@Composable
 private fun SetupPageBody(
     page: SetupPageContent,
     compactHeight: Boolean,
@@ -1034,13 +1008,6 @@ private fun SetupPageBody(
         modifier = modifier,
         horizontalAlignment = Alignment.Start,
     ) {
-        SetupPageIcon(
-            page = page,
-            compactHeight = compactHeight,
-        )
-
-        Spacer(modifier = Modifier.height(if (compactHeight) 12.dp else 14.dp))
-
         Text(
             text = stringResource(page.titleRes),
             style = if (compactHeight) {
@@ -1092,17 +1059,13 @@ private fun HiddenPhrasePanel(
                     }
                 }
             }
-            OutlinedButton(
+            SatraButton(
+                text = stringResource(R.string.wallet_setup_recovery_phrase_copy),
                 onClick = onCopyClick,
                 modifier = Modifier.fillMaxWidth(),
-                border = BorderStroke(1.dp, SatraButtonSecondaryBorder),
-            ) {
-                Text(
-                    text = stringResource(R.string.wallet_setup_recovery_phrase_copy),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
+                variant = SatraButtonVariant.Secondary,
+                height = SatraButtonDefaults.CompactHeight,
+            )
         }
     }
 }
@@ -1188,23 +1151,15 @@ private fun RecoveryPhraseOptionsBottomSheet(
                 )
             }
             Spacer(modifier = Modifier.height(12.dp))
-            Button(
+            SatraButton(
+                text = stringResource(R.string.wallet_setup_action_done),
                 onClick = {
                     performHaptic()
                     onDismissRequest()
                 },
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                ),
-            ) {
-                Text(
-                    text = stringResource(R.string.wallet_setup_action_done),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
+                height = SatraButtonDefaults.CompactHeight,
+            )
         }
     }
 }
@@ -1242,35 +1197,20 @@ private fun RecoveryPhraseScreenshotWarningSheet(
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Button(
+            SatraButton(
+                text = stringResource(R.string.wallet_setup_screenshot_generate_new),
                 onClick = onGenerateNewMnemonic,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                ),
-            ) {
-                Text(
-                    text = stringResource(R.string.wallet_setup_screenshot_generate_new),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
-            OutlinedButton(
+                    .fillMaxWidth(),
+            )
+            SatraButton(
+                text = stringResource(R.string.wallet_setup_screenshot_keep_current),
                 onClick = onKeepCurrent,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                border = BorderStroke(1.dp, SatraButtonSecondaryBorder),
-            ) {
-                Text(
-                    text = stringResource(R.string.wallet_setup_screenshot_keep_current),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
+                    .fillMaxWidth(),
+                variant = SatraButtonVariant.Secondary,
+                height = SatraButtonDefaults.CompactHeight,
+            )
         }
     }
 }
@@ -1326,13 +1266,12 @@ private fun PasscodeEntryPanel(
             )
 
             onOptionsClick?.let {
-                TextButton(onClick = it) {
-                    Text(
-                        text = stringResource(R.string.wallet_setup_passcode_options),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
+                SatraButton(
+                    text = stringResource(R.string.wallet_setup_passcode_options),
+                    onClick = it,
+                    variant = SatraButtonVariant.Text,
+                    height = 40.dp,
+                )
             }
 
             noteRes?.let { messageRes ->
@@ -1805,35 +1744,21 @@ private fun RecoveryPhraseEntry(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                OutlinedButton(
+                SatraButton(
+                    text = stringResource(R.string.wallet_setup_action_paste),
                     onClick = onPasteClick,
                     modifier = Modifier
-                        .weight(1f)
-                        .height(48.dp),
-                    border = BorderStroke(1.dp, SatraButtonSecondaryBorder),
-                ) {
-                    Text(
-                        text = stringResource(R.string.wallet_setup_action_paste),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
-                Button(
+                        .weight(1f),
+                    variant = SatraButtonVariant.Secondary,
+                    height = SatraButtonDefaults.CompactHeight,
+                )
+                SatraButton(
+                    text = stringResource(R.string.wallet_setup_action_scan),
                     onClick = onScanClick,
                     modifier = Modifier
-                        .weight(1f)
-                        .height(48.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary,
-                    ),
-                ) {
-                    Text(
-                        text = stringResource(R.string.wallet_setup_action_scan),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
+                        .weight(1f),
+                    height = SatraButtonDefaults.CompactHeight,
+                )
             }
         }
     }
@@ -2234,39 +2159,24 @@ private fun SetupActions(
         modifier = Modifier.fillMaxWidth(),
     ) {
         if (primaryTextRes != null) {
-            Button(
+            SatraButton(
+                text = stringResource(primaryTextRes),
                 onClick = onPrimaryClick,
                 enabled = primaryEnabled,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                ),
-            ) {
-                Text(
-                    text = stringResource(primaryTextRes),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
+                    .fillMaxWidth(),
+            )
         }
 
         if (secondaryTextRes != null && onSecondaryClick != null) {
-            OutlinedButton(
+            SatraButton(
+                text = stringResource(secondaryTextRes),
                 onClick = onSecondaryClick,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                border = BorderStroke(1.dp, SatraButtonSecondaryBorder),
-            ) {
-                Text(
-                    text = stringResource(secondaryTextRes),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
+                    .fillMaxWidth(),
+                variant = SatraButtonVariant.Secondary,
+                height = SatraButtonDefaults.CompactHeight,
+            )
         }
     }
 }
