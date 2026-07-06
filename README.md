@@ -11,7 +11,7 @@ The app is multi-chain by design and uses the network and asset list documented 
 - Brand kit added under `brand/satra-brand-kit` and applied to the current UI, app icon, splash theme, colors, typography, and icon resources.
 - Local wallet database is implemented for wallets, derived addresses, private keys, assets, balances, transactions, app preferences, security settings, address book, notifications, and cached market records.
 - Mnemonic creation/import, passphrase support, private-key import validation, watch-only import, address derivation, receive addresses, QR scanning, EVM sync, Bitcoin-family sync, Solana sync, account-chain sync scaffolding, and market price caching are in place.
-- Send transaction execution and broadcast are still in progress; send preparation screens are present, but production signing/broadcast support must be completed before release.
+- Send transaction signing and broadcasting are implemented for the supported wallet networks documented in `docs/SUPPORTED_ASSETS.md`, with network-specific validation, fee handling, and transaction status screens.
 - Supported assets and networks are documented in `docs/SUPPORTED_ASSETS.md`.
 
 ## Tech Stack

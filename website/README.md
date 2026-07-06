@@ -4,7 +4,7 @@ The marketing and legal website for **Satra**, an open-source, non-custodial And
 
 > *Satra — from the Sanskrit* sat, *“that which is real.”* A crypto wallet as a quiet instrument of ownership, not a casino.
 
-This folder is self-contained. Open `index.html` in any modern browser, or serve this folder as a static site. Clean production routes are generated alongside the `.dc.html` source screens.
+This folder is self-contained. Open `index.html` in any modern browser, or serve this folder as a static site. Only production HTML routes should be published.
 
 ---
 
@@ -12,13 +12,13 @@ This folder is self-contained. Open `index.html` in any modern browser, or serve
 
 | # | Screen | File | What it does |
 |---|--------|------|--------------|
-| 1 | **Landing** | `Satra Landing.dc.html` | Hero — “Keep what’s real.” Live dark-theme phone mock of the home/portfolio screen. Followed by a fair comparison band vs MetaMask / Trust Wallet / Rabby, and a full site footer. Home page. |
-| 2 | **Security** | `Satra Security.dc.html` | How self-custody works: on-device key generation, recovery phrase, passcode / biometrics / auto-lock / erase, honest sync, watch-only. |
-| 3 | **Privacy** | `Satra Privacy.dc.html` | The full Privacy Policy, verbatim, as a document (sticky table of contents + numbered sections). |
-| 4 | **Terms** | `Satra Terms.dc.html` | The full Terms of Use, verbatim, as a document (sticky table of contents + numbered sections). |
-| 5 | **Open source** | `Satra Open Source.dc.html` | Why Satra is public under Apache 2.0 — read / verify / fork, repository map, security-through-openness. |
-| 6 | **FAQ** | `Satra FAQ.dc.html` | 24 grounded questions across 6 groups (Basics, Keys & custody, Privacy, Security, Transactions, Support), as an accordion. |
-| 7 | **Contact** | `Satra Contact.dc.html` | Email + GitHub-issues cards and a backend-less form that composes a `mailto:` in the visitor’s own email app. |
+| 1 | **Landing** | `index.html` | Hero — “Keep what’s real.” Live dark-theme phone mock of the home/portfolio screen. Followed by a fair comparison band vs MetaMask / Trust Wallet / Rabby, and a full site footer. Home page. |
+| 2 | **Security** | `security/index.html` | How self-custody works: on-device key generation, recovery phrase, passcode / biometrics / auto-lock / erase, honest sync, watch-only. |
+| 3 | **Privacy** | `privacy/index.html` | The full Privacy Policy as a document with a sticky table of contents and numbered sections. |
+| 4 | **Terms** | `terms/index.html` | The full Terms of Use as a document with a sticky table of contents and numbered sections. |
+| 5 | **Open source** | `open-source/index.html` | Why Satra is public under Apache 2.0 — read / verify / fork, repository map, security-through-openness. |
+| 6 | **FAQ** | `faq/index.html` | Grounded questions across Basics, Keys & custody, Privacy, Security, Transactions, and Support. |
+| 7 | **Contact** | `contact/index.html` | Email + GitHub-issues cards and a backend-less form that composes a `mailto:` in the visitor’s own email app. |
 
 All pages cross-link through the top nav and the footer.
 
@@ -32,13 +32,12 @@ website/
 ├── README.md                     ← you are here
 ├── support.js                    ← runtime that renders the generated screens
 │
-├── Satra Landing.dc.html
-├── Satra Security.dc.html
-├── Satra Privacy.dc.html
-├── Satra Terms.dc.html
-├── Satra Open Source.dc.html
-├── Satra FAQ.dc.html
-├── Satra Contact.dc.html
+├── security/index.html
+├── privacy/index.html
+├── terms/index.html
+├── open-source/index.html
+├── faq/index.html
+├── contact/index.html
 │
 └── brand/
     └── satra-brand-kit/
@@ -46,7 +45,7 @@ website/
         └── logo/svg/             ← Satra mark, wordmark & lockups (ink / bone)
 ```
 
-Each `.dc.html` screen is a single self-rendering file that loads `./support.js` from the same folder. Keep the files together and the relative paths intact.
+The public site should not include local design-export `.dc.html` files.
 
 ---
 
@@ -64,11 +63,10 @@ Fonts load from Google Fonts (Outfit + Space Grotesk); an internet connection is
 
 ## Editing
 
-The screens are Design Components. To change one, edit its `.dc.html` file:
+To change a page, edit the production HTML file for that route:
 
 - **Copy** lives directly in the markup — edit the text in place.
 - **Colors, spacing, layout** are inline styles on each element.
-- A few screens expose toggles at the top of their logic class (e.g. Privacy/Terms `showToc` / `showSummary`, FAQ `expandAll`, Landing `showAnnounce` / `countUp` / `parallax`).
 
 ---
 

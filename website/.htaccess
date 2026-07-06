@@ -1,7 +1,6 @@
 DirectoryIndex index.html
 Options -Indexes
 ErrorDocument 404 /404.html
-AddType application/vnd.android.package-archive .apk
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
@@ -19,4 +18,9 @@ AddType application/vnd.android.package-archive .apk
   Header set Referrer-Policy "strict-origin-when-cross-origin"
   Header set X-Frame-Options "SAMEORIGIN"
   Header set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+  <FilesMatch "\.(html)$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+  </FilesMatch>
 </IfModule>

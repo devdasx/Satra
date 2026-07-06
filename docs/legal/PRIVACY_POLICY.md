@@ -78,9 +78,11 @@ Satra uses encrypted network connections where supported by its configured provi
 
 ## Data Retention And Deletion
 
-Data stored by Satra remains on your device until you delete it, remove a wallet, reset the app, clear app data, or uninstall the app.
+Satra does not create accounts and does not maintain a Satra-hosted user profile, so there is no Satra account record or server-side wallet profile to delete.
 
-Satra does not control retention by third-party public blockchain providers. Public blockchain records may be permanent.
+Data stored by Satra remains on your device until you delete it, remove a wallet, reset the app, clear app data, or uninstall the app. These actions remove local wallet records, cached balances, cached transactions, preferences, and local app data from that device.
+
+Satra cannot delete public blockchain records after they exist on a blockchain. Satra also does not control retention by third-party public RPC, API, Electrum, explorer, indexer, blockchain, market data, or currency-rate providers. Those providers may retain public wallet queries, request metadata, IP addresses, or public blockchain records under their own policies.
 
 ## Children
 
