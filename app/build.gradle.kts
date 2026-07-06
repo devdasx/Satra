@@ -37,8 +37,8 @@ android {
         applicationId = "com.satra.wallet"
         minSdk = 26
         targetSdk = 37
-        versionCode = 20413
-        versionName = "2.4.13"
+        versionCode = 20414
+        versionName = "2.4.14"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
