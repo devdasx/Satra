@@ -20,6 +20,8 @@ internal class RippleSendClient(
         val accountData = result.getJSONObject("account_data")
         return RippleAccountInfo(
             sequence = accountData.getLong("Sequence"),
+            balanceDrops = accountData.optString("Balance").takeIf(String::isNotBlank)?.let(::BigInteger)
+                ?: BigInteger.ZERO,
             ledgerIndex = result.optLong("ledger_index", 0L),
         )
     }
@@ -86,5 +88,6 @@ internal class RippleSendClient(
 
 internal data class RippleAccountInfo(
     val sequence: Long,
+    val balanceDrops: BigInteger,
     val ledgerIndex: Long,
 )

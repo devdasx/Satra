@@ -170,6 +170,9 @@ dependencies {
     implementation("com.google.mlkit:barcode-scanning:17.3.0")
     implementation("com.google.zxing:core:3.5.4")
     implementation("org.bouncycastle:bcprov-jdk18on:1.78.1")
+    implementation("io.github.nova-wallet.substrate-sdk-android:core:2.11.8") {
+        exclude(group = "org.bouncycastle", module = "bcprov-jdk15on")
+    }
     implementation("org.ton.kotlin:ton-kotlin-contract:0.5.0")
 
     testImplementation("junit:junit:4.13.2")

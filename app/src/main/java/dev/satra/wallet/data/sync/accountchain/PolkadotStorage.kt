@@ -45,6 +45,12 @@ internal object PolkadotStorage {
         return data.readU128LittleEndian(SYSTEM_ACCOUNT_FREE_OFFSET)
     }
 
+    fun parseSystemAccountNonce(storageHex: String?): BigInteger? {
+        val data = storageHex?.hexToBytesOrNull() ?: return null
+        if (data.size < SYSTEM_ACCOUNT_NONCE_LENGTH) return BigInteger.ZERO
+        return BigInteger.valueOf(data.readUIntLittleEndian(0))
+    }
+
     fun parseAssetAccountBalance(storageHex: String?): BigInteger? {
         val data = storageHex?.hexToBytesOrNull() ?: return null
         if (data.size < U128_LENGTH) return BigInteger.ZERO
@@ -176,6 +182,9 @@ internal object PolkadotStorage {
         return result
     }
 
+    private fun ByteArray.readUIntLittleEndian(offset: Int): Long =
+        readIntLittleEndian(offset).toLong() and 0xffffffffL
+
     private fun ByteArray.readU128LittleEndian(offset: Int): BigInteger =
         BigInteger(1, copyOfRange(offset, offset + U128_LENGTH).reversedArray())
 
@@ -205,6 +214,7 @@ internal object PolkadotStorage {
     private const val ACCOUNT_ID_LENGTH = 32
     private const val CHECKSUM_LENGTH = 2
     private const val U128_LENGTH = 16
+    private const val SYSTEM_ACCOUNT_NONCE_LENGTH = 4
     private const val SYSTEM_ACCOUNT_FREE_OFFSET = 16
     private const val BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
     private const val PRIME64_1 = -7046029288634856825L
