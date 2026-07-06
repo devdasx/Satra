@@ -80,7 +80,9 @@ import dev.satra.wallet.ui.components.RecoveryPhraseWordGrid
 import dev.satra.wallet.ui.components.SatraButton
 import dev.satra.wallet.ui.components.SatraButtonDefaults
 import dev.satra.wallet.ui.components.SatraButtonVariant
+import dev.satra.wallet.ui.components.SatraLtrContent
 import dev.satra.wallet.ui.components.SatraPasscodeScreen
+import dev.satra.wallet.ui.components.satraLtr
 import dev.satra.wallet.ui.main.SatraCryptoIcon
 import dev.satra.wallet.ui.theme.SatraButtonSecondaryBorder
 import dev.satra.wallet.ui.theme.SatraTheme
@@ -1548,25 +1550,28 @@ private fun RecoveryPhraseEntry(
 
     FramedTool {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlinedTextField(
-                value = recoveryPhrase,
-                onValueChange = onRecoveryPhraseChange,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 148.dp),
-                textStyle = MaterialTheme.typography.bodyLarge,
-                isError = showError,
-                placeholder = {
-                    Text(text = stringResource(R.string.wallet_setup_recovery_phrase_placeholder))
-                },
-                supportingText = {
-                    Text(
-                        text = recoveryPhraseValidationMessage(validation),
-                        color = messageColor,
-                    )
-                },
-                minLines = 4,
-            )
+            SatraLtrContent {
+                OutlinedTextField(
+                    value = recoveryPhrase,
+                    onValueChange = onRecoveryPhraseChange,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 148.dp),
+                    textStyle = MaterialTheme.typography.bodyLarge.satraLtr(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii),
+                    isError = showError,
+                    placeholder = {
+                        Text(text = stringResource(R.string.wallet_setup_recovery_phrase_placeholder))
+                    },
+                    supportingText = {
+                        Text(
+                            text = recoveryPhraseValidationMessage(validation),
+                            color = messageColor,
+                        )
+                    },
+                    minLines = 4,
+                )
+            }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -1596,23 +1601,25 @@ private fun OptionalPassphraseField(
     passphrase: String,
     onPassphraseChange: (String) -> Unit,
 ) {
-    OutlinedTextField(
-        value = passphrase,
-        onValueChange = onPassphraseChange,
-        modifier = Modifier.fillMaxWidth(),
-        textStyle = MaterialTheme.typography.bodyLarge,
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-        label = {
-            Text(text = stringResource(R.string.wallet_setup_passphrase_label))
-        },
-        placeholder = {
-            Text(text = stringResource(R.string.wallet_setup_passphrase_placeholder))
-        },
-        supportingText = {
-            Text(text = stringResource(R.string.wallet_setup_passphrase_note))
-        },
-    )
+    SatraLtrContent {
+        OutlinedTextField(
+            value = passphrase,
+            onValueChange = onPassphraseChange,
+            modifier = Modifier.fillMaxWidth(),
+            textStyle = MaterialTheme.typography.bodyLarge.satraLtr(),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii),
+            label = {
+                Text(text = stringResource(R.string.wallet_setup_passphrase_label))
+            },
+            placeholder = {
+                Text(text = stringResource(R.string.wallet_setup_passphrase_placeholder))
+            },
+            supportingText = {
+                Text(text = stringResource(R.string.wallet_setup_passphrase_note))
+            },
+        )
+    }
 }
 
 @Composable
@@ -1710,21 +1717,24 @@ private fun SecretEntryPanel(
     FramedTool {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             SelectedNetworkPill(selectedNetwork = selectedNetwork)
-            OutlinedTextField(
-                value = value,
-                onValueChange = onValueChange,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(148.dp),
-                textStyle = MaterialTheme.typography.bodyLarge,
-                placeholder = {
-                    Text(text = stringResource(placeholderRes))
-                },
-                label = {
-                    Text(text = stringResource(labelRes))
-                },
-                minLines = 4,
-            )
+            SatraLtrContent {
+                OutlinedTextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 148.dp),
+                    textStyle = MaterialTheme.typography.bodyLarge.satraLtr(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii),
+                    placeholder = {
+                        Text(text = stringResource(placeholderRes))
+                    },
+                    label = {
+                        Text(text = stringResource(labelRes))
+                    },
+                    minLines = 4,
+                )
+            }
             Text(
                 text = stringResource(noteRes),
                 style = MaterialTheme.typography.labelLarge,

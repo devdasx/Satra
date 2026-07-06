@@ -92,13 +92,14 @@ fun SatraPasscodeScreen(
         }
     }
 
-    BoxWithConstraints(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface)
-            .safeDrawingPadding(),
-        contentAlignment = Alignment.Center,
-    ) {
+    SatraLtrContent {
+        BoxWithConstraints(
+            modifier = modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.surface)
+                .safeDrawingPadding(),
+            contentAlignment = Alignment.Center,
+        ) {
         val horizontalPadding = if (maxWidth < 600.dp) 24.dp else 56.dp
         val contentWidth = if (maxWidth < 600.dp) 420.dp else 480.dp
         val foreground = MaterialTheme.colorScheme.onSurface
@@ -108,102 +109,103 @@ fun SatraPasscodeScreen(
         val error = MaterialTheme.colorScheme.error
         val visibleError = displayedError
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = horizontalPadding)
-                .widthIn(max = contentWidth),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
             Column(
                 modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .graphicsLayer { translationX = shakeOffset.value },
+                    .fillMaxSize()
+                    .padding(horizontal = horizontalPadding)
+                    .widthIn(max = contentWidth),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
             ) {
-                Image(
-                    painter = painterResource(R.drawable.satra_mark),
-                    contentDescription = null,
-                    modifier = Modifier.size(46.dp),
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .graphicsLayer { translationX = shakeOffset.value },
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.satra_mark),
+                        contentDescription = null,
+                        modifier = Modifier.size(46.dp),
+                    )
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    Text(
+                        text = title,
+                        color = foreground,
+                        fontSize = 26.sp,
+                        lineHeight = 31.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = body,
+                        color = muted,
+                        fontSize = 13.5.sp,
+                        lineHeight = 20.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center,
+                    )
+
+                    Spacer(modifier = Modifier.height(26.dp))
+
+                    SatraPasscodeDots(
+                        passcodeLength = normalizedPasscodeLength,
+                        filledCount = passcode.length,
+                        foreground = foreground,
+                        faint = faint,
+                        error = error,
+                        isError = visibleError != null,
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(34.dp)
+                            .padding(top = 14.dp),
+                        contentAlignment = Alignment.TopCenter,
+                    ) {
+                        if (visibleError != null) {
+                            Text(
+                                text = visibleError,
+                                color = error,
+                                fontSize = 12.5.sp,
+                                lineHeight = 18.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                textAlign = TextAlign.Center,
+                            )
+                        }
+                    }
+
+                    middleContent()
+                }
+
+                SatraPasscodeKeypad(
+                    biometricsEnabled = biometricsEnabled,
+                    biometricIconEnabled = biometricIconEnabled,
+                    foreground = foreground,
+                    chip = chip,
+                    muted = muted,
+                    onDigitClick = { digit ->
+                        displayedError = null
+                        if (passcode.length < normalizedPasscodeLength) {
+                            passcode += digit
+                        }
+                    },
+                    onBackspaceClick = {
+                        displayedError = null
+                        passcode = passcode.dropLast(1)
+                    },
+                    onBiometricClick = onBiometricClick,
                 )
 
                 Spacer(modifier = Modifier.height(18.dp))
-
-                Text(
-                    text = title,
-                    color = foreground,
-                    fontSize = 26.sp,
-                    lineHeight = 31.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = body,
-                    color = muted,
-                    fontSize = 13.5.sp,
-                    lineHeight = 20.sp,
-                    fontWeight = FontWeight.Medium,
-                    textAlign = TextAlign.Center,
-                )
-
-                Spacer(modifier = Modifier.height(26.dp))
-
-                SatraPasscodeDots(
-                    passcodeLength = normalizedPasscodeLength,
-                    filledCount = passcode.length,
-                    foreground = foreground,
-                    faint = faint,
-                    error = error,
-                    isError = visibleError != null,
-                )
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(34.dp)
-                        .padding(top = 14.dp),
-                    contentAlignment = Alignment.TopCenter,
-                ) {
-                    if (visibleError != null) {
-                        Text(
-                            text = visibleError,
-                            color = error,
-                            fontSize = 12.5.sp,
-                            lineHeight = 18.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            textAlign = TextAlign.Center,
-                        )
-                    }
-                }
-
-                middleContent()
             }
-
-            SatraPasscodeKeypad(
-                biometricsEnabled = biometricsEnabled,
-                biometricIconEnabled = biometricIconEnabled,
-                foreground = foreground,
-                chip = chip,
-                muted = muted,
-                onDigitClick = { digit ->
-                    displayedError = null
-                    if (passcode.length < normalizedPasscodeLength) {
-                        passcode += digit
-                    }
-                },
-                onBackspaceClick = {
-                    displayedError = null
-                    passcode = passcode.dropLast(1)
-                },
-                onBiometricClick = onBiometricClick,
-            )
-
-            Spacer(modifier = Modifier.height(18.dp))
         }
     }
 }
@@ -333,6 +335,7 @@ private fun SatraPasscodeDigitKey(
             lineHeight = 31.sp,
             fontWeight = FontWeight.Medium,
             textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.headlineSmall.satraLtr(),
         )
     }
 }

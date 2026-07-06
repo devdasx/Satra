@@ -88,7 +88,9 @@ import dev.satra.wallet.ui.components.RecoveryPhraseWordGrid
 import dev.satra.wallet.ui.components.SatraButton
 import dev.satra.wallet.ui.components.SatraButtonDefaults
 import dev.satra.wallet.ui.components.SatraButtonVariant
+import dev.satra.wallet.ui.components.SatraLtrContent
 import dev.satra.wallet.ui.components.SatraPasscodeScreen
+import dev.satra.wallet.ui.components.satraLtr
 import dev.satra.wallet.settings.SatraSettings
 import dev.satra.wallet.settings.SatraSettingsDefaults
 import dev.satra.wallet.settings.SatraThemePreference
@@ -756,11 +758,15 @@ private fun SecretValueCard(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Text(
-                text = secret,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
+            SatraLtrContent {
+                Text(
+                    text = secret,
+                    modifier = Modifier.fillMaxWidth(),
+                    style = MaterialTheme.typography.bodyLarge.satraLtr(),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
             SatraButton(
                 text = stringResource(R.string.settings_wallet_management_copy_secret),
                 onClick = onCopy,
@@ -813,20 +819,26 @@ private fun PrivateKeyBackupCard(
                         color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.ExtraBold,
                     )
-                    Text(
-                        text = details.ifBlank { privateKey.keySource },
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = FontWeight.Medium,
-                    )
+                    SatraLtrContent {
+                        Text(
+                            text = details.ifBlank { privateKey.keySource },
+                            modifier = Modifier.fillMaxWidth(),
+                            style = MaterialTheme.typography.bodyMedium.satraLtr(),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.Medium,
+                        )
+                    }
                 }
             }
-            Text(
-                text = privateKey.backupValue,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.SemiBold,
-            )
+            SatraLtrContent {
+                Text(
+                    text = privateKey.backupValue,
+                    modifier = Modifier.fillMaxWidth(),
+                    style = MaterialTheme.typography.bodyLarge.satraLtr(),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
             SatraButton(
                 text = stringResource(R.string.settings_wallet_management_copy_secret),
                 onClick = onCopy,

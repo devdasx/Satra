@@ -31,24 +31,26 @@ fun RecoveryPhraseWordGrid(
     verticalSpacing: Dp = 10.dp,
 ) {
     val safeColumns = columns.coerceAtLeast(1)
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(verticalSpacing),
-    ) {
-        words.chunked(safeColumns).forEachIndexed { rowIndex, rowWords ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(horizontalSpacing),
-            ) {
-                rowWords.forEachIndexed { columnIndex, word ->
-                    RecoveryPhraseWordCell(
-                        number = rowIndex * safeColumns + columnIndex + 1,
-                        word = word,
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-                repeat(safeColumns - rowWords.size) {
-                    Spacer(modifier = Modifier.weight(1f))
+    SatraLtrContent {
+        Column(
+            modifier = modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(verticalSpacing),
+        ) {
+            words.chunked(safeColumns).forEachIndexed { rowIndex, rowWords ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(horizontalSpacing),
+                ) {
+                    rowWords.forEachIndexed { columnIndex, word ->
+                        RecoveryPhraseWordCell(
+                            number = rowIndex * safeColumns + columnIndex + 1,
+                            word = word,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    repeat(safeColumns - rowWords.size) {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
                 }
             }
         }
@@ -62,7 +64,7 @@ private fun RecoveryPhraseWordCell(
     modifier: Modifier = Modifier,
 ) {
     Card(
-        modifier = modifier.heightIn(min = 54.dp),
+        modifier = modifier.heightIn(min = 62.dp),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -72,23 +74,24 @@ private fun RecoveryPhraseWordCell(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 12.dp),
+                .padding(horizontal = 14.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = number.toString().padStart(2, '0'),
-                style = MaterialTheme.typography.labelLarge,
+                style = MaterialTheme.typography.labelLarge.satraLtr(),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.width(28.dp),
+                modifier = Modifier.width(34.dp),
             )
             Text(
                 text = word,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleMedium.satraLtr(),
                 color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.ExtraBold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
             )
         }
     }

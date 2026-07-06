@@ -95,6 +95,8 @@ import dev.satra.wallet.data.send.SatraSendService
 import dev.satra.wallet.ui.components.SatraButton
 import dev.satra.wallet.ui.components.SatraButtonDefaults
 import dev.satra.wallet.ui.components.SatraButtonVariant
+import dev.satra.wallet.ui.components.SatraLtrContent
+import dev.satra.wallet.ui.components.satraLtr
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -2346,40 +2348,44 @@ private fun SendKeypad(onKey: (String) -> Unit) {
         listOf("7", "8", "9"),
         listOf(".", "0", "⌫"),
     )
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .widthIn(max = ChooseAssetContentMaxWidth),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        keys.forEach { row ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                row.forEach { key ->
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(56.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                            .clickable { onKey(key) },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        if (key == "⌫") {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_satra_backspace),
-                                contentDescription = null,
-                                modifier = Modifier.size(26.dp),
-                                tint = MaterialTheme.colorScheme.onSurface,
-                            )
-                        } else {
-                            Text(
-                                text = key,
-                                style = MaterialTheme.typography.headlineSmall.copy(fontSize = 22.sp),
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontWeight = FontWeight.Medium,
-                            )
+    SatraLtrContent {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .widthIn(max = ChooseAssetContentMaxWidth),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            keys.forEach { row ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    row.forEach { key ->
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(56.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .clickable { onKey(key) },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            if (key == "⌫") {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_satra_backspace),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(26.dp),
+                                    tint = MaterialTheme.colorScheme.onSurface,
+                                )
+                            } else {
+                                Text(
+                                    text = key,
+                                    style = MaterialTheme.typography.headlineSmall
+                                        .copy(fontSize = 22.sp)
+                                        .satraLtr(),
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontWeight = FontWeight.Medium,
+                                )
+                            }
                         }
                     }
                 }
