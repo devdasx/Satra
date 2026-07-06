@@ -526,7 +526,7 @@ private fun SendNetworkSelectionContent(
                     stringResource(R.string.send_network_empty_value)
                 },
                 iconRes = networkIconRes(row.network.networkId),
-                enabled = row.hasSigningKey,
+                enabled = true,
                 onClick = {
                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                     onNetworkSelected(row.asset.assetId)
@@ -598,11 +598,7 @@ private fun SendRecipientContent(
                     if (!state.canSign) {
                         SendWarningCard(
                             title = stringResource(R.string.send_cannot_sign_title),
-                            body = if (state.wallet.isWatchOnly) {
-                                stringResource(R.string.send_watch_only_body)
-                            } else {
-                                stringResource(R.string.send_missing_key_body)
-                            },
+                            body = sendCannotSignBody(state),
                         )
                         Spacer(modifier = Modifier.height(14.dp))
                     }
@@ -1602,10 +1598,21 @@ private fun SendAssetGroupRow(
         secondaryAmount = group.totalFiatFormatted,
         showSecondaryAmount = showSecondaryAmount,
         iconRes = group.iconRes,
-        enabled = group.canSend,
+        enabled = group.assets.isNotEmpty(),
         onClick = onClick,
     )
 }
+
+@Composable
+private fun sendCannotSignBody(state: SendDetailsState.Content): String =
+    when {
+        state.wallet.isWatchOnly -> stringResource(R.string.send_watch_only_body)
+        !state.row.canSignAndBroadcast -> stringResource(
+            R.string.send_broadcast_unsupported_network_body,
+            state.row.network.displayName,
+        )
+        else -> stringResource(R.string.send_missing_key_body)
+    }
 
 @Composable
 private fun SendRecipientContextLine(row: SendAssetRow) {
@@ -2622,7 +2629,7 @@ private fun SatraMainWalletSnapshot.toSendDetailsState(assetId: String): SendDet
             SendDetailsState.Content(
                 wallet = snapshot.wallet,
                 row = row,
-                canSign = !snapshot.wallet.isWatchOnly && row.hasSigningKey,
+                canSign = !snapshot.wallet.isWatchOnly && row.canSignAndBroadcast && row.hasSigningKey,
                 addressBookEntries = emptyList(),
                 recentRecipients = emptyList(),
             )
@@ -2693,7 +2700,7 @@ private suspend fun SatraWalletRepository.loadSendDetails(assetId: String): Send
                 SendDetailsState.Content(
                     wallet = snapshot.wallet,
                     row = row,
-                    canSign = !snapshot.wallet.isWatchOnly && row.hasSigningKey,
+                    canSign = !snapshot.wallet.isWatchOnly && row.canSignAndBroadcast && row.hasSigningKey,
                     addressBookEntries = addressBook,
                     recentRecipients = recent,
                 )
@@ -2778,6 +2785,9 @@ private fun SendSnapshot.Content.toSendAssetRows(): List<SendAssetRow> {
             ?: asset.toZeroBalanceWalletAsset(wallet)
         val balance = walletAsset.balanceDecimal.toBigDecimalOrZero()
         val canSignAndBroadcast = SatraSendService.canSignAndBroadcast(asset, network)
+        val hasSigningKey = privateKeys.any { privateKey ->
+            privateKey.networkId == walletAsset.networkId
+        }
         SendAssetRow(
             asset = asset,
             network = network,
@@ -2788,10 +2798,8 @@ private fun SendSnapshot.Content.toSendAssetRows(): List<SendAssetRow> {
             fiatAmount = walletAsset.balanceFiatValue.toBigDecimalOrZero(),
             fiatFormatted = formatFiat(walletAsset.balanceFiatValue, wallet.localCurrencyCode),
             iconRes = assetIconRes(asset.symbol),
-            hasSigningKey = canSignAndBroadcast &&
-                privateKeys.any { privateKey ->
-                    privateKey.networkId == walletAsset.networkId
-                },
+            canSignAndBroadcast = canSignAndBroadcast,
+            hasSigningKey = hasSigningKey,
         )
     }.sortedWith(
         compareByDescending<SendAssetRow> { row -> row.fiatAmount }
@@ -2839,7 +2847,6 @@ private fun List<SendAssetRow>.groupForAssetSelection(localCurrencyCode: String)
                 totalFiatFormatted = formatFiat(totalFiat.toPlainString(), localCurrencyCode),
                 totalBalanceValueFormatted = formatCryptoAmount(totalBalance),
                 iconRes = primary.iconRes,
-                canSend = rows.any { row -> row.hasSigningKey },
             )
         }
         .sortedWith(
@@ -3211,7 +3218,6 @@ private data class SendAssetGroup(
     val totalFiatFormatted: String,
     val totalBalanceValueFormatted: String,
     @DrawableRes val iconRes: Int,
-    val canSend: Boolean,
 )
 
 private data class SendAssetRow(
@@ -3224,6 +3230,7 @@ private data class SendAssetRow(
     val fiatAmount: BigDecimal,
     val fiatFormatted: String,
     @DrawableRes val iconRes: Int,
+    val canSignAndBroadcast: Boolean,
     val hasSigningKey: Boolean,
 )
 
