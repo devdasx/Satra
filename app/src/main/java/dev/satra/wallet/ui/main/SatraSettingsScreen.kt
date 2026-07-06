@@ -150,7 +150,7 @@ internal fun SatraSettingsRootScreen(
                     } else {
                         stringResource(R.string.settings_security_body_disabled)
                     },
-                    onClick = { onNavigate(SatraMainRoute.Security) },
+                    onClick = { onNavigate(SatraMainRoute.SecurityPasscodeGate) },
                 )
                 SettingsDivider()
                 SettingsRow(
@@ -1273,6 +1273,57 @@ internal fun SatraAppearanceScreen(
 }
 
 @Composable
+internal fun SatraSecurityPasscodeGateScreen(
+    walletRepository: SatraWalletRepository,
+    onVerified: () -> Unit,
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var appSettings by remember { mutableStateOf<AppSettingsRecord?>(null) }
+    var verifying by remember { mutableStateOf(false) }
+    var resetNonce by remember { mutableStateOf(0) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(walletRepository) {
+        appSettings = walletRepository.getAppSettings()
+    }
+
+    val settings = appSettings
+    LaunchedEffect(settings) {
+        if (settings != null && !settings.hasUsablePasscode()) {
+            onVerified()
+        }
+    }
+
+    if (settings == null || !settings.hasUsablePasscode()) {
+        return
+    }
+
+    SatraPasscodeScreen(
+        passcodeLength = settings.passcodeLength ?: 6,
+        title = stringResource(R.string.settings_security_title),
+        body = stringResource(R.string.app_lock_body),
+        settings = settings.toPasscodeUiSettings(),
+        resetNonce = resetNonce,
+        errorMessage = errorMessage,
+        biometricsEnabled = false,
+        onPasscodeComplete = { passcode ->
+            if (verifying) return@SatraPasscodeScreen
+            scope.launch {
+                verifying = true
+                if (walletRepository.verifyAppPasscode(passcode)) {
+                    onVerified()
+                } else {
+                    verifying = false
+                    errorMessage = context.getString(R.string.settings_security_wrong_passcode)
+                    resetNonce += 1
+                }
+            }
+        },
+    )
+}
+
+@Composable
 internal fun SatraSecurityScreen(
     walletRepository: SatraWalletRepository,
     onBack: () -> Unit,
@@ -2357,6 +2408,11 @@ private data class WalletBackupRequest(
 
 private fun AppSettingsRecord?.toPasscodeUiSettings(): SatraSettings =
     SatraSettings(hapticsEnabled = this?.hapticsEnabled ?: true)
+
+private fun AppSettingsRecord.hasUsablePasscode(): Boolean =
+    passcodeEnabled &&
+        !passcodeHash.isNullOrBlank() &&
+        !passcodeSalt.isNullOrBlank()
 
 private data class AutoLockOption(
     val timeoutMillis: Long,

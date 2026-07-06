@@ -341,6 +341,19 @@ fun SatraMainScreen(
                     onThemePreferenceChange = onThemePreferenceChange,
                 )
             }
+            composable(SatraMainRoute.SecurityPasscodeGate) {
+                SatraSecurityPasscodeGateScreen(
+                    walletRepository = walletRepository,
+                    onVerified = {
+                        tabNavController.navigate(SatraMainRoute.Security) {
+                            popUpTo(SatraMainRoute.SecurityPasscodeGate) {
+                                inclusive = true
+                            }
+                            launchSingleTop = true
+                        }
+                    },
+                )
+            }
             composable(SatraMainRoute.Security) {
                 SatraSecurityScreen(
                     walletRepository = walletRepository,
@@ -5235,6 +5248,7 @@ internal object SatraMainRoute {
     const val Currency = "main/settings/preferences/currency"
     const val Language = "main/settings/preferences/language"
     const val Appearance = "main/settings/preferences/appearance"
+    const val SecurityPasscodeGate = "main/settings/security/passcode"
     const val Security = "main/settings/security"
     const val SecurityCreatePasscode = "main/settings/security/create-passcode"
     const val SecurityTurnOffPasscode = "main/settings/security/turn-off-passcode"
