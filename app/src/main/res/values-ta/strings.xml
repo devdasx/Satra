@@ -998,6 +998,8 @@
     <string name="settings_notifications_transactions">பரிவர்த்தனைகள்</string>
     <string name="settings_notifications_transactions_body">அனுப்பப்பட்டது, பெற்றது, நிலுவையில் உள்ளது, தோல்வியடைந்தது மற்றும் உறுதிப்படுத்தப்பட்ட பரிவர்த்தனை புதுப்பிப்புகள்.</string>
     <string name="settings_about_source">மூல குறியீடு</string>
+    <string name="settings_about_open_website">satra.app-இல் திறக்கவும்</string>
+    <string name="settings_about_open_github">GitHub-இல் திறக்கவும்</string>
     <string name="settings_legal_title">சட்டப்படி</string>
     <string name="settings_legal_body">தனியுரிமைக் கொள்கை, பயன்பாட்டு விதிமுறைகள் மற்றும் பொது மூல இணைப்புகள்.</string>
     <string name="settings_privacy_policy">தனியுரிமைக் கொள்கை</string>

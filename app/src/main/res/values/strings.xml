@@ -1007,6 +1007,8 @@
     <string name="settings_notifications_transactions">Transactions</string>
     <string name="settings_notifications_transactions_body">Sent, received, pending, failed, and confirmed transaction updates.</string>
     <string name="settings_about_source">Source code</string>
+    <string name="settings_about_open_website">Open on satra.app</string>
+    <string name="settings_about_open_github">Open on GitHub</string>
     <string name="settings_legal_title">Legal</string>
     <string name="settings_legal_body">Privacy policy, terms of use, and public source links.</string>
     <string name="settings_privacy_policy">Privacy Policy</string>

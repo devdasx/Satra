@@ -1609,6 +1609,14 @@ internal fun SatraAboutScreen(
     appVersion: String,
     onBack: () -> Unit,
 ) {
+    val context = LocalContext.current
+    val privacyUrl = stringResource(R.string.settings_url_privacy)
+    val termsUrl = stringResource(R.string.settings_url_terms)
+    val sourceUrl = stringResource(R.string.settings_url_source)
+    fun openUrl(url: String) {
+        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+    }
+
     SettingsScaffold(
         titleRes = R.string.settings_about_title,
         onBack = onBack,
@@ -1620,9 +1628,25 @@ internal fun SatraAboutScreen(
                     body = appVersion,
                 )
                 SettingsDivider()
-                StaticSettingsRow(
+                SettingsRow(
+                    iconRes = R.drawable.ic_brand_document,
+                    title = stringResource(R.string.settings_privacy_policy),
+                    body = stringResource(R.string.settings_about_open_website),
+                    onClick = { openUrl(privacyUrl) },
+                )
+                SettingsDivider()
+                SettingsRow(
+                    iconRes = R.drawable.ic_brand_document,
+                    title = stringResource(R.string.settings_terms_of_use),
+                    body = stringResource(R.string.settings_about_open_website),
+                    onClick = { openUrl(termsUrl) },
+                )
+                SettingsDivider()
+                SettingsRow(
+                    iconRes = R.drawable.ic_github_invertocat,
                     title = stringResource(R.string.settings_about_source),
-                    body = stringResource(R.string.settings_url_source),
+                    body = stringResource(R.string.settings_about_open_github),
+                    onClick = { openUrl(sourceUrl) },
                 )
             }
         }

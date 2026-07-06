@@ -998,6 +998,8 @@
     <string name="settings_notifications_transactions">Giao dịch</string>
     <string name="settings_notifications_transactions_body">Đã gửi, đã nhận, đang chờ xử lý, không thành công và đã xác nhận cập nhật giao dịch.</string>
     <string name="settings_about_source">Mã nguồn</string>
+    <string name="settings_about_open_website">Mở trên satra.app</string>
+    <string name="settings_about_open_github">Mở trên GitHub</string>
     <string name="settings_legal_title">Hợp pháp</string>
     <string name="settings_legal_body">Chính sách bảo mật, điều khoản sử dụng và liên kết nguồn công khai.</string>
     <string name="settings_privacy_policy">Chính sách bảo mật</string>

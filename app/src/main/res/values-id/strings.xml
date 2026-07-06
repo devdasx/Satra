@@ -998,6 +998,8 @@
     <string name="settings_notifications_transactions">Transaksi</string>
     <string name="settings_notifications_transactions_body">Pembaruan transaksi terkirim, diterima, tertunda, gagal, dan dikonfirmasi.</string>
     <string name="settings_about_source">Kode sumber</string>
+    <string name="settings_about_open_website">Buka di satra.app</string>
+    <string name="settings_about_open_github">Buka di GitHub</string>
     <string name="settings_legal_title">Hukum</string>
     <string name="settings_legal_body">Kebijakan privasi, ketentuan penggunaan, dan tautan sumber publik.</string>
     <string name="settings_privacy_policy">Kebijakan Privasi</string>

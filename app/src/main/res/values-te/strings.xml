@@ -998,6 +998,8 @@
     <string name="settings_notifications_transactions">లావాదేవీలు</string>
     <string name="settings_notifications_transactions_body">లావాదేవీ అప్‌డేట్‌లు పంపబడ్డాయి, స్వీకరించబడ్డాయి, పెండింగ్‌లో ఉన్నాయి, విఫలమయ్యాయి మరియు ధృవీకరించబడ్డాయి.</string>
     <string name="settings_about_source">సోర్స్ కోడ్</string>
+    <string name="settings_about_open_website">satra.appలో తెరవండి</string>
+    <string name="settings_about_open_github">GitHubలో తెరవండి</string>
     <string name="settings_legal_title">చట్టపరమైన</string>
     <string name="settings_legal_body">గోప్యతా విధానం, ఉపయోగ నిబంధనలు మరియు పబ్లిక్ సోర్స్ లింక్‌లు.</string>
     <string name="settings_privacy_policy">గోప్యతా విధానం</string>

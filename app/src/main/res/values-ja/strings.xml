@@ -998,6 +998,8 @@
     <string name="settings_notifications_transactions">トランザクション</string>
     <string name="settings_notifications_transactions_body">送信、受信、保留中、失敗、および確認されたトランザクションの更新。</string>
     <string name="settings_about_source">ソースコード</string>
+    <string name="settings_about_open_website">satra.appで開く</string>
+    <string name="settings_about_open_github">GitHubで開く</string>
     <string name="settings_legal_title">法律上の</string>
     <string name="settings_legal_body">プライバシー ポリシー、利用規約、およびパブリック ソースのリンク。</string>
     <string name="settings_privacy_policy">プライバシーポリシー</string>

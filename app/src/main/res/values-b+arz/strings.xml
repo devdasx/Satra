@@ -998,6 +998,8 @@
     <string name="settings_notifications_transactions">المعاملات</string>
     <string name="settings_notifications_transactions_body">تحديثات المعاملات المرسلة والمستلمة والمعلقة والفاشلة والمؤكدة.</string>
     <string name="settings_about_source">كود المصدر</string>
+    <string name="settings_about_open_website">افتح على satra.app</string>
+    <string name="settings_about_open_github">افتح على GitHub</string>
     <string name="settings_legal_title">قانوني</string>
     <string name="settings_legal_body">سياسة الخصوصية وشروط الاستخدام وروابط المصادر العامة.</string>
     <string name="settings_privacy_policy">سياسة الخصوصية</string>

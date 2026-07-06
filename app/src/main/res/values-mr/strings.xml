@@ -998,6 +998,8 @@
     <string name="settings_notifications_transactions">व्यवहार</string>
     <string name="settings_notifications_transactions_body">पाठवलेले, मिळालेले, प्रलंबित, अयशस्वी आणि पुष्टी केलेले व्यवहार अपडेट.</string>
     <string name="settings_about_source">स्त्रोत कोड</string>
+    <string name="settings_about_open_website">satra.app वर उघडा</string>
+    <string name="settings_about_open_github">GitHub वर उघडा</string>
     <string name="settings_legal_title">कायदेशीर</string>
     <string name="settings_legal_body">गोपनीयता धोरण, वापर अटी आणि सार्वजनिक स्त्रोत दुवे.</string>
     <string name="settings_privacy_policy">गोपनीयता धोरण</string>

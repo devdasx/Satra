@@ -998,6 +998,8 @@
     <string name="settings_notifications_transactions">Ma\'amaloli</string>
     <string name="settings_notifications_transactions_body">An aika, karɓa, yana jiran, kasa, da kuma tabbatar da sabunta ma\'amala.</string>
     <string name="settings_about_source">Lambar tushe</string>
+    <string name="settings_about_open_website">Bude a satra.app</string>
+    <string name="settings_about_open_github">Bude a GitHub</string>
     <string name="settings_legal_title">Shari\'a</string>
     <string name="settings_legal_body">Manufar keɓantawa, sharuɗɗan amfani, da hanyoyin haɗin jama\'a.</string>
     <string name="settings_privacy_policy">takardar kebantawa</string>

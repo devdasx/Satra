@@ -998,6 +998,8 @@
     <string name="settings_notifications_transactions">লেনদেন</string>
     <string name="settings_notifications_transactions_body">পাঠানো, প্রাপ্ত, মুলতুবি, ব্যর্থ, এবং নিশ্চিত লেনদেন আপডেট.</string>
     <string name="settings_about_source">সোর্স কোড</string>
+    <string name="settings_about_open_website">satra.app-এ খুলুন</string>
+    <string name="settings_about_open_github">GitHub-এ খুলুন</string>
     <string name="settings_legal_title">আইনি</string>
     <string name="settings_legal_body">গোপনীয়তা নীতি, ব্যবহারের শর্তাবলী এবং পাবলিক সোর্স লিঙ্ক।</string>
     <string name="settings_privacy_policy">গোপনীয়তা নীতি</string>

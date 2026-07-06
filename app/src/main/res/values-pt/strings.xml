@@ -998,6 +998,8 @@
     <string name="settings_notifications_transactions">Transações</string>
     <string name="settings_notifications_transactions_body">Atualizações de transações enviadas, recebidas, pendentes, com falha e confirmadas.</string>
     <string name="settings_about_source">Código fonte</string>
+    <string name="settings_about_open_website">Abrir em satra.app</string>
+    <string name="settings_about_open_github">Abrir no GitHub</string>
     <string name="settings_legal_title">Jurídico</string>
     <string name="settings_legal_body">Política de privacidade, termos de uso e links de fontes públicas.</string>
     <string name="settings_privacy_policy">Política de Privacidade</string>

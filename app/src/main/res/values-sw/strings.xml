@@ -998,6 +998,8 @@
     <string name="settings_notifications_transactions">Shughuli</string>
     <string name="settings_notifications_transactions_body">Imetumwa, imepokelewa, inasubiri, haikufaulu na imethibitishwa masasisho ya muamala.</string>
     <string name="settings_about_source">Msimbo wa chanzo</string>
+    <string name="settings_about_open_website">Fungua kwenye satra.app</string>
+    <string name="settings_about_open_github">Fungua kwenye GitHub</string>
     <string name="settings_legal_title">Kisheria</string>
     <string name="settings_legal_body">Sera ya faragha, sheria na masharti na viungo vya vyanzo vya umma.</string>
     <string name="settings_privacy_policy">Sera ya Faragha</string>

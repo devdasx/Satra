@@ -998,6 +998,8 @@
     <string name="settings_notifications_transactions">Транзакции</string>
     <string name="settings_notifications_transactions_body">Отправленные, полученные, ожидающие, неудачные и подтвержденные обновления транзакций.</string>
     <string name="settings_about_source">Исходный код</string>
+    <string name="settings_about_open_website">Открыть на satra.app</string>
+    <string name="settings_about_open_github">Открыть на GitHub</string>
     <string name="settings_legal_title">Юридический</string>
     <string name="settings_legal_body">Политика конфиденциальности, условия использования и ссылки на общедоступные источники.</string>
     <string name="settings_privacy_policy">Политика конфиденциальности</string>

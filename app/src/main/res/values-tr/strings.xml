@@ -998,6 +998,8 @@
     <string name="settings_notifications_transactions">İşlemler</string>
     <string name="settings_notifications_transactions_body">Gönderilen, alınan, bekleyen, başarısız olan ve onaylanan işlem güncellemeleri.</string>
     <string name="settings_about_source">Kaynak kodu</string>
+    <string name="settings_about_open_website">satra.app’te aç</string>
+    <string name="settings_about_open_github">GitHub’da aç</string>
     <string name="settings_legal_title">Yasal</string>
     <string name="settings_legal_body">Gizlilik politikası, kullanım şartları ve kamu kaynağı bağlantıları.</string>
     <string name="settings_privacy_policy">Gizlilik Politikası</string>

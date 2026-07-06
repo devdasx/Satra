@@ -998,6 +998,8 @@
     <string name="settings_notifications_transactions">交易</string>
     <string name="settings_notifications_transactions_body">已发送、已接收、待处理、失败和已确认的交易更新。</string>
     <string name="settings_about_source">来源代码</string>
+    <string name="settings_about_open_website">在 satra.app 上打开</string>
+    <string name="settings_about_open_github">在 GitHub 上打开</string>
     <string name="settings_legal_title">法律</string>
     <string name="settings_legal_body">隐私政策、使用条款和公共源链接。</string>
     <string name="settings_privacy_policy">隐私政策</string>

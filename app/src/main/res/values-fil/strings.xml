@@ -998,6 +998,8 @@
     <string name="settings_notifications_transactions">Mga transaksyon</string>
     <string name="settings_notifications_transactions_body">Ipinadala, natanggap, nakabinbin, nabigo, at nakumpirma na mga update sa transaksyon.</string>
     <string name="settings_about_source">Source code ng app</string>
+    <string name="settings_about_open_website">Buksan sa satra.app</string>
+    <string name="settings_about_open_github">Buksan sa GitHub</string>
     <string name="settings_legal_title">Legal na impormasyon</string>
     <string name="settings_legal_body">Patakaran sa privacy, mga tuntunin ng paggamit, at mga link ng pampublikong mapagkukunan.</string>
     <string name="settings_privacy_policy">Patakaran sa Privacy</string>

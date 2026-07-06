@@ -998,6 +998,8 @@
     <string name="settings_notifications_transactions">لین دین</string>
     <string name="settings_notifications_transactions_body">بھیجی گئی، وصول کیتی گئی، زیر التواء، ناکام، تے تصدیق شدہ لین دین دی اپ ڈیٹ۔</string>
     <string name="settings_about_source">سورس کوڈ</string>
+    <string name="settings_about_open_website">satra.app ਤੇ ਖੋਲ੍ਹੋ</string>
+    <string name="settings_about_open_github">GitHub ਤੇ ਖੋਲ੍ਹੋ</string>
     <string name="settings_legal_title">قانونی</string>
     <string name="settings_legal_body">رازداری دی پالیسی، استعمال دیاں شرائط، تے عوامی وسیلے دے لنکس۔</string>
     <string name="settings_privacy_policy">رازداری دی پالیسی</string>

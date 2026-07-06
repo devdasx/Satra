@@ -995,6 +995,7 @@ private fun SettingsAboutContent(
     val uriHandler = LocalUriHandler.current
     val termsUrl = stringResource(R.string.onboarding_terms_of_use_url)
     val privacyUrl = stringResource(R.string.onboarding_privacy_policy_url)
+    val sourceUrl = stringResource(R.string.onboarding_open_source_url)
 
     SettingsSheetHeader(
         titleRes = R.string.settings_about_title,
@@ -1020,6 +1021,14 @@ private fun SettingsAboutContent(
         onClick = {
             performHaptic()
             uriHandler.openUri(privacyUrl)
+        },
+    )
+    SettingsNavigationRow(
+        title = stringResource(R.string.settings_about_source),
+        body = stringResource(R.string.settings_about_open_github),
+        onClick = {
+            performHaptic()
+            uriHandler.openUri(sourceUrl)
         },
     )
 }
