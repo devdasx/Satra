@@ -32,7 +32,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -82,7 +81,10 @@ import dev.satra.wallet.ui.components.SatraButtonDefaults
 import dev.satra.wallet.ui.components.SatraButtonVariant
 import dev.satra.wallet.ui.components.SatraLtrContent
 import dev.satra.wallet.ui.components.SatraPasscodeScreen
+import dev.satra.wallet.ui.components.satraDoneKeyboardActions
+import dev.satra.wallet.ui.components.satraDoneKeyboardOptions
 import dev.satra.wallet.ui.components.satraLtr
+import dev.satra.wallet.ui.components.satraSingleLineInput
 import dev.satra.wallet.ui.main.SatraCryptoIcon
 import dev.satra.wallet.ui.theme.SatraButtonSecondaryBorder
 import dev.satra.wallet.ui.theme.SatraTheme
@@ -1547,18 +1549,20 @@ private fun RecoveryPhraseEntry(
         showError -> MaterialTheme.colorScheme.error
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
+    val keyboardActions = satraDoneKeyboardActions()
 
     FramedTool {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             SatraLtrContent {
                 OutlinedTextField(
                     value = recoveryPhrase,
-                    onValueChange = onRecoveryPhraseChange,
+                    onValueChange = { onRecoveryPhraseChange(it.satraSingleLineInput()) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(min = 148.dp),
                     textStyle = MaterialTheme.typography.bodyLarge.satraLtr(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii),
+                    keyboardOptions = satraDoneKeyboardOptions(keyboardType = KeyboardType.Ascii),
+                    keyboardActions = keyboardActions,
                     isError = showError,
                     placeholder = {
                         Text(text = stringResource(R.string.wallet_setup_recovery_phrase_placeholder))
@@ -1601,14 +1605,16 @@ private fun OptionalPassphraseField(
     passphrase: String,
     onPassphraseChange: (String) -> Unit,
 ) {
+    val keyboardActions = satraDoneKeyboardActions()
     SatraLtrContent {
         OutlinedTextField(
             value = passphrase,
-            onValueChange = onPassphraseChange,
+            onValueChange = { onPassphraseChange(it.satraSingleLineInput()) },
             modifier = Modifier.fillMaxWidth(),
             textStyle = MaterialTheme.typography.bodyLarge.satraLtr(),
             singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii),
+            keyboardOptions = satraDoneKeyboardOptions(keyboardType = KeyboardType.Ascii),
+            keyboardActions = keyboardActions,
             label = {
                 Text(text = stringResource(R.string.wallet_setup_passphrase_label))
             },
@@ -1714,18 +1720,20 @@ private fun SecretEntryPanel(
     selectedNetwork: WalletImportNetwork,
     @StringRes errorRes: Int? = null,
 ) {
+    val keyboardActions = satraDoneKeyboardActions()
     FramedTool {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             SelectedNetworkPill(selectedNetwork = selectedNetwork)
             SatraLtrContent {
                 OutlinedTextField(
                     value = value,
-                    onValueChange = onValueChange,
+                    onValueChange = { onValueChange(it.satraSingleLineInput()) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(min = 148.dp),
                     textStyle = MaterialTheme.typography.bodyLarge.satraLtr(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii),
+                    keyboardOptions = satraDoneKeyboardOptions(keyboardType = KeyboardType.Ascii),
+                    keyboardActions = keyboardActions,
                     placeholder = {
                         Text(text = stringResource(placeholderRes))
                     },

@@ -39,6 +39,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.satra.wallet.R
+import dev.satra.wallet.ui.components.satraDoneKeyboardActions
+import dev.satra.wallet.ui.components.satraDoneKeyboardOptions
+import dev.satra.wallet.ui.components.satraSingleLineInput
 
 @Composable
 internal fun SatraChooseAssetScaffold(
@@ -108,9 +111,10 @@ internal fun ChooseAssetSearchBar(
     onQueryChange: (String) -> Unit,
     placeholder: String,
 ) {
+    val keyboardActions = satraDoneKeyboardActions()
     BasicTextField(
         value = query,
-        onValueChange = onQueryChange,
+        onValueChange = { onQueryChange(it.satraSingleLineInput()) },
         modifier = Modifier
             .fillMaxWidth()
             .widthIn(max = ChooseAssetContentMaxWidth)
@@ -123,6 +127,8 @@ internal fun ChooseAssetSearchBar(
             fontWeight = FontWeight.Normal,
         ),
         singleLine = true,
+        keyboardOptions = satraDoneKeyboardOptions(),
+        keyboardActions = keyboardActions,
         cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
         decorationBox = { innerTextField ->
             Row(

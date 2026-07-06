@@ -96,7 +96,10 @@ import dev.satra.wallet.ui.components.SatraButton
 import dev.satra.wallet.ui.components.SatraButtonDefaults
 import dev.satra.wallet.ui.components.SatraButtonVariant
 import dev.satra.wallet.ui.components.SatraLtrContent
+import dev.satra.wallet.ui.components.satraDoneKeyboardActions
+import dev.satra.wallet.ui.components.satraDoneKeyboardOptions
 import dev.satra.wallet.ui.components.satraLtr
+import dev.satra.wallet.ui.components.satraSingleLineInput
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -1711,6 +1714,7 @@ private fun SendRecipientAddressBox(
     onBookClick: () -> Unit,
 ) {
     val shape = RoundedCornerShape(16.dp)
+    val keyboardActions = satraDoneKeyboardActions()
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -1727,7 +1731,7 @@ private fun SendRecipientAddressBox(
     ) {
         BasicTextField(
             value = value,
-            onValueChange = onValueChange,
+            onValueChange = { onValueChange(it.satraSingleLineInput(newlineReplacement = "")) },
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 44.dp),
@@ -1737,6 +1741,8 @@ private fun SendRecipientAddressBox(
                 lineHeight = 21.sp,
                 fontWeight = FontWeight.Medium,
             ),
+            keyboardOptions = satraDoneKeyboardOptions(),
+            keyboardActions = keyboardActions,
             minLines = 2,
             maxLines = 5,
             decorationBox = { innerTextField ->
@@ -1786,6 +1792,7 @@ private fun SendRecipientMemoBox(
     onValueChange: (String) -> Unit,
 ) {
     val shape = RoundedCornerShape(16.dp)
+    val keyboardActions = satraDoneKeyboardActions()
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -1803,7 +1810,7 @@ private fun SendRecipientMemoBox(
         SatraLtrContent {
             BasicTextField(
                 value = value,
-                onValueChange = onValueChange,
+                onValueChange = { onValueChange(it.satraSingleLineInput()) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 36.dp),
@@ -1813,6 +1820,8 @@ private fun SendRecipientMemoBox(
                     lineHeight = 21.sp,
                     fontWeight = FontWeight.Medium,
                 ),
+                keyboardOptions = satraDoneKeyboardOptions(),
+                keyboardActions = keyboardActions,
                 minLines = 1,
                 maxLines = 2,
                 decorationBox = { innerTextField ->

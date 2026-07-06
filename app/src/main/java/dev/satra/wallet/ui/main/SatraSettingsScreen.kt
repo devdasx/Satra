@@ -90,7 +90,10 @@ import dev.satra.wallet.ui.components.SatraButtonDefaults
 import dev.satra.wallet.ui.components.SatraButtonVariant
 import dev.satra.wallet.ui.components.SatraLtrContent
 import dev.satra.wallet.ui.components.SatraPasscodeScreen
+import dev.satra.wallet.ui.components.satraDoneKeyboardActions
+import dev.satra.wallet.ui.components.satraDoneKeyboardOptions
 import dev.satra.wallet.ui.components.satraLtr
+import dev.satra.wallet.ui.components.satraSingleLineInput
 import dev.satra.wallet.settings.SatraSettings
 import dev.satra.wallet.settings.SatraSettingsDefaults
 import dev.satra.wallet.settings.SatraThemePreference
@@ -389,9 +392,10 @@ private fun WalletManagementSearchField(
     @StringRes placeholderRes: Int = R.string.settings_wallet_management_search_placeholder,
     @StringRes clearContentDescriptionRes: Int = R.string.settings_wallet_management_search_clear,
 ) {
+    val keyboardActions = satraDoneKeyboardActions()
     TextField(
         value = query,
-        onValueChange = onQueryChange,
+        onValueChange = { onQueryChange(it.satraSingleLineInput()) },
         modifier = Modifier
             .fillMaxWidth()
             .widthIn(max = SettingsContentMaxWidth)
@@ -436,6 +440,8 @@ private fun WalletManagementSearchField(
             null
         },
         singleLine = true,
+        keyboardOptions = satraDoneKeyboardOptions(),
+        keyboardActions = keyboardActions,
         shape = RoundedCornerShape(100.dp),
         colors = TextFieldDefaults.colors(
             focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
@@ -859,6 +865,7 @@ internal fun SatraWalletRemoveWarningScreen(
 ) {
     var wallet by remember { mutableStateOf<WalletRecord?>(null) }
     var confirmation by remember { mutableStateOf("") }
+    val keyboardActions = satraDoneKeyboardActions()
     LaunchedEffect(walletRepository, walletId) {
         wallet = walletRepository.getWallets().firstOrNull { it.walletId == walletId }
     }
@@ -880,10 +887,16 @@ internal fun SatraWalletRemoveWarningScreen(
                 )
                 OutlinedTextField(
                     value = confirmation,
-                    onValueChange = { confirmation = it.uppercase(Locale.US).take(12) },
+                    onValueChange = {
+                        confirmation = it.satraSingleLineInput(newlineReplacement = "")
+                            .uppercase(Locale.US)
+                            .take(12)
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text(stringResource(R.string.settings_wallet_management_remove_confirm_label)) },
                     singleLine = true,
+                    keyboardOptions = satraDoneKeyboardOptions(),
+                    keyboardActions = keyboardActions,
                 )
                 SatraButton(
                     text = stringResource(R.string.settings_wallet_management_continue_to_passcode),
@@ -2207,6 +2220,7 @@ private fun AddressBookEditorSheet(
     var address by remember(entry) { mutableStateOf(entry?.address.orEmpty()) }
     var notes by remember(entry) { mutableStateOf(entry?.notes.orEmpty()) }
     var favorite by remember(entry) { mutableStateOf(entry?.isFavorite ?: false) }
+    val keyboardActions = satraDoneKeyboardActions()
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
@@ -2226,23 +2240,33 @@ private fun AddressBookEditorSheet(
             )
             OutlinedTextField(
                 value = label,
-                onValueChange = { label = it.take(64) },
+                onValueChange = { label = it.satraSingleLineInput().take(64) },
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text(stringResource(R.string.settings_address_book_label)) },
                 singleLine = true,
+                keyboardOptions = satraDoneKeyboardOptions(),
+                keyboardActions = keyboardActions,
             )
             OutlinedTextField(
                 value = address,
-                onValueChange = { address = it.trim().take(160) },
+                onValueChange = {
+                    address = it.satraSingleLineInput(newlineReplacement = "")
+                        .trim()
+                        .take(160)
+                },
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text(stringResource(R.string.settings_address_book_address)) },
+                keyboardOptions = satraDoneKeyboardOptions(),
+                keyboardActions = keyboardActions,
                 minLines = 2,
             )
             OutlinedTextField(
                 value = notes,
-                onValueChange = { notes = it.take(160) },
+                onValueChange = { notes = it.satraSingleLineInput().take(160) },
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text(stringResource(R.string.settings_address_book_notes)) },
+                keyboardOptions = satraDoneKeyboardOptions(),
+                keyboardActions = keyboardActions,
                 minLines = 2,
             )
             Text(

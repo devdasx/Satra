@@ -112,6 +112,9 @@ import dev.satra.wallet.settings.SatraThemePreference
 import dev.satra.wallet.ui.components.SatraButton
 import dev.satra.wallet.ui.components.SatraButtonDefaults
 import dev.satra.wallet.ui.components.SatraButtonVariant
+import dev.satra.wallet.ui.components.satraDoneKeyboardActions
+import dev.satra.wallet.ui.components.satraDoneKeyboardOptions
+import dev.satra.wallet.ui.components.satraSingleLineInput
 import dev.satra.wallet.ui.setup.WalletSetupFlow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -1714,9 +1717,10 @@ private fun MarketsSearchField(
     query: String,
     onQueryChange: (String) -> Unit,
 ) {
+    val keyboardActions = satraDoneKeyboardActions()
     TextField(
         value = query,
-        onValueChange = onQueryChange,
+        onValueChange = { onQueryChange(it.satraSingleLineInput()) },
         modifier = Modifier
             .fillMaxWidth()
             .height(56.dp),
@@ -1760,6 +1764,8 @@ private fun MarketsSearchField(
             null
         },
         singleLine = true,
+        keyboardOptions = satraDoneKeyboardOptions(),
+        keyboardActions = keyboardActions,
         shape = RoundedCornerShape(100.dp),
         colors = TextFieldDefaults.colors(
             focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
@@ -2738,9 +2744,10 @@ private fun ActivitySearchField(
     query: String,
     onQueryChange: (String) -> Unit,
 ) {
+    val keyboardActions = satraDoneKeyboardActions()
     TextField(
         value = query,
-        onValueChange = onQueryChange,
+        onValueChange = { onQueryChange(it.satraSingleLineInput()) },
         modifier = Modifier
             .fillMaxWidth()
             .height(56.dp),
@@ -2784,6 +2791,8 @@ private fun ActivitySearchField(
             null
         },
         singleLine = true,
+        keyboardOptions = satraDoneKeyboardOptions(),
+        keyboardActions = keyboardActions,
         shape = RoundedCornerShape(100.dp),
         colors = TextFieldDefaults.colors(
             focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
@@ -3729,9 +3738,10 @@ private fun HomeAssetSearchField(
     query: String,
     onQueryChange: (String) -> Unit,
 ) {
+    val keyboardActions = satraDoneKeyboardActions()
     TextField(
         value = query,
-        onValueChange = onQueryChange,
+        onValueChange = { onQueryChange(it.satraSingleLineInput()) },
         modifier = Modifier
             .fillMaxWidth()
             .height(56.dp),
@@ -3775,6 +3785,8 @@ private fun HomeAssetSearchField(
             null
         },
         singleLine = true,
+        keyboardOptions = satraDoneKeyboardOptions(),
+        keyboardActions = keyboardActions,
         shape = RoundedCornerShape(100.dp),
         colors = TextFieldDefaults.colors(
             focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
