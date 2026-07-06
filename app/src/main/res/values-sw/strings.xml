@@ -470,6 +470,9 @@
     <string name="send_missing_key_body">Hakuna ufunguo wa kuambatisha wa ndani uliohifadhiwa kwa mtandao huu. Ingiza au uunde pochi ya kusaini kabla ya kutuma.</string>
     <string name="send_recipient_label">Anwani ya mpokeaji</string>
     <string name="send_recipient_helper">Bandika anwani halali ya %1$s.</string>
+    <string name="send_destination_tag_label">Lebo ya mahali pa kwenda (si lazima)</string>
+    <string name="send_destination_tag_error">Weka nambari pekee, hadi 4294967295.</string>
+    <string name="send_stellar_memo_error">Memo za Stellar lazima ziwe baiti 28 au chini.</string>
     <string name="send_recipient_error">Angalia umbizo la anwani kabla ya kuendelea.</string>
     <string name="send_amount_label">Kiasi katika %1$s</string>
     <string name="send_amount_error">Weka kiasi kikubwa kuliko sifuri na kisichozidi salio lako.</string>
@@ -495,6 +498,7 @@
     <string name="send_broadcast_unsupported_network_body">Kutia saini bado hakupatikani kwa %1$s. Satra haikuhifadhi uhamisho huu kwenye Shughuli.</string>
     <string name="send_broadcast_missing_key_body">Hakuna ufunguo wa kuambatisha wa ndani unaopatikana kwa mtandao huu. Satra haikuhifadhi uhamisho huu kwenye Shughuli.</string>
     <string name="send_broadcast_invalid_recipient_body">Angalia anwani ya mpokeaji ya mtandao huu kabla ya kutuma.</string>
+    <string name="send_broadcast_invalid_memo_body">Kagua memo au lebo ya mahali pa kwenda kabla ya kutuma.</string>
     <string name="send_broadcast_invalid_amount_body">Angalia usahihi wa kiasi kabla ya kutuma.</string>
     <string name="send_broadcast_insufficient_balance_body">Mkoba huu hauna salio la kutosha kugharamia kiasi na ada ya mtandao.</string>
     <string name="send_search_asset_placeholder">Tafuta sarafu au ishara</string>

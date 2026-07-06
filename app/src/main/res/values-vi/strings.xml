@@ -470,6 +470,9 @@
     <string name="send_missing_key_body">Không có khóa ký cục bộ nào được lưu trữ cho mạng này. Nhập hoặc tạo ví ký trước khi gửi.</string>
     <string name="send_recipient_label">Địa chỉ người nhận</string>
     <string name="send_recipient_helper">Dán địa chỉ %1$s hợp lệ.</string>
+    <string name="send_destination_tag_label">Thẻ đích (tùy chọn)</string>
+    <string name="send_destination_tag_error">Chỉ nhập số, tối đa 4294967295.</string>
+    <string name="send_stellar_memo_error">Memo Stellar phải từ 28 byte trở xuống.</string>
     <string name="send_recipient_error">Kiểm tra định dạng địa chỉ trước khi tiếp tục.</string>
     <string name="send_amount_label">Số tiền trong %1$s</string>
     <string name="send_amount_error">Nhập số tiền lớn hơn 0 và không nhiều hơn số dư của bạn.</string>
@@ -495,6 +498,7 @@
     <string name="send_broadcast_unsupported_network_body">Tính năng ký chưa khả dụng cho %1$s. Satra không lưu quá trình truyền này vào Hoạt động.</string>
     <string name="send_broadcast_missing_key_body">Không có khóa ký cục bộ nào có sẵn cho mạng này. Satra không lưu quá trình truyền này vào Hoạt động.</string>
     <string name="send_broadcast_invalid_recipient_body">Kiểm tra địa chỉ người nhận cho mạng này trước khi gửi.</string>
+    <string name="send_broadcast_invalid_memo_body">Kiểm tra memo hoặc thẻ đích trước khi gửi.</string>
     <string name="send_broadcast_invalid_amount_body">Kiểm tra độ chính xác của số tiền trước khi gửi.</string>
     <string name="send_broadcast_insufficient_balance_body">Ví này không có đủ số dư để trang trải số tiền và phí mạng.</string>
     <string name="send_search_asset_placeholder">Tìm kiếm tiền xu hoặc mã thông báo</string>

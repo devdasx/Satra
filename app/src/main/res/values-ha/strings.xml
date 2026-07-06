@@ -470,6 +470,9 @@
     <string name="send_missing_key_body">Babu maɓallin sa hannu na gida da aka adana don wannan hanyar sadarwa. Shigo ko ƙirƙirar walat ɗin sa hannu kafin aikawa.</string>
     <string name="send_recipient_label">Adireshin mai karɓa</string>
     <string name="send_recipient_helper">Manna ingantaccen adireshin %1$s.</string>
+    <string name="send_destination_tag_label">Alamar inda za a aika (na zaɓi)</string>
+    <string name="send_destination_tag_error">Shigar da lambobi kawai, har zuwa 4294967295.</string>
+    <string name="send_stellar_memo_error">Memo na Stellar dole ya zama baiti 28 ko ƙasa da haka.</string>
     <string name="send_recipient_error">Duba tsarin adireshin kafin ci gaba.</string>
     <string name="send_amount_label">Adadin a %1$s</string>
     <string name="send_amount_error">Shigar da adadi mafi girma fiye da sifili kuma bai wuce ma\'aunin ku ba.</string>
@@ -495,6 +498,7 @@
     <string name="send_broadcast_unsupported_network_body">Babu sa hannu don %1$s tukuna. Satra bai ajiye wannan canja wuri zuwa Aiki ba.</string>
     <string name="send_broadcast_missing_key_body">Babu maɓallin sa hannu na gida da ke akwai don wannan hanyar sadarwa. Satra bai ajiye wannan canja wuri zuwa Aiki ba.</string>
     <string name="send_broadcast_invalid_recipient_body">Bincika adireshin mai karɓa na wannan hanyar sadarwa kafin aikawa.</string>
+    <string name="send_broadcast_invalid_memo_body">Duba memo ko alamar inda za a aika kafin aikawa.</string>
     <string name="send_broadcast_invalid_amount_body">Bincika madaidaicin adadin kafin aikawa.</string>
     <string name="send_broadcast_insufficient_balance_body">Wannan walat ɗin ba ta da isasshen ma\'auni don rufe adadin da kuɗin hanyar sadarwa.</string>
     <string name="send_search_asset_placeholder">Bincika tsabar kudi ko alama</string>

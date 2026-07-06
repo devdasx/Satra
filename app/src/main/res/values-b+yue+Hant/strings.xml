@@ -470,6 +470,9 @@
     <string name="send_missing_key_body">呢個網絡冇儲存本地簽署密鑰。喺傳送之前匯入或者建立一個簽名錢包。</string>
     <string name="send_recipient_label">收件人地址</string>
     <string name="send_recipient_helper">貼上有效嘅 %1$s 地址。</string>
+    <string name="send_destination_tag_label">目的地標籤（可選）</string>
+    <string name="send_destination_tag_error">只可輸入數字，最多 4294967295。</string>
+    <string name="send_stellar_memo_error">Stellar 備忘錄必須不超過 28 位元組。</string>
     <string name="send_recipient_error">繼續之前，請檢查地址格式。</string>
     <string name="send_amount_label">以 %1$s 計嘅金額</string>
     <string name="send_amount_error">輸入大過零，而且唔超過你嘅餘額嘅金額。</string>
@@ -495,6 +498,7 @@
     <string name="send_broadcast_unsupported_network_body">%1$s 仲未可以簽名。 Satra 冇將呢個轉移儲存去活動。</string>
     <string name="send_broadcast_missing_key_body">呢個網絡冇本地簽署密鑰。 Satra 冇將呢個轉移儲存去活動。</string>
     <string name="send_broadcast_invalid_recipient_body">喺發送之前，請檢查呢個網絡嘅收件人地址。</string>
+    <string name="send_broadcast_invalid_memo_body">發送前請檢查備忘錄或目的地標籤。</string>
     <string name="send_broadcast_invalid_amount_body">喺寄出之前檢查金額精確度。</string>
     <string name="send_broadcast_insufficient_balance_body">呢個錢包冇足夠餘額去支付金額同網絡費用。</string>
     <string name="send_search_asset_placeholder">搜尋硬幣或者代幣</string>

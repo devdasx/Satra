@@ -470,6 +470,9 @@
     <string name="send_missing_key_body">ఈ నెట్‌వర్క్ కోసం స్థానిక సంతకం కీ ఏదీ నిల్వ చేయబడదు. పంపే ముందు సంతకం చేసే వాలెట్‌ని దిగుమతి చేయండి లేదా సృష్టించండి.</string>
     <string name="send_recipient_label">గ్రహీత చిరునామా</string>
     <string name="send_recipient_helper">చెల్లుబాటు అయ్యే %1$s చిరునామాను అతికించండి.</string>
+    <string name="send_destination_tag_label">గమ్యస్థాన ట్యాగ్ (ఐచ్ఛికం)</string>
+    <string name="send_destination_tag_error">4294967295 వరకు సంఖ్యలు మాత్రమే నమోదు చేయండి.</string>
+    <string name="send_stellar_memo_error">Stellar మెమోలు 28 బైట్లు లేదా అంతకంటే తక్కువగా ఉండాలి.</string>
     <string name="send_recipient_error">కొనసాగడానికి ముందు చిరునామా ఆకృతిని తనిఖీ చేయండి.</string>
     <string name="send_amount_label">%1$sలో మొత్తం</string>
     <string name="send_amount_error">సున్నా కంటే ఎక్కువ మరియు మీ బ్యాలెన్స్ కంటే ఎక్కువ మొత్తాన్ని నమోదు చేయండి.</string>
@@ -495,6 +498,7 @@
     <string name="send_broadcast_unsupported_network_body">%1$sకి ఇంకా సంతకం అందుబాటులో లేదు. Satra ఈ బదిలీని కార్యాచరణకు సేవ్ చేయలేదు.</string>
     <string name="send_broadcast_missing_key_body">ఈ నెట్‌వర్క్ కోసం స్థానిక సంతకం కీ అందుబాటులో లేదు. Satra ఈ బదిలీని కార్యాచరణకు సేవ్ చేయలేదు.</string>
     <string name="send_broadcast_invalid_recipient_body">పంపే ముందు ఈ నెట్‌వర్క్ కోసం గ్రహీత చిరునామాను తనిఖీ చేయండి.</string>
+    <string name="send_broadcast_invalid_memo_body">పంపించే ముందు మెమో లేదా గమ్యస్థాన ట్యాగ్‌ను తనిఖీ చేయండి.</string>
     <string name="send_broadcast_invalid_amount_body">పంపే ముందు మొత్తం ఖచ్చితత్వాన్ని తనిఖీ చేయండి.</string>
     <string name="send_broadcast_insufficient_balance_body">మొత్తం మరియు నెట్‌వర్క్ రుసుమును కవర్ చేయడానికి ఈ వాలెట్‌లో తగినంత బ్యాలెన్స్ లేదు.</string>
     <string name="send_search_asset_placeholder">నాణెం లేదా టోకెన్‌ని శోధించండి</string>

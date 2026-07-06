@@ -470,6 +470,9 @@
     <string name="send_missing_key_body">இந்த நெட்வொர்க்கிற்கு உள்ளூர் கையொப்ப விசை எதுவும் சேமிக்கப்படவில்லை. அனுப்புவதற்கு முன், கையொப்பமிடும் பணப்பையை இறக்குமதி செய்யவும் அல்லது உருவாக்கவும்.</string>
     <string name="send_recipient_label">பெறுநரின் முகவரி</string>
     <string name="send_recipient_helper">சரியான %1$s முகவரியை ஒட்டவும்.</string>
+    <string name="send_destination_tag_label">இலக்கு குறிச்சொல் (விரும்பினால்)</string>
+    <string name="send_destination_tag_error">4294967295 வரை எண்கள் மட்டும் உள்ளிடவும்.</string>
+    <string name="send_stellar_memo_error">Stellar குறிப்புகள் 28 பைட் அல்லது அதற்கு குறைவாக இருக்க வேண்டும்.</string>
     <string name="send_recipient_error">தொடர்வதற்கு முன் முகவரி வடிவமைப்பைச் சரிபார்க்கவும்.</string>
     <string name="send_amount_label">%1$s இல் தொகை</string>
     <string name="send_amount_error">பூஜ்ஜியத்தை விட அதிகமான தொகையை உள்ளிடவும் மற்றும் உங்கள் இருப்பை விட அதிகமாக இல்லை.</string>
@@ -495,6 +498,7 @@
     <string name="send_broadcast_unsupported_network_body">%1$s க்கு இன்னும் கையொப்பமிட முடியவில்லை. Satra இந்த பரிமாற்றத்தை செயல்பாட்டில் சேமிக்கவில்லை.</string>
     <string name="send_broadcast_missing_key_body">இந்த நெட்வொர்க்கிற்கு உள்ளூர் கையொப்பமிடும் விசை எதுவும் இல்லை. Satra இந்த பரிமாற்றத்தை செயல்பாட்டில் சேமிக்கவில்லை.</string>
     <string name="send_broadcast_invalid_recipient_body">அனுப்பும் முன் இந்த நெட்வொர்க்கிற்கான பெறுநரின் முகவரியைச் சரிபார்க்கவும்.</string>
+    <string name="send_broadcast_invalid_memo_body">அனுப்புவதற்கு முன் குறிப்பு அல்லது இலக்கு குறிச்சொல்லை சரிபார்க்கவும்.</string>
     <string name="send_broadcast_invalid_amount_body">அனுப்பும் முன் தொகையின் துல்லியத்தைச் சரிபார்க்கவும்.</string>
     <string name="send_broadcast_insufficient_balance_body">இந்த வாலட்டில் தொகை மற்றும் நெட்வொர்க் கட்டணத்தை ஈடுகட்ட போதுமான இருப்பு இல்லை.</string>
     <string name="send_search_asset_placeholder">நாணயம் அல்லது டோக்கனைத் தேடுங்கள்</string>

@@ -470,6 +470,9 @@
     <string name="send_missing_key_body">इस नेटवर्क के लिए कोई स्थानीय हस्ताक्षर कुंजी संग्रहीत नहीं है। भेजने से पहले एक हस्ताक्षरित वॉलेट आयात करें या बनाएं।</string>
     <string name="send_recipient_label">प्राप्तकर्ता का पता</string>
     <string name="send_recipient_helper">वैध%1$s पता चिपकाएँ।</string>
+    <string name="send_destination_tag_label">डेस्टिनेशन टैग (वैकल्पिक)</string>
+    <string name="send_destination_tag_error">केवल अंक दर्ज करें, अधिकतम 4294967295।</string>
+    <string name="send_stellar_memo_error">Stellar मेमो 28 बाइट या कम होना चाहिए।</string>
     <string name="send_recipient_error">जारी रखने से पहले पता प्रारूप जांचें।</string>
     <string name="send_amount_label">राशि%1$s में</string>
     <string name="send_amount_error">शून्य से अधिक और अपनी शेष राशि से अधिक राशि दर्ज न करें।</string>
@@ -495,6 +498,7 @@
     <string name="send_broadcast_unsupported_network_body">%1$s के लिए हस्ताक्षर अभी उपलब्ध नहीं है। Satra ने इस स्थानांतरण को गतिविधि में सहेजा नहीं।</string>
     <string name="send_broadcast_missing_key_body">इस नेटवर्क के लिए कोई स्थानीय हस्ताक्षर कुंजी उपलब्ध नहीं है। Satra ने इस स्थानांतरण को गतिविधि में सहेजा नहीं।</string>
     <string name="send_broadcast_invalid_recipient_body">भेजने से पहले इस नेटवर्क के लिए प्राप्तकर्ता का पता जांचें।</string>
+    <string name="send_broadcast_invalid_memo_body">भेजने से पहले मेमो या डेस्टिनेशन टैग जांचें।</string>
     <string name="send_broadcast_invalid_amount_body">भेजने से पहले राशि की सटीकता जांच लें.</string>
     <string name="send_broadcast_insufficient_balance_body">इस वॉलेट में राशि और नेटवर्क शुल्क को कवर करने के लिए पर्याप्त शेष नहीं है।</string>
     <string name="send_search_asset_placeholder">सिक्का या टोकन खोजें</string>

@@ -470,6 +470,9 @@
     <string name="send_missing_key_body">Tidak ada kunci penandatanganan lokal yang disimpan untuk jaringan ini. Impor atau buat dompet penandatanganan sebelum mengirim.</string>
     <string name="send_recipient_label">Alamat penerima</string>
     <string name="send_recipient_helper">Tempelkan alamat %1$s yang valid.</string>
+    <string name="send_destination_tag_label">Tag tujuan (opsional)</string>
+    <string name="send_destination_tag_error">Masukkan angka saja, hingga 4294967295.</string>
+    <string name="send_stellar_memo_error">Memo Stellar harus 28 byte atau kurang.</string>
     <string name="send_recipient_error">Periksa format alamat sebelum melanjutkan.</string>
     <string name="send_amount_label">Jumlah dalam %1$s</string>
     <string name="send_amount_error">Masukkan jumlah yang lebih besar dari nol dan tidak lebih dari saldo Anda.</string>
@@ -495,6 +498,7 @@
     <string name="send_broadcast_unsupported_network_body">Penandatanganan belum tersedia untuk %1$s. Satra tidak menyimpan transfer ini ke Aktivitas.</string>
     <string name="send_broadcast_missing_key_body">Tidak ada kunci penandatanganan lokal yang tersedia untuk jaringan ini. Satra tidak menyimpan transfer ini ke Aktivitas.</string>
     <string name="send_broadcast_invalid_recipient_body">Periksa alamat penerima jaringan ini sebelum mengirim.</string>
+    <string name="send_broadcast_invalid_memo_body">Periksa memo atau tag tujuan sebelum mengirim.</string>
     <string name="send_broadcast_invalid_amount_body">Periksa ketepatan jumlah sebelum mengirim.</string>
     <string name="send_broadcast_insufficient_balance_body">Dompet ini tidak memiliki saldo yang cukup untuk menutupi jumlah dan biaya jaringan.</string>
     <string name="send_search_asset_placeholder">Cari koin atau token</string>

@@ -470,6 +470,9 @@
     <string name="send_missing_key_body">या नेटवर्कसाठी कोणतीही स्थानिक स्वाक्षरी की संचयित केलेली नाही. पाठवण्यापूर्वी स्वाक्षरी करणारे वॉलेट आयात करा किंवा तयार करा.</string>
     <string name="send_recipient_label">प्राप्तकर्त्याचा पत्ता</string>
     <string name="send_recipient_helper">एक वैध %1$s पत्ता पेस्ट करा.</string>
+    <string name="send_destination_tag_label">गंतव्य टॅग (पर्यायी)</string>
+    <string name="send_destination_tag_error">फक्त अंक टाका, 4294967295 पर्यंत.</string>
+    <string name="send_stellar_memo_error">Stellar मेमो 28 बाइट किंवा कमी असणे आवश्यक आहे.</string>
     <string name="send_recipient_error">सुरू ठेवण्यापूर्वी पत्त्याचे स्वरूप तपासा.</string>
     <string name="send_amount_label">%1$s मध्ये रक्कम</string>
     <string name="send_amount_error">शून्यापेक्षा मोठी आणि तुमच्या शिल्लक रकमेपेक्षा जास्त रक्कम एंटर करा.</string>
@@ -495,6 +498,7 @@
     <string name="send_broadcast_unsupported_network_body">%1$s साठी अद्याप स्वाक्षरी उपलब्ध नाही. Satra ने हे हस्तांतरण क्रियाकलापामध्ये जतन केले नाही.</string>
     <string name="send_broadcast_missing_key_body">या नेटवर्कसाठी कोणतीही स्थानिक स्वाक्षरी की उपलब्ध नाही. Satra ने हे हस्तांतरण क्रियाकलापामध्ये जतन केले नाही.</string>
     <string name="send_broadcast_invalid_recipient_body">पाठवण्यापूर्वी या नेटवर्कसाठी प्राप्तकर्त्याचा पत्ता तपासा.</string>
+    <string name="send_broadcast_invalid_memo_body">पाठवण्यापूर्वी मेमो किंवा गंतव्य टॅग तपासा.</string>
     <string name="send_broadcast_invalid_amount_body">पाठवण्यापूर्वी रकमेची अचूकता तपासा.</string>
     <string name="send_broadcast_insufficient_balance_body">या वॉलेटमध्ये रक्कम आणि नेटवर्क फी भरण्यासाठी पुरेशी शिल्लक नाही.</string>
     <string name="send_search_asset_placeholder">नाणे किंवा टोकन शोधा</string>

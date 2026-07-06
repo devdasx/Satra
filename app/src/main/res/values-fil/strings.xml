@@ -470,6 +470,9 @@
     <string name="send_missing_key_body">Walang lokal na signing key ang nakaimbak para sa network na ito. Mag-import o gumawa ng signing wallet bago ipadala.</string>
     <string name="send_recipient_label">Address ng tatanggap</string>
     <string name="send_recipient_helper">Mag-paste ng wastong %1$s address.</string>
+    <string name="send_destination_tag_label">Destination tag (opsyonal)</string>
+    <string name="send_destination_tag_error">Mga numero lang ang ilagay, hanggang 4294967295.</string>
+    <string name="send_stellar_memo_error">Ang Stellar memo ay dapat 28 bytes o mas mababa.</string>
     <string name="send_recipient_error">Suriin ang format ng address bago magpatuloy.</string>
     <string name="send_amount_label">Halaga sa %1$s</string>
     <string name="send_amount_error">Maglagay ng halagang mas malaki sa zero at hindi hihigit sa iyong balanse.</string>
@@ -495,6 +498,7 @@
     <string name="send_broadcast_unsupported_network_body">Hindi pa available ang pagpirma para sa %1$s. Hindi na-save ng Satra ang paglilipat na ito sa Aktibidad.</string>
     <string name="send_broadcast_missing_key_body">Walang available na lokal na signing key para sa network na ito. Hindi na-save ng Satra ang paglilipat na ito sa Aktibidad.</string>
     <string name="send_broadcast_invalid_recipient_body">Tingnan ang address ng tatanggap para sa network na ito bago ipadala.</string>
+    <string name="send_broadcast_invalid_memo_body">Suriin ang memo o destination tag bago ipadala.</string>
     <string name="send_broadcast_invalid_amount_body">Suriin ang katumpakan ng halaga bago ipadala.</string>
     <string name="send_broadcast_insufficient_balance_body">Ang wallet na ito ay walang sapat na balanse upang masakop ang halaga at bayad sa network.</string>
     <string name="send_search_asset_placeholder">Maghanap ng barya o token</string>

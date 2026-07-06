@@ -470,6 +470,9 @@
     <string name="send_missing_key_body">Für dieses Netzwerk ist kein lokaler Signaturschlüssel gespeichert. Importieren oder erstellen Sie vor dem Senden eine Signatur-Wallet.</string>
     <string name="send_recipient_label">Empfängeradresse</string>
     <string name="send_recipient_helper">Fügen Sie eine gültige %1$s-Adresse ein.</string>
+    <string name="send_destination_tag_label">Ziel-Tag (optional)</string>
+    <string name="send_destination_tag_error">Nur Zahlen eingeben, bis 4294967295.</string>
+    <string name="send_stellar_memo_error">Stellar-Memos dürfen höchstens 28 Byte lang sein.</string>
     <string name="send_recipient_error">Überprüfen Sie das Adressformat, bevor Sie fortfahren.</string>
     <string name="send_amount_label">Betrag in %1$s</string>
     <string name="send_amount_error">Geben Sie einen Betrag ein, der größer als Null und nicht höher als Ihr Guthaben ist.</string>
@@ -495,6 +498,7 @@
     <string name="send_broadcast_unsupported_network_body">Für %1$s ist die Signierung noch nicht verfügbar. Satra hat diese Übertragung nicht in der Aktivität gespeichert.</string>
     <string name="send_broadcast_missing_key_body">Für dieses Netzwerk ist kein lokaler Signaturschlüssel verfügbar. Satra hat diese Übertragung nicht in der Aktivität gespeichert.</string>
     <string name="send_broadcast_invalid_recipient_body">Überprüfen Sie vor dem Senden die Empfängeradresse für dieses Netzwerk.</string>
+    <string name="send_broadcast_invalid_memo_body">Prüfe Memo oder Ziel-Tag vor dem Senden.</string>
     <string name="send_broadcast_invalid_amount_body">Überprüfen Sie vor dem Senden die Genauigkeit des Betrags.</string>
     <string name="send_broadcast_insufficient_balance_body">Dieses Wallet verfügt nicht über genügend Guthaben, um den Betrag und die Netzwerkgebühr zu decken.</string>
     <string name="send_search_asset_placeholder">Suchen Sie nach Münze oder Wertmarke</string>

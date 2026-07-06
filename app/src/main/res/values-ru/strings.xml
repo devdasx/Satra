@@ -470,6 +470,9 @@
     <string name="send_missing_key_body">Для этой сети не хранится локальный ключ подписи. Импортируйте или создайте кошелек для подписи перед отправкой.</string>
     <string name="send_recipient_label">Адрес получателя</string>
     <string name="send_recipient_helper">Вставьте действительный адрес %1$s.</string>
+    <string name="send_destination_tag_label">Тег назначения (необязательно)</string>
+    <string name="send_destination_tag_error">Введите только цифры, до 4294967295.</string>
+    <string name="send_stellar_memo_error">Мемо Stellar должно быть не длиннее 28 байт.</string>
     <string name="send_recipient_error">Прежде чем продолжить, проверьте формат адреса.</string>
     <string name="send_amount_label">Сумма в %1$s</string>
     <string name="send_amount_error">Введите сумму больше нуля и не более вашего баланса.</string>
@@ -495,6 +498,7 @@
     <string name="send_broadcast_unsupported_network_body">Подписание пока недоступно для %1$s. Satra не ​​сохранил эту передачу в «Активности».</string>
     <string name="send_broadcast_missing_key_body">Для этой сети нет локального ключа подписи. Satra не ​​сохранил эту передачу в «Активности».</string>
     <string name="send_broadcast_invalid_recipient_body">Перед отправкой проверьте адрес получателя для этой сети.</string>
+    <string name="send_broadcast_invalid_memo_body">Проверьте memo или тег назначения перед отправкой.</string>
     <string name="send_broadcast_invalid_amount_body">Перед отправкой проверьте точность суммы.</string>
     <string name="send_broadcast_insufficient_balance_body">В этом кошельке недостаточно средств для покрытия суммы и комиссии сети.</string>
     <string name="send_search_asset_placeholder">Поиск монеты или жетона</string>

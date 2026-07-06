@@ -231,7 +231,7 @@ fun SatraSendRecipientScreen(
     onBack: () -> Unit,
     onScanClick: () -> Unit,
     onScannedAddressConsumed: () -> Unit,
-    onContinue: (assetId: String, recipient: String, warnPoison: Boolean) -> Unit,
+    onContinue: (assetId: String, recipient: String, memo: String, warnPoison: Boolean) -> Unit,
 ) {
     var state by remember(assetId) {
         mutableStateOf(
@@ -282,9 +282,10 @@ fun SatraSendAmountScreen(
     onWalletSnapshotLoaded: (SatraMainWalletSnapshot) -> Unit,
     assetId: String,
     recipient: String,
+    memo: String,
     warnPoison: Boolean,
     onBack: () -> Unit,
-    onReview: (assetId: String, recipient: String, amount: String, warnPoison: Boolean) -> Unit,
+    onReview: (assetId: String, recipient: String, memo: String, amount: String, warnPoison: Boolean) -> Unit,
 ) {
     var state by remember(assetId) {
         mutableStateOf(
@@ -320,6 +321,7 @@ fun SatraSendAmountScreen(
         is SendDetailsState.Content -> SendAmountContent(
             state = current,
             recipient = Uri.decode(recipient),
+            memo = SatraMainRoute.decodeOptionalRouteValue(memo),
             warnPoison = warnPoison,
             onBack = onBack,
             onReview = onReview,
@@ -334,6 +336,7 @@ fun SatraSendReviewScreen(
     onWalletSnapshotLoaded: (SatraMainWalletSnapshot) -> Unit,
     assetId: String,
     recipient: String,
+    memo: String,
     amount: String,
     warnPoison: Boolean,
     onBack: () -> Unit,
@@ -375,6 +378,7 @@ fun SatraSendReviewScreen(
             walletRepository = walletRepository,
             state = current,
             recipient = Uri.decode(recipient),
+            memo = SatraMainRoute.decodeOptionalRouteValue(memo),
             amountText = Uri.decode(amount),
             warnPoison = warnPoison,
             onBack = onBack,
@@ -543,20 +547,25 @@ private fun SendRecipientContent(
     onBack: () -> Unit,
     onScanClick: () -> Unit,
     onScannedAddressConsumed: () -> Unit,
-    onContinue: (assetId: String, recipient: String, warnPoison: Boolean) -> Unit,
+    onContinue: (assetId: String, recipient: String, memo: String, warnPoison: Boolean) -> Unit,
 ) {
     val clipboard = LocalClipboardManager.current
     val haptic = LocalHapticFeedback.current
     var recipient by rememberSaveable(state.row.asset.assetId) { mutableStateOf("") }
+    var memo by rememberSaveable(state.row.asset.assetId) { mutableStateOf("") }
     var bookVisible by remember { mutableStateOf(false) }
+    val memoSpec = remember(state.row.network.networkId, state.row.network.family) {
+        sendMemoSpecFor(state.row.network)
+    }
     val knownAddresses = remember(state.addressBookEntries, state.recentRecipients) {
         (state.addressBookEntries.map { it.address } + state.recentRecipients.map { it.address }).distinct()
     }
     val isValid = isLikelyAddressForNetwork(recipient, state.row.network)
     val showError = recipient.length >= RECIPIENT_ERROR_MIN_LENGTH && !isValid
+    val showMemoError = memo.isNotBlank() && !isValidSendMemo(memo, memoSpec)
     val isKnown = knownAddresses.any { it.equals(recipient.trim(), ignoreCase = true) }
     val warnPoison = recipient.isNotBlank() && isPoisonLike(recipient, knownAddresses)
-    val canContinue = state.canSign && isValid
+    val canContinue = state.canSign && isValid && !showMemoError
 
     LaunchedEffect(scannedAddress) {
         if (scannedAddress.isNotBlank()) {
@@ -620,10 +629,23 @@ private fun SendRecipientContent(
                             bookVisible = true
                         },
                     )
+                    if (memoSpec != null) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        SendRecipientMemoBox(
+                            value = memo,
+                            label = stringResource(memoSpec.labelRes),
+                            showError = showMemoError,
+                            onValueChange = { memo = it },
+                        )
+                    }
                     Spacer(modifier = Modifier.height(10.dp))
                     when {
                         showError -> SendRecipientInlineMessage(
                             text = stringResource(R.string.send_recipient_error),
+                            isError = true,
+                        )
+                        showMemoError && memoSpec != null -> SendRecipientInlineMessage(
+                            text = stringResource(memoSpec.errorRes),
                             isError = true,
                         )
                         warnPoison -> SendRecipientInlineMessage(
@@ -659,7 +681,7 @@ private fun SendRecipientContent(
                 enabled = canContinue,
                 onClick = {
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    onContinue(state.row.asset.assetId, recipient.trim(), warnPoison)
+                    onContinue(state.row.asset.assetId, recipient.trim(), memo.trim(), warnPoison)
                 },
             )
         }
@@ -670,9 +692,10 @@ private fun SendRecipientContent(
 private fun SendAmountContent(
     state: SendDetailsState.Content,
     recipient: String,
+    memo: String,
     warnPoison: Boolean,
     onBack: () -> Unit,
-    onReview: (assetId: String, recipient: String, amount: String, warnPoison: Boolean) -> Unit,
+    onReview: (assetId: String, recipient: String, memo: String, amount: String, warnPoison: Boolean) -> Unit,
 ) {
     var amountText by rememberSaveable(state.row.asset.assetId, recipient) { mutableStateOf("") }
     var feeSpeed by rememberSaveable(state.row.asset.assetId) { mutableStateOf(SendFeeSpeed.Normal) }
@@ -754,7 +777,7 @@ private fun SendAmountContent(
                 enabled = canReview,
                 onClick = {
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    onReview(state.row.asset.assetId, recipient, amountText, warnPoison)
+                    onReview(state.row.asset.assetId, recipient, memo, amountText, warnPoison)
                 },
             )
         }
@@ -767,6 +790,7 @@ private fun SendReviewContent(
     walletRepository: SatraWalletRepository,
     state: SendDetailsState.Content,
     recipient: String,
+    memo: String,
     amountText: String,
     warnPoison: Boolean,
     onBack: () -> Unit,
@@ -780,6 +804,7 @@ private fun SendReviewContent(
     var sending by remember { mutableStateOf(false) }
     var showPoisonSheet by remember(warnPoison) { mutableStateOf(false) }
     val amount = amountText.toBigDecimalOrNullSafe() ?: BigDecimal.ZERO
+    val normalizedMemo = memo.trim()
     val feeQuote = estimatedFeeFor(state.row, SendFeeSpeed.Normal)
     val maxAmount = remember(state.row, feeQuote) { state.row.maxSendAmount(feeQuote) }
     val amountFormatted = "${formatCryptoAmount(amount)} ${state.row.asset.symbol}"
@@ -790,6 +815,7 @@ private fun SendReviewContent(
     )
     val missingKeyBody = stringResource(R.string.send_broadcast_missing_key_body)
     val invalidRecipientBody = stringResource(R.string.send_broadcast_invalid_recipient_body)
+    val invalidMemoBody = stringResource(R.string.send_broadcast_invalid_memo_body)
     val invalidAmountBody = stringResource(R.string.send_broadcast_invalid_amount_body)
     val insufficientBalanceBody = stringResource(R.string.send_broadcast_insufficient_balance_body)
     val broadcastFailedBody = stringResource(R.string.send_broadcast_failed_body)
@@ -805,6 +831,7 @@ private fun SendReviewContent(
                 walletRepository.signAndBroadcastSend(
                     assetId = state.row.asset.assetId,
                     recipientAddress = recipient,
+                    memo = normalizedMemo.takeIf(String::isNotBlank),
                     amountDecimal = amount,
                 )
             }.onSuccess { transactionId ->
@@ -816,6 +843,7 @@ private fun SendReviewContent(
                     is SatraSendException.UnsupportedNetwork -> unsupportedNetworkBody
                     is SatraSendException.MissingSigningKey -> missingKeyBody
                     is SatraSendException.InvalidRecipient -> invalidRecipientBody
+                    is SatraSendException.InvalidMemo -> invalidMemoBody
                     is SatraSendException.InvalidAmount -> invalidAmountBody
                     is SatraSendException.InsufficientBalance -> insufficientBalanceBody
                     else -> broadcastFailedBody
@@ -892,13 +920,17 @@ private fun SendReviewContent(
                         fiatPreview = formatFiat(fiatPreview.toPlainString(), state.wallet.localCurrencyCode),
                     )
                     SendReviewFactCard(
-                        rows = listOf(
-                            stringResource(R.string.send_review_to) to recipient.shortAddress(),
-                            stringResource(R.string.send_review_network) to
-                                "${state.row.network.displayName} · ${state.row.networkStandardLabel(nativeAssetLabel)}",
-                            stringResource(R.string.send_review_fee) to "~${feeQuote.displayText}",
-                            stringResource(R.string.send_review_total) to
-                                stringResource(R.string.send_review_total_plus_fee, amountFormatted),
+                        rows = sendReviewRows(
+                            recipient = recipient,
+                            memo = normalizedMemo,
+                            network = "${state.row.network.displayName} · ${state.row.networkStandardLabel(nativeAssetLabel)}",
+                            fee = "~${feeQuote.displayText}",
+                            total = stringResource(R.string.send_review_total_plus_fee, amountFormatted),
+                            toLabel = stringResource(R.string.send_review_to),
+                            memoLabel = stringResource(R.string.activity_detail_memo),
+                            networkLabel = stringResource(R.string.send_review_network),
+                            feeLabel = stringResource(R.string.send_review_fee),
+                            totalLabel = stringResource(R.string.send_review_total),
                         ),
                     )
                     Spacer(modifier = Modifier.height(14.dp))
@@ -986,6 +1018,12 @@ private fun SendReceiptContent(
                 value = networkWithStandard,
                 networkId = state.network.networkId,
             )
+            state.transaction.memo?.takeIf(String::isNotBlank)?.let { memo ->
+                SendReceiptFactRow(
+                    label = stringResource(R.string.activity_detail_memo),
+                    value = memo,
+                )
+            }
             SendReceiptFactRow(
                 label = stringResource(R.string.send_review_fee),
                 value = "~${state.networkFeeFormatted}",
@@ -1741,6 +1779,62 @@ private fun SendRecipientAddressBox(
 }
 
 @Composable
+private fun SendRecipientMemoBox(
+    value: String,
+    label: String,
+    showError: Boolean,
+    onValueChange: (String) -> Unit,
+) {
+    val shape = RoundedCornerShape(16.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(
+                width = 1.5.dp,
+                color = if (showError) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.outlineVariant
+                },
+                shape = shape,
+            )
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+    ) {
+        SatraLtrContent {
+            BasicTextField(
+                value = value,
+                onValueChange = onValueChange,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 36.dp),
+                textStyle = MaterialTheme.typography.bodyMedium.satraLtr().copy(
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = 14.sp,
+                    lineHeight = 21.sp,
+                    fontWeight = FontWeight.Medium,
+                ),
+                minLines = 1,
+                maxLines = 2,
+                decorationBox = { innerTextField ->
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        if (value.isBlank()) {
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.bodyMedium.satraLtr().copy(fontSize = 14.sp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                        innerTextField()
+                    }
+                },
+            )
+        }
+    }
+}
+
+@Composable
 private fun SendRecipientToolChip(
     text: String,
     @DrawableRes iconRes: Int,
@@ -1992,6 +2086,69 @@ private fun SendReviewFactCard(rows: List<Pair<String, String>>) {
                 )
             }
         }
+    }
+}
+
+private fun sendReviewRows(
+    recipient: String,
+    memo: String,
+    network: String,
+    fee: String,
+    total: String,
+    toLabel: String,
+    memoLabel: String,
+    networkLabel: String,
+    feeLabel: String,
+    totalLabel: String,
+): List<Pair<String, String>> {
+    val rows = mutableListOf(
+        toLabel to recipient.shortAddress(),
+    )
+    memo.takeIf(String::isNotBlank)?.let { rows.add(memoLabel to it) }
+    rows.add(networkLabel to network)
+    rows.add(feeLabel to fee)
+    rows.add(totalLabel to total)
+    return rows
+}
+
+private enum class SendMemoKind {
+    RippleDestinationTag,
+    StellarTextMemo,
+}
+
+private data class SendMemoSpec(
+    val kind: SendMemoKind,
+    val labelRes: Int,
+    val errorRes: Int,
+)
+
+private fun sendMemoSpecFor(network: SupportedNetwork): SendMemoSpec? =
+    when (network.family) {
+        "ripple" -> SendMemoSpec(
+            kind = SendMemoKind.RippleDestinationTag,
+            labelRes = R.string.send_destination_tag_label,
+            errorRes = R.string.send_destination_tag_error,
+        )
+        "stellar" -> SendMemoSpec(
+            kind = SendMemoKind.StellarTextMemo,
+            labelRes = R.string.send_memo_label,
+            errorRes = R.string.send_stellar_memo_error,
+        )
+        else -> null
+    }
+
+private fun isValidSendMemo(
+    memo: String,
+    spec: SendMemoSpec?,
+): Boolean {
+    val value = memo.trim()
+    if (spec == null || value.isBlank()) return true
+    return when (spec.kind) {
+        SendMemoKind.RippleDestinationTag -> {
+            value.all(Char::isDigit) &&
+                value.toLongOrNull()?.let { it in 0L..XRPL_DESTINATION_TAG_MAX } == true
+        }
+        SendMemoKind.StellarTextMemo -> value.toByteArray(Charsets.UTF_8).size <= STELLAR_MEMO_TEXT_MAX_BYTES
     }
 }
 
@@ -3269,3 +3426,5 @@ private const val CRYPTO_DISPLAY_DECIMALS = 8
 private const val RECIPIENT_ERROR_MIN_LENGTH = 8
 private const val SEND_RECEIPT_POLL_INTERVAL_MS = 6_000L
 private const val SEND_RECEIPT_COPY_RESET_MS = 900L
+private const val STELLAR_MEMO_TEXT_MAX_BYTES = 28
+private const val XRPL_DESTINATION_TAG_MAX = 0xffffffffL

@@ -470,6 +470,9 @@
     <string name="send_missing_key_body">এই নেটওয়ার্কের জন্য কোনো স্থানীয় সাইনিং কী সংরক্ষিত নেই৷ পাঠানোর আগে আমদানি করুন বা সাইনিং ওয়ালেট তৈরি করুন।</string>
     <string name="send_recipient_label">প্রাপকের ঠিকানা</string>
     <string name="send_recipient_helper">একটি বৈধ %1$s ঠিকানা পেস্ট করুন।</string>
+    <string name="send_destination_tag_label">গন্তব্য ট্যাগ (ঐচ্ছিক)</string>
+    <string name="send_destination_tag_error">শুধু সংখ্যা লিখুন, সর্বোচ্চ 4294967295।</string>
+    <string name="send_stellar_memo_error">Stellar মেমো 28 বাইট বা তার কম হতে হবে।</string>
     <string name="send_recipient_error">চালিয়ে যাওয়ার আগে ঠিকানা বিন্যাস চেক করুন.</string>
     <string name="send_amount_label">%1$s এ পরিমাণ</string>
     <string name="send_amount_error">শূন্যের চেয়ে বেশি এবং আপনার ব্যালেন্সের বেশি নয় এমন একটি পরিমাণ লিখুন।</string>
@@ -495,6 +498,7 @@
     <string name="send_broadcast_unsupported_network_body">%1$s এর জন্য সাইনিং এখনও উপলব্ধ নয়৷ Satra এই স্থানান্তরটিকে কার্যকলাপে সংরক্ষণ করেনি৷</string>
     <string name="send_broadcast_missing_key_body">এই নেটওয়ার্কের জন্য কোনো স্থানীয় সাইনিং কী উপলব্ধ নেই৷ Satra এই স্থানান্তরটিকে কার্যকলাপে সংরক্ষণ করেনি৷</string>
     <string name="send_broadcast_invalid_recipient_body">পাঠানোর আগে এই নেটওয়ার্কের জন্য প্রাপকের ঠিকানা চেক করুন।</string>
+    <string name="send_broadcast_invalid_memo_body">পাঠানোর আগে মেমো বা গন্তব্য ট্যাগ পরীক্ষা করুন।</string>
     <string name="send_broadcast_invalid_amount_body">পাঠানোর আগে পরিমাণ নির্ভুলতা পরীক্ষা করুন.</string>
     <string name="send_broadcast_insufficient_balance_body">এই ওয়ালেটে পরিমাণ এবং নেটওয়ার্ক ফি কভার করার জন্য পর্যাপ্ত ব্যালেন্স নেই।</string>
     <string name="send_search_asset_placeholder">মুদ্রা বা টোকেন অনুসন্ধান করুন</string>

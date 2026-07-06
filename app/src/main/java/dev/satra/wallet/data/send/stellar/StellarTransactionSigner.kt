@@ -22,6 +22,7 @@ internal object StellarTransactionSigner {
             amountStroops = amount,
             sequenceNumber = sequence,
             createAccount = request.createAccount,
+            memoText = request.memoText,
         )
         val signaturePayload = SatraSigningCrypto.sha256(MAINNET_PASSPHRASE.toByteArray(Charsets.UTF_8)) +
             xdrInt(ENVELOPE_TYPE_TX) +
@@ -51,13 +52,14 @@ internal object StellarTransactionSigner {
         amountStroops: Long,
         sequenceNumber: Long,
         createAccount: Boolean,
+        memoText: String?,
     ): ByteArray =
         ByteArrayOutputStream().use { out ->
             out.writeMuxedEd25519(sourcePublicKey)
             out.writeInt(STELLAR_BASE_FEE_STROOPS)
             out.writeLong(sequenceNumber)
             out.writeInt(PRECONDITION_NONE)
-            out.writeInt(MEMO_NONE)
+            out.writeMemo(memoText)
             out.writeInt(1)
             out.writeInt(0)
             if (createAccount) {
@@ -72,6 +74,22 @@ internal object StellarTransactionSigner {
             }
             out.toByteArray()
         }
+
+    private fun ByteArrayOutputStream.writeMemo(memoText: String?) {
+        val memoBytes = memoText
+            ?.trim()
+            ?.takeIf(String::isNotBlank)
+            ?.toByteArray(Charsets.UTF_8)
+        if (memoBytes == null) {
+            writeInt(MEMO_NONE)
+            return
+        }
+        require(memoBytes.size <= STELLAR_MEMO_TEXT_MAX_BYTES) {
+            "Stellar memo text is too long."
+        }
+        writeInt(MEMO_TEXT)
+        writeVariableOpaque(memoBytes)
+    }
 
     private fun ByteArrayOutputStream.writeMuxedEd25519(publicKey: ByteArray) {
         writeInt(KEY_TYPE_ED25519)
@@ -166,6 +184,8 @@ internal object StellarTransactionSigner {
     private const val KEY_TYPE_ED25519 = 0
     private const val PRECONDITION_NONE = 0
     private const val MEMO_NONE = 0
+    private const val MEMO_TEXT = 1
+    private const val STELLAR_MEMO_TEXT_MAX_BYTES = 28
     private const val OP_CREATE_ACCOUNT = 0
     private const val OP_PAYMENT = 1
     private const val ASSET_NATIVE = 0
@@ -180,6 +200,7 @@ internal data class StellarSigningRequest(
     val amountRaw: BigInteger,
     val accountSequence: Long,
     val createAccount: Boolean,
+    val memoText: String? = null,
     val privateKeyHex: String,
 )
 

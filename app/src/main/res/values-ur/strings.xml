@@ -470,6 +470,9 @@
     <string name="send_missing_key_body">اس نیٹ ورک کے لیے کوئی مقامی سائننگ کلید محفوظ نہیں ہے۔ بھیجنے سے پہلے دستخط کرنے والا پرس درآمد کریں یا بنائیں۔</string>
     <string name="send_recipient_label">وصول کنندہ کا پتہ</string>
     <string name="send_recipient_helper">ایک درست %1$s پتہ چسپاں کریں۔</string>
+    <string name="send_destination_tag_label">منزل ٹیگ (اختیاری)</string>
+    <string name="send_destination_tag_error">صرف نمبر درج کریں، زیادہ سے زیادہ 4294967295۔</string>
+    <string name="send_stellar_memo_error">Stellar میمو 28 بائٹس یا کم ہونا چاہیے۔</string>
     <string name="send_recipient_error">جاری رکھنے سے پہلے ایڈریس کا فارمیٹ چیک کریں۔</string>
     <string name="send_amount_label">%1$s میں رقم</string>
     <string name="send_amount_error">صفر سے زیادہ اور اپنے بیلنس سے زیادہ رقم درج کریں۔</string>
@@ -495,6 +498,7 @@
     <string name="send_broadcast_unsupported_network_body">%1$s کے لیے دستخط کرنا ابھی تک دستیاب نہیں ہے۔ Satra نے اس منتقلی کو سرگرمی میں محفوظ نہیں کیا۔</string>
     <string name="send_broadcast_missing_key_body">اس نیٹ ورک کے لیے کوئی مقامی سائننگ کلید دستیاب نہیں ہے۔ Satra نے اس منتقلی کو سرگرمی میں محفوظ نہیں کیا۔</string>
     <string name="send_broadcast_invalid_recipient_body">بھیجنے سے پہلے اس نیٹ ورک کے وصول کنندہ کا پتہ چیک کریں۔</string>
+    <string name="send_broadcast_invalid_memo_body">بھیجنے سے پہلے میمو یا منزل ٹیگ چیک کریں۔</string>
     <string name="send_broadcast_invalid_amount_body">بھیجنے سے پہلے رقم کی درستگی کو چیک کریں۔</string>
     <string name="send_broadcast_insufficient_balance_body">اس بٹوے میں رقم اور نیٹ ورک فیس کو پورا کرنے کے لیے کافی بیلنس نہیں ہے۔</string>
     <string name="send_search_asset_placeholder">سکے یا ٹوکن تلاش کریں۔</string>

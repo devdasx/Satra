@@ -533,11 +533,12 @@ fun SatraMainScreen(
                     onBack = { tabNavController.popBackStack() },
                     onScanClick = onScanAddressClick,
                     onScannedAddressConsumed = onScannedAddressConsumed,
-                    onContinue = { selectedAssetId, recipient, warnPoison ->
+                    onContinue = { selectedAssetId, recipient, memo, warnPoison ->
                         tabNavController.navigate(
                             SatraMainRoute.sendAmount(
                                 assetId = selectedAssetId,
                                 recipient = recipient,
+                                memo = memo,
                                 warnPoison = warnPoison,
                             ),
                         )
@@ -547,6 +548,7 @@ fun SatraMainScreen(
             composable(SatraMainRoute.SendAmountPattern) { entry ->
                 val assetId = entry.arguments?.getString(SatraMainRoute.ArgAssetId).orEmpty()
                 val recipient = entry.arguments?.getString(SatraMainRoute.ArgRecipient).orEmpty()
+                val memo = entry.arguments?.getString(SatraMainRoute.ArgMemo).orEmpty()
                 val warnPoison = entry.arguments?.getString(SatraMainRoute.ArgWarnPoison).toBoolean()
                 SatraSendAmountScreen(
                     walletRepository = walletRepository,
@@ -554,13 +556,15 @@ fun SatraMainScreen(
                     onWalletSnapshotLoaded = { snapshot -> walletSnapshot = snapshot },
                     assetId = assetId,
                     recipient = recipient,
+                    memo = memo,
                     warnPoison = warnPoison,
                     onBack = { tabNavController.popBackStack() },
-                    onReview = { selectedAssetId, selectedRecipient, amount, selectedWarnPoison ->
+                    onReview = { selectedAssetId, selectedRecipient, selectedMemo, amount, selectedWarnPoison ->
                         tabNavController.navigate(
                             SatraMainRoute.sendReview(
                                 assetId = selectedAssetId,
                                 recipient = selectedRecipient,
+                                memo = selectedMemo,
                                 amount = amount,
                                 warnPoison = selectedWarnPoison,
                             ),
@@ -571,6 +575,7 @@ fun SatraMainScreen(
             composable(SatraMainRoute.SendReviewPattern) { entry ->
                 val assetId = entry.arguments?.getString(SatraMainRoute.ArgAssetId).orEmpty()
                 val recipient = entry.arguments?.getString(SatraMainRoute.ArgRecipient).orEmpty()
+                val memo = entry.arguments?.getString(SatraMainRoute.ArgMemo).orEmpty()
                 val amount = entry.arguments?.getString(SatraMainRoute.ArgAmount).orEmpty()
                 val warnPoison = entry.arguments?.getString(SatraMainRoute.ArgWarnPoison).toBoolean()
                 SatraSendReviewScreen(
@@ -579,6 +584,7 @@ fun SatraMainScreen(
                     onWalletSnapshotLoaded = { snapshot -> walletSnapshot = snapshot },
                     assetId = assetId,
                     recipient = recipient,
+                    memo = memo,
                     amount = amount,
                     warnPoison = warnPoison,
                     onBack = { tabNavController.popBackStack() },
@@ -631,11 +637,12 @@ fun SatraMainScreen(
                     onBack = { tabNavController.popBackStack() },
                     onScanClick = onScanAddressClick,
                     onScannedAddressConsumed = onScannedAddressConsumed,
-                    onContinue = { selectedAssetId, recipient, warnPoison ->
+                    onContinue = { selectedAssetId, recipient, memo, warnPoison ->
                         tabNavController.navigate(
                             SatraMainRoute.sendAmount(
                                 assetId = selectedAssetId,
                                 recipient = recipient,
+                                memo = memo,
                                 warnPoison = warnPoison,
                             ),
                         )
@@ -5226,6 +5233,7 @@ internal object SatraMainRoute {
     const val ArgAssetId = "assetId"
     const val ArgTransactionId = "transactionId"
     const val ArgRecipient = "recipient"
+    const val ArgMemo = "memo"
     const val ArgAmount = "amount"
     const val ArgWarnPoison = "warnPoison"
     const val ArgWalletId = "walletId"
@@ -5235,8 +5243,8 @@ internal object SatraMainRoute {
     const val SendNetworkPattern = "main/send/network/{$ArgSymbol}"
     const val SendComposerPattern = "main/send/compose/{$ArgAssetId}"
     const val SendRecipientPattern = "main/send/recipient/{$ArgAssetId}"
-    const val SendAmountPattern = "main/send/amount/{$ArgAssetId}/{$ArgRecipient}/{$ArgWarnPoison}"
-    const val SendReviewPattern = "main/send/review/{$ArgAssetId}/{$ArgRecipient}/{$ArgAmount}/{$ArgWarnPoison}"
+    const val SendAmountPattern = "main/send/amount/{$ArgAssetId}/{$ArgRecipient}/{$ArgMemo}/{$ArgWarnPoison}"
+    const val SendReviewPattern = "main/send/review/{$ArgAssetId}/{$ArgRecipient}/{$ArgMemo}/{$ArgAmount}/{$ArgWarnPoison}"
     const val SendSentPattern = "main/send/sent/{$ArgTransactionId}"
     const val TransactionDetailPattern = "main/activity/transaction/{$ArgTransactionId}"
     const val MarketDetailPattern = "main/markets/asset/{$ArgSymbol}"
@@ -5279,17 +5287,25 @@ internal object SatraMainRoute {
     fun sendAmount(
         assetId: String,
         recipient: String,
+        memo: String,
         warnPoison: Boolean,
     ): String =
-        "main/send/amount/${Uri.encode(assetId)}/${Uri.encode(recipient)}/$warnPoison"
+        "main/send/amount/${Uri.encode(assetId)}/${Uri.encode(recipient)}/${encodeOptionalRouteValue(memo)}/$warnPoison"
 
     fun sendReview(
         assetId: String,
         recipient: String,
+        memo: String,
         amount: String,
         warnPoison: Boolean,
     ): String =
-        "main/send/review/${Uri.encode(assetId)}/${Uri.encode(recipient)}/${Uri.encode(amount)}/$warnPoison"
+        "main/send/review/${Uri.encode(assetId)}/${Uri.encode(recipient)}/${encodeOptionalRouteValue(memo)}/${Uri.encode(amount)}/$warnPoison"
+
+    fun decodeOptionalRouteValue(value: String): String =
+        Uri.decode(value).takeUnless { it == EmptyRouteValue }.orEmpty()
+
+    private fun encodeOptionalRouteValue(value: String): String =
+        Uri.encode(value.takeIf(String::isNotBlank) ?: EmptyRouteValue)
 
     fun sendSent(transactionId: String): String =
         "main/send/sent/${Uri.encode(transactionId)}"
@@ -5305,6 +5321,8 @@ internal object SatraMainRoute {
 
     fun walletRemovePasscode(walletId: String): String =
         "main/settings/wallet-management/remove/${Uri.encode(walletId)}/passcode"
+
+    private const val EmptyRouteValue = "_satra_empty_"
 }
 
 private val HomeContentMaxWidth = 720.dp

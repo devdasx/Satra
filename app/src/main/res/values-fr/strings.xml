@@ -470,6 +470,9 @@
     <string name="send_missing_key_body">Aucune clé de signature locale n\'est stockée pour ce réseau. Importez ou créez un portefeuille de signature avant l\'envoi.</string>
     <string name="send_recipient_label">Adresse du destinataire</string>
     <string name="send_recipient_helper">Collez une adresse%1$s valide.</string>
+    <string name="send_destination_tag_label">Balise de destination (facultatif)</string>
+    <string name="send_destination_tag_error">Saisissez uniquement des chiffres, jusqu’à 4294967295.</string>
+    <string name="send_stellar_memo_error">Les mémos Stellar doivent faire 28 octets ou moins.</string>
     <string name="send_recipient_error">Vérifiez le format de l\'adresse avant de continuer.</string>
     <string name="send_amount_label">Montant dans%1$s</string>
     <string name="send_amount_error">Entrez un montant supérieur à zéro et pas supérieur à votre solde.</string>
@@ -495,6 +498,7 @@
     <string name="send_broadcast_unsupported_network_body">La signature n\'est pas encore disponible pour%1$s. Satra n\'a pas enregistré ce transfert dans Activity.</string>
     <string name="send_broadcast_missing_key_body">Aucune clé de signature locale n\'est disponible pour ce réseau. Satra n\'a pas enregistré ce transfert dans Activity.</string>
     <string name="send_broadcast_invalid_recipient_body">Vérifiez l\'adresse du destinataire pour ce réseau avant l\'envoi.</string>
+    <string name="send_broadcast_invalid_memo_body">Vérifiez le mémo ou la balise de destination avant l’envoi.</string>
     <string name="send_broadcast_invalid_amount_body">Vérifiez la précision du montant avant l\'envoi.</string>
     <string name="send_broadcast_insufficient_balance_body">Ce portefeuille n\'a pas suffisamment de solde pour couvrir le montant et les frais de réseau.</string>
     <string name="send_search_asset_placeholder">Rechercher une pièce ou un jeton</string>

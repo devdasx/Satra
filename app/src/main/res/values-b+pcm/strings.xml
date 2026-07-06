@@ -470,6 +470,9 @@
     <string name="send_missing_key_body">No local signing key is stored for this network. Import or create a signing wallet before sending.</string>
     <string name="send_recipient_label">Recipient address</string>
     <string name="send_recipient_helper">Paste a valid %1$s address.</string>
+    <string name="send_destination_tag_label">Destination tag (optional)</string>
+    <string name="send_destination_tag_error">Enter only numbers, up to 4294967295.</string>
+    <string name="send_stellar_memo_error">Stellar memos must be 28 bytes or less.</string>
     <string name="send_recipient_error">Check di address format before continuing.</string>
     <string name="send_amount_label">Amount in %1$s</string>
     <string name="send_amount_error">Put an amount greater than zero and no more than your balance.</string>
@@ -495,6 +498,7 @@
     <string name="send_broadcast_unsupported_network_body">Signing no dey available for %1$s yet. Satra did not save this transfer to Activity.</string>
     <string name="send_broadcast_missing_key_body">No local signing key is available for this network. Satra did not save this transfer to Activity.</string>
     <string name="send_broadcast_invalid_recipient_body">Check di recipient address for this network before sending.</string>
+    <string name="send_broadcast_invalid_memo_body">Check the memo or destination tag before sending.</string>
     <string name="send_broadcast_invalid_amount_body">Check di amount precision before sending.</string>
     <string name="send_broadcast_insufficient_balance_body">This wallet no dey have enough balance to cover di amount and network fee.</string>
     <string name="send_search_asset_placeholder">Search coin or token</string>

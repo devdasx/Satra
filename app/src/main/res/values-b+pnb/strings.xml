@@ -470,6 +470,9 @@
     <string name="send_missing_key_body">اس نیٹ ورک لئی کوئی لوکل سائننگ کلید محفوظ نئیں اے۔ بھیجن توں پہلاں اک دستخط کرن آلا بٹوہ درآمد کرو یا بناؤ۔</string>
     <string name="send_recipient_label">وصول کرن آلے دا پتہ</string>
     <string name="send_recipient_helper">اک درست %1$s پتہ پیسٹ کرو۔</string>
+    <string name="send_destination_tag_label">منزل ٹیگ (اختیاری)</string>
+    <string name="send_destination_tag_error">صرف نمبر درج کرو، زیادہ توں زیادہ 4294967295۔</string>
+    <string name="send_stellar_memo_error">Stellar میمو 28 بائٹس یا گھٹ ہونا چاہیدا اے۔</string>
     <string name="send_recipient_error">جاری رکھن توں پہلاں پتے دی شکل چیک کرو۔</string>
     <string name="send_amount_label">%1$s چ رقم</string>
     <string name="send_amount_error">صفر توں ودھ رقم درج کرو تے اپنے بیلنس توں زیادہ نئیں۔</string>
@@ -495,6 +498,7 @@
     <string name="send_broadcast_unsupported_network_body">%1$s لئی دستخط ہلے نئیں اے۔ Satra نے اس منتقلی نو سرگرمی چ محفوظ نئیں کیتا۔</string>
     <string name="send_broadcast_missing_key_body">اس نیٹ ورک لئی کوئی لوکل سائننگ کلید دستیاب نئیں اے۔ Satra نے اس منتقلی نو سرگرمی چ محفوظ نئیں کیتا۔</string>
     <string name="send_broadcast_invalid_recipient_body">بھیجن توں پہلاں اس نیٹ ورک لئی وصول کنندہ دا پتہ چیک کرو۔</string>
+    <string name="send_broadcast_invalid_memo_body">بھیجن توں پہلے میمو یا منزل ٹیگ چیک کرو۔</string>
     <string name="send_broadcast_invalid_amount_body">بھیجن توں پہلاں رقم دی درستگی چیک کرو۔</string>
     <string name="send_broadcast_insufficient_balance_body">اس پرس چ رقم تے نیٹ ورک فیس دا احاطہ کرن لئی اینا بیلنس نئیں اے۔</string>
     <string name="send_search_asset_placeholder">سکہ یا ٹوکن لبھو</string>

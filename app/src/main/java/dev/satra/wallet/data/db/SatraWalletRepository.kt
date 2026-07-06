@@ -552,6 +552,7 @@ class SatraWalletRepository(
         assetId: String,
         recipientAddress: String,
         amountDecimal: BigDecimal,
+        memo: String? = null,
     ): String =
         withContext(Dispatchers.IO) {
             val wallet = walletDao.getWallets().firstOrNull { it.isActive }
@@ -609,6 +610,7 @@ class SatraWalletRepository(
                     contractAddress = asset.contractAddress,
                     sourceAddress = sourceAddressRecord.address,
                     recipientAddress = recipientAddress,
+                    memo = memo?.trim()?.takeIf(String::isNotBlank),
                     amountDecimal = amountDecimal.stripTrailingZeros().toPlainString(),
                     balanceRaw = walletAsset.balanceRaw,
                     walletAssetMetadataJson = walletAsset.metadataJson,
@@ -648,6 +650,7 @@ class SatraWalletRepository(
                     fromAddress = broadcast.fromAddress,
                     toAddress = broadcast.toAddress,
                     nonce = broadcast.nonce.toString(),
+                    memo = broadcast.memo,
                     timestamp = broadcast.timestampMillis,
                     metadataJson = JSONObject()
                         .put("flow", "send")
@@ -655,6 +658,9 @@ class SatraWalletRepository(
                         .put("provider", broadcast.providerName)
                         .put("rawTransaction", broadcast.rawTransaction)
                         .put("assetSymbol", asset.symbol)
+                        .also { metadata ->
+                            broadcast.memo?.takeIf(String::isNotBlank)?.let { metadata.put("memo", it) }
+                        }
                         .toString(),
                 ),
             )

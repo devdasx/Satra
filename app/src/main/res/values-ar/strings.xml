@@ -470,6 +470,9 @@
     <string name="send_missing_key_body">لا يتم تخزين مفتاح توقيع محلي لهذه الشبكة. قم باستيراد أو إنشاء محفظة توقيع قبل إرسال عنوان</string>
     <string name="send_recipient_label">عنوان المستلم</string>
     <string name="send_recipient_helper">قم بلصق عنوان%1$s صالح.</string>
+    <string name="send_destination_tag_label">علامة الوجهة (اختياري)</string>
+    <string name="send_destination_tag_error">أدخل أرقامًا فقط حتى 4294967295.</string>
+    <string name="send_stellar_memo_error">يجب ألا تتجاوز مذكرات Stellar 28 بايت.</string>
     <string name="send_recipient_error">تحقق من تنسيق العنوان قبل المتابعة.</string>
     <string name="send_amount_label">المبلغ في%1$s</string>
     <string name="send_amount_error">أدخل مبلغًا أكبر من الصفر وليس أكثر من رصيدك.</string>
@@ -495,6 +498,7 @@
     <string name="send_broadcast_unsupported_network_body">التوقيع غير متاح لـ%1$s حتى الآن. لم يتم حفظ هذا التحويل في النشاط.</string>
     <string name="send_broadcast_missing_key_body">لا يتوفر مفتاح توقيع محلي لهذه الشبكة. Satra لم يحفظ هذا التحويل في النشاط.</string>
     <string name="send_broadcast_invalid_recipient_body">تحقق من عنوان المستلم لهذه الشبكة قبل الإرسال.</string>
+    <string name="send_broadcast_invalid_memo_body">تحقق من المذكرة أو علامة الوجهة قبل الإرسال.</string>
     <string name="send_broadcast_invalid_amount_body">تحقق من دقة المبلغ قبل الإرسال.</string>
     <string name="send_broadcast_insufficient_balance_body">لا تحتوي هذه المحفظة على رصيد كافٍ لتغطية المبلغ ورسوم الشبكة.</string>
     <string name="send_search_asset_placeholder">بحث عن عملة أو رمز مميز</string>

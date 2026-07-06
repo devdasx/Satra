@@ -319,6 +319,7 @@ class SatraSendService {
             throw SatraSendException.UnsupportedNetwork(request.networkId)
         }
         val amountRaw = decimalToRaw(request.amountDecimal, request.decimals)
+        val memoText = normalizedStellarMemo(request.memo)
         val availableRaw = request.balanceRaw.toBigIntegerOrZero()
         if (availableRaw < amountRaw.add(BigInteger.valueOf(STELLAR_BASE_FEE_STROOPS.toLong()))) {
             throw SatraSendException.InsufficientBalance()
@@ -343,6 +344,7 @@ class SatraSendService {
                         amountRaw = amountRaw,
                         accountSequence = sequence,
                         createAccount = createAccount,
+                        memoText = memoText,
                         privateKeyHex = request.privateKeyHex,
                     ),
                 )
@@ -361,6 +363,7 @@ class SatraSendService {
                     feeAssetId = request.assetId,
                     nonce = BigInteger.valueOf(sequence + 1L),
                     timestampMillis = System.currentTimeMillis(),
+                    memo = memoText,
                 )
             } catch (error: Throwable) {
                 lastError = error
@@ -529,6 +532,8 @@ class SatraSendService {
     ): SatraBroadcastResult {
         val isNative = request.assetType.uppercase(Locale.US) == "NATIVE"
         val amountRaw = decimalToRaw(request.amountDecimal, request.decimals)
+        val destinationTag = normalizedRippleDestinationTag(request.memo)
+        val normalizedMemo = destinationTag?.toString()
         val availableRaw = request.balanceRaw.toBigIntegerOrZero()
         if (availableRaw < amountRaw) {
             throw SatraSendException.InsufficientBalance()
@@ -574,6 +579,7 @@ class SatraSendService {
                         feeDrops = feeDrops,
                         sequence = account.sequence,
                         lastLedgerSequence = ledger + XRPL_LAST_LEDGER_OFFSET,
+                        destinationTag = destinationTag,
                         privateKeyHex = request.privateKeyHex,
                     ),
                 )
@@ -593,12 +599,33 @@ class SatraSendService {
                         ?.assetId,
                     nonce = BigInteger.valueOf(account.sequence),
                     timestampMillis = System.currentTimeMillis(),
+                    memo = normalizedMemo,
                 )
             } catch (error: Throwable) {
                 lastError = error
             }
         }
         throw SatraSendException.BroadcastFailed(lastError ?: IllegalStateException("No XRPL provider broadcast succeeded."))
+    }
+
+    private fun normalizedRippleDestinationTag(memo: String?): Long? {
+        val value = memo?.trim()?.takeIf(String::isNotBlank) ?: return null
+        if (!value.all(Char::isDigit)) {
+            throw SatraSendException.InvalidMemo()
+        }
+        val tag = value.toLongOrNull() ?: throw SatraSendException.InvalidMemo()
+        if (tag !in 0L..XRPL_DESTINATION_TAG_MAX) {
+            throw SatraSendException.InvalidMemo()
+        }
+        return tag
+    }
+
+    private fun normalizedStellarMemo(memo: String?): String? {
+        val value = memo?.trim()?.takeIf(String::isNotBlank) ?: return null
+        if (value.toByteArray(Charsets.UTF_8).size > STELLAR_MEMO_TEXT_MAX_BYTES) {
+            throw SatraSendException.InvalidMemo()
+        }
+        return value
     }
 
     private suspend fun signAndBroadcastSui(
@@ -1127,11 +1154,13 @@ class SatraSendService {
         private const val APTOS_EXPIRATION_SECONDS = 600L
         private const val DEFAULT_APTOS_MAX_GAS_AMOUNT = 100_000UL
         private const val STELLAR_BASE_FEE_STROOPS = 100
+        private const val STELLAR_MEMO_TEXT_MAX_BYTES = 28
         private const val DEFAULT_SUI_GAS_BUDGET_MIST = 5_000_000L
         private const val SUI_COIN_TYPE = "0x2::sui::SUI"
         private const val DEFAULT_KAVA_GAS_LIMIT = 200_000L
         private const val DEFAULT_KAVA_FEE_UKAVA = 20_000L
         private const val XRPL_LAST_LEDGER_OFFSET = 20L
+        private const val XRPL_DESTINATION_TAG_MAX = 0xffffffffL
         private val DEFAULT_TON_FEE_NANOTON = BigInteger.valueOf(15_000_000L)
         private val TON_JETTON_TRANSFER_ATTACHED_NANOTON = BigInteger.valueOf(50_000_000L)
     }

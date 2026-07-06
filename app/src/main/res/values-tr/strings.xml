@@ -470,6 +470,9 @@
     <string name="send_missing_key_body">Bu ağ için yerel imzalama anahtarı depolanmadı. Göndermeden önce bir imza cüzdanını içe aktarın veya oluşturun.</string>
     <string name="send_recipient_label">Alıcı adresi</string>
     <string name="send_recipient_helper">Geçerli bir %1$s adresi yapıştırın.</string>
+    <string name="send_destination_tag_label">Hedef etiketi (isteğe bağlı)</string>
+    <string name="send_destination_tag_error">Yalnızca sayı girin, en fazla 4294967295.</string>
+    <string name="send_stellar_memo_error">Stellar notları 28 bayt veya daha az olmalıdır.</string>
     <string name="send_recipient_error">Devam etmeden önce adres biçimini kontrol edin.</string>
     <string name="send_amount_label">%1$s cinsinden tutar</string>
     <string name="send_amount_error">Sıfırdan büyük ve bakiyenizden fazla olmayan bir tutar girin.</string>
@@ -495,6 +498,7 @@
     <string name="send_broadcast_unsupported_network_body">İmzalama henüz %1$s için kullanılamıyor. Satra bu aktarımı Aktivite\'ye kaydetmedi.</string>
     <string name="send_broadcast_missing_key_body">Bu ağ için yerel imzalama anahtarı yok. Satra bu aktarımı Aktivite\'ye kaydetmedi.</string>
     <string name="send_broadcast_invalid_recipient_body">Göndermeden önce bu ağın alıcı adresini kontrol edin.</string>
+    <string name="send_broadcast_invalid_memo_body">Göndermeden önce notu veya hedef etiketini kontrol edin.</string>
     <string name="send_broadcast_invalid_amount_body">Göndermeden önce miktar hassasiyetini kontrol edin.</string>
     <string name="send_broadcast_insufficient_balance_body">Bu cüzdanda tutarı ve ağ ücretini karşılayacak yeterli bakiye yok.</string>
     <string name="send_search_asset_placeholder">Madeni para veya jeton arayın</string>

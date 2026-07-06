@@ -470,6 +470,9 @@
     <string name="send_missing_key_body">No se almacena ninguna clave de firma local para esta red. Importe o cree una billetera de firma antes de enviar.</string>
     <string name="send_recipient_label">Dirección del destinatario</string>
     <string name="send_recipient_helper">Pegue una dirección%1$s válida.</string>
+    <string name="send_destination_tag_label">Etiqueta de destino (opcional)</string>
+    <string name="send_destination_tag_error">Ingresa solo números, hasta 4294967295.</string>
+    <string name="send_stellar_memo_error">Los memos de Stellar deben tener 28 bytes o menos.</string>
     <string name="send_recipient_error">Compruebe el formato de la dirección antes de continuar.</string>
     <string name="send_amount_label">Cantidad en%1$s</string>
     <string name="send_amount_error">Ingrese una cantidad mayor que cero y no mayor que su saldo.</string>
@@ -495,6 +498,7 @@
     <string name="send_broadcast_unsupported_network_body">La firma aún no está disponible para%1$s. Satra no guardó esta transferencia en Activity.</string>
     <string name="send_broadcast_missing_key_body">No hay ninguna clave de firma local disponible para esta red. Satra no guardó esta transferencia en Actividad.</string>
     <string name="send_broadcast_invalid_recipient_body">Verifique la dirección del destinatario de esta red antes de enviar.</string>
+    <string name="send_broadcast_invalid_memo_body">Revisa el memo o la etiqueta de destino antes de enviar.</string>
     <string name="send_broadcast_invalid_amount_body">Verifique la precisión del monto antes de enviar.</string>
     <string name="send_broadcast_insufficient_balance_body">Esta billetera no tiene saldo suficiente para cubrir el monto y la tarifa de la red.</string>
     <string name="send_search_asset_placeholder">Buscar moneda o token</string>

@@ -27,6 +27,7 @@ internal object RippleTransactionSigner {
             signingPubKey = signingPubKey,
             accountId = accountId,
             destination = destination,
+            destinationTag = request.destinationTag,
             signature = null,
         )
         val digest = sha512Half(XRPL_SIGNING_PREFIX + unsigned)
@@ -42,6 +43,7 @@ internal object RippleTransactionSigner {
             signingPubKey = signingPubKey,
             accountId = accountId,
             destination = destination,
+            destinationTag = request.destinationTag,
             signature = signatureDer,
         )
         val txHash = sha512Half(XRPL_TRANSACTION_ID_PREFIX + signed).toHex().uppercase()
@@ -83,6 +85,7 @@ internal object RippleTransactionSigner {
         signingPubKey: ByteArray,
         accountId: ByteArray,
         destination: ByteArray,
+        destinationTag: Long?,
         signature: ByteArray?,
     ): ByteArray =
         ByteArrayOutputStream().use { out ->
@@ -90,6 +93,10 @@ internal object RippleTransactionSigner {
             out.writeUInt16(TRANSACTION_TYPE_PAYMENT)
             out.write(fieldHeader(TYPE_UINT32, FIELD_SEQUENCE))
             out.writeUInt32(sequence)
+            destinationTag?.let { tag ->
+                out.write(fieldHeader(TYPE_UINT32, FIELD_DESTINATION_TAG))
+                out.writeUInt32(tag)
+            }
             out.write(fieldHeader(TYPE_UINT32, FIELD_LAST_LEDGER_SEQUENCE))
             out.writeUInt32(lastLedgerSequence)
             out.write(fieldHeader(TYPE_AMOUNT, FIELD_AMOUNT))
@@ -218,6 +225,7 @@ internal object RippleTransactionSigner {
     private const val TYPE_ACCOUNT_ID = 8
     private const val FIELD_TRANSACTION_TYPE = 2
     private const val FIELD_SEQUENCE = 4
+    private const val FIELD_DESTINATION_TAG = 14
     private const val FIELD_LAST_LEDGER_SEQUENCE = 27
     private const val FIELD_AMOUNT = 1
     private const val FIELD_FEE = 8
@@ -246,6 +254,7 @@ internal data class RippleSigningRequest(
     val feeDrops: BigInteger,
     val sequence: Long,
     val lastLedgerSequence: Long,
+    val destinationTag: Long? = null,
     val privateKeyHex: String,
 )
 

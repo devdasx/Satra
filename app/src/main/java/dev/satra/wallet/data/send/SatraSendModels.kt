@@ -13,6 +13,7 @@ data class SatraSendRequest(
     val sourceAddress: String,
     val recipientAddress: String,
     val amountDecimal: String,
+    val memo: String? = null,
     val balanceRaw: String,
     val walletAssetMetadataJson: String = "{}",
     val privateKeyHex: String,
@@ -34,6 +35,7 @@ data class SatraBroadcastResult(
     val feeAssetId: String?,
     val nonce: BigInteger,
     val timestampMillis: Long,
+    val memo: String? = null,
 )
 
 sealed class SatraSendException(message: String, cause: Throwable? = null) : Exception(message, cause) {
@@ -41,6 +43,7 @@ sealed class SatraSendException(message: String, cause: Throwable? = null) : Exc
     class MissingSigningKey : SatraSendException("No local signing key is available for this network.")
     class UnsupportedNetwork(networkId: String) : SatraSendException("Signing is not available for $networkId.")
     class InvalidRecipient(cause: Throwable? = null) : SatraSendException("Invalid recipient address.", cause)
+    class InvalidMemo(cause: Throwable? = null) : SatraSendException("Invalid transaction memo.", cause)
     class InvalidAmount(cause: Throwable? = null) : SatraSendException("Invalid send amount.", cause)
     class InsufficientBalance : SatraSendException("Insufficient balance.")
     class BroadcastFailed(cause: Throwable) : SatraSendException("Broadcast failed.", cause)

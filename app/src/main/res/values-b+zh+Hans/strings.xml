@@ -470,6 +470,9 @@
     <string name="send_missing_key_body">没有为此网络存储本地签名密钥。在发送之前导入或创建签名钱包。</string>
     <string name="send_recipient_label">收件人地址</string>
     <string name="send_recipient_helper">粘贴有效的%1$s 地址。</string>
+    <string name="send_destination_tag_label">目的地标签（可选）</string>
+    <string name="send_destination_tag_error">只能输入数字，最大 4294967295。</string>
+    <string name="send_stellar_memo_error">Stellar 备忘录必须不超过 28 字节。</string>
     <string name="send_recipient_error">在继续之前检查地址格式。</string>
     <string name="send_amount_label">%1$s 金额</string>
     <string name="send_amount_error">输入大于零且不超过您的余额的金额。</string>
@@ -495,6 +498,7 @@
     <string name="send_broadcast_unsupported_network_body">%1$s 尚不支持签名。 Satra 未将此转账保存到活动中。</string>
     <string name="send_broadcast_missing_key_body">该网络没有可用的本地签名密钥。 Satra 未将此传输保存到活动。</string>
     <string name="send_broadcast_invalid_recipient_body">发送前检查该网络的收件人地址。</string>
+    <string name="send_broadcast_invalid_memo_body">发送前请检查备忘录或目的地标签。</string>
     <string name="send_broadcast_invalid_amount_body">发送前检查金额精度。</string>
     <string name="send_broadcast_insufficient_balance_body">该钱包没有足够的余额来支付金额和网络费用。</string>
     <string name="send_search_asset_placeholder">搜索硬币或代币</string>
