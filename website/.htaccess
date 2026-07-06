@@ -1,6 +1,7 @@
 DirectoryIndex index.html
 Options -Indexes
 ErrorDocument 404 /404.html
+AddType application/vnd.android.package-archive .apk
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
