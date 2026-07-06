@@ -173,13 +173,6 @@ internal fun SatraSettingsRootScreen(
                     body = stringResource(R.string.settings_about_body),
                     onClick = { onNavigate(SatraMainRoute.About) },
                 )
-                SettingsDivider()
-                SettingsRow(
-                    iconRes = R.drawable.ic_brand_document,
-                    title = stringResource(R.string.settings_legal_title),
-                    body = stringResource(R.string.settings_legal_body),
-                    onClick = { onNavigate(SatraMainRoute.Legal) },
-                )
             }
         }
         item { SettingsSectionTitle(R.string.settings_section_danger) }
@@ -1647,39 +1640,6 @@ internal fun SatraAboutScreen(
                     title = stringResource(R.string.settings_about_source),
                     body = stringResource(R.string.settings_about_open_github),
                     onClick = { openUrl(sourceUrl) },
-                )
-            }
-        }
-    }
-}
-
-@Composable
-internal fun SatraLegalScreen(onBack: () -> Unit) {
-    val context = LocalContext.current
-    val privacyUrl = stringResource(R.string.settings_url_privacy)
-    val termsUrl = stringResource(R.string.settings_url_terms)
-    fun openUrl(url: String) {
-        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-    }
-
-    SettingsScaffold(
-        titleRes = R.string.settings_legal_title,
-        onBack = onBack,
-    ) {
-        item {
-            SettingsCard {
-                SettingsRow(
-                    iconRes = R.drawable.ic_brand_document,
-                    title = stringResource(R.string.settings_privacy_policy),
-                    body = privacyUrl,
-                    onClick = { openUrl(privacyUrl) },
-                )
-                SettingsDivider()
-                SettingsRow(
-                    iconRes = R.drawable.ic_brand_document,
-                    title = stringResource(R.string.settings_terms_of_use),
-                    body = termsUrl,
-                    onClick = { openUrl(termsUrl) },
                 )
             }
         }

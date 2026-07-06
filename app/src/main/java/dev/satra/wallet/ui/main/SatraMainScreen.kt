@@ -395,9 +395,6 @@ fun SatraMainScreen(
                     onBack = { tabNavController.popBackStack() },
                 )
             }
-            composable(SatraMainRoute.Legal) {
-                SatraLegalScreen(onBack = { tabNavController.popBackStack() })
-            }
             composable(SatraMainRoute.DangerZone) {
                 SatraDangerZoneScreen(
                     walletRepository = walletRepository,
@@ -5274,7 +5271,6 @@ internal object SatraMainRoute {
     const val SecurityTurnOffPasscode = "main/settings/security/turn-off-passcode"
     const val Notifications = "main/settings/notifications"
     const val About = "main/settings/about"
-    const val Legal = "main/settings/legal"
     const val DangerZone = "main/settings/danger-zone"
     const val DangerZonePasscode = "main/settings/danger-zone/passcode"
 
