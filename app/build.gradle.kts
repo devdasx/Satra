@@ -37,8 +37,8 @@ android {
         applicationId = "com.satra.wallet"
         minSdk = 26
         targetSdk = 37
-        versionCode = 20411
-        versionName = "2.4.11"
+        versionCode = 20412
+        versionName = "2.4.12"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -71,6 +71,15 @@ android {
 
     buildTypes {
         release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
+            ndk {
+                debugSymbolLevel = "SYMBOL_TABLE"
+            }
             if (hasReleaseSigningConfig) {
                 signingConfig = signingConfigs.getByName("release")
             }
