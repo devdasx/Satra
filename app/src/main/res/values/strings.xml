@@ -23,7 +23,6 @@
     <string name="onboarding_terms_of_use_url" translatable="false">https://satra.app/terms</string>
     <string name="settings_title">Settings</string>
     <string name="settings_back_content_description">Go back</string>
-    <string name="settings_open_indicator" translatable="false">&gt;</string>
     <string name="settings_section_appearance">Appearance</string>
     <string name="settings_theme_system">System</string>
     <string name="settings_theme_system_body">Follow this device.</string>

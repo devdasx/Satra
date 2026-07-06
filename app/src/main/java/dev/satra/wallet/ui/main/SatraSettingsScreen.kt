@@ -1865,12 +1865,11 @@ private fun SettingsRow(
             modifier = Modifier.width(24.dp),
             contentAlignment = Alignment.CenterEnd,
         ) {
-            Text(
-                text = stringResource(R.string.settings_open_indicator),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
+            Icon(
+                painter = painterResource(R.drawable.ic_brand_chevron_end),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.78f),
+                modifier = Modifier.size(22.dp),
             )
         }
     }
