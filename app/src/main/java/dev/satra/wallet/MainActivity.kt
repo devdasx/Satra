@@ -226,6 +226,7 @@ class MainActivity : FragmentActivity() {
             fun persistPendingWalletSetup(
                 flow: WalletSetupFlow,
                 biometricsEnabled: Boolean,
+                saveSecurity: Boolean = true,
             ): Boolean {
                 if (pendingWalletId.isNotBlank()) {
                     return true
@@ -287,10 +288,12 @@ class MainActivity : FragmentActivity() {
                             }
                         }
                     }
-                    walletRepository.saveSetupSecurity(
-                        passcode = pendingSetupPasscode,
-                        biometricsEnabled = pendingSetupPasscode.isNotBlank() && biometricsEnabled,
-                    )
+                    if (saveSecurity) {
+                        walletRepository.saveSetupSecurity(
+                            passcode = pendingSetupPasscode,
+                            biometricsEnabled = pendingSetupPasscode.isNotBlank() && biometricsEnabled,
+                        )
+                    }
                     true
                 } catch (_: Exception) {
                     Toast.makeText(
@@ -303,7 +306,7 @@ class MainActivity : FragmentActivity() {
             }
 
             fun finishWalletSetup(flow: WalletSetupFlow) {
-                appUnlocked = pendingSetupPasscode.isNotBlank()
+                appUnlocked = appUnlocked || pendingSetupPasscode.isNotBlank()
                 settingsStore.edit()
                     .remove(KEY_LAST_BACKGROUND_AT)
                     .apply()
@@ -313,6 +316,25 @@ class MainActivity : FragmentActivity() {
                         inclusive = true
                     }
                     launchSingleTop = true
+                }
+            }
+
+            fun continueWalletSetupAfterDetails(flow: WalletSetupFlow) {
+                coroutineScope.launch {
+                    val walletAlreadyExists = walletRepository.getPrimaryWallet() != null
+                    if (walletAlreadyExists) {
+                        pendingSetupPasscode = ""
+                        if (persistPendingWalletSetup(
+                                flow = flow,
+                                biometricsEnabled = false,
+                                saveSecurity = false,
+                            )
+                        ) {
+                            finishWalletSetup(flow)
+                        }
+                    } else {
+                        navController.navigate(SatraRoute.setupPasscode(flow))
+                    }
                 }
             }
 
@@ -507,7 +529,7 @@ class MainActivity : FragmentActivity() {
                                 )
                             },
                             onNext = {
-                                navController.navigate(SatraRoute.setupPasscode(WalletSetupFlow.Create))
+                                continueWalletSetupAfterDetails(WalletSetupFlow.Create)
                             },
                         )
                     }
@@ -569,7 +591,7 @@ class MainActivity : FragmentActivity() {
                                 pendingImportPassphrase = passphrase
                                 pendingImportPrivateKey = ""
                                 pendingImportWatchAddress = ""
-                                navController.navigate(SatraRoute.setupPasscode(WalletSetupFlow.Import))
+                                continueWalletSetupAfterDetails(WalletSetupFlow.Import)
                             },
                         )
                     }
@@ -660,7 +682,7 @@ class MainActivity : FragmentActivity() {
                                     pendingImportPassphrase = ""
                                     pendingImportPrivateKey = privateKey
                                     pendingImportWatchAddress = ""
-                                    navController.navigate(SatraRoute.setupPasscode(WalletSetupFlow.Import))
+                                    continueWalletSetupAfterDetails(WalletSetupFlow.Import)
                                 },
                             )
                         } else {
@@ -677,7 +699,7 @@ class MainActivity : FragmentActivity() {
                                     pendingImportPassphrase = ""
                                     pendingImportPrivateKey = ""
                                     pendingImportWatchAddress = address
-                                    navController.navigate(SatraRoute.setupPasscode(WalletSetupFlow.Import))
+                                    continueWalletSetupAfterDetails(WalletSetupFlow.Import)
                                 },
                             )
                         }

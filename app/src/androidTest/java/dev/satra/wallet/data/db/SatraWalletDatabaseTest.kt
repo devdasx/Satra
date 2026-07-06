@@ -507,6 +507,26 @@ class SatraWalletDatabaseTest {
     }
 
     @Test
+    fun repositoryDoesNotClearExistingPasscodeWhenSetupSecurityIsSkipped() {
+        val repository = SatraWalletRepository(dao)
+
+        repository.saveSetupSecurity(passcode = "123456", biometricsEnabled = true)
+        val protectedSettings = dao.getAppSettings()
+        assertTrue(protectedSettings.passcodeEnabled)
+        assertTrue(protectedSettings.biometricsEnabled)
+        assertEquals(6, protectedSettings.passcodeLength)
+
+        repository.saveSetupSecurity(passcode = "", biometricsEnabled = false)
+
+        val skippedSettings = dao.getAppSettings()
+        assertTrue(skippedSettings.passcodeEnabled)
+        assertTrue(skippedSettings.biometricsEnabled)
+        assertEquals(protectedSettings.passcodeHash, skippedSettings.passcodeHash)
+        assertEquals(protectedSettings.passcodeSalt, skippedSettings.passcodeSalt)
+        assertEquals(6, skippedSettings.passcodeLength)
+    }
+
+    @Test
     fun repositoryPersistsCreateImportAndPrivateKeyFlowsForEveryNetwork() {
         val repository = SatraWalletRepository(dao)
         val createdWalletId = repository.createMnemonicWallet(

@@ -364,12 +364,6 @@ class SatraWalletRepository(
         biometricsEnabled: Boolean,
     ) {
         if (passcode.isBlank()) {
-            walletDao.updateAppSettings(
-                AppSettingsUpdate(
-                    clearPasscode = true,
-                    biometricsEnabled = false,
-                ),
-            )
             return
         }
         val passcodeHash = SatraPasscodeHasher.hash(passcode)
