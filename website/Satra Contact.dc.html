@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <title>satra — contact</title>
+  <link rel="icon" href="brand/satra-brand-kit/app-icon/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    html, body { margin: 0; padding: 0; background: #F7F6F3; }
+    ::selection { background: rgba(11,11,12,.9); color: #F7F6F3; }
+    input::placeholder, textarea::placeholder { color: #8E8E93; opacity: 1; }
+  </style>
+</helmet>
+
+<section style="background: #F7F6F3; color: #2C2C30; font-family: 'Outfit', -apple-system, 'Helvetica Neue', sans-serif; -webkit-font-smoothing: antialiased; display: flex; flex-direction: column; min-height: 100vh;">
+
+  <!-- Nav -->
+  <nav data-screen-label="Nav" style="width: 100%; box-sizing: border-box; max-width: 1152px; margin: 0 auto; padding: 0 32px; height: 64px; display: flex; align-items: center; justify-content: space-between;">
+    <a href="Satra Landing.dc.html" aria-label="Satra home" style="display: flex; align-items: center; gap: 10px; text-decoration: none;">
+      <svg width="26" height="26" viewBox="26 26 48 48" aria-hidden="true"><path d="M28 28 L48 28 A20 20 0 0 1 28 48 Z" fill="#0B0B0C"></path><rect x="52" y="28" width="20" height="20" rx="2" fill="#0B0B0C" opacity=".4"></rect><rect x="28" y="52" width="20" height="20" rx="2" fill="#0B0B0C" opacity=".4"></rect><path d="M72 52 A20 20 0 0 0 52 72 L72 72 Z" fill="#0B0B0C"></path></svg>
+      <span style="font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 21px; letter-spacing: -0.015em; color: #0B0B0C; line-height: 1;">satra</span>
+    </a>
+    <div style="display: flex; align-items: center; gap: 32px;">
+      <div style="display: flex; align-items: center; gap: 28px;">
+        <a href="Satra Landing.dc.html" style="font-size: 13.5px; font-weight: 500; color: #55555A; text-decoration: none; transition: color .15s;" style-hover="color: #0B0B0C;">Wallet</a>
+        <a href="Satra Security.dc.html" style="font-size: 13.5px; font-weight: 500; color: #55555A; text-decoration: none; transition: color .15s;" style-hover="color: #0B0B0C;">Security</a>
+        <a href="Satra Open Source.dc.html" style="font-size: 13.5px; font-weight: 500; color: #55555A; text-decoration: none; transition: color .15s;" style-hover="color: #0B0B0C;">Open source</a>
+        <a href="#" style="font-size: 13.5px; font-weight: 600; color: #0B0B0C; text-decoration: none;">Contact</a>
+      </div>
+      <a href="#" style="font-size: 12.5px; font-weight: 600; color: #F7F6F3; background: #0B0B0C; text-decoration: none; padding: 9px 18px; border-radius: 999px; line-height: 1; transition: background .15s;" style-hover="background: #2C2C30;">Get the app</a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <header data-screen-label="Contact hero" style="display: flex; flex-direction: column; align-items: center; text-align: center; padding: clamp(64px, 9vh, 104px) 24px clamp(40px, 6vh, 64px); gap: 22px;">
+    <span style="font-size: 13px; font-weight: 600; color: #8E8E93; letter-spacing: 0.06em; text-transform: uppercase;">Contact</span>
+    <h1 style="margin: 0; font-weight: 600; font-size: clamp(44px, 5.6vw, 76px); line-height: 1.04; letter-spacing: -0.035em; color: #0B0B0C; text-wrap: balance; max-width: 18ch;">We read every word.</h1>
+    <p style="margin: 0; font-size: clamp(17px, 1.6vw, 20px); line-height: 1.55; color: #55555A; max-width: 34em; text-wrap: pretty;">No accounts, no ticket queues, no bots. Mail lands with the people who build Satra — usually answered within two working days.</p>
+  </header>
+
+  <!-- Body -->
+  <div data-screen-label="Contact body" style="width: 100%; box-sizing: border-box; max-width: 1100px; margin: 0 auto; padding: 0 32px clamp(72px, 10vh, 112px); display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 20px; align-items: start;">
+
+    <!-- Channels -->
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+      <div style="background: #0B0B0C; border-radius: 28px; padding: 30px; display: flex; flex-direction: column; gap: 12px;">
+        <span style="font-size: 12px; font-weight: 600; color: #8E8E93; letter-spacing: 0.06em; text-transform: uppercase;">Email</span>
+        <a href="mailto:care@satra.app" style="font-family: 'Space Grotesk', sans-serif; font-weight: 500; font-size: clamp(20px, 2.2vw, 26px); letter-spacing: -0.01em; color: #F7F6F3; text-decoration: none;" style-hover="text-decoration: underline; text-underline-offset: 4px;">care@satra.app</a>
+        <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #A8A8AD; text-wrap: pretty;">For support, privacy, terms, press — anything. Plain email, straight to us.</p>
+      </div>
+      <div style="background: #FFFFFF; border: 1px solid #E4E2DD; border-radius: 28px; box-shadow: 0 1px 3px rgba(11,11,12,.06); padding: 30px; display: flex; flex-direction: column; gap: 12px;">
+        <span style="font-size: 12px; font-weight: 600; color: #8E8E93; letter-spacing: 0.06em; text-transform: uppercase;">Bugs &amp; ideas</span>
+        <a href="https://github.com/devdasx/Satra/issues" style="font-weight: 600; font-size: 19px; letter-spacing: -0.015em; color: #0B0B0C; text-decoration: none;" style-hover="text-decoration: underline; text-underline-offset: 4px;">Open a GitHub issue ›</a>
+        <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #55555A; text-wrap: pretty;">Satra is open source — bug reports and feature requests live in public, next to the code that fixes them.</p>
+      </div>
+      <sc-if value="{{ showSafety }}" hint-placeholder-val="{{ true }}">
+        <div style="background: #FFFFFF; border: 1px solid #E4E2DD; border-radius: 28px; box-shadow: 0 1px 3px rgba(11,11,12,.06); padding: 30px; display: flex; flex-direction: column; gap: 12px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11 V8 a3 3 0 0 1 6 0 v3" fill="none" stroke="#0B0B0C" stroke-width="2.5"></path><rect x="5.5" y="11" width="13" height="8.5" rx="2" fill="#0B0B0C"></rect></svg>
+          <span style="font-weight: 600; font-size: 17px; color: #131316;">One rule, always</span>
+          <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #55555A; text-wrap: pretty;">We will never ask for your recovery phrase, private keys, or a payment. Anyone who does is not Satra — don’t reply, don’t click, don’t share.</p>
+        </div>
+      </sc-if>
+    </div>
+
+    <!-- Form -->
+    <div style="background: #FFFFFF; border: 1px solid #E4E2DD; border-radius: 28px; box-shadow: 0 1px 3px rgba(11,11,12,.06); padding: 34px; display: flex; flex-direction: column; gap: 18px;">
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <span style="font-weight: 600; font-size: 20px; letter-spacing: -0.015em; color: #131316;">Write to us</span>
+        <span style="font-size: 13px; line-height: 1.5; color: #8E8E93;">This form has no backend. Sending opens the message in your own email app — nothing is uploaded anywhere.</span>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+        <label style="display: flex; flex-direction: column; gap: 7px;">
+          <span style="font-size: 12.5px; font-weight: 600; color: #55555A;">Name</span>
+          <input ref="{{ nameRef }}" type="text" placeholder="Optional" style="box-sizing: border-box; width: 100%; background: #FFFFFF; border: 1px solid #D9D8D4; border-radius: 12px; padding: 12px 14px; font-family: 'Outfit', sans-serif; font-size: 15px; color: #131316; outline: none;" style-focus="border-color: #0B0B0C; box-shadow: 0 0 0 3px rgba(11,11,12,.12);">
+        </label>
+        <label style="display: flex; flex-direction: column; gap: 7px;">
+          <span style="font-size: 12.5px; font-weight: 600; color: #55555A;">Email</span>
+          <input ref="{{ emailRef }}" type="email" placeholder="you@example.com" style="box-sizing: border-box; width: 100%; background: #FFFFFF; border: 1px solid #D9D8D4; border-radius: 12px; padding: 12px 14px; font-family: 'Outfit', sans-serif; font-size: 15px; color: #131316; outline: none;" style-focus="border-color: #0B0B0C; box-shadow: 0 0 0 3px rgba(11,11,12,.12);">
+        </label>
+      </div>
+      <label style="display: flex; flex-direction: column; gap: 7px;">
+        <span style="font-size: 12.5px; font-weight: 600; color: #55555A;">Topic</span>
+        <div style="position: relative;">
+        <select ref="{{ topicRef }}" style="box-sizing: border-box; width: 100%; background: #FFFFFF; border: 1px solid #D9D8D4; border-radius: 12px; padding: 12px 36px 12px 14px; font-family: 'Outfit', sans-serif; font-size: 15px; color: #131316; outline: none; appearance: none; -webkit-appearance: none;" style-focus="border-color: #0B0B0C; box-shadow: 0 0 0 3px rgba(11,11,12,.12);">
+          <option>Support</option>
+          <option>Security</option>
+          <option>Privacy</option>
+          <option>Press</option>
+          <option>Something else</option>
+        </select>
+        <svg width="12" height="8" viewBox="0 0 12 8" aria-hidden="true" style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); pointer-events: none;"><path d="M1 1.5 L6 6.5 L11 1.5" fill="none" stroke="#8E8E93" stroke-width="2" stroke-linecap="round"></path></svg>
+        </div>
+      </label>
+      <label style="display: flex; flex-direction: column; gap: 7px;">
+        <span style="font-size: 12.5px; font-weight: 600; color: #55555A;">Message</span>
+        <textarea ref="{{ messageRef }}" rows="6" placeholder="What’s going on? Include your Android version and Satra version if it’s about the app — and never include your recovery phrase." style="box-sizing: border-box; width: 100%; background: #FFFFFF; border: 1px solid #D9D8D4; border-radius: 12px; padding: 12px 14px; font-family: 'Outfit', sans-serif; font-size: 15px; line-height: 1.55; color: #131316; outline: none; resize: vertical; min-height: 130px;" style-focus="border-color: #0B0B0C; box-shadow: 0 0 0 3px rgba(11,11,12,.12);"></textarea>
+      </label>
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <button type="button" onClick="{{ sendMail }}" style="border: none; cursor: pointer; background: #0B0B0C; color: #F7F6F3; font-family: 'Outfit', sans-serif; font-size: 15px; font-weight: 600; padding: 14px 28px; border-radius: 999px; line-height: 1; transition: background .15s;" style-hover="background: #2C2C30;">Compose the email</button>
+        <span style="font-size: 13px; font-weight: 500; color: #8E8E93;">{{ formNote }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer data-screen-label="Footer" style="border-top: 1px solid #ECEAE5; margin-top: auto;">
+    <div style="width: 100%; box-sizing: border-box; max-width: 1100px; margin: 0 auto; padding: 32px; display: flex; align-items: center; gap: 20px; font-size: 12.5px; font-weight: 500; flex-wrap: wrap;">
+      <span style="color: #8E8E93;">© 2026 Satra · Apache 2.0</span>
+      <a href="Satra Privacy.dc.html" style="color: #55555A; text-decoration: none;" style-hover="color: #0B0B0C;">Privacy</a>
+      <a href="Satra Terms.dc.html" style="color: #55555A; text-decoration: none;" style-hover="color: #0B0B0C;">Terms</a>
+      <a href="Satra FAQ.dc.html" style="color: #55555A; text-decoration: none;" style-hover="color: #0B0B0C;">FAQ</a>
+      <a href="#" style="color: #0B0B0C; text-decoration: none; font-weight: 600;">Contact</a>
+    </div>
+  </footer>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;showSafety&quot;: { &quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Page&quot; }
+}">
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.nameRef = React.createRef();
+    this.emailRef = React.createRef();
+    this.topicRef = React.createRef();
+    this.messageRef = React.createRef();
+    this.state = { note: '' };
+  }
+
+  sendMail = () => {
+    const name = (this.nameRef.current && this.nameRef.current.value || '').trim();
+    const email = (this.emailRef.current && this.emailRef.current.value || '').trim();
+    const topic = (this.topicRef.current && this.topicRef.current.value) || 'Support';
+    const msg = (this.messageRef.current && this.messageRef.current.value || '').trim();
+    if (!msg) {
+      this.setState({ note: 'Add a message first.' });
+      return;
+    }
+    const subject = '[Satra] ' + topic + (name ? ' — ' + name : '');
+    let body = msg;
+    if (name || email) body += '\n\n— ' + (name || 'Anonymous') + (email ? ' <' + email + '>' : '');
+    const href = 'mailto:care@satra.app?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+    this.setState({ note: 'Opening your email app…' });
+    window.location.href = href;
+  };
+
+  renderVals() {
+    return {
+      showSafety: this.props.showSafety ?? true,
+      nameRef: this.nameRef,
+      emailRef: this.emailRef,
+      topicRef: this.topicRef,
+      messageRef: this.messageRef,
+      sendMail: this.sendMail,
+      formNote: this.state.note
+    };
+  }
+}
+</script>
+</body>
+</html>
