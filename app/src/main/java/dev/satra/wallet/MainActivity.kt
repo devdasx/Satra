@@ -216,6 +216,13 @@ class MainActivity : FragmentActivity() {
                 pendingWalletId = ""
             }
 
+            fun nextWalletName(baseNameRes: Int): String {
+                val baseName = getString(baseNameRes)
+                return walletRepository.nextWalletName(baseName) { suffix ->
+                    getString(R.string.wallet_default_numbered_name, baseName, suffix)
+                }
+            }
+
             fun persistPendingWalletSetup(
                 flow: WalletSetupFlow,
                 biometricsEnabled: Boolean,
@@ -239,7 +246,7 @@ class MainActivity : FragmentActivity() {
                             }
                         }
                         walletRepository.createMnemonicWallet(
-                            walletName = getString(R.string.wallet_default_created_name),
+                            walletName = nextWalletName(R.string.wallet_default_created_name),
                             mnemonic = mnemonic,
                             passphrase = pendingCreatePassphrase,
                             isBackedUp = true,
@@ -250,7 +257,7 @@ class MainActivity : FragmentActivity() {
                             WalletImportMethod.RecoveryPhrase -> {
                                 require(Bip39MnemonicValidator.validate(pendingImportRecoveryPhrase).isValid)
                                 walletRepository.importMnemonicWallet(
-                                    walletName = getString(R.string.wallet_default_imported_name),
+                                    walletName = nextWalletName(R.string.wallet_default_imported_name),
                                     mnemonic = pendingImportRecoveryPhrase,
                                     passphrase = pendingImportPassphrase,
                                     metadataJson = metadataJson,
@@ -260,7 +267,7 @@ class MainActivity : FragmentActivity() {
                             WalletImportMethod.PrivateKey -> {
                                 require(pendingImportPrivateKey.isNotBlank())
                                 walletRepository.importPrivateKeyWallet(
-                                    walletName = getString(R.string.wallet_default_imported_name),
+                                    walletName = nextWalletName(R.string.wallet_default_private_key_name),
                                     networkId = WalletImportNetwork.fromRoute(pendingImportNetworkSegment)
                                         ?.networkId ?: WalletImportNetwork.Bitcoin.networkId,
                                     privateKey = pendingImportPrivateKey,
@@ -271,7 +278,7 @@ class MainActivity : FragmentActivity() {
                             WalletImportMethod.WatchOnly -> {
                                 require(pendingImportWatchAddress.isNotBlank())
                                 walletRepository.importWatchOnlyWallet(
-                                    walletName = getString(R.string.wallet_default_watch_only_name),
+                                    walletName = nextWalletName(R.string.wallet_default_watch_only_name),
                                     networkId = WalletImportNetwork.fromRoute(pendingImportNetworkSegment)
                                         ?.networkId ?: WalletImportNetwork.Bitcoin.networkId,
                                     address = pendingImportWatchAddress,

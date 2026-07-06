@@ -123,7 +123,7 @@ internal fun SatraSettingsRootScreen(
         item {
             SettingsCard {
                 SettingsRow(
-                    iconRes = R.drawable.ic_brand_receive,
+                    iconRes = R.drawable.ic_brand_address_book,
                     title = stringResource(R.string.settings_address_book_title),
                     body = stringResource(R.string.settings_address_book_body),
                     onClick = { onNavigate(SatraMainRoute.AddressBook) },
@@ -152,7 +152,7 @@ internal fun SatraSettingsRootScreen(
                 )
                 SettingsDivider()
                 SettingsRow(
-                    iconRes = R.drawable.ic_brand_history,
+                    iconRes = R.drawable.ic_brand_bell,
                     title = stringResource(R.string.settings_notifications_title),
                     body = stringResource(R.string.settings_notifications_body),
                     onClick = { onNavigate(SatraMainRoute.Notifications) },
@@ -163,14 +163,14 @@ internal fun SatraSettingsRootScreen(
         item {
             SettingsCard {
                 SettingsRow(
-                    iconRes = R.drawable.ic_brand_wallet,
+                    iconRes = R.drawable.ic_brand_info,
                     title = stringResource(R.string.settings_about_title),
                     body = stringResource(R.string.settings_about_body),
                     onClick = { onNavigate(SatraMainRoute.About) },
                 )
                 SettingsDivider()
                 SettingsRow(
-                    iconRes = R.drawable.ic_brand_list,
+                    iconRes = R.drawable.ic_brand_document,
                     title = stringResource(R.string.settings_legal_title),
                     body = stringResource(R.string.settings_legal_body),
                     onClick = { onNavigate(SatraMainRoute.Legal) },
@@ -1041,14 +1041,14 @@ internal fun SatraPreferencesScreen(
         item {
             SettingsCard {
                 SettingsRow(
-                    iconRes = R.drawable.ic_brand_assets,
+                    iconRes = R.drawable.ic_brand_currency,
                     title = stringResource(R.string.settings_currency_title),
                     body = appSettings?.localCurrencyCode ?: DEFAULT_LOCAL_CURRENCY_CODE,
                     onClick = { onNavigate(SatraMainRoute.Currency) },
                 )
                 SettingsDivider()
                 SettingsRow(
-                    iconRes = R.drawable.ic_brand_list,
+                    iconRes = R.drawable.ic_brand_language,
                     title = stringResource(R.string.settings_language_title),
                     body = supportedSettingLanguages
                         .firstOrNull { it.tag == settings.languageTag }
@@ -1058,14 +1058,14 @@ internal fun SatraPreferencesScreen(
                 )
                 SettingsDivider()
                 SettingsRow(
-                    iconRes = R.drawable.ic_brand_settings,
+                    iconRes = R.drawable.ic_brand_appearance,
                     title = stringResource(R.string.settings_appearance_title),
                     body = stringResource(settings.themePreference.titleRes),
                     onClick = { onNavigate(SatraMainRoute.Appearance) },
                 )
                 SettingsDivider()
                 SettingsSwitchRow(
-                    iconRes = R.drawable.ic_brand_move,
+                    iconRes = R.drawable.ic_brand_haptics,
                     title = stringResource(R.string.settings_haptics_title),
                     body = stringResource(R.string.settings_haptics_body),
                     checked = settings.hapticsEnabled,
@@ -1348,7 +1348,7 @@ internal fun SatraSecurityScreen(
         item {
             SettingsCard {
                 SettingsSwitchRow(
-                    iconRes = R.drawable.ic_brand_scan,
+                    iconRes = R.drawable.ic_satra_id,
                     title = stringResource(R.string.settings_security_biometrics_title),
                     body = stringResource(R.string.settings_security_biometrics_body),
                     checked = appSettings?.biometricsEnabled == true,
@@ -1483,6 +1483,7 @@ internal fun SatraNotificationsScreen(
         item {
             SettingsCard {
                 NotificationSwitch(
+                    iconRes = R.drawable.ic_brand_document,
                     titleRes = R.string.settings_notifications_news,
                     bodyRes = R.string.settings_notifications_news_body,
                     checked = appSettings?.notificationsNewsEnabled == true,
@@ -1496,6 +1497,7 @@ internal fun SatraNotificationsScreen(
                 )
                 SettingsDivider()
                 NotificationSwitch(
+                    iconRes = R.drawable.ic_brand_price_alert,
                     titleRes = R.string.settings_notifications_prices,
                     bodyRes = R.string.settings_notifications_prices_body,
                     checked = appSettings?.notificationsPricesEnabled == true,
@@ -1509,6 +1511,7 @@ internal fun SatraNotificationsScreen(
                 )
                 SettingsDivider()
                 NotificationSwitch(
+                    iconRes = R.drawable.ic_brand_transaction_alert,
                     titleRes = R.string.settings_notifications_transactions,
                     bodyRes = R.string.settings_notifications_transactions_body,
                     checked = appSettings?.notificationsTransactionsEnabled == true,
@@ -1566,14 +1569,14 @@ internal fun SatraLegalScreen(onBack: () -> Unit) {
         item {
             SettingsCard {
                 SettingsRow(
-                    iconRes = R.drawable.ic_brand_list,
+                    iconRes = R.drawable.ic_brand_document,
                     title = stringResource(R.string.settings_privacy_policy),
                     body = privacyUrl,
                     onClick = { openUrl(privacyUrl) },
                 )
                 SettingsDivider()
                 SettingsRow(
-                    iconRes = R.drawable.ic_brand_list,
+                    iconRes = R.drawable.ic_brand_document,
                     title = stringResource(R.string.settings_terms_of_use),
                     body = termsUrl,
                     onClick = { openUrl(termsUrl) },
@@ -2068,13 +2071,14 @@ private fun SettingsSwitchRow(
 
 @Composable
 private fun NotificationSwitch(
+    @DrawableRes iconRes: Int,
     @StringRes titleRes: Int,
     @StringRes bodyRes: Int,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
 ) {
     SettingsSwitchRow(
-        iconRes = R.drawable.ic_brand_history,
+        iconRes = iconRes,
         title = stringResource(titleRes),
         body = stringResource(bodyRes),
         checked = checked,
@@ -2193,7 +2197,7 @@ private fun AddressBookEditorSheet(
                 )
             }
             SettingsSwitchRow(
-                iconRes = R.drawable.ic_brand_add,
+                iconRes = R.drawable.ic_brand_favorite,
                 title = stringResource(R.string.settings_address_book_favorite),
                 body = stringResource(R.string.settings_address_book_favorite_body),
                 checked = favorite,

@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Satra</string>
-    <string name="wallet_default_created_name">Satra 錢包</string>
+    <string name="wallet_default_created_name">錢包</string>
     <string name="wallet_default_imported_name">匯入嘅錢包</string>
     <string name="wallet_default_watch_only_name">只可檢視嘅錢包</string>
+    <string name="wallet_default_private_key_name">私人密鑰錢包</string>
+    <string name="wallet_default_numbered_name">%1$s %2$d</string>
     <string name="wallet_symbol">◎</string>
     <string name="onboarding_action_create_wallet">建立錢包</string>
     <string name="onboarding_action_restore_wallet">匯入錢包</string>

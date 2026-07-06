@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Satra</string>
-    <string name="wallet_default_created_name">Satra వాలెట్</string>
+    <string name="wallet_default_created_name">వాలెట్</string>
     <string name="wallet_default_imported_name">దిగుమతి చేసిన వాలెట్</string>
     <string name="wallet_default_watch_only_name">చూడటానికి మాత్రమే వాలెట్</string>
+    <string name="wallet_default_private_key_name">ప్రైవేట్ కీ వాలెట్</string>
+    <string name="wallet_default_numbered_name">%1$s %2$d</string>
     <string name="wallet_symbol">◎</string>
     <string name="onboarding_action_create_wallet">వాలెట్ సృష్టించండి</string>
     <string name="onboarding_action_restore_wallet">వాలెట్‌ను దిగుమతి చేయండి</string>

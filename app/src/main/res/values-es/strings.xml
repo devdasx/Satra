@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Satra</string>
-    <string name="wallet_default_created_name">Satra Monedero</string>
-    <string name="wallet_default_imported_name">Monedero importado</string>
-    <string name="wallet_default_watch_only_name">Monedero de solo reloj</string>
+    <string name="wallet_default_created_name">Billetera</string>
+    <string name="wallet_default_imported_name">Billetera importada</string>
+    <string name="wallet_default_watch_only_name">Billetera solo de observación</string>
+    <string name="wallet_default_private_key_name">Billetera de clave privada</string>
+    <string name="wallet_default_numbered_name">%1$s %2$d</string>
     <string name="wallet_symbol">◎</string>
     <string name="onboarding_action_create_wallet">Crear monedero</string>
     <string name="onboarding_action_restore_wallet">Importar monedero</string>

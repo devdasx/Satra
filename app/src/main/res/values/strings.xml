@@ -2,9 +2,11 @@
 <resources>
     <string name="app_name">Satra</string>
     <string name="satra_support_email" translatable="false">care@satra.app</string>
-    <string name="wallet_default_created_name">Satra Wallet</string>
+    <string name="wallet_default_created_name">Wallet</string>
     <string name="wallet_default_imported_name">Imported Wallet</string>
-    <string name="wallet_default_watch_only_name">Watch-only Wallet</string>
+    <string name="wallet_default_watch_only_name">Watch-Only Wallet</string>
+    <string name="wallet_default_private_key_name">Private Key Wallet</string>
+    <string name="wallet_default_numbered_name">%1$s %2$d</string>
     <string name="wallet_symbol">◎</string>
     <string name="onboarding_action_create_wallet">Create wallet</string>
     <string name="onboarding_action_restore_wallet">Import wallet</string>

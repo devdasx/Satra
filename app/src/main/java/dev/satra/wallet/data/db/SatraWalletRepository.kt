@@ -109,6 +109,25 @@ class SatraWalletRepository(
             )
         }
 
+    fun nextWalletName(
+        baseName: String,
+        numberedName: (Int) -> String,
+    ): String {
+        val existingNames = walletDao.getWallets()
+            .map { wallet -> wallet.walletName.trim() }
+            .toSet()
+        val cleanedBaseName = baseName.trim()
+        if (cleanedBaseName !in existingNames) {
+            return cleanedBaseName
+        }
+
+        var suffix = 2
+        while (numberedName(suffix).trim() in existingNames) {
+            suffix += 1
+        }
+        return numberedName(suffix).trim()
+    }
+
     fun createMnemonicWallet(
         walletName: String,
         mnemonic: String,
