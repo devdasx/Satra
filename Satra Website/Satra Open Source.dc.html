@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <title>satra — open source</title>
+  <link rel="icon" href="brand/satra-brand-kit/app-icon/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    html, body { margin: 0; padding: 0; background: #F7F6F3; }
+    ::selection { background: rgba(11,11,12,.9); color: #F7F6F3; }
+  </style>
+</helmet>
+
+<section style="background: #F7F6F3; color: #2C2C30; font-family: 'Outfit', -apple-system, 'Helvetica Neue', sans-serif; -webkit-font-smoothing: antialiased; display: flex; flex-direction: column;">
+
+  <!-- Nav -->
+  <nav data-screen-label="Nav" style="width: 100%; box-sizing: border-box; max-width: 1152px; margin: 0 auto; padding: 0 32px; height: 64px; display: flex; align-items: center; justify-content: space-between;">
+    <a href="Satra Landing.dc.html" aria-label="Satra home" style="display: flex; align-items: center; gap: 10px; text-decoration: none;">
+      <svg width="26" height="26" viewBox="26 26 48 48" aria-hidden="true"><path d="M28 28 L48 28 A20 20 0 0 1 28 48 Z" fill="#0B0B0C"></path><rect x="52" y="28" width="20" height="20" rx="2" fill="#0B0B0C" opacity=".4"></rect><rect x="28" y="52" width="20" height="20" rx="2" fill="#0B0B0C" opacity=".4"></rect><path d="M72 52 A20 20 0 0 0 52 72 L72 72 Z" fill="#0B0B0C"></path></svg>
+      <span style="font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 21px; letter-spacing: -0.015em; color: #0B0B0C; line-height: 1;">satra</span>
+    </a>
+    <div style="display: flex; align-items: center; gap: 32px;">
+      <div style="display: flex; align-items: center; gap: 28px;">
+        <a href="Satra Landing.dc.html" style="font-size: 13.5px; font-weight: 500; color: #55555A; text-decoration: none; transition: color .15s;" style-hover="color: #0B0B0C;">Wallet</a>
+        <a href="Satra Security.dc.html" style="font-size: 13.5px; font-weight: 500; color: #55555A; text-decoration: none; transition: color .15s;" style-hover="color: #0B0B0C;">Security</a>
+        <a href="Satra Privacy.dc.html" style="font-size: 13.5px; font-weight: 500; color: #55555A; text-decoration: none; transition: color .15s;" style-hover="color: #0B0B0C;">Privacy</a>
+        <a href="#" style="font-size: 13.5px; font-weight: 600; color: #0B0B0C; text-decoration: none;">Open source</a>
+      </div>
+      <a href="#" style="font-size: 12.5px; font-weight: 600; color: #F7F6F3; background: #0B0B0C; text-decoration: none; padding: 9px 18px; border-radius: 999px; line-height: 1; transition: background .15s;" style-hover="background: #2C2C30;">Get the app</a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <header data-screen-label="Open source hero" style="display: flex; flex-direction: column; align-items: center; text-align: center; padding: clamp(72px, 11vh, 128px) 24px clamp(56px, 8vh, 96px); gap: 26px;">
+    <span style="font-size: 13px; font-weight: 600; color: #8E8E93; letter-spacing: 0.06em; text-transform: uppercase;">Open source</span>
+    <h1 style="margin: 0; font-weight: 600; font-size: clamp(48px, 6.4vw, 84px); line-height: 1.04; letter-spacing: -0.035em; color: #0B0B0C; text-wrap: balance; max-width: 16ch;">Nothing to hide. Literally.</h1>
+    <p style="margin: 0; font-size: clamp(17px, 1.6vw, 20px); line-height: 1.55; color: #55555A; max-width: 36em; text-wrap: pretty;">A wallet asks for more trust than almost any software you run. Satra answers with the only honest currency: the code itself — every screen, every key-derivation path, every sync call, public under Apache 2.0.</p>
+    <div style="display: flex; align-items: center; justify-content: center; gap: 24px; margin-top: 4px;">
+      <a href="https://github.com/devdasx/Satra" style="display: inline-flex; align-items: center; background: #0B0B0C; color: #F7F6F3; font-size: 15.5px; font-weight: 600; text-decoration: none; padding: 15px 30px; border-radius: 999px; line-height: 1; transition: background .15s;" style-hover="background: #2C2C30;">Browse the repository</a>
+      <a href="https://github.com/devdasx/Satra/blob/main/LICENSE" style="display: inline-flex; align-items: center; gap: 6px; color: #0B0B0C; font-size: 15.5px; font-weight: 500; text-decoration: none;" style-hover="text-decoration: underline; text-underline-offset: 4px;">Apache 2.0 license <span aria-hidden="true" style="font-weight: 600;">›</span></a>
+    </div>
+  </header>
+
+  <!-- Read / Verify / Fork -->
+  <div data-screen-label="Read verify fork" style="width: 100%; box-sizing: border-box; max-width: 1100px; margin: 0 auto; padding: 0 32px clamp(64px, 9vh, 104px); display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+    <div style="background: #FFFFFF; border: 1px solid #E4E2DD; border-radius: 28px; box-shadow: 0 1px 3px rgba(11,11,12,.06); padding: 30px; display: flex; flex-direction: column; gap: 12px;">
+      <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><g fill="#0B0B0C"><rect x="4" y="4" width="16" height="3" rx="1.5"></rect><rect x="4" y="10.5" width="16" height="3" rx="1.5" opacity=".4"></rect><rect x="4" y="17" width="10" height="3" rx="1.5" opacity=".4"></rect></g></svg>
+      <h3 style="margin: 0; font-weight: 600; font-size: 22px; letter-spacing: -0.02em; color: #0B0B0C;">Read it</h3>
+      <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #55555A; text-wrap: pretty;">Kotlin and Jetpack Compose, in the open. How wallets are derived, how the local database is protected, which providers get called — it’s all on the page, not in a policy.</p>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #E4E2DD; border-radius: 28px; box-shadow: 0 1px 3px rgba(11,11,12,.06); padding: 30px; display: flex; flex-direction: column; gap: 12px;">
+      <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8 V6 a2 2 0 0 1 2 -2 h2 M16 4 h2 a2 2 0 0 1 2 2 v2 M20 16 v2 a2 2 0 0 1 -2 2 h-2 M8 20 H6 a2 2 0 0 1 -2 -2 v-2" fill="none" stroke="#0B0B0C" stroke-width="2.5" stroke-linecap="round"></path><rect x="8.5" y="8.5" width="7" height="7" rx="1.5" fill="#0B0B0C" opacity=".4"></rect></svg>
+      <h3 style="margin: 0; font-weight: 600; font-size: 22px; letter-spacing: -0.02em; color: #0B0B0C;">Verify it</h3>
+      <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #55555A; text-wrap: pretty;">“No analytics SDKs” is a claim you can grep. Check the dependencies, search for trackers, read the sync code. Our security and privacy pages cite the repo — not the other way around.</p>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #E4E2DD; border-radius: 28px; box-shadow: 0 1px 3px rgba(11,11,12,.06); padding: 30px; display: flex; flex-direction: column; gap: 12px;">
+      <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><g fill="#0B0B0C"><path d="M4 4 L10.5 4 A6.5 6.5 0 0 1 4 10.5 Z"></path><rect x="13.5" y="4" width="6.5" height="6.5" rx="1" opacity=".4"></rect><rect x="4" y="13.5" width="6.5" height="6.5" rx="1" opacity=".4"></rect><path d="M20 13.5 A6.5 6.5 0 0 0 13.5 20 L20 20 Z"></path></g></svg>
+      <h3 style="margin: 0; font-weight: 600; font-size: 22px; letter-spacing: -0.02em; color: #0B0B0C;">Fork it</h3>
+      <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #55555A; text-wrap: pretty;">Apache 2.0 means you may use, modify, and redistribute Satra — build your own, audit ours, or keep a copy forever. Openness that survives us is the point.</p>
+    </div>
+  </div>
+
+  <!-- Repo map -->
+  <div data-screen-label="Inside the repository" style="background: #EFEDE8;">
+    <div style="width: 100%; box-sizing: border-box; max-width: 1100px; margin: 0 auto; padding: clamp(72px, 10vh, 112px) 32px; display: grid; grid-template-columns: 1fr 1.15fr; gap: clamp(40px, 6vw, 88px); align-items: center;">
+      <div style="display: flex; flex-direction: column; gap: 18px;">
+        <span style="font-size: 13px; font-weight: 600; color: #8E8E93; letter-spacing: 0.06em; text-transform: uppercase;">The repository</span>
+        <h2 style="margin: 0; font-weight: 600; font-size: clamp(34px, 3.6vw, 50px); line-height: 1.06; letter-spacing: -0.03em; color: #0B0B0C; text-wrap: balance;">The whole product, one tree.</h2>
+        <p style="margin: 0; font-size: 17px; line-height: 1.6; color: #55555A; text-wrap: pretty;">Not just the app. The supported-asset list, the brand system, the legal documents, even this website — versioned together, so every claim has a diff and every change has a history.</p>
+        <p style="margin: 0; font-size: 17px; line-height: 1.6; color: #55555A; text-wrap: pretty;">When the privacy policy changes, you don’t re-read it and guess. You read the commit.</p>
+      </div>
+      <div style="background: #0B0B0C; border-radius: 28px; padding: 28px 30px; display: flex; flex-direction: column; gap: 2px; box-shadow: 0 24px 60px -24px rgba(11,11,12,.35);">
+        <div style="display: flex; align-items: center; gap: 8px; padding-bottom: 14px;">
+          <span style="width: 7px; height: 7px; border-radius: 999px; background: #4E9E76;"></span>
+          <span style="font-family: 'Space Grotesk', sans-serif; font-size: 12.5px; font-weight: 500; color: #8E8E93;">github.com/devdasx/Satra</span>
+        </div>
+        <div style="display: flex; align-items: baseline; gap: 14px; padding: 9px 0; border-top: 1px solid #1F1F23;"><span style="font-family: 'Space Grotesk', sans-serif; font-size: 13.5px; font-weight: 500; color: #F7F6F3; min-width: 190px;">app/src</span><span style="font-size: 12.5px; color: #8E8E93;">the wallet — Kotlin, Jetpack Compose</span></div>
+        <div style="display: flex; align-items: baseline; gap: 14px; padding: 9px 0; border-top: 1px solid #1F1F23;"><span style="font-family: 'Space Grotesk', sans-serif; font-size: 13.5px; font-weight: 500; color: #F7F6F3; min-width: 190px;">docs/SUPPORTED_ASSETS.md</span><span style="font-size: 12.5px; color: #8E8E93;">every network &amp; asset, in writing</span></div>
+        <div style="display: flex; align-items: baseline; gap: 14px; padding: 9px 0; border-top: 1px solid #1F1F23;"><span style="font-family: 'Space Grotesk', sans-serif; font-size: 13.5px; font-weight: 500; color: #F7F6F3; min-width: 190px;">docs/legal</span><span style="font-size: 12.5px; color: #8E8E93;">privacy policy &amp; terms, versioned</span></div>
+        <div style="display: flex; align-items: baseline; gap: 14px; padding: 9px 0; border-top: 1px solid #1F1F23;"><span style="font-family: 'Space Grotesk', sans-serif; font-size: 13.5px; font-weight: 500; color: #F7F6F3; min-width: 190px;">brand/satra-brand-kit</span><span style="font-size: 12.5px; color: #8E8E93;">the identity system itself</span></div>
+        <div style="display: flex; align-items: baseline; gap: 14px; padding: 9px 0; border-top: 1px solid #1F1F23;"><span style="font-family: 'Space Grotesk', sans-serif; font-size: 13.5px; font-weight: 500; color: #F7F6F3; min-width: 190px;">website</span><span style="font-size: 12.5px; color: #8E8E93;">these pages</span></div>
+        <div style="display: flex; align-items: baseline; gap: 14px; padding: 9px 0; border-top: 1px solid #1F1F23;"><span style="font-family: 'Space Grotesk', sans-serif; font-size: 13.5px; font-weight: 500; color: #F7F6F3; min-width: 190px;">tools</span><span style="font-size: 12.5px; color: #8E8E93;">i18n &amp; hardcoded-string checks</span></div>
+        <div style="display: flex; align-items: baseline; gap: 14px; padding: 9px 0 0; border-top: 1px solid #1F1F23;"><span style="font-family: 'Space Grotesk', sans-serif; font-size: 13.5px; font-weight: 500; color: #F7F6F3; min-width: 190px;">LICENSE</span><span style="font-size: 12.5px; color: #8E8E93;">Apache 2.0</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- What openness buys you -->
+  <div data-screen-label="Openness and security" style="width: 100%; box-sizing: border-box; max-width: 1100px; margin: 0 auto; padding: clamp(72px, 10vh, 112px) 32px; display: grid; grid-template-columns: 1fr 1fr; gap: clamp(40px, 6vw, 88px); align-items: center;">
+    <div style="display: flex; flex-direction: column; gap: 18px;">
+      <span style="font-size: 13px; font-weight: 600; color: #8E8E93; letter-spacing: 0.06em; text-transform: uppercase;">Why it matters</span>
+      <h2 style="margin: 0; font-weight: 600; font-size: clamp(34px, 3.6vw, 50px); line-height: 1.06; letter-spacing: -0.03em; color: #0B0B0C; text-wrap: balance;">Security you can audit beats security you’re promised.</h2>
+      <p style="margin: 0; font-size: 17px; line-height: 1.6; color: #55555A; text-wrap: pretty;">A closed wallet asks you to believe. An open one lets you — or anyone more paranoid than you — confirm. That’s the difference between marketing and evidence, and it’s why openness is a security feature, not a licensing detail.</p>
+      <a href="Satra Security.dc.html" style="display: inline-flex; align-items: center; gap: 6px; color: #0B0B0C; font-size: 15.5px; font-weight: 500; text-decoration: none;" style-hover="text-decoration: underline; text-underline-offset: 4px;">Read how Satra is secured <span aria-hidden="true" style="font-weight: 600;">›</span></a>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #E4E2DD; border-radius: 28px; box-shadow: 0 1px 3px rgba(11,11,12,.06); padding: 30px; display: flex; flex-direction: column; gap: 4px;">
+      <span style="font-weight: 600; font-size: 16px; color: #131316; padding-bottom: 10px;">Things you can check yourself</span>
+      <div style="display: flex; align-items: center; gap: 12px; padding: 11px 0; border-top: 1px solid #ECEAE5; font-size: 15px; font-weight: 500; color: #2C2C30;"><span style="width: 5px; height: 5px; border-radius: 999px; background: #0B0B0C; flex: none;"></span>Keys are derived and stored on device only</div>
+      <div style="display: flex; align-items: center; gap: 12px; padding: 11px 0; border-top: 1px solid #ECEAE5; font-size: 15px; font-weight: 500; color: #2C2C30;"><span style="width: 5px; height: 5px; border-radius: 999px; background: #0B0B0C; flex: none;"></span>No ad, analytics, or tracking SDKs in the dependency list</div>
+      <div style="display: flex; align-items: center; gap: 12px; padding: 11px 0; border-top: 1px solid #ECEAE5; font-size: 15px; font-weight: 500; color: #2C2C30;"><span style="width: 5px; height: 5px; border-radius: 999px; background: #0B0B0C; flex: none;"></span>Exactly which Electrum, RPC &amp; price providers get called</div>
+      <div style="display: flex; align-items: center; gap: 12px; padding: 11px 0; border-top: 1px solid #ECEAE5; font-size: 15px; font-weight: 500; color: #2C2C30;"><span style="width: 5px; height: 5px; border-radius: 999px; background: #0B0B0C; flex: none;"></span>How passcode, auto-lock &amp; erase protection behave</div>
+      <div style="display: flex; align-items: center; gap: 12px; padding: 11px 0; border-top: 1px solid #ECEAE5; font-size: 15px; font-weight: 500; color: #2C2C30;"><span style="width: 5px; height: 5px; border-radius: 999px; background: #0B0B0C; flex: none;"></span>The full supported-asset list — nothing implied, nothing more</div>
+    </div>
+  </div>
+
+  <!-- License band -->
+  <div data-screen-label="License" style="background: #0B0B0C;">
+    <div style="width: 100%; box-sizing: border-box; max-width: 900px; margin: 0 auto; padding: clamp(88px, 12vh, 136px) 32px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 24px;">
+      <svg width="34" height="34" viewBox="26 26 48 48" aria-hidden="true"><path d="M28 28 L48 28 A20 20 0 0 1 28 48 Z" fill="#F7F6F3"></path><rect x="52" y="28" width="20" height="20" rx="2" fill="#F7F6F3" opacity=".4"></rect><rect x="28" y="52" width="20" height="20" rx="2" fill="#F7F6F3" opacity=".4"></rect><path d="M72 52 A20 20 0 0 0 52 72 L72 72 Z" fill="#F7F6F3"></path></svg>
+      <h2 style="margin: 0; font-weight: 600; font-size: clamp(38px, 4.6vw, 60px); line-height: 1.05; letter-spacing: -0.033em; color: #F7F6F3;">Apache 2.0.</h2>
+      <p style="margin: 0; font-size: clamp(16px, 1.5vw, 19px); line-height: 1.6; color: #A8A8AD; max-width: 34em; text-wrap: pretty;">Use it, study it, change it, ship it. One honest caveat from our own terms: open source is transparency, not a warranty — it doesn’t make Satra a custodian, an advisor, or infallible.</p>
+      <div style="display: flex; align-items: center; gap: 24px; margin-top: 6px;">
+        <a href="https://github.com/devdasx/Satra/blob/main/LICENSE" style="display: inline-flex; align-items: center; background: #F7F6F3; color: #0B0B0C; font-size: 15px; font-weight: 600; text-decoration: none; padding: 14px 28px; border-radius: 999px; line-height: 1; transition: background .15s;" style-hover="background: #FFFFFF;">Read the license</a>
+        <a href="https://github.com/devdasx/Satra/issues" style="display: inline-flex; align-items: center; gap: 6px; color: #F7F6F3; font-size: 15px; font-weight: 500; text-decoration: none;" style-hover="text-decoration: underline; text-underline-offset: 4px;">Found something? Open an issue <span aria-hidden="true" style="font-weight: 600;">›</span></a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <sc-if value="{{ showFinePrint }}" hint-placeholder-val="{{ true }}">
+    <footer data-screen-label="Footer" style="border-top: 1px solid #ECEAE5;">
+      <div style="width: 100%; box-sizing: border-box; max-width: 1100px; margin: 0 auto; padding: 36px 32px 48px; display: flex; flex-direction: column; gap: 14px;">
+        <p style="margin: 0; font-size: 12.5px; line-height: 1.65; color: #8E8E93; max-width: 72em; text-wrap: pretty;">Satra’s source code is published under the Apache License 2.0. Open-source availability does not create a warranty, custody relationship, advisory relationship, or an obligation to support any specific network, asset, or feature forever.</p>
+        <div style="display: flex; align-items: center; gap: 20px; font-size: 12.5px; font-weight: 500;">
+          <span style="color: #8E8E93;">© 2026 Satra · Apache 2.0</span>
+          <a href="Satra Privacy.dc.html" style="color: #55555A; text-decoration: none;" style-hover="color: #0B0B0C;">Privacy</a>
+          <a href="Satra Terms.dc.html" style="color: #55555A; text-decoration: none;" style-hover="color: #0B0B0C;">Terms</a>
+          <a href="mailto:care@satra.app" style="color: #55555A; text-decoration: none;" style-hover="color: #0B0B0C;">Contact</a>
+        </div>
+      </div>
+    </footer>
+  </sc-if>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;showFinePrint&quot;: { &quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Page&quot; }
+}">
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      showFinePrint: this.props.showFinePrint ?? true
+    };
+  }
+}
+</script>
+</body>
+</html>

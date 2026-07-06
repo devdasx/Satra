@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /*.dc.html$
+
+Sitemap: https://satra.app/sitemap.xml
