@@ -574,9 +574,10 @@ fun SatraMainScreen(
                     },
                     onSent = { transactionId ->
                         tabNavController.navigate(SatraMainRoute.sendSent(transactionId)) {
-                            popUpTo(SatraMainRoute.SendAsset) {
+                            popUpTo(tabNavController.graph.findStartDestination().id) {
                                 inclusive = false
                             }
+                            launchSingleTop = true
                         }
                     },
                 )
@@ -598,9 +599,10 @@ fun SatraMainScreen(
                     },
                     onSendAnother = {
                         tabNavController.navigate(SatraMainRoute.SendAsset) {
-                            popUpTo(SatraMainRoute.SendAsset) {
-                                inclusive = true
+                            popUpTo(tabNavController.graph.findStartDestination().id) {
+                                inclusive = false
                             }
+                            launchSingleTop = true
                         }
                     },
                 )

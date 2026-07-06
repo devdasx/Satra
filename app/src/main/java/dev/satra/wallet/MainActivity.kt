@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.os.LocaleList
 import android.widget.Toast
 import androidx.annotation.RequiresApi
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.biometric.BiometricManager
@@ -312,7 +313,7 @@ class MainActivity : FragmentActivity() {
                     .apply()
                 resetPendingWalletSetup()
                 navController.navigate(SatraRoute.main(flow)) {
-                    popUpTo(SatraRoute.ONBOARDING) {
+                    popUpTo(0) {
                         inclusive = true
                     }
                     launchSingleTop = true
@@ -388,6 +389,9 @@ class MainActivity : FragmentActivity() {
                     }
 
                     composable(SatraRoute.APP_LOCK) {
+                        BackHandler(enabled = true) {
+                            // The locked state is modal: Android back must not reveal the app below it.
+                        }
                         var loadedAppSettings by remember { mutableStateOf<AppSettingsRecord?>(null) }
                         var biometricPromptShown by rememberSaveable { mutableStateOf(false) }
 
@@ -442,7 +446,7 @@ class MainActivity : FragmentActivity() {
                                                 Toast.LENGTH_LONG,
                                             ).show()
                                             navController.navigate(SatraRoute.ONBOARDING) {
-                                                popUpTo(SatraRoute.APP_LOCK) {
+                                                popUpTo(0) {
                                                     inclusive = true
                                                 }
                                                 launchSingleTop = true
@@ -848,7 +852,7 @@ class MainActivity : FragmentActivity() {
                                 settingsStore.edit().clear().apply()
                                 applyAppLocale(SatraSettingsDefaults.DEFAULT_LANGUAGE_TAG)
                                 navController.navigate(SatraRoute.ONBOARDING) {
-                                    popUpTo(SatraRoute.MAIN) {
+                                    popUpTo(0) {
                                         inclusive = true
                                     }
                                     launchSingleTop = true
