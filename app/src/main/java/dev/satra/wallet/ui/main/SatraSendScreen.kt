@@ -81,6 +81,7 @@ import dev.satra.wallet.R
 import dev.satra.wallet.data.assets.SupportedAsset
 import dev.satra.wallet.data.assets.SupportedAssetCatalog
 import dev.satra.wallet.data.assets.SupportedNetwork
+import dev.satra.wallet.data.assets.isValidAddressForNetwork
 import dev.satra.wallet.data.db.AddressBookEntryRecord
 import dev.satra.wallet.data.db.SatraWalletRepository
 import dev.satra.wallet.data.db.WalletAddressRecord
@@ -563,7 +564,7 @@ private fun SendRecipientContent(
     val knownAddresses = remember(state.addressBookEntries, state.recentRecipients) {
         (state.addressBookEntries.map { it.address } + state.recentRecipients.map { it.address }).distinct()
     }
-    val isValid = isLikelyAddressForNetwork(recipient, state.row.network)
+    val isValid = isValidAddressForNetwork(recipient, state.row.network)
     val showError = recipient.length >= RECIPIENT_ERROR_MIN_LENGTH && !isValid
     val showMemoError = memo.isNotBlank() && !isValidSendMemo(memo, memoSpec)
     val isKnown = knownAddresses.any { it.equals(recipient.trim(), ignoreCase = true) }
@@ -3067,21 +3068,6 @@ private fun List<WalletTransactionRecord>.toRecentRecipients(networkId: String):
             )
         }
         .toList()
-
-private fun isLikelyAddressForNetwork(
-    address: String,
-    network: SupportedNetwork,
-): Boolean {
-    val value = address.trim()
-    if (value.length < 4) return false
-    return when (network.family) {
-        "evm" -> value.matches(Regex("^0x[0-9a-fA-F]{40}$"))
-        "utxo" -> value.length in 26..90 && value.none(Char::isWhitespace)
-        "solana", "sui", "aptos", "near", "polkadot", "stellar", "ton", "tron", "ripple" ->
-            value.length in 16..120 && value.none(Char::isWhitespace)
-        else -> value.length in 16..120 && value.none(Char::isWhitespace)
-    }
-}
 
 private fun isPoisonLike(address: String, knownAddresses: List<String>): Boolean {
     val normalized = address.trim().lowercase(Locale.US)

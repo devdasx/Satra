@@ -2,6 +2,7 @@ package dev.satra.wallet.data.db
 
 import android.content.Context
 import dev.satra.wallet.data.assets.SupportedAssetCatalog
+import dev.satra.wallet.data.assets.isValidAddressForNetworkId
 import dev.satra.wallet.data.pricing.FxRateQuote
 import dev.satra.wallet.data.pricing.SatraAssetPrice
 import dev.satra.wallet.data.pricing.SatraAssetMarketData
@@ -418,6 +419,9 @@ class SatraWalletRepository(
         existingEntryId: String? = null,
     ): String =
         withContext(Dispatchers.IO) {
+            require(isValidAddressForNetworkId(entry.address, entry.networkId)) {
+                "Invalid address book address for ${entry.networkId}."
+            }
             walletDao.upsertAddressBookEntry(entry, existingEntryId)
         }
 

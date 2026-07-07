@@ -77,6 +77,7 @@ import dev.satra.wallet.R
 import dev.satra.wallet.data.assets.SupportedAsset
 import dev.satra.wallet.data.assets.SupportedAssetCatalog
 import dev.satra.wallet.data.assets.SupportedNetwork
+import dev.satra.wallet.data.assets.isValidAddressForNetwork
 import dev.satra.wallet.data.db.AddressBookEntryRecord
 import dev.satra.wallet.data.db.AppSettingsRecord
 import dev.satra.wallet.data.db.AppSettingsUpdate
@@ -2265,6 +2266,10 @@ private fun AddressBookEditorSheet(
     val filteredGroups = remember(assetGroups, assetQuery) {
         assetGroups.filterAddressBookAssetGroups(assetQuery)
     }
+    val addressIsValid = selectedChoice?.let { choice ->
+        isValidAddressForNetwork(address, choice.network)
+    } ?: false
+    val showAddressError = selectedChoice != null && address.isNotBlank() && !addressIsValid
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
@@ -2372,6 +2377,14 @@ private fun AddressBookEditorSheet(
                         },
                         modifier = Modifier.fillMaxWidth(),
                         label = { Text(stringResource(R.string.settings_address_book_address)) },
+                        isError = showAddressError,
+                        supportingText = if (showAddressError) {
+                            {
+                                Text(stringResource(R.string.send_recipient_error))
+                            }
+                        } else {
+                            null
+                        },
                         keyboardOptions = satraDoneKeyboardOptions(),
                         keyboardActions = keyboardActions,
                         minLines = 2,
@@ -2396,6 +2409,7 @@ private fun AddressBookEditorSheet(
                         text = stringResource(R.string.settings_action_save),
                         onClick = {
                             val saveChoice = selectedChoice ?: return@SatraButton
+                            if (!isValidAddressForNetwork(address, saveChoice.network)) return@SatraButton
                             onSave(
                                 NewAddressBookEntryRecord(
                                     label = label.trim(),
@@ -2407,7 +2421,7 @@ private fun AddressBookEditorSheet(
                                 ),
                             )
                         },
-                        enabled = selectedChoice != null && label.isNotBlank() && address.isNotBlank(),
+                        enabled = selectedChoice != null && label.isNotBlank() && addressIsValid,
                         modifier = Modifier
                             .fillMaxWidth(),
                     )
