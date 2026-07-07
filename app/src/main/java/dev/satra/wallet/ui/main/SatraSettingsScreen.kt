@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -35,6 +36,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
@@ -978,6 +980,26 @@ internal fun SatraAddressBookScreen(
     val uiEntries = remember(entries) { entries.toAddressBookUiEntries() }
     val filteredEntries = remember(uiEntries, query) { uiEntries.filterAddressBookEntries(query) }
 
+    fun openAddAddress() {
+        editingEntry = null
+        showEditor = true
+    }
+
+    val appBarActions: (@Composable RowScope.() -> Unit)? = if (entries.isNotEmpty()) {
+        {
+            IconButton(onClick = ::openAddAddress) {
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = stringResource(R.string.settings_address_book_add),
+                    modifier = Modifier.size(24.dp),
+                    tint = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+        }
+    } else {
+        null
+    }
+
     fun reload() {
         scope.launch { entries = walletRepository.getAddressBookEntries() }
     }
@@ -989,20 +1011,18 @@ internal fun SatraAddressBookScreen(
     SettingsScaffold(
         titleRes = R.string.settings_address_book_title,
         onBack = onBack,
+        actions = appBarActions,
     ) {
-        item {
-            SatraButton(
-                text = stringResource(R.string.settings_address_book_add),
-                onClick = {
-                    editingEntry = null
-                    showEditor = true
-                },
-                modifier = Modifier
-                    .fillMaxWidth(),
-                height = SatraButtonDefaults.CompactHeight,
-            )
-        }
         if (entries.isEmpty()) {
+            item {
+                SatraButton(
+                    text = stringResource(R.string.settings_address_book_add),
+                    onClick = ::openAddAddress,
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    height = SatraButtonDefaults.CompactHeight,
+                )
+            }
             item {
                 Box(
                     modifier = Modifier
@@ -1790,6 +1810,7 @@ internal fun SatraDangerZonePasscodeScreen(
 private fun SettingsScaffold(
     @StringRes titleRes: Int,
     onBack: (() -> Unit)? = null,
+    actions: (@Composable RowScope.() -> Unit)? = null,
     content: LazyListScope.() -> Unit,
 ) {
     LazyColumn(
@@ -1820,12 +1841,14 @@ private fun SettingsScaffold(
                 }
                 Text(
                     text = stringResource(titleRes),
+                    modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.headlineSmall,
                     color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+                actions?.invoke(this)
             }
         }
         content()
