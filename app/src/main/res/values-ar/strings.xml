@@ -698,6 +698,9 @@
     <string name="settings_address_book_edit">تحرير العنوان</string>
     <string name="settings_address_book_empty_title">لا توجد عناوين محفوظة حتى الآن.</string>
     <string name="settings_address_book_empty_body">أضف المستلمين الذين تثق بهم حتى يسهل مراجعتهم قبل الإرسال.</string>
+    <string name="settings_address_book_search_placeholder">البحث في العناوين</string>
+    <string name="settings_address_book_search_empty_title">لا توجد عناوين مطابقة</string>
+    <string name="settings_address_book_search_empty_body">ابحث بالاسم أو العنوان أو الأصل أو الشبكة.</string>
     <string name="settings_address_book_label">ملصق</string>
     <string name="settings_address_book_address">عنوان</string>
     <string name="settings_address_book_notes">ملاحظات</string>

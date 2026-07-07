@@ -698,6 +698,9 @@
     <string name="settings_address_book_edit">编辑地址</string>
     <string name="settings_address_book_empty_title">尚未保存地址。</string>
     <string name="settings_address_book_empty_body">添加您信任的收件人，以便在发送前更轻松地查看他们。</string>
+    <string name="settings_address_book_search_placeholder">搜索地址</string>
+    <string name="settings_address_book_search_empty_title">没有匹配的地址</string>
+    <string name="settings_address_book_search_empty_body">按名称、地址、资产或网络搜索。</string>
     <string name="settings_address_book_label">标签</string>
     <string name="settings_address_book_address">地址</string>
     <string name="settings_address_book_notes">笔记</string>

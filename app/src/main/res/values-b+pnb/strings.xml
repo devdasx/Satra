@@ -698,6 +698,9 @@
     <string name="settings_address_book_edit">پتہ تبدیل کرو</string>
     <string name="settings_address_book_empty_title">ہلے تک کوئی محفوظ نئیں کیتا گیا پتہ۔</string>
     <string name="settings_address_book_empty_body">وصول کنندگان نو شامل کرو جنہاں تے تسی اعتماد کردے او تاکہ بھیجن توں پہلے اوہناں دا جائزہ لینا سوکھا ہووے۔</string>
+    <string name="settings_address_book_search_placeholder">پتے لبھو</string>
+    <string name="settings_address_book_search_empty_title">کوئی ملدے پتے نہیں</string>
+    <string name="settings_address_book_search_empty_body">نام، پتے، اثاثے یا نیٹ ورک نال لبھو۔</string>
     <string name="settings_address_book_label">لیبل</string>
     <string name="settings_address_book_address">پتہ</string>
     <string name="settings_address_book_notes">نوٹ</string>

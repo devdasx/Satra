@@ -698,6 +698,9 @@
     <string name="settings_address_book_edit">முகவரியைத் திருத்தவும்</string>
     <string name="settings_address_book_empty_title">இதுவரை சேமிக்கப்பட்ட முகவரிகள் இல்லை.</string>
     <string name="settings_address_book_empty_body">நீங்கள் நம்பும் பெறுநர்களைச் சேர்ப்பதன் மூலம் அனுப்பும் முன் எளிதாக மதிப்பாய்வு செய்யலாம்.</string>
+    <string name="settings_address_book_search_placeholder">முகவரிகளைத் தேடுங்கள்</string>
+    <string name="settings_address_book_search_empty_title">பொருந்தும் முகவரிகள் இல்லை</string>
+    <string name="settings_address_book_search_empty_body">பெயர், முகவரி, சொத்து அல்லது நெட்வொர்க் மூலம் தேடுங்கள்.</string>
     <string name="settings_address_book_label">லேபிள்</string>
     <string name="settings_address_book_address">முகவரி</string>
     <string name="settings_address_book_notes">குறிப்புகள்</string>

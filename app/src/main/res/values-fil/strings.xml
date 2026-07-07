@@ -698,6 +698,9 @@
     <string name="settings_address_book_edit">I-edit ang address</string>
     <string name="settings_address_book_empty_title">Wala pang naka-save na mga address.</string>
     <string name="settings_address_book_empty_body">Magdagdag ng mga tatanggap na pinagkakatiwalaan mo upang mas madaling suriin ang mga ito bago ipadala.</string>
+    <string name="settings_address_book_search_placeholder">Maghanap ng mga address</string>
+    <string name="settings_address_book_search_empty_title">Walang tugmang address</string>
+    <string name="settings_address_book_search_empty_body">Maghanap ayon sa pangalan, address, asset, o network.</string>
     <string name="settings_address_book_label">Label ng pangalan</string>
     <string name="settings_address_book_address">Address ng wallet</string>
     <string name="settings_address_book_notes">Mga Tala</string>

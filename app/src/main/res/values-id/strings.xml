@@ -698,6 +698,9 @@
     <string name="settings_address_book_edit">Sunting alamat</string>
     <string name="settings_address_book_empty_title">Belum ada alamat yang disimpan.</string>
     <string name="settings_address_book_empty_body">Tambahkan penerima yang Anda percayai agar mereka lebih mudah ditinjau sebelum dikirim.</string>
+    <string name="settings_address_book_search_placeholder">Cari alamat</string>
+    <string name="settings_address_book_search_empty_title">Tidak ada alamat yang cocok</string>
+    <string name="settings_address_book_search_empty_body">Cari berdasarkan nama, alamat, aset, atau jaringan.</string>
     <string name="settings_address_book_label">Nama label</string>
     <string name="settings_address_book_address">Alamat</string>
     <string name="settings_address_book_notes">Catatan</string>

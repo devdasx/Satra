@@ -698,6 +698,9 @@
     <string name="settings_address_book_edit">पता संपादित करें</string>
     <string name="settings_address_book_empty_title">अभी तक कोई सहेजा गया पता नहीं.</string>
     <string name="settings_address_book_empty_body">जिन प्राप्तकर्ताओं पर आप भरोसा करते हैं उन्हें जोड़ें ताकि भेजने से पहले उनकी समीक्षा करना आसान हो।</string>
+    <string name="settings_address_book_search_placeholder">पते खोजें</string>
+    <string name="settings_address_book_search_empty_title">कोई मिलते-जुलते पते नहीं</string>
+    <string name="settings_address_book_search_empty_body">नाम, पता, एसेट या नेटवर्क से खोजें।</string>
     <string name="settings_address_book_label">लेबल</string>
     <string name="settings_address_book_address">पता</string>
     <string name="settings_address_book_notes">टिप्पणियाँ</string>

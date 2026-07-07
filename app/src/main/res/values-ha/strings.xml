@@ -698,6 +698,9 @@
     <string name="settings_address_book_edit">Gyara adireshin</string>
     <string name="settings_address_book_empty_title">Babu adiresoshin da aka ajiye tukuna.</string>
     <string name="settings_address_book_empty_body">Ƙara masu karɓa da kuka amince da su don su sami sauƙin dubawa kafin aikawa.</string>
+    <string name="settings_address_book_search_placeholder">Nemo adireshi</string>
+    <string name="settings_address_book_search_empty_title">Babu adireshin da ya dace</string>
+    <string name="settings_address_book_search_empty_body">Nemo ta suna, adireshi, kadara, ko cibiyar sadarwa.</string>
     <string name="settings_address_book_label">Lakabi</string>
     <string name="settings_address_book_address">Adireshi</string>
     <string name="settings_address_book_notes">Bayanan kula</string>

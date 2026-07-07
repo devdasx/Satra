@@ -698,6 +698,9 @@
     <string name="settings_address_book_edit">Adresi düzenle</string>
     <string name="settings_address_book_empty_title">Henüz kayıtlı adres yok.</string>
     <string name="settings_address_book_empty_body">Göndermeden önce incelenmelerini kolaylaştırmak için güvendiğiniz alıcıları ekleyin.</string>
+    <string name="settings_address_book_search_placeholder">Adresleri ara</string>
+    <string name="settings_address_book_search_empty_title">Eşleşen adres yok</string>
+    <string name="settings_address_book_search_empty_body">Ada, adrese, varlığa veya ağa göre arayın.</string>
     <string name="settings_address_book_label">Etiket</string>
     <string name="settings_address_book_address">Adres</string>
     <string name="settings_address_book_notes">Notlar</string>

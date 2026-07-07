@@ -698,6 +698,9 @@
     <string name="settings_address_book_edit">住所の編集</string>
     <string name="settings_address_book_empty_title">保存されたアドレスはまだありません。</string>
     <string name="settings_address_book_empty_body">信頼できる受信者を追加すると、送信前に確認しやすくなります。</string>
+    <string name="settings_address_book_search_placeholder">アドレスを検索</string>
+    <string name="settings_address_book_search_empty_title">一致するアドレスはありません</string>
+    <string name="settings_address_book_search_empty_body">名前、アドレス、資産、またはネットワークで検索します。</string>
     <string name="settings_address_book_label">ラベル</string>
     <string name="settings_address_book_address">住所</string>
     <string name="settings_address_book_notes">注意事項</string>

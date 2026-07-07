@@ -698,6 +698,9 @@
     <string name="settings_address_book_edit">చిరునామాను సవరించండి</string>
     <string name="settings_address_book_empty_title">ఇంకా సేవ్ చేయబడిన చిరునామాలు లేవు.</string>
     <string name="settings_address_book_empty_body">మీరు విశ్వసించే గ్రహీతలను జోడించండి, తద్వారా వారు పంపే ముందు సులభంగా సమీక్షించవచ్చు.</string>
+    <string name="settings_address_book_search_placeholder">చిరునామాలను శోధించండి</string>
+    <string name="settings_address_book_search_empty_title">సరిపోలే చిరునామాలు లేవు</string>
+    <string name="settings_address_book_search_empty_body">పేరు, చిరునామా, ఆస్తి లేదా నెట్‌వర్క్ ద్వారా శోధించండి.</string>
     <string name="settings_address_book_label">లేబుల్</string>
     <string name="settings_address_book_address">చిరునామా</string>
     <string name="settings_address_book_notes">గమనికలు</string>

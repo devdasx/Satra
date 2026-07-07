@@ -698,6 +698,9 @@
     <string name="settings_address_book_edit">पत्ता संपादित करा</string>
     <string name="settings_address_book_empty_title">अद्याप कोणतेही जतन केलेले पत्ते नाहीत.</string>
     <string name="settings_address_book_empty_body">तुमचा विश्वास असलेले प्राप्तकर्ते जोडा जेणेकरून पाठवण्यापूर्वी त्यांचे पुनरावलोकन करणे सोपे होईल.</string>
+    <string name="settings_address_book_search_placeholder">पत्ते शोधा</string>
+    <string name="settings_address_book_search_empty_title">जुळणारे पत्ते नाहीत</string>
+    <string name="settings_address_book_search_empty_body">नाव, पत्ता, मालमत्ता किंवा नेटवर्कनुसार शोधा.</string>
     <string name="settings_address_book_label">लेबल</string>
     <string name="settings_address_book_address">पत्ता</string>
     <string name="settings_address_book_notes">नोट्स</string>

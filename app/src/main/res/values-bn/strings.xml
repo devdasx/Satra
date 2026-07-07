@@ -698,6 +698,9 @@
     <string name="settings_address_book_edit">ঠিকানা সম্পাদনা করুন</string>
     <string name="settings_address_book_empty_title">এখনও কোন সংরক্ষিত ঠিকানা.</string>
     <string name="settings_address_book_empty_body">আপনি বিশ্বাস করেন এমন প্রাপকদের যোগ করুন যাতে পাঠানোর আগে তাদের পর্যালোচনা করা সহজ হয়।</string>
+    <string name="settings_address_book_search_placeholder">ঠিকানা খুঁজুন</string>
+    <string name="settings_address_book_search_empty_title">কোনো মিল থাকা ঠিকানা নেই</string>
+    <string name="settings_address_book_search_empty_body">নাম, ঠিকানা, সম্পদ বা নেটওয়ার্ক দিয়ে খুঁজুন।</string>
     <string name="settings_address_book_label">লেবেল</string>
     <string name="settings_address_book_address">ঠিকানা</string>
     <string name="settings_address_book_notes">নোট</string>

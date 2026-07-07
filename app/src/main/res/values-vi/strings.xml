@@ -698,6 +698,9 @@
     <string name="settings_address_book_edit">Chỉnh sửa địa chỉ</string>
     <string name="settings_address_book_empty_title">Chưa có địa chỉ nào được lưu.</string>
     <string name="settings_address_book_empty_body">Thêm người nhận mà bạn tin cậy để họ dễ dàng xem xét hơn trước khi gửi.</string>
+    <string name="settings_address_book_search_placeholder">Tìm kiếm địa chỉ</string>
+    <string name="settings_address_book_search_empty_title">Không có địa chỉ phù hợp</string>
+    <string name="settings_address_book_search_empty_body">Tìm theo tên, địa chỉ, tài sản hoặc mạng.</string>
     <string name="settings_address_book_label">Nhãn</string>
     <string name="settings_address_book_address">Địa chỉ</string>
     <string name="settings_address_book_notes">Ghi chú</string>

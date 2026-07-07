@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -73,7 +74,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.satra.wallet.R
+import dev.satra.wallet.data.assets.SupportedAsset
 import dev.satra.wallet.data.assets.SupportedAssetCatalog
+import dev.satra.wallet.data.assets.SupportedNetwork
 import dev.satra.wallet.data.db.AddressBookEntryRecord
 import dev.satra.wallet.data.db.AppSettingsRecord
 import dev.satra.wallet.data.db.AppSettingsUpdate
@@ -98,6 +101,7 @@ import dev.satra.wallet.settings.SatraSettings
 import dev.satra.wallet.settings.SatraSettingsDefaults
 import dev.satra.wallet.settings.SatraThemePreference
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 import java.util.Currency
 import java.util.Locale
 
@@ -969,6 +973,9 @@ internal fun SatraAddressBookScreen(
     var entries by remember { mutableStateOf(emptyList<AddressBookEntryRecord>()) }
     var editingEntry by remember { mutableStateOf<AddressBookEntryRecord?>(null) }
     var showEditor by remember { mutableStateOf(false) }
+    var query by rememberSaveable { mutableStateOf("") }
+    val uiEntries = remember(entries) { entries.toAddressBookUiEntries() }
+    val filteredEntries = remember(uiEntries, query) { uiEntries.filterAddressBookEntries(query) }
 
     fun reload() {
         scope.launch { entries = walletRepository.getAddressBookEntries() }
@@ -996,23 +1003,56 @@ internal fun SatraAddressBookScreen(
         }
         if (entries.isEmpty()) {
             item {
-                SettingsEmptyCard(
-                    titleRes = R.string.settings_address_book_empty_title,
-                    bodyRes = R.string.settings_address_book_empty_body,
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .widthIn(max = SettingsContentMaxWidth)
+                        .heightIn(min = 460.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    SettingsEmptyCard(
+                        titleRes = R.string.settings_address_book_empty_title,
+                        bodyRes = R.string.settings_address_book_empty_body,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             }
         } else {
-            items(entries, key = { it.entryId }) { entry ->
+            item {
+                ChooseAssetSearchBar(
+                    query = query,
+                    onQueryChange = { query = it },
+                    placeholder = stringResource(R.string.settings_address_book_search_placeholder),
+                )
+            }
+            if (filteredEntries.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .widthIn(max = SettingsContentMaxWidth)
+                            .heightIn(min = 360.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        SettingsEmptyCard(
+                            titleRes = R.string.settings_address_book_search_empty_title,
+                            bodyRes = R.string.settings_address_book_search_empty_body,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                }
+            }
+            items(filteredEntries, key = { it.entry.entryId }) { entry ->
                 SettingsCard {
                     AddressBookEntryRow(
                         entry = entry,
                         onEdit = {
-                            editingEntry = entry
+                            editingEntry = entry.entry
                             showEditor = true
                         },
                         onDelete = {
                             scope.launch {
-                                walletRepository.deleteAddressBookEntry(entry.entryId)
+                                walletRepository.deleteAddressBookEntry(entry.entry.entryId)
                                 reload()
                             }
                         },
@@ -2147,28 +2187,38 @@ private fun NotificationSwitch(
 
 @Composable
 private fun AddressBookEntryRow(
-    entry: AddressBookEntryRecord,
+    entry: AddressBookUiEntry,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            SatraCryptoIcon(
-                iconRes = networkIconRes(entry.networkId),
-                modifier = Modifier.size(44.dp),
-            )
+            if (entry.choice != null) {
+                SatraAssetNetworkIcon(
+                    assetIconRes = assetIconRes(entry.choice.asset.symbol),
+                    networkIconRes = networkIconRes(entry.network.networkId),
+                    modifier = Modifier.size(46.dp),
+                )
+            } else {
+                SatraCryptoIcon(
+                    iconRes = networkIconRes(entry.network.networkId),
+                    modifier = Modifier.size(46.dp),
+                )
+            }
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = entry.label,
+                    text = entry.entry.label,
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold,
                 )
                 Text(
-                    text = "${entry.networkId} · ${entry.address.shortSettingsValue()}",
+                    text = entry.subtitle(),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }
@@ -2198,12 +2248,23 @@ private fun AddressBookEditorSheet(
     onDismiss: () -> Unit,
     onSave: (NewAddressBookEntryRecord) -> Unit,
 ) {
+    val assetGroups = remember { addressBookAssetGroups() }
+    val initialChoice = remember(entry) { entry?.toAddressBookAssetChoice() }
+    var step by remember(entry) {
+        mutableStateOf(if (entry == null) AddressBookEditorStep.Asset else AddressBookEditorStep.Details)
+    }
+    var assetQuery by remember(entry) { mutableStateOf("") }
+    var pendingGroup by remember(entry) { mutableStateOf<AddressBookAssetGroup?>(null) }
+    var selectedChoice by remember(entry) { mutableStateOf(initialChoice) }
     var label by remember(entry) { mutableStateOf(entry?.label.orEmpty()) }
-    var networkId by remember(entry) { mutableStateOf(entry?.networkId ?: SupportedAssetCatalog.networks.first().networkId) }
     var address by remember(entry) { mutableStateOf(entry?.address.orEmpty()) }
     var notes by remember(entry) { mutableStateOf(entry?.notes.orEmpty()) }
     var favorite by remember(entry) { mutableStateOf(entry?.isFavorite ?: false) }
     val keyboardActions = satraDoneKeyboardActions()
+    val nativeAssetLabel = stringResource(R.string.asset_type_native)
+    val filteredGroups = remember(assetGroups, assetQuery) {
+        assetGroups.filterAddressBookAssetGroups(assetQuery)
+    }
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
@@ -2211,86 +2272,189 @@ private fun AddressBookEditorSheet(
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
-                text = stringResource(
-                    if (entry == null) R.string.settings_address_book_add else R.string.settings_address_book_edit,
-                ),
+                text = stringResource(step.titleRes(entry == null)),
+                modifier = Modifier.fillMaxWidth(),
                 style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold,
             )
-            OutlinedTextField(
-                value = label,
-                onValueChange = { label = it.satraSingleLineInput().take(64) },
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text(stringResource(R.string.settings_address_book_label)) },
-                singleLine = true,
-                keyboardOptions = satraDoneKeyboardOptions(),
-                keyboardActions = keyboardActions,
+            when (step) {
+                AddressBookEditorStep.Asset -> {
+                    ChooseAssetSearchBar(
+                        query = assetQuery,
+                        onQueryChange = { assetQuery = it },
+                        placeholder = stringResource(R.string.send_search_asset_placeholder),
+                    )
+                    ChooseAssetSectionHeader(stringResource(R.string.send_section_all_assets))
+                    if (filteredGroups.isEmpty()) {
+                        ChooseAssetEmptySearchNote()
+                    } else {
+                        filteredGroups.forEach { group ->
+                            ChooseAssetRow(
+                                symbol = group.symbol,
+                                name = group.name,
+                                networkCount = group.choices.size,
+                                primaryAmount = "",
+                                secondaryAmount = "",
+                                showSecondaryAmount = false,
+                                iconRes = group.iconRes,
+                                enabled = true,
+                                onClick = {
+                                    if (group.choices.size > 1) {
+                                        pendingGroup = group
+                                        step = AddressBookEditorStep.Network
+                                    } else {
+                                        selectedChoice = group.choices.first()
+                                        step = AddressBookEditorStep.Details
+                                    }
+                                },
+                            )
+                        }
+                    }
+                }
+
+                AddressBookEditorStep.Network -> {
+                    val group = pendingGroup
+                    if (group != null) {
+                        ChooseNetworkContextLine(
+                            symbol = group.symbol,
+                            networkCount = group.choices.size,
+                            iconRes = group.iconRes,
+                        )
+                        group.choices.forEach { choice ->
+                            ChooseNetworkRow(
+                                networkName = choice.network.displayName,
+                                standard = choice.networkStandardLabel(nativeAssetLabel),
+                                primaryAmount = "",
+                                secondaryAmount = "",
+                                iconRes = networkIconRes(choice.network.networkId),
+                                enabled = true,
+                                onClick = {
+                                    selectedChoice = choice
+                                    step = AddressBookEditorStep.Details
+                                },
+                            )
+                        }
+                    }
+                }
+
+                AddressBookEditorStep.Details -> {
+                    val choice = selectedChoice
+                    if (choice != null) {
+                        AddressBookSelectedAssetCard(
+                            choice = choice,
+                            nativeAssetLabel = nativeAssetLabel,
+                            onChange = {
+                                pendingGroup = null
+                                step = AddressBookEditorStep.Asset
+                            },
+                        )
+                    }
+                    OutlinedTextField(
+                        value = label,
+                        onValueChange = { label = it.satraSingleLineInput().take(64) },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text(stringResource(R.string.settings_address_book_label)) },
+                        singleLine = true,
+                        keyboardOptions = satraDoneKeyboardOptions(),
+                        keyboardActions = keyboardActions,
+                    )
+                    OutlinedTextField(
+                        value = address,
+                        onValueChange = {
+                            address = it.satraSingleLineInput(newlineReplacement = "")
+                                .trim()
+                                .take(160)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text(stringResource(R.string.settings_address_book_address)) },
+                        keyboardOptions = satraDoneKeyboardOptions(),
+                        keyboardActions = keyboardActions,
+                        minLines = 2,
+                    )
+                    OutlinedTextField(
+                        value = notes,
+                        onValueChange = { notes = it.satraSingleLineInput().take(160) },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text(stringResource(R.string.settings_address_book_notes)) },
+                        keyboardOptions = satraDoneKeyboardOptions(),
+                        keyboardActions = keyboardActions,
+                        minLines = 2,
+                    )
+                    SettingsSwitchRow(
+                        iconRes = R.drawable.ic_brand_favorite,
+                        title = stringResource(R.string.settings_address_book_favorite),
+                        body = stringResource(R.string.settings_address_book_favorite_body),
+                        checked = favorite,
+                        onCheckedChange = { favorite = it },
+                    )
+                    SatraButton(
+                        text = stringResource(R.string.settings_action_save),
+                        onClick = {
+                            val saveChoice = selectedChoice ?: return@SatraButton
+                            onSave(
+                                NewAddressBookEntryRecord(
+                                    label = label.trim(),
+                                    networkId = saveChoice.network.networkId,
+                                    address = address.trim(),
+                                    notes = notes.trim().takeIf(String::isNotBlank),
+                                    isFavorite = favorite,
+                                    metadataJson = saveChoice.toAddressBookMetadataJson(),
+                                ),
+                            )
+                        },
+                        enabled = selectedChoice != null && label.isNotBlank() && address.isNotBlank(),
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(18.dp))
+        }
+    }
+}
+
+@Composable
+private fun AddressBookSelectedAssetCard(
+    choice: AddressBookAssetChoice,
+    nativeAssetLabel: String,
+    onChange: () -> Unit,
+) {
+    SettingsCard {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            SatraAssetNetworkIcon(
+                assetIconRes = assetIconRes(choice.asset.symbol),
+                networkIconRes = networkIconRes(choice.network.networkId),
+                modifier = Modifier.size(48.dp),
             )
-            OutlinedTextField(
-                value = address,
-                onValueChange = {
-                    address = it.satraSingleLineInput(newlineReplacement = "")
-                        .trim()
-                        .take(160)
-                },
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text(stringResource(R.string.settings_address_book_address)) },
-                keyboardOptions = satraDoneKeyboardOptions(),
-                keyboardActions = keyboardActions,
-                minLines = 2,
-            )
-            OutlinedTextField(
-                value = notes,
-                onValueChange = { notes = it.satraSingleLineInput().take(160) },
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text(stringResource(R.string.settings_address_book_notes)) },
-                keyboardOptions = satraDoneKeyboardOptions(),
-                keyboardActions = keyboardActions,
-                minLines = 2,
-            )
-            Text(
-                text = stringResource(R.string.settings_address_book_network),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Bold,
-            )
-            SupportedAssetCatalog.networks.forEach { network ->
-                SelectableSettingsRow(
-                    title = network.displayName,
-                    body = network.nativeSymbol,
-                    selected = networkId == network.networkId,
-                    onClick = { networkId = network.networkId },
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = choice.asset.symbol,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = "${choice.asset.name} · ${choice.network.displayName} · ${choice.networkStandardLabel(nativeAssetLabel)}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
-            SettingsSwitchRow(
-                iconRes = R.drawable.ic_brand_favorite,
-                title = stringResource(R.string.settings_address_book_favorite),
-                body = stringResource(R.string.settings_address_book_favorite_body),
-                checked = favorite,
-                onCheckedChange = { favorite = it },
-            )
             SatraButton(
-                text = stringResource(R.string.settings_action_save),
-                onClick = {
-                    onSave(
-                        NewAddressBookEntryRecord(
-                            label = label.trim(),
-                            networkId = networkId,
-                            address = address.trim(),
-                            notes = notes.trim().takeIf(String::isNotBlank),
-                            isFavorite = favorite,
-                        ),
-                    )
-                },
-                enabled = label.isNotBlank() && address.isNotBlank(),
-                modifier = Modifier
-                    .fillMaxWidth(),
+                text = stringResource(R.string.settings_action_edit),
+                onClick = onChange,
+                variant = SatraButtonVariant.Secondary,
+                height = SatraButtonDefaults.CompactHeight,
             )
-            Spacer(modifier = Modifier.height(18.dp))
         }
     }
 }
@@ -2344,13 +2508,148 @@ private fun SettingsSectionTitle(@StringRes titleRes: Int) {
 private fun SettingsEmptyCard(
     @StringRes titleRes: Int,
     @StringRes bodyRes: Int,
+    modifier: Modifier = Modifier,
 ) {
     SatraEmptyState(
         title = stringResource(titleRes),
         body = stringResource(bodyRes),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
     )
 }
+
+private enum class AddressBookEditorStep {
+    Asset,
+    Network,
+    Details,
+}
+
+@StringRes
+private fun AddressBookEditorStep.titleRes(isNewEntry: Boolean): Int =
+    when (this) {
+        AddressBookEditorStep.Asset -> R.string.settings_address_book_add
+        AddressBookEditorStep.Network -> R.string.receive_choose_network_title
+        AddressBookEditorStep.Details -> {
+            if (isNewEntry) R.string.settings_address_book_add else R.string.settings_address_book_edit
+        }
+    }
+
+private data class AddressBookAssetChoice(
+    val asset: SupportedAsset,
+    val network: SupportedNetwork,
+) {
+    fun networkStandardLabel(nativeAssetLabel: String): String =
+        asset.tokenStandard
+            ?: network.tokenStandard
+            ?: if (asset.assetType == "NATIVE") nativeAssetLabel else network.family.uppercase(Locale.US)
+
+    fun toAddressBookMetadataJson(): String =
+        JSONObject()
+            .put("assetId", asset.assetId)
+            .put("symbol", asset.symbol)
+            .put("name", asset.name)
+            .toString()
+}
+
+private data class AddressBookAssetGroup(
+    val symbol: String,
+    val name: String,
+    val choices: List<AddressBookAssetChoice>,
+    @DrawableRes val iconRes: Int,
+)
+
+private data class AddressBookUiEntry(
+    val entry: AddressBookEntryRecord,
+    val choice: AddressBookAssetChoice?,
+    val network: SupportedNetwork,
+) {
+    fun subtitle(): String {
+        val assetPrefix = choice?.let { "${it.asset.symbol} · " }.orEmpty()
+        return "$assetPrefix${network.displayName} · ${entry.address.shortSettingsValue()}"
+    }
+
+    fun matches(query: String): Boolean {
+        val normalized = query.trim()
+        return normalized.isBlank() ||
+            entry.label.contains(normalized, ignoreCase = true) ||
+            entry.address.contains(normalized, ignoreCase = true) ||
+            entry.notes.orEmpty().contains(normalized, ignoreCase = true) ||
+            network.displayName.contains(normalized, ignoreCase = true) ||
+            network.nativeSymbol.contains(normalized, ignoreCase = true) ||
+            network.networkId.contains(normalized, ignoreCase = true) ||
+            choice?.asset?.symbol.orEmpty().contains(normalized, ignoreCase = true) ||
+            choice?.asset?.name.orEmpty().contains(normalized, ignoreCase = true)
+    }
+}
+
+private fun addressBookAssetGroups(): List<AddressBookAssetGroup> {
+    val networkById = SupportedAssetCatalog.networks.associateBy { network -> network.networkId }
+    return SupportedAssetCatalog.assets
+        .mapNotNull { asset ->
+            networkById[asset.networkId]?.let { network ->
+                AddressBookAssetChoice(asset = asset, network = network)
+            }
+        }
+        .groupBy { choice -> choice.asset.symbol.uppercase(Locale.US) }
+        .values
+        .map { choices ->
+            val representative = choices.first()
+            AddressBookAssetGroup(
+                symbol = representative.asset.symbol,
+                name = representative.asset.name,
+                choices = choices,
+                iconRes = assetIconRes(representative.asset.symbol),
+            )
+        }
+}
+
+private fun List<AddressBookAssetGroup>.filterAddressBookAssetGroups(query: String): List<AddressBookAssetGroup> {
+    val normalized = query.trim()
+    return if (normalized.isBlank()) {
+        this
+    } else {
+        filter { group ->
+            group.symbol.contains(normalized, ignoreCase = true) ||
+                group.name.contains(normalized, ignoreCase = true) ||
+                group.choices.any { choice ->
+                    choice.network.displayName.contains(normalized, ignoreCase = true) ||
+                        choice.network.nativeSymbol.contains(normalized, ignoreCase = true)
+                }
+        }
+    }
+}
+
+private fun List<AddressBookEntryRecord>.toAddressBookUiEntries(): List<AddressBookUiEntry> {
+    val networkById = SupportedAssetCatalog.networks.associateBy { network -> network.networkId }
+    return mapNotNull { entry ->
+        val network = networkById[entry.networkId] ?: return@mapNotNull null
+        AddressBookUiEntry(
+            entry = entry,
+            choice = entry.toAddressBookAssetChoice(),
+            network = network,
+        )
+    }
+}
+
+private fun List<AddressBookUiEntry>.filterAddressBookEntries(query: String): List<AddressBookUiEntry> =
+    filter { entry -> entry.matches(query) }
+
+private fun AddressBookEntryRecord.toAddressBookAssetChoice(): AddressBookAssetChoice? {
+    val networkById = SupportedAssetCatalog.networks.associateBy { network -> network.networkId }
+    val network = networkById[networkId] ?: return null
+    val metadataAssetId = addressBookAssetId()
+    val asset = SupportedAssetCatalog.assets.firstOrNull { asset -> asset.assetId == metadataAssetId }
+        ?: SupportedAssetCatalog.assets.firstOrNull { asset ->
+            asset.networkId == networkId && asset.assetType == "NATIVE"
+        }
+        ?: SupportedAssetCatalog.assets.firstOrNull { asset -> asset.networkId == networkId }
+        ?: return null
+    return AddressBookAssetChoice(asset = asset, network = network)
+}
+
+private fun AddressBookEntryRecord.addressBookAssetId(): String? =
+    runCatching {
+        JSONObject(metadataJson).optString("assetId").takeIf(String::isNotBlank)
+    }.getOrNull()
 
 private val SatraThemePreference.titleRes: Int
     @StringRes get() = when (this) {

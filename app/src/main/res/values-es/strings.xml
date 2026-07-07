@@ -698,6 +698,9 @@
     <string name="settings_address_book_edit">Editar dirección</string>
     <string name="settings_address_book_empty_title">Aún no hay direcciones guardadas.</string>
     <string name="settings_address_book_empty_body">Agregue destinatarios de confianza para que sean más fáciles de revisar antes de enviar.</string>
+    <string name="settings_address_book_search_placeholder">Buscar direcciones</string>
+    <string name="settings_address_book_search_empty_title">No hay direcciones coincidentes</string>
+    <string name="settings_address_book_search_empty_body">Busca por nombre, dirección, activo o red.</string>
     <string name="settings_address_book_label">Etiqueta</string>
     <string name="settings_address_book_address">Dirección</string>
     <string name="settings_address_book_notes">Notas</string>

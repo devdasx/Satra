@@ -698,6 +698,9 @@
     <string name="settings_address_book_edit">Изменить адрес</string>
     <string name="settings_address_book_empty_title">Сохраненных адресов пока нет.</string>
     <string name="settings_address_book_empty_body">Добавьте получателей, которым вы доверяете, чтобы их было легче просмотреть перед отправкой.</string>
+    <string name="settings_address_book_search_placeholder">Поиск адресов</string>
+    <string name="settings_address_book_search_empty_title">Нет совпадающих адресов</string>
+    <string name="settings_address_book_search_empty_body">Ищите по имени, адресу, активу или сети.</string>
     <string name="settings_address_book_label">Этикетка</string>
     <string name="settings_address_book_address">Адрес</string>
     <string name="settings_address_book_notes">Примечания</string>

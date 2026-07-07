@@ -698,6 +698,9 @@
     <string name="settings_address_book_edit">Badilisha anwani</string>
     <string name="settings_address_book_empty_title">Bado hakuna anwani zilizohifadhiwa.</string>
     <string name="settings_address_book_empty_body">Ongeza wapokeaji unaowaamini ili iwe rahisi kuwakagua kabla ya kuwatuma.</string>
+    <string name="settings_address_book_search_placeholder">Tafuta anwani</string>
+    <string name="settings_address_book_search_empty_title">Hakuna anwani zinazolingana</string>
+    <string name="settings_address_book_search_empty_body">Tafuta kwa jina, anwani, mali, au mtandao.</string>
     <string name="settings_address_book_label">Lebo</string>
     <string name="settings_address_book_address">Anwani</string>
     <string name="settings_address_book_notes">Vidokezo</string>

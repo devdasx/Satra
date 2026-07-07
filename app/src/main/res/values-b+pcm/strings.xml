@@ -698,6 +698,9 @@
     <string name="settings_address_book_edit">Edit address</string>
     <string name="settings_address_book_empty_title">No saved addresses yet.</string>
     <string name="settings_address_book_empty_body">Add recipients you trust so they are easier to review before sending.</string>
+    <string name="settings_address_book_search_placeholder">Search addresses</string>
+    <string name="settings_address_book_search_empty_title">No matching addresses</string>
+    <string name="settings_address_book_search_empty_body">Search by name, address, asset, or network.</string>
     <string name="settings_address_book_label">Label</string>
     <string name="settings_address_book_address">Address</string>
     <string name="settings_address_book_notes">Notes</string>
